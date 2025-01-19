@@ -21,12 +21,12 @@ jobs:
         run: |
           # Find all packages with a build_pkg.yml and manifest.yml
           packages=$(find pkg-src -type f -name "build_pkg.yml" -exec dirname {} \; | xargs -n1 basename)
-          if -z $packages; then
-            echo "Found packages: $packages"
-            echo "packages=$packages" >> $GITHUB_ENV
-          else
+          if [ -z $packages ]; then
             echo "No packages found! $packages"
             echo "packages=''" >> $GITHUB_ENV
+          else
+            echo "Found packages: $packages"
+            echo "packages=$packages" >> $GITHUB_ENV
           fi
 
       - name: Generate Workflow
