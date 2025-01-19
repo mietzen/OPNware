@@ -19,32 +19,31 @@ on:
         type: string
 
 jobs:
-
   dhcp-client-widget:
-  if: inputs.pkg_name == 'dhcp-client-widget'
-  uses: ./.github/workflows/build_dhcp-client-widget.yml
-  with:
-    abi: ${{ inputs.abi }}
-    arch: ${{ inputs.arch }}
+    if: inputs.pkg_name == 'dhcp-client-widget'
+    uses: ./.github/workflows/build_dhcp-client-widget.yml
+    with:
+      abi: ${{ inputs.abi }}
+      arch: ${{ inputs.arch }}
 
   adguard:
-  if: inputs.pkg_name == 'adguard'
-  uses: ./.github/workflows/build_adguard.yml
-  with:
-    abi: ${{ inputs.abi }}
-    arch: ${{ inputs.arch }}
+    if: inputs.pkg_name == 'adguard'
+    uses: ./.github/workflows/build_adguard.yml
+    with:
+      abi: ${{ inputs.abi }}
+      arch: ${{ inputs.arch }}
 
   caddyv2:
-  if: inputs.pkg_name == 'caddyv2'
-  uses: ./.github/workflows/build_caddyv2.yml
-  with:
-    abi: ${{ inputs.abi }}
-    arch: ${{ inputs.arch }}
+    if: inputs.pkg_name == 'caddyv2'
+    uses: ./.github/workflows/build_caddyv2.yml
+    with:
+      abi: ${{ inputs.abi }}
+      arch: ${{ inputs.arch }}
 
   upsnap:
-  if: inputs.pkg_name == 'upsnap'
-  uses: ./.github/workflows/build_upsnap.yml
-  with:
-    abi: ${{ inputs.abi }}
-    arch: ${{ inputs.arch }}
+    if: inputs.pkg_name == 'upsnap'
+    uses: ./.github/workflows/build_upsnap.yml
+    with:
+      abi: ${{ inputs.abi }}
+      arch: ${{ inputs.arch }}
 
