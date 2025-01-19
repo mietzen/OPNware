@@ -44,7 +44,7 @@ jobs:
             echo "packages=''" >> $GITHUB_ENV
           else
             echo "Found packages: $packages"
-            echo 'packages="$packages"' >> $GITHUB_ENV
+            echo "packages=$packages"" >> $GITHUB_ENV
           fi
 
       - name: Generate Workflow
