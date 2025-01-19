@@ -20,17 +20,3 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v3
 
-      - name: pkg_123
-        if: inputs.pkg_name == 'pkg_123'
-        uses: ./.github/workflows/build_pkg_123.yml
-        with:
-          abi: 
-          arch: 
-
-      - name: upsnap
-        if: inputs.pkg_name == 'upsnap'
-        uses: ./.github/workflows/build_upsnap.yml
-        with:
-          abi: 
-          arch: 
-
