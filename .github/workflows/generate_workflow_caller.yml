@@ -77,7 +77,7 @@ jobs:
           echo "" >> .github/workflows/pkg_workflow_caller.yml
 
           echo "${packages}" | jq -r '.[]' | while read -r pkg; do
-            reusable_workflow='./.github/workflows/build_${pkg}.yml'
+            reusable_workflow="./.github/workflows/build_${pkg}.yml"
             cat << EOL >> .github/workflows/pkg_workflow_caller.yml
                 - name: ${pkg}
                   if: inputs.pkg_name == '${pkg}'
