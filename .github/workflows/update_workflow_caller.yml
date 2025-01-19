@@ -42,15 +42,17 @@ jobs:
           packages=$(find pkg-src -type f -name "build_pkg.yml" -exec dirname {} \; | xargs -n1 basename | sed -z '$ s/\n$//' | jq -Rsc 'split("\n")')
           if [ -z $packages ]; then
             echo "No packages found! $packages"
-            echo "packages=''" >> $GITHUB_ENV
+            echo "packages=''" >> $GITHUB_OUTPUT
           else
             echo "Found packages: $packages"
-            echo "packages=$packages" >> $GITHUB_ENV
+            echo "packages=$packages" >> $GITHUB_OUTPUT
           fi
 
       - name: Generate Workflow
         id: generate
         if: ${{ steps.discover.outputs.packages }} != ''
+        env:
+          PACKAGES: ${{ steps.discover.outputs.packages }}
         run: |
           cat <<EOF > .github/workflows/workflow_caller.yml
           ######################################################
@@ -76,7 +78,7 @@ jobs:
           jobs:
           EOF
           rm -rf .github/workflows/build_*.yml
-          echo "${packages}" | jq -r '.[]' | while read -r pkg; do
+          echo "${PACKAGES}" | jq -r '.[]' | while read -r pkg; do
             reusable_workflow="./.github/workflows/build_${pkg}.yml"
             cat << EOL >> .github/workflows/workflow_caller.yml
             ${pkg}:
