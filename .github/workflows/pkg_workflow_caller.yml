@@ -24,13 +24,13 @@ jobs:
         if: inputs.pkg_name == 'pkg_123'
         uses: ./.github/workflows/build_pkg_123.yml
         with:
-          abi: {% raw -%}\{%- endraw %}
-          arch: {% raw -%}\{%- endraw %}
+          abi: ${{ inputs.abi }}
+          arch: ${{ inputs.arch }}
 
       - name: upsnap
         if: inputs.pkg_name == 'upsnap'
         uses: ./.github/workflows/build_upsnap.yml
         with:
-          abi: {% raw -%}\{%- endraw %}
-          arch: {% raw -%}\{%- endraw %}
+          abi: ${{ inputs.abi }}
+          arch: ${{ inputs.arch }}
 
