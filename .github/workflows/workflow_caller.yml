@@ -20,6 +20,27 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v3
 
+      - name: dhcp-client-widget
+        if: inputs.pkg_name == 'dhcp-client-widget'
+        uses: ./.github/workflows/build_dhcp-client-widget.yml
+        with:
+          abi: ${{ inputs.abi }}
+          arch: ${{ inputs.arch }}
+
+      - name: adguard
+        if: inputs.pkg_name == 'adguard'
+        uses: ./.github/workflows/build_adguard.yml
+        with:
+          abi: ${{ inputs.abi }}
+          arch: ${{ inputs.arch }}
+
+      - name: caddyv2
+        if: inputs.pkg_name == 'caddyv2'
+        uses: ./.github/workflows/build_caddyv2.yml
+        with:
+          abi: ${{ inputs.abi }}
+          arch: ${{ inputs.arch }}
+
       - name: upsnap
         if: inputs.pkg_name == 'upsnap'
         uses: ./.github/workflows/build_upsnap.yml
