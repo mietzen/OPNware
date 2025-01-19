@@ -1,4 +1,4 @@
-name: Build Package UpSnap
+name: Build Package DHCP Client Widget
 
 on:
   workflow_call:

@@ -1,4 +1,4 @@
-name: Build Package UpSnap
+name: Build Package AdGuard
 
 on:
   workflow_call:

@@ -1,4 +1,4 @@
-name: Build Package UpSnap
+name: Build Package CaddyV2
 
 on:
   workflow_call:
