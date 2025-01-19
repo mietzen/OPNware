@@ -6,17 +6,34 @@ on:
     paths:
       - 'pkgs/**'
 
-permissions:
-  contents: write
-  workflows: write
 
 jobs:
   generate-workflows:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
+      - uses: actions/create-github-app-token@v1
+        id: generate-token
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+      
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+          token: ${{ steps.generate-token.outputs.token }}
+      
+      - name: Get GitHub App User ID
+        id: get-user-id
+        env:
+          GH_TOKEN: ${{ steps.generate-token.outputs.token }}
+        run: echo "user-id=$(gh api "/users/${{ steps.generate-token.outputs.app-slug }}[bot]" --jq .id)" >> "$GITHUB_OUTPUT"
+      
+      - name: Set Commiter Credentials
+        run: |
+          git config --global user.name '${{ steps.generate-token.outputs.app-slug }}[bot]'
+          git config --global user.email '${{ steps.get-user-id.outputs.user-id }}+${{ steps.generate-token.outputs.app-slug }}[bot]@users.noreply.github.com'
+      
       - name: Discover Packages
         id: discover
         run: |
@@ -71,17 +88,23 @@ jobs:
                     arch: ${{ inputs.arch }}
           EOL
           echo "" >> .github/workflows/pkg_workflow_caller.yml
-          if [ ! -L ${reusable_workflow} ]; then
-            ln -s ./pkg-src/${pkg}/build_pkg.yml ${reusable_workflow}
-            git add ${reusable_workflow}
+          if [ ! -f ${reusable_workflow} ]; then
+            echo "Moving ./pkg-src/${pkg}/build_pkg.yml to ${reusable_workflow}"
+            mv ./pkg-src/${pkg}/build_pkg.yml ${reusable_workflow}
+            echo "Linking ${reusable_workflow} to ./pkg-src/${pkg}/build_pkg.yml
+            ln -s ${reusable_workflow} ./pkg-src/${pkg}/build_pkg.yml
+            git add ${reusable_workflow} ./pkg-src/${pkg}/build_pkg.yml
+            git commit -m "Moved and linked ${pkg} workflow"
           fi
           done
-          git add .github/workflows/pkg_workflow_caller.yml
-          echo "Workflow generated."
 
-      - name: Commit and Push Workflow
-        run: |
-          git config --global user.name "GitHub Actions"
-          git config --global user.email "actions@github.com"
+          git add .github/workflows/pkg_workflow_caller.yml
           git commit -m "Updated package workflow caller"
+
+          echo ""
+          echo "Workflow generated."
+          echo "-------------------"
+          cat .github/workflows/pkg_workflow_caller.yml
+          echo ""
+
           git push
