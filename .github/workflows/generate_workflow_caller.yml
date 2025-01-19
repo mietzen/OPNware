@@ -76,6 +76,7 @@ jobs:
           EOF
           echo "" >> .github/workflows/workflow_caller.yml
 
+          rm -rf .github/workflows/build_*.yml
           echo "${packages}" | jq -r '.[]' | while read -r pkg; do
             reusable_workflow="./.github/workflows/build_${pkg}.yml"
             cat << EOL >> .github/workflows/workflow_caller.yml
@@ -87,10 +88,13 @@ jobs:
                     arch: ${{ '\${{ inputs.arch }}' }}
           EOL
             echo "" >> .github/workflows/workflow_caller.yml
-            cp -f ./pkg-src/${pkg}/build_pkg.yml ${reusable_workflow}
+            cp ./pkg-src/${pkg}/build_pkg.yml ${reusable_workflow}
             git add ${reusable_workflow}
             git commit -m "Copied ${pkg} workflow" || echo "No changes in ${reusable_workflow}"
           done
+
+          git add .github/workflows/.
+          git commit -m "Removed old workflows" || echo "No old workflows to remove"
 
           git add .github/workflows/workflow_caller.yml
           git commit -m "Updated package workflow caller" || echo "No changes in .github/workflows/workflow_caller.yml"
