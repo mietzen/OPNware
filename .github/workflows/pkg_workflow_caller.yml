@@ -1,4 +1,4 @@
-name: Pkg workflow caller
+name: Workflow caller
 
 on:
   workflow_call:
