@@ -20,7 +20,7 @@ jobs:
         id: discover
         run: |
           # Find all packages with a build_pkg.yml and manifest.yml
-          packages=$(find pkgs -type f -name "build_pkg.yml" -exec dirname {} \; | xargs -n1 basename)
+          packages=$(find pkg-src -type f -name "build_pkg.yml" -exec dirname {} \; | xargs -n1 basename)
           if -z $packages; then
             echo "Found packages: $packages"
             echo "packages=$packages" >> $GITHUB_ENV

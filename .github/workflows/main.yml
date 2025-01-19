@@ -23,7 +23,7 @@ jobs:
         id: set-matrix
         run: |
           # Find all packages with both build_pkg.yml and manifest.yml
-          pkgs=$(find pkgs -type f -name "build_pkg.yml" -exec dirname {} \; | xargs -n1 basename)
+          pkgs=$(find pkg-src -type f -name "build_pkg.yml" -exec dirname {} \; | xargs -n1 basename)
 
           # Read the abi and arch values from config.yml
           abi_list=$(yq eval '.pkg-repo.abi' config.yml | jq -c '.[]')
