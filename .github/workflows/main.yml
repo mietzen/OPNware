@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   push:
     paths:
-      - ! 'pkgs/**'
+      - '!pkgs/**'
       - 'config.yml'
       - '.github/workflows/*.yml'
   schedule:
