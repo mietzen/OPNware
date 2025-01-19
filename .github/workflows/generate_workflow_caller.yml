@@ -91,7 +91,7 @@ jobs:
           if [ ! -f ${reusable_workflow} ]; then
             echo "Moving ./pkg-src/${pkg}/build_pkg.yml to ${reusable_workflow}"
             mv ./pkg-src/${pkg}/build_pkg.yml ${reusable_workflow}
-            echo "Linking ${reusable_workflow} to ./pkg-src/${pkg}/build_pkg.yml
+            echo "Linking ${reusable_workflow} to ./pkg-src/${pkg}/build_pkg.yml"
             ln -s ${reusable_workflow} ./pkg-src/${pkg}/build_pkg.yml
             git add ${reusable_workflow} ./pkg-src/${pkg}/build_pkg.yml
             git commit -m "Moved and linked ${pkg} workflow"
