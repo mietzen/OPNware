@@ -61,19 +61,15 @@ jobs:
           on:
             workflow_call:
               inputs:
-                abi:
-                  required: true
-                  type: string
-                arch:
-                  required: true
-                  type: string
-                pkg_name:
+                matrix:
                   required: true
                   type: string
 
           jobs:
             build:
               runs-on: ubuntu-latest
+              strategy:
+                matrix: ${{ '\${{ fromJson(inputs.matrix) }}' }}
               steps:
                 - name: Checkout Code
                   uses: actions/checkout@v3
@@ -85,11 +81,11 @@ jobs:
             reusable_workflow="./.github/workflows/build_${pkg}.yml"
             cat << EOL >> .github/workflows/workflow_caller.yml
                 - name: ${pkg}
-                  if: inputs.pkg_name == '${pkg}'
+                  if: matrix.pkg_name == '${pkg}'
                   uses: ${reusable_workflow}
                   with:
-                    abi: ${{ '\${{ inputs.abi }}' }}
-                    arch: ${{ '\${{ inputs.arch }}' }}
+                    abi: ${{ '\${{ matrix.abi }}' }}
+                    arch: ${{ '\${{ matrix.arch }}' }}
           EOL
             echo "" >> .github/workflows/workflow_caller.yml
             cat << EOF > ${reusable_workflow}
