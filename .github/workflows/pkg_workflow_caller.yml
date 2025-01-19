@@ -1,0 +1,22 @@
+name: Pkg workflow caller
+
+on:
+  workflow_call:
+    inputs:
+      abi:
+        required: true
+        type: string
+      arch:
+        required: true
+        type: string
+      pkg_name:
+        required: true
+        type: string
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
