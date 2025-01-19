@@ -4,9 +4,8 @@ on:
   workflow_dispatch:
   push:
     paths:
-      - '!pkg-src/**'
+      - 'pkg-src/**'
       - 'config.yml'
-      - '.github/workflows/*.yml'
   schedule:
     - cron: "15 4 * * *"
 
