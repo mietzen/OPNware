@@ -30,7 +30,7 @@ jobs:
           arch_list=$(yq eval '.pkg-repo.arch' config.yml -o json | jq -c)
 
           # Create the JSON matrix
-          matrix=$(jq -n \
+          matrix=$(jq -c -n \
             --argjson arch "$arch_list" \
             --argjson abi "$abi_list" \
             --argjson pkg_name "$packages" \
