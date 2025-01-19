@@ -74,18 +74,17 @@ jobs:
                   type: string
 
           jobs:
-
           EOF
           rm -rf .github/workflows/build_*.yml
           echo "${packages}" | jq -r '.[]' | while read -r pkg; do
             reusable_workflow="./.github/workflows/build_${pkg}.yml"
             cat << EOL >> .github/workflows/workflow_caller.yml
             ${pkg}:
-            if: inputs.pkg_name == '${pkg}'
-            uses: ${reusable_workflow}
-            with:
-              abi: ${{ '\${{ inputs.abi }}' }}
-              arch: ${{ '\${{ inputs.arch }}' }}
+              if: inputs.pkg_name == '${pkg}'
+              uses: ${reusable_workflow}
+              with:
+                abi: ${{ '\${{ inputs.abi }}' }}
+                arch: ${{ '\${{ inputs.arch }}' }}
 
           EOL
             cat << EOF > ${reusable_workflow}
