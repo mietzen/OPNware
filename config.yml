@@ -1,0 +1,11 @@
+---
+pkg-repo:
+  abi:
+    - 13
+    - 14
+    - 15
+  arch:
+    - amd64
+  load_dependencies: true
+  dependency_repos:
+    - http://pkg.freebsd.org/
