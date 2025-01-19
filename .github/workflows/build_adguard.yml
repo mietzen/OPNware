@@ -16,7 +16,7 @@ on:
         type: string
 
 jobs:
-  build:
+  adguard:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
