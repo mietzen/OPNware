@@ -50,7 +50,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Call Build Workflows
-        uses: .github/workflows/pkg_workflow_caller.yml
+        uses: ./.github/workflows/pkg_workflow_caller.yml
         with:
           abi: ${{ matrix.abi }}
           arch: ${{ matrix.arch }}
