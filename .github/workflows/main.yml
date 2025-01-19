@@ -39,11 +39,19 @@ jobs:
           echo "matrix=$matrix" >> $GITHUB_OUTPUT
 
   build-packages:
+    runs-on: ubuntu-latest
     strategy:
       matrix: ${{ fromJson(needs.discover-packages.outputs.matrix) }}
     needs: discover-packages
-    uses: ./.github/workflows/workflow_caller.yml
-    with:
-      abi: ${{ matrix.abi }}
-      arch: ${{ matrix.arch }}
-      pkg_name: ${{ matrix.pkg_name }}
+    env:
+      ABI: ${{ matrix.abi }}
+      ARCH: ${{ matrix.arch }}
+      PKG_NAME: ${{ matrix.pkg_name }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Build ${{ matrix.pkg_name }}
+        run: |
+          cat pkg-src/${{ matrix.pkg_name }}/build_pkg.yml
+          which ansible
