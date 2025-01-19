@@ -46,4 +46,4 @@ jobs:
     with:
       abi: ${{ matrix.abi }}
       arch: ${{ matrix.arch }}
-      pkg_name: ${{ matrix.pkgs }}
+      pkg_name: ${{ matrix.pkg_name }}
