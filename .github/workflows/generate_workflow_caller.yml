@@ -87,16 +87,13 @@ jobs:
                     arch: ${{ '\${{ inputs.arch }}' }}
           EOL
             echo "" >> .github/workflows/pkg_workflow_caller.yml
-            if [ ! -L ${reusable_workflow} ]; then
-              echo "Linking ./pkg-src/${pkg}/build_pkg.yml to ${reusable_workflow}"
-              ln -s ./pkg-src/${pkg}/build_pkg.yml ${reusable_workflow}
-              git add ${reusable_workflow}
-              git commit -m "Linked ${pkg} workflow"
-            fi
+            cp -f ./pkg-src/${pkg}/build_pkg.yml ${reusable_workflow}
+            git add ${reusable_workflow}
+            git commit -m "Copied ${pkg} workflow" || echo "No changes in ${reusable_workflow}"
           done
 
           git add .github/workflows/pkg_workflow_caller.yml
-          git commit -m "Updated package workflow caller" || true
+          git commit -m "Updated package workflow caller" || echo "No changes in .github/workflows/pkg_workflow_caller.yml"
 
           echo ""
           echo "Workflow generated."
