@@ -11,7 +11,7 @@ on:
         type: string
 
 jobs:
-  build:
+  caddyv2:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
