@@ -5,6 +5,10 @@
   vars:
     go_version: 1.23.5
     node_version: 22.13.0
+  environment:
+    GOPATH: "{{ lookup('env', 'GITHUB_WORKSPACE',) }}/go"
+    GOBIN: "{{ lookup('env', 'GITHUB_WORKSPACE',) }}/go/bin"
+    NODEBIN: "{{ lookup('env', 'GITHUB_WORKSPACE',) }}/node/bin"
   tasks:
     - name: Create Directories
       ansible.builtin.file:
@@ -12,22 +16,25 @@
         state: directory
         mode: '0755'
       loop:
-        - "{{ lookup('env', 'GITHUB_WORKSPACE',) }}/go"
-        - "{{ lookup('env', 'GITHUB_WORKSPACE',) }}/node"
         - "{{ lookup('env', 'GITHUB_WORKSPACE',) }}/src"
         - "{{ lookup('env', 'GITHUB_WORKSPACE',) }}/dist"
 
     - name: Download and Extract Go
       ansible.builtin.unarchive:
         src: "https://go.dev/dl/go{{ go_version }}.linux-amd64.tar.gz"
-        dest: "{{ lookup('env', 'GITHUB_WORKSPACE',) }}/go"
+        dest: "{{ lookup('env', 'GITHUB_WORKSPACE',) }}"
         remote_src: true
 
     - name: Download and Extract Node.js
       ansible.builtin.unarchive:
         src: "https://nodejs.org/dist/v{{ node_version }}/node-v{{ node_version }}-linux-x64.tar.xz"
-        dest: "{{ lookup('env', 'GITHUB_WORKSPACE',) }}/node"
+        dest: "{{ lookup('env', 'GITHUB_WORKSPACE',) }}"
         remote_src: true
+
+    - name: Move Node.js
+      ansible.builtin.shell:
+        cmd: mv $GITHUB_WORKSPACE/node-v{{ node_version }}-linux-x64 $GITHUB_WORKSPACE/node
+        creates: "{{ lookup('env', 'NODEBIN',) }}"
 
     - name: Get latest release of a public repository
       community.general.github_release:
@@ -45,22 +52,17 @@
     - name: Build UpSnap
       ansible.builtin.shell:
         cmd: |
-          export PATH="${GITHUB_WORKSPACE}/go/bin:${GITHUB_WORKSPACE}/node/bin:${PATH}"
-          which go
-          which npm
-          npm i -g pnpm
-          pnpm --prefix=./frontend i
-          pnpm --prefix=./frontend run build
+          ${NODEBIN}/npm i -g pnpm
+          ${NODEBIN}/pnpm --prefix=./frontend i
+          ${NODEBIN}/pnpm --prefix=./frontend run build
           cp -r ./frontend/build/* ./backend/pb_public/
           cd backend
-          go mod tidy
-          GOOS=freebsd \
-            GOARCH={{ lookup('env', 'ARCH',) }} \
-            CGO_ENABLED=0 \
-            go build
-          mv upsnap $GITHUB_WORKSPACE/dist
+          ${GOBIN}/go mod tidy
+          ${GOBIN}/go build
+          mv upsnap ${GITHUB_WORKSPACE}/dist
         chdir: "{{ lookup('env', 'GITHUB_WORKSPACE',) }}/src"
         creates: "{{ lookup('env', 'GITHUB_WORKSPACE',) }}/dist/upsnap"
       environment:
         GOOS: freebsd
         GOARCH: "{{ lookup('env', 'ARCH',) }}"
+        CGO_ENABLED: 0
