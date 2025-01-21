@@ -10,17 +10,15 @@
         mode: '0755'
 
     - name: Get latest release of a public repository
-      community.general.github_release:
-        user: seriousm4x
-        repo: UpSnap
-        action: latest_release
+      ansible.builtin.shell:
+        cmd: gh release --repo seriousm4x/UpSnap list --json tagName,isLatest --jq '.[] | select(.isLatest)|.tagName'
       register: latest_release
 
-    - name: Git checkout AdGuardHome
+    - name: Git checkout UpSnap
       ansible.builtin.git:
         repo: 'https://github.com/seriousm4x/UpSnap.git'
         dest: "{{ lookup('env', 'GITHUB_WORKSPACE',) }}/src"
-        version: "{{ latest_release.tag }}"
+        version: "{{ latest_release.stdout }}"
 
     - name: Build UpSnap
       ansible.builtin.shell:

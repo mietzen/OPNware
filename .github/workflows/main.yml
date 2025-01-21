@@ -67,9 +67,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: |
-          pipx inject ansible-core github3.py
-          ansible-galaxy collection install -U community.general
 
       - name: Build ${{ matrix.pkg_name }}
         uses: dawidd6/action-ansible-playbook@v2

@@ -10,10 +10,8 @@
         mode: '0755'
 
     - name: Get latest release of a public repository
-      community.general.github_release:
-        user: AdguardTeam
-        repo: AdGuardHome
-        action: latest_release
+      ansible.builtin.shell:
+        cmd: gh release --repo AdguardTeam/AdGuardHome list --json tagName,isLatest --jq '.[] | select(.isLatest)|.tagName'
       register: latest_release
 
     - name: Install snapcraft
@@ -26,7 +24,7 @@
       ansible.builtin.git:
         repo: 'https://github.com/AdguardTeam/AdGuardHome.git'
         dest: "{{ lookup('env', 'GITHUB_WORKSPACE',) }}/src"
-        version: "{{ latest_release.tag }}"
+        version: "{{ latest_release.stdout }}"
 
     - name: Build AdGuardHome
       community.general.make:
