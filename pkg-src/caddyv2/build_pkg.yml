@@ -49,4 +49,4 @@
       environment:
         PATH: "{{ lookup('env', 'GITHUB_WORKSPACE',) }}/go/bin:{{ lookup('env', 'PATH',) }}"
         GOOS: freeBSD
-        GOARCH: "{{ lookup('env', 'ARCH',) }}""
+        GOARCH: "{{ lookup('env', 'ARCH',) }}"
