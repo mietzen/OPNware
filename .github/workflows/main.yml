@@ -58,6 +58,8 @@ jobs:
         uses: actions/checkout@v4
         with:
           path: repo
+      - name: Testing
+        run: env
 
       - name: Build ${{ matrix.pkg_name }}
         env:
