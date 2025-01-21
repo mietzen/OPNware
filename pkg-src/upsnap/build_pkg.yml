@@ -16,16 +16,11 @@
         action: latest_release
       register: latest_release
 
-    - name: Download and Extract UpSnap source
-      ansible.builtin.unarchive:
-        src: https://github.com/seriousm4x/UpSnap/archive/refs/tags/{{ latest_release.tag }}.tar.gz
-        dest: "{{ lookup('env', 'GITHUB_WORKSPACE',) }}"
-        remote_src: true
-
-    - name: Move UpSnap source
-      ansible.builtin.shell:
-        cmd: mv $GITHUB_WORKSPACE/UpSnap-{{ latest_release.tag }} $GITHUB_WORKSPACE/src
-        creates: "{{ lookup('env', 'GITHUB_WORKSPACE',) }}/src"
+    - name: Git checkout AdGuardHome
+      ansible.builtin.git:
+        repo: 'https://github.com/seriousm4x/UpSnap.git'
+        dest: "{{ lookup('env', 'GITHUB_WORKSPACE',) }}/src"
+        version: "{{ latest_release.tag }}"
 
     - name: Build UpSnap
       ansible.builtin.shell:

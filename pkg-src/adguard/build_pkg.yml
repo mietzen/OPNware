@@ -37,6 +37,6 @@
           CHANNEL: release
           SIGN: 0
           VERSION: "{{ latest_release.tag }}"
-          DIST_DIR: "{{ lookup('env', 'GITHUB_WORKSPACE',) }}/dist"
+          DIST_DIR: "../dist"
           ARCH: "{{ lookup('env', 'ARCH',) }}"
           OS: freebsd
