@@ -37,30 +37,47 @@
         dest: "{{ lookup('env', 'GITHUB_WORKSPACE',) }}/src"
         remote_src: true
 
+    - name: Debugging 
+      ansible.builtin.shell:
+        cmd: |
+          env
+      register: debugging
+    - debug: msg="{{ debugging.stdout }}"
+
     - name: Debugging 1
       ansible.builtin.shell:
         cmd: |
           ls -al ${GITHUB_WORKSPACE}/go
+      register: debugging
+    - debug: msg="{{ debugging.stdout }}"
 
     - name: Debugging 2
       ansible.builtin.shell:
         cmd: |
           ls -al ${GITHUB_WORKSPACE}/go/bin
+      register: debugging
+    - debug: msg="{{ debugging.stdout }}"
 
     - name: Install xCaddy
       ansible.builtin.shell:
         cmd: |
           ${GITHUB_WORKSPACE}/go/bin/go install github.com/caddyserver/xcaddy/cmd/xcaddy@latest
+      register: debugging
+    - debug: msg="{{ debugging.stdout }}"
 
     - name: Debugging 3
       ansible.builtin.shell:
         cmd: |
           ls -al ${GITHUB_WORKSPACE}/go
+      register: debugging
+    - debug: msg="{{ debugging.stdout }}"
 
     - name: Debugging 4
       ansible.builtin.shell:
         cmd: |
           ls -al ${GITHUB_WORKSPACE}/go/bin
+      register: debugging
+    - debug: msg="{{ debugging.stdout }}"
 
     - name: Build CaddyV2
       ansible.builtin.shell:
