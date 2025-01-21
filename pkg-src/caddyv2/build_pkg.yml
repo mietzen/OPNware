@@ -45,6 +45,8 @@
     - name: Build CaddyV2
       ansible.builtin.shell:
         cmd: |
+          ls -al ${GITHUB_WORKSPACE}/go
+          ls -al ${GITHUB_WORKSPACE}/go/bin
           GOOS=freebsd GOARCH=$ARCH $GITHUB_WORKSPACE/go/bin/xcaddy build {{ latest_release.tag }} \
               --with {{ caddy_plugins | join(' --with ') }} \
               --output $GITHUB_WORKSPACE/dist
