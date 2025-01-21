@@ -51,8 +51,11 @@
           cp -r ./frontend/build/* ./backend/pb_public/
           cd backend
           go mod tidy
-          GOOS=freebsd GOARCH=amd64 CGO_ENABLED=0 go build
+          CGO_ENABLED=0 go build
           mv upsnap {{ lookup('env', 'GITHUB_WORKSPACE',) }}/dist
         chdir: "{{ lookup('env', 'GITHUB_WORKSPACE',) }}/src"
+        creates: "{{ lookup('env', 'GITHUB_WORKSPACE',) }}/dist/upsnap"
       environment:
         PATH: "{{ lookup('env', 'GITHUB_WORKSPACE',) }}/go/bin:{{ lookup('env', 'GITHUB_WORKSPACE',) }}/node/bin:{{ lookup('env', 'PATH',) }}"
+        GOOS: freebsd
+        GOARCH: "{{ lookup('env', 'ARCH',) }}"

@@ -34,7 +34,7 @@
 
     - name: Download and Extract CaddyV2 source
       ansible.builtin.unarchive:
-        src: https://github.com/caddyserver/caddy/archive/refs/tags/{{ latest_release.tag }}.tar.gz
+        src: "https://github.com/caddyserver/caddy/archive/refs/tags/{{ latest_release.tag }}.tar.gz"
         dest: "{{ lookup('env', 'GITHUB_WORKSPACE',) }}/src"
         remote_src: true
 
@@ -46,6 +46,7 @@
             --with {{ caddy_plugins | join(' --with ') }} \
             --output {{ lookup('env', 'GITHUB_WORKSPACE',) }}/dist
         chdir: "{{ lookup('env', 'GITHUB_WORKSPACE',) }}/src"
+        creates: "{{ lookup('env', 'GITHUB_WORKSPACE',) }}/dist/caddy"
       environment:
         PATH: "{{ lookup('env', 'GITHUB_WORKSPACE',) }}/go/bin:{{ lookup('env', 'PATH',) }}"
         GOOS: freeBSD
