@@ -5,6 +5,8 @@
   vars:
     go_version: 1.23.5
     node_version: 22.13.0
+  environment:
+    PATH: "{{ lookup('env', 'GITHUB_WORKSPACE',) }}/go/bin:{{ lookup('env', 'GITHUB_WORKSPACE',) }}/node/bin:{{ ansible_env.PATH }}"
   tasks:
     - name: Create Directories
       ansible.builtin.file:
@@ -56,6 +58,5 @@
         chdir: "{{ lookup('env', 'GITHUB_WORKSPACE',) }}/src"
         creates: "{{ lookup('env', 'GITHUB_WORKSPACE',) }}/dist/upsnap"
       environment:
-        PATH: "{{ lookup('env', 'GITHUB_WORKSPACE',) }}/go/bin:{{ lookup('env', 'GITHUB_WORKSPACE',) }}/node/bin:{{ lookup('env', 'PATH',) }}"
         GOOS: freebsd
         GOARCH: "{{ lookup('env', 'ARCH',) }}"
