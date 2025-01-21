@@ -2,41 +2,19 @@
 - name: Build AdGuardHome
   hosts: localhost
   gather_facts: false
-  vars:
-    go_version: 1.23.5
-    node_version: 22.13.0
-  environment:
-    PATH: "{{ lookup('env', 'GITHUB_WORKSPACE',) }}/go/bin:{{ lookup('env', 'GITHUB_WORKSPACE',) }}/node/bin:{{ ansible_env.PATH }}"
   tasks:
     - name: Create Directories
       ansible.builtin.file:
-        path: "{{ item }}"
+        path: "{{ lookup('env', 'GITHUB_WORKSPACE',) }}/dist"
         state: directory
         mode: '0755'
-      loop:
-        - "{{ lookup('env', 'GITHUB_WORKSPACE',) }}/go"
-        - "{{ lookup('env', 'GITHUB_WORKSPACE',) }}/node"
-        - "{{ lookup('env', 'GITHUB_WORKSPACE',) }}/src"
-        - "{{ lookup('env', 'GITHUB_WORKSPACE',) }}/dist"
-
-    - name: Download and Extract Go
-      ansible.builtin.unarchive:
-        src: "https://go.dev/dl/go{{ go_version }}.linux-amd64.tar.gz"
-        dest: "{{ lookup('env', 'GITHUB_WORKSPACE',) }}/go"
-        remote_src: true
-
-    - name: Download and Extract Node.js
-      ansible.builtin.unarchive:
-        src: "https://nodejs.org/dist/v{{ node_version }}/node-v{{ node_version }}-linux-x64.tar.xz"
-        dest: "{{ lookup('env', 'GITHUB_WORKSPACE',) }}/node"
-        remote_src: true
 
     - name: Install snapcraft
       community.general.snap:
         name:
           - snapcraft
         options:
-          - --classic
+          - classic
       become: true
 
     - name: Get latest release of a public repository
@@ -49,8 +27,13 @@
     - name: Download and Extract AdGuardHome source
       ansible.builtin.unarchive:
         src: https://github.com/AdguardTeam/AdGuardHome/archive/refs/tags/{{ latest_release.tag }}.tar.gz
-        dest: "{{ lookup('env', 'GITHUB_WORKSPACE',) }}/src"
+        dest: "{{ lookup('env', 'GITHUB_WORKSPACE',) }}"
         remote_src: true
+
+    - name: Move AdGuardHome source
+      ansible.builtin.shell:
+        cmd: mv $GITHUB_WORKSPACE/AdGuardHome-{{ latest_release.tag }} $GITHUB_WORKSPACE/src
+        creates: "{{ lookup('env', 'GITHUB_WORKSPACE',) }}/src"
 
     - name: Build AdGuardHome
       community.general.make:

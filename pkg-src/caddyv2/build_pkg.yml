@@ -3,7 +3,6 @@
   hosts: localhost
   gather_facts: false
   vars:
-    go_version: 1.23.5
     caddy_plugins:
       - github.com/caddy-dns/porkbun
       - github.com/caddy-dns/ddnss

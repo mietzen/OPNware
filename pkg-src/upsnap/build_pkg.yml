@@ -25,7 +25,7 @@
     - name: Move UpSnap source
       ansible.builtin.shell:
         cmd: mv $GITHUB_WORKSPACE/UpSnap-{{ latest_release.tag }} $GITHUB_WORKSPACE/src
-        creates: "{{ lookup('env', 'NODEBIN',) }}"
+        creates: "{{ lookup('env', 'GITHUB_WORKSPACE',) }}/src"
 
     - name: Build UpSnap
       ansible.builtin.shell:
