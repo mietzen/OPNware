@@ -21,7 +21,7 @@ on:
 
 jobs:
   discover-packages:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
@@ -51,7 +51,7 @@ jobs:
     strategy:
       matrix: ${{ fromJson(needs.discover-packages.outputs.matrix) }}
       fail-fast: false
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: discover-packages
     steps:
       - name: Checkout Code
@@ -82,7 +82,7 @@ jobs:
 
   build-repo:
     if: github.event_name == 'push'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: build-packages
     steps:
       - name: Download build artifacts
@@ -106,7 +106,7 @@ jobs:
 
   deploy-pkg-repo:
     if: github.event_name == 'push'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: build-repo
     permissions:
       pages: write
