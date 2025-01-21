@@ -8,10 +8,6 @@
       - github.com/caddy-dns/porkbun
       - github.com/caddy-dns/ddnss
       - github.com/mietzen/caddy-dynamicdns-cmd-source
-  environment:
-      PATH: "{{ lookup('env', 'GITHUB_WORKSPACE',) }}/go/bin:{{ ansible_env.PATH }}"
-      GOPATH: "{{ lookup('env', 'GITHUB_WORKSPACE',) }}/go"
-      GOROOT: "{{ lookup('env', 'GITHUB_WORKSPACE',) }}/go"
   tasks:
     - name: Create Directories
       ansible.builtin.file:
@@ -41,16 +37,12 @@
         dest: "{{ lookup('env', 'GITHUB_WORKSPACE',) }}/src"
         remote_src: true
 
-    - name: Echo Path
-      ansible.builtin.shell:
-        cmd: |
-          echo $PATH
-
-
     - name: Install xCaddy
       ansible.builtin.shell:
         cmd: |
           ${GITHUB_WORKSPACE}/go/bin/go install github.com/caddyserver/xcaddy/cmd/xcaddy@latest
+      environment:
+        GOPATH: "{{ lookup('env', 'GITHUB_WORKSPACE',) }}/go"
 
     - name: Build CaddyV2
       ansible.builtin.shell:
@@ -60,3 +52,5 @@
               --output $GITHUB_WORKSPACE/dist
         chdir: "{{ lookup('env', 'GITHUB_WORKSPACE',) }}/src"
         creates: "{{ lookup('env', 'GITHUB_WORKSPACE',) }}/dist/caddy"
+      environment:
+        GOPATH: "{{ lookup('env', 'GITHUB_WORKSPACE',) }}/go"
