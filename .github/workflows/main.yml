@@ -8,12 +8,14 @@ on:
     paths:
       - 'pkg-src/**'
       - 'config.yml'
+      - '.github/workflows/main.yml'
   push:
     branches:
       - main
     paths:
       - 'pkg-src/**'
       - 'config.yml'
+      - '.github/workflows/main.yml'
   schedule:
     - cron: "15 4 * * *"
 
