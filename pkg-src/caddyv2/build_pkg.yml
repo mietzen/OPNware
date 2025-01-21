@@ -8,6 +8,10 @@
       - github.com/caddy-dns/porkbun
       - github.com/caddy-dns/ddnss
       - github.com/mietzen/caddy-dynamicdns-cmd-source
+  environment:
+      PATH: "{{ lookup('env', 'GITHUB_WORKSPACE',) }}/go/bin:{{ ansible_env.PATH }}"
+      GOPATH: "{{ lookup('env', 'GITHUB_WORKSPACE',) }}/go"
+      GOROOT: "{{ lookup('env', 'GITHUB_WORKSPACE',) }}/go"
   tasks:
     - name: Create Directories
       ansible.builtin.file:
@@ -37,37 +41,15 @@
         dest: "{{ lookup('env', 'GITHUB_WORKSPACE',) }}/src"
         remote_src: true
 
-    - name: Debugging 1
-      ansible.builtin.shell:
-        cmd: |
-          ls ${GITHUB_WORKSPACE}/go
-
-    - name: Debugging 2
-      ansible.builtin.shell:
-        cmd: |
-          ls ${GITHUB_WORKSPACE}/go/bin
-
     - name: Install xCaddy
       ansible.builtin.shell:
         cmd: |
-          GOPATH=${GITHUB_WORKSPACE}/go ${GITHUB_WORKSPACE}/go/bin/go install github.com/caddyserver/xcaddy/cmd/xcaddy@latest
-
-    - name: Debugging 3
-      ansible.builtin.shell:
-        cmd: |
-          ls ${GITHUB_WORKSPACE}/go
-
-    - name: Debugging 4
-      ansible.builtin.shell:
-        cmd: |
-          ls ${GITHUB_WORKSPACE}/go/bin
+          ${GITHUB_WORKSPACE}/go/bin/go install github.com/caddyserver/xcaddy/cmd/xcaddy@latest
 
     - name: Build CaddyV2
       ansible.builtin.shell:
         cmd: |
-          ls ${GITHUB_WORKSPACE}/go
-          ls ${GITHUB_WORKSPACE}/go/bin
-          GOPATH=${GITHUB_WORKSPACE}/go GOOS=freebsd GOARCH=$ARCH $GITHUB_WORKSPACE/go/bin/xcaddy build {{ latest_release.tag }} \
+          GOOS=freebsd GOARCH=$ARCH $GITHUB_WORKSPACE/go/bin/xcaddy build {{ latest_release.tag }} \
               --with {{ caddy_plugins | join(' --with ') }} \
               --output $GITHUB_WORKSPACE/dist
         chdir: "{{ lookup('env', 'GITHUB_WORKSPACE',) }}/src"
