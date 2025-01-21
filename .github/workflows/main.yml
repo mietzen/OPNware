@@ -53,6 +53,9 @@ jobs:
       fail-fast: false
     runs-on: ubuntu-24.04
     needs: discover-packages
+    env:
+      ABI: ${{ matrix.abi }}
+      ARCH: ${{ matrix.arch }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -64,21 +67,23 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-      - name: Build ${{ matrix.pkg_name }}
-        env:
-          ABI: ${{ matrix.abi }}
-          ARCH: ${{ matrix.arch }}
-        run: |
-          python3 -m venv .venv
-          source .venv/bin/activate
-          pip install \
-            ansible-core>=2.18.1 \
-            github3.py>=4.0.1
+      - run: |
+          pipx inject ansible-core github3.py
           ansible-galaxy collection install -U community.general
-          ansible-playbook repo/pkg-src/${{ matrix.pkg_name }}/build_pkg.yml
+
+      - name: Build ${{ matrix.pkg_name }}
+        uses: dawidd6/action-ansible-playbook@v2
+        with:
+          playbook: build_pkg.yml
+          directory: repo/pkg-src/${{ matrix.pkg_name }}/
+          configuration: |
+            [defaults]
+            callbacks_enabled = ansible.posix.profile_tasks, ansible.posix.timer
+            stdout_callback = yaml
+            nocows = false
+          inventory: |
+            [local]
+            localhost ansible_connection=local
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
