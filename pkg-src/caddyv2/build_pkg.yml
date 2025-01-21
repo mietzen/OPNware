@@ -41,6 +41,8 @@
     - name: Install xCaddy
       ansible.builtin.shell:
         cmd: |
+          ls -al ${GITHUB_WORKSPACE}/go
+          ls -al ${GITHUB_WORKSPACE}/go/bin/
           ${GITHUB_WORKSPACE}/go/bin/go install github.com/caddyserver/xcaddy/cmd/xcaddy@latest
 
     - name: Build CaddyV2
