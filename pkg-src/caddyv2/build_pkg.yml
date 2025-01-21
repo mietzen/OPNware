@@ -41,6 +41,12 @@
         dest: "{{ lookup('env', 'GITHUB_WORKSPACE',) }}/src"
         remote_src: true
 
+    - name: Echo Path
+      ansible.builtin.shell:
+        cmd: |
+          echo $PATH
+
+
     - name: Install xCaddy
       ansible.builtin.shell:
         cmd: |
