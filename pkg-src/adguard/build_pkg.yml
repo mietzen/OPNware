@@ -16,6 +16,13 @@
         action: latest_release
       register: latest_release
 
+    - name: Move UpSnap source
+      ansible.builtin.shell:
+        cmd: |
+          snap install snapcraft --classic
+          which snapcraft
+      become: true
+
     - name: Download and Extract AdGuardHome source
       ansible.builtin.unarchive:
         src: https://github.com/AdguardTeam/AdGuardHome/archive/refs/tags/{{ latest_release.tag }}.tar.gz

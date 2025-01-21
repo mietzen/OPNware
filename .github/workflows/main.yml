@@ -72,7 +72,6 @@ jobs:
           ABI: ${{ matrix.abi }}
           ARCH: ${{ matrix.arch }}
         run: |
-          sudo snap install snapcraft --classic
           python3 -m venv .venv
           source .venv/bin/activate
           pip install \
