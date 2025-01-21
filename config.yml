@@ -4,6 +4,7 @@ pkg-repo:
     - 13
     - 14
     - 15
+  latest: 14
   arch:
     - amd64
   load_dependencies: true

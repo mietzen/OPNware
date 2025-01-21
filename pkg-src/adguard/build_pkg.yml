@@ -1,23 +1,66 @@
-name: Build Package AdGuard
+---
+- name: Build AdGuardHome
+  hosts: localhost
+  gather_facts: false
+  vars:
+    go_version: 1.23.5
+    node_version: 22.13.0
+  tasks:
+    - name: Create Directories
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        mode: '0644'
+      loop:
+        - "{{ lookup('env', 'GITHUB_WORKSPACE',) }}/go"
+        - "{{ lookup('env', 'GITHUB_WORKSPACE',) }}/node"
+        - "{{ lookup('env', 'GITHUB_WORKSPACE',) }}/src"
+        - "{{ lookup('env', 'GITHUB_WORKSPACE',) }}/dist"
 
-on:
-  workflow_call:
-    inputs:
-      abi:
-        required: true
-        type: string
-      arch:
-        required: true
-        type: string
+    - name: Download and Extract Go
+      ansible.builtin.unarchive:
+        src: "https://go.dev/dl/go{{ go_version }}.linux-amd64.tar.gz"
+        dest: "{{ lookup('env', 'GITHUB_WORKSPACE',) }}/go"
+        remote_src: true
 
-jobs:
-  adguard:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
+    - name: Download and Extract Node.js
+      ansible.builtin.unarchive:
+        src: "https://nodejs.org/dist/v{{ node_version }}/node-v{{ node_version }}-linux-x64.tar.xz"
+        dest: "{{ lookup('env', 'GITHUB_WORKSPACE',) }}/node"
+        remote_src: true
 
-      - name: Build Package
-        run: |
-          echo "Building package with ABI=${{ inputs.abi }} ARCH=${{ inputs.arch }}"
-          # Add your build logic here
+    - name: Install snapcraft
+      community.general.snap:
+        name:
+          - snapcraft
+        options:
+          - --classic
+      become: true
+
+    - name: Get latest release of a public repository
+      community.general.github_release:
+        user: AdguardTeam
+        repo: AdGuardHome
+        action: latest_release
+      register: latest_release
+
+    - name: Download and Extract AdGuardHome source
+      ansible.builtin.unarchive:
+        src: https://github.com/AdguardTeam/AdGuardHome/archive/refs/tags/{{ latest_release.tag }}.tar.gz
+        dest: "{{ lookup('env', 'GITHUB_WORKSPACE',) }}/src"
+        remote_src: true
+
+    - name: Build AdGuardHome
+      community.general.make:
+        chdir: "{{ lookup('env', 'GITHUB_WORKSPACE',) }}/src"
+        target: build-release
+        params:
+          VERBOSE: 1
+          CHANNEL: release
+          SIGN: 0
+          VERSION: "{{ latest_release.tag }}"
+          DIST_DIR: "{{ lookup('env', 'GITHUB_WORKSPACE',) }}/dist"
+          ARCH: "{{ lookup('env', 'ARCH',) }}"
+          OS: FreeBSD
+      environment:
+        PATH: "{{ lookup('env', 'GITHUB_WORKSPACE',) }}/go/bin:{{ lookup('env', 'GITHUB_WORKSPACE',) }}/node/bin:{{ lookup('env', 'PATH',) }}"

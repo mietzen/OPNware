@@ -1,23 +1,52 @@
-name: Build Package CaddyV2
+---
+- name: Build CaddyV2
+  hosts: localhost
+  gather_facts: false
+  vars:
+    go_version: 1.23.5
+    caddy_plugins:
+      - github.com/caddy-dns/porkbun
+      - github.com/caddy-dns/ddnss
+      - github.com/mietzen/caddy-dynamicdns-cmd-source
+  tasks:
+    - name: Create Directories
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        mode: '0644'
+      loop:
+        - "{{ lookup('env', 'GITHUB_WORKSPACE',) }}/go"
+        - "{{ lookup('env', 'GITHUB_WORKSPACE',) }}/src"
+        - "{{ lookup('env', 'GITHUB_WORKSPACE',) }}/dist"
 
-on:
-  workflow_call:
-    inputs:
-      abi:
-        required: true
-        type: string
-      arch:
-        required: true
-        type: string
+    - name: Download and Extract Go
+      ansible.builtin.unarchive:
+        src: "https://go.dev/dl/go{{ go_version }}.linux-amd64.tar.gz"
+        dest: "{{ lookup('env', 'GITHUB_WORKSPACE',) }}/go"
+        remote_src: true
 
-jobs:
-  caddyv2:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
+    - name: Get latest release of CaddyV2
+      community.general.github_release:
+        user: caddyserver
+        repo: caddy
+        action: latest_release
+      register: latest_release
 
-      - name: Build Package
-        run: |
-          echo "Building package with ABI=${{ inputs.abi }} ARCH=${{ inputs.arch }}"
-          # Add your build logic here
+    - name: Download and Extract CaddyV2 source
+      ansible.builtin.unarchive:
+        src: https://github.com/caddyserver/caddy/archive/refs/tags/{{ latest_release.tag }}.tar.gz
+        dest: "{{ lookup('env', 'GITHUB_WORKSPACE',) }}/src"
+        remote_src: true
+
+    - name: Build CaddyV2
+      ansible.builtin.shell:
+        cmd: |
+          go install github.com/caddyserver/xcaddy/cmd/xcaddy@latest
+          xcaddy build {{ latest_release.tag }} \
+            --with {{ caddy_plugins | join(' --with ') }} \
+            --output {{ lookup('env', 'GITHUB_WORKSPACE',) }}/dist
+        chdir: "{{ lookup('env', 'GITHUB_WORKSPACE',) }}/src"
+      environment:
+        PATH: "{{ lookup('env', 'GITHUB_WORKSPACE',) }}/go/bin:{{ lookup('env', 'PATH',) }}"
+        GOOS: freeBSD
+        GOARCH: "{{ lookup('env', 'ARCH',) }}""
