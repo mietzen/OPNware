@@ -9,7 +9,8 @@
       - github.com/caddy-dns/ddnss
       - github.com/mietzen/caddy-dynamicdns-cmd-source
   environment:
-      GITHUB_PATH: "{{ lookup('env', 'GITHUB_WORKSPACE',) }}/go/bin:{{ lookup('env', 'GITHUB_PATH',) }}"
+      GOPATH: "{{ lookup('env', 'GITHUB_WORKSPACE',) }}/go"
+
   tasks:
     - name: Create Directories
       ansible.builtin.file:
@@ -39,26 +40,25 @@
         dest: "{{ lookup('env', 'GITHUB_WORKSPACE',) }}/src"
         remote_src: true
 
+    - name: Execute task with extended PATH
+      shell: echo $PATH
+      environment:
+        PATH: "${GITHUB_WORKSPACE}/go/bin:{{ ansible_env.PATH }}"
+
     - name: Install xCaddy
       ansible.builtin.shell:
         cmd: |
           ${GITHUB_WORKSPACE}/go/bin/go install github.com/caddyserver/xcaddy/cmd/xcaddy@latest
-      environment:
-        GOPATH: "{{ lookup('env', 'GITHUB_WORKSPACE',) }}/go"
-
-    - name: echo PATH
-      ansible.builtin.shell:
-        cmd: echo $PATH
 
     - name: Build CaddyV2
       ansible.builtin.shell:
         cmd: |
+          echo $GOOS
           $GITHUB_WORKSPACE/go/bin/xcaddy build {{ latest_release.tag }} \
               --with {{ caddy_plugins | join(' --with ') }} \
               --output $GITHUB_WORKSPACE/dist
         chdir: "{{ lookup('env', 'GITHUB_WORKSPACE',) }}/src"
         creates: "{{ lookup('env', 'GITHUB_WORKSPACE',) }}/dist/caddy"
       environment:
-        GOPATH: "{{ lookup('env', 'GITHUB_WORKSPACE',) }}/go"
         GOOS: freebsd
         GOARCH: "{{ lookup('env', 'ARCH',) }}"
