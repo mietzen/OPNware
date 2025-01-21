@@ -38,12 +38,14 @@
         dest: "{{ lookup('env', 'GITHUB_WORKSPACE',) }}/src"
         remote_src: true
 
-    - name: Build CaddyV2
+    - name: Install xCaddy
       ansible.builtin.shell:
         cmd: |
+          which go
           go install github.com/caddyserver/xcaddy/cmd/xcaddy@latest
       environment:
         PATH: "{{ lookup('env', 'GITHUB_WORKSPACE',) }}/go/bin:{{ lookup('env', 'PATH',) }}"
+
     - name: Build CaddyV2
       ansible.builtin.shell:
         cmd: |
