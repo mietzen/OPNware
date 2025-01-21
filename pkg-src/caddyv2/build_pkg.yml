@@ -37,10 +37,30 @@
         dest: "{{ lookup('env', 'GITHUB_WORKSPACE',) }}/src"
         remote_src: true
 
+    - name: Debugging 1
+      ansible.builtin.shell:
+        cmd: |
+          ls -al ${GITHUB_WORKSPACE}/go
+
+    - name: Debugging 2
+      ansible.builtin.shell:
+        cmd: |
+          ls -al ${GITHUB_WORKSPACE}/go/bin
+
     - name: Install xCaddy
       ansible.builtin.shell:
         cmd: |
           ${GITHUB_WORKSPACE}/go/bin/go install github.com/caddyserver/xcaddy/cmd/xcaddy@latest
+
+    - name: Debugging 3
+      ansible.builtin.shell:
+        cmd: |
+          ls -al ${GITHUB_WORKSPACE}/go
+
+    - name: Debugging 4
+      ansible.builtin.shell:
+        cmd: |
+          ls -al ${GITHUB_WORKSPACE}/go/bin
 
     - name: Build CaddyV2
       ansible.builtin.shell:
