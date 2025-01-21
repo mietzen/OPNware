@@ -5,8 +5,6 @@
   vars:
     go_version: 1.23.5
     node_version: 22.13.0
-  environment:
-    PATH: "{{ lookup('env', 'GITHUB_WORKSPACE',) }}/go/bin:{{ lookup('env', 'GITHUB_WORKSPACE',) }}/node/bin:{{ ansible_env.PATH }}"
   tasks:
     - name: Create Directories
       ansible.builtin.file:
@@ -47,14 +45,20 @@
     - name: Build UpSnap
       ansible.builtin.shell:
         cmd: |
+          export PATH="${GITHUB_WORKSPACE}/go/bin:${GITHUB_WORKSPACE}/node/bin:${PATH}"
+          which go
+          which npm
           npm i -g pnpm
           pnpm --prefix=./frontend i
           pnpm --prefix=./frontend run build
           cp -r ./frontend/build/* ./backend/pb_public/
           cd backend
           go mod tidy
-          CGO_ENABLED=0 go build
-          mv upsnap {{ lookup('env', 'GITHUB_WORKSPACE',) }}/dist
+          GOOS=freebsd \
+            GOARCH={{ lookup('env', 'ARCH',) }} \
+            CGO_ENABLED=0 \
+            go build
+          mv upsnap $GITHUB_WORKSPACE/dist
         chdir: "{{ lookup('env', 'GITHUB_WORKSPACE',) }}/src"
         creates: "{{ lookup('env', 'GITHUB_WORKSPACE',) }}/dist/upsnap"
       environment:
