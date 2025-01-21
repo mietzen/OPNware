@@ -12,12 +12,9 @@
   tasks:
     - name: Create Directories
       ansible.builtin.file:
-        path: "{{ item }}"
+        path: "{{ lookup('env', 'GITHUB_WORKSPACE',) }}/dist"
         state: directory
         mode: '0755'
-      loop:
-        - "{{ lookup('env', 'GITHUB_WORKSPACE',) }}/src"
-        - "{{ lookup('env', 'GITHUB_WORKSPACE',) }}/dist"
 
     - name: Download and Extract Go
       ansible.builtin.unarchive:
@@ -46,8 +43,13 @@
     - name: Download and Extract UpSnap source
       ansible.builtin.unarchive:
         src: https://github.com/seriousm4x/UpSnap/archive/refs/tags/{{ latest_release.tag }}.tar.gz
-        dest: "{{ lookup('env', 'GITHUB_WORKSPACE',) }}/src"
+        dest: "{{ lookup('env', 'GITHUB_WORKSPACE',) }}"
         remote_src: true
+
+    - name: Move UpSnap source
+      ansible.builtin.shell:
+        cmd: mv $GITHUB_WORKSPACE/UpSnap-{{ latest_release.tag }} $GITHUB_WORKSPACE/src
+        creates: "{{ lookup('env', 'NODEBIN',) }}"
 
     - name: Build UpSnap
       ansible.builtin.shell:

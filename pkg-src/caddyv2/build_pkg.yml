@@ -15,12 +15,9 @@
   tasks:
     - name: Create Directories
       ansible.builtin.file:
-        path: "{{ item }}"
+        path: "{{ lookup('env', 'GITHUB_WORKSPACE',) }}/dist"
         state: directory
         mode: '0755'
-      loop:
-        - "{{ lookup('env', 'GITHUB_WORKSPACE',) }}/src"
-        - "{{ lookup('env', 'GITHUB_WORKSPACE',) }}/dist"
 
     - name: Download and Extract Go
       ansible.builtin.unarchive:
@@ -34,12 +31,6 @@
         repo: caddy
         action: latest_release
       register: latest_release
-
-    - name: Download and Extract CaddyV2 source
-      ansible.builtin.unarchive:
-        src: "https://github.com/caddyserver/caddy/archive/refs/tags/{{ latest_release.tag }}.tar.gz"
-        dest: "{{ lookup('env', 'GITHUB_WORKSPACE',) }}/src"
-        remote_src: true
 
     - name: Install xCaddy
       ansible.builtin.shell:
