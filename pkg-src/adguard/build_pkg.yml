@@ -9,14 +9,6 @@
         state: directory
         mode: '0755'
 
-    - name: Install snapcraft
-      community.general.snap:
-        name:
-          - snapcraft
-        options:
-          - classic
-      become: true
-
     - name: Get latest release of a public repository
       community.general.github_release:
         user: AdguardTeam
