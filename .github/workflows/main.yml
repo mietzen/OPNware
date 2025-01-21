@@ -70,7 +70,7 @@ jobs:
             ansible-core>=2.18.1 \
             github3.py>=4.0.1
           ansible-galaxy collection install -U community.general
-          ansible-playbook repo/pkg-src/${{ matrix.pkg_name }}/build_pkg.yml
+          ansible-playbook repo/pkg-src/${{ matrix.pkg_name }}/build_pkg.yml -v
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
