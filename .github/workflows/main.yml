@@ -62,6 +62,11 @@ jobs:
           ABI: ${{ matrix.abi }}
           ARCH: ${{ matrix.arch }}
         run: |
+          python3 -m venv .venv
+          source .venv/bin/activate
+          pip install \
+            github3.py >= 1.0.0a3
+            ansible >= 2.18
           ansible-galaxy collection install -U community.general
           ansible-playbook repo/pkg-src/${{ matrix.pkg_name }}/build_pkg.yml
 
