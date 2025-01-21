@@ -24,7 +24,7 @@
 
     - name: Move AdGuardHome source
       ansible.builtin.shell:
-        cmd: mv $GITHUB_WORKSPACE/AdGuardHome-{{ latest_release.tag }} $GITHUB_WORKSPACE/src
+        cmd: mv $GITHUB_WORKSPACE/AdGuardHome-{{ latest_release.tag[1:] }} $GITHUB_WORKSPACE/src
         creates: "{{ lookup('env', 'GITHUB_WORKSPACE',) }}/src"
 
     - name: Build AdGuardHome
