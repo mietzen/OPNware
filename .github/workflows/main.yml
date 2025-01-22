@@ -31,27 +31,7 @@ jobs:
       - name: Parse Packages and Config
         id: set-matrix
         run: |
-          # Find all packages with both build_pkg.yml and manifest.yml
-          packages=$(find pkg-src -type f -name "build_pkg.yml" -exec dirname {} \; | xargs -n1 basename | sed -z '$ s/\n$//' | jq -Rsc 'split("\n")')
-
-          # Read the abi and arch values from config.yml
-          abi_list=$(yq eval '.pkg-repo.abi' config.yml -o json | jq -c)
-          arch_list=$(yq eval '.pkg-repo.arch' config.yml -o json | jq -c)
-
-          includes_arr=()
-          echo $packages | jq -r '.[]' | while read pkg; do
-            includes_arr+=( "$(yq eval '.build_config.include * {"name": .name}' pkg-src/${pkg}/config.yml -o j | jq -c)" )
-          done
-
-          includes="[${includes_arr[*]// /,}]"
-
-          # Create the JSON matrix
-          matrix=$(jq -c -n \
-            --argjson arch "$arch_list" \
-            --argjson abi "$abi_list" \
-            --argjson pkg_name "$packages" \
-            --argjson includes "$includes" \
-            '{arch: $arch, abi: $abi, pkg_name: $pkg_name, include: $includes}')
+          matrix=$(python ./.github/assets/build-matrix.py)
           echo "Matrix: $matrix"
           echo "matrix=$matrix" >> $GITHUB_OUTPUT
 
