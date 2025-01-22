@@ -1,0 +1,5 @@
+---
+name: caddyv2
+build_config:
+  include:
+    go: '1.23'

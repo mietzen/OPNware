@@ -38,12 +38,20 @@ jobs:
           abi_list=$(yq eval '.pkg-repo.abi' config.yml -o json | jq -c)
           arch_list=$(yq eval '.pkg-repo.arch' config.yml -o json | jq -c)
 
+          includes_arr=()
+          echo $packages | jq -r '.[]' | while read pkg; do
+            includes_arr+=( "$(yq eval '.build_config.include * {"name": .name}' pkg-src/${pkg}/config.yml -o j | jq -c)" )
+          done
+
+          includes="[${includes_arr[*]// /,}]"
+
           # Create the JSON matrix
           matrix=$(jq -c -n \
             --argjson arch "$arch_list" \
             --argjson abi "$abi_list" \
             --argjson pkg_name "$packages" \
-            '{arch: $arch, abi: $abi, pkg_name: $pkg_name}')
+            --argjson includes "$includes" \
+            '{arch: $arch, abi: $abi, pkg_name: $pkg_name, include: $includes}')
           echo "Matrix: $matrix"
           echo "matrix=$matrix" >> $GITHUB_OUTPUT
 
@@ -61,12 +69,18 @@ jobs:
         uses: actions/checkout@v4
         with:
           path: repo
-      - uses: actions/setup-go@v5
+
+      - name: Setup GO
+        uses: actions/setup-go@v5
+        if: ${{ matrix.go }}
         with:
-          go-version: '1.23'
-      - uses: actions/setup-node@v4
+          go-version: ${{ matrix.go }}
+
+      - name: Setup NodeJS
+        uses: actions/setup-node@v4
+        if: ${{ matrix.node }}
         with:
-          node-version: '22'
+          node-version: ${{ matrix.node }}
 
       - name: Build ${{ matrix.pkg_name }}
         uses: dawidd6/action-ansible-playbook@v2
