@@ -11,29 +11,41 @@
 
     - name: Get latest release of a public repository
       ansible.builtin.shell:
-        cmd: gh release --repo seriousm4x/UpSnap list --json tagName,isLatest --jq '.[] | select(.isLatest)|.tagName'
+        cmd: |
+          set -o pipefail
+          curl -s https://api.github.com/repos/${repo}/releases/latest | jq -r '.tag_name'
       register: latest_release
+      changed_when: latest_release.rc != 0
+      environment:
+        repo: 'seriousm4x/UpSnap'
 
-    - name: Git checkout UpSnap
+    - name: Git checkout repository
       ansible.builtin.git:
-        repo: 'https://github.com/seriousm4x/UpSnap.git'
+        repo: 'https://github.com/${repo}.git'
         dest: "{{ lookup('env', 'GITHUB_WORKSPACE',) }}/src"
         version: "{{ latest_release.stdout }}"
+      environment:
+        repo: 'seriousm4x/UpSnap'
 
-    - name: Build UpSnap
+    - name: Build UpSnap frontend
       ansible.builtin.shell:
         cmd: |
           npm i -g pnpm
           pnpm --prefix=./frontend i
           pnpm --prefix=./frontend run build
           cp -r ./frontend/build/* ./backend/pb_public/
-          cd backend
+        chdir: "{{ lookup('env', 'GITHUB_WORKSPACE',) }}/src"
+        creates: "{{ lookup('env', 'GITHUB_WORKSPACE',) }}/src/backend/pb_public/"
+
+    - name: Build UpSnap backend
+      ansible.builtin.shell:
+        cmd: |
           go mod tidy
           go build
           mv upsnap ${GITHUB_WORKSPACE}/dist
-        chdir: "{{ lookup('env', 'GITHUB_WORKSPACE',) }}/src"
+        chdir: "{{ lookup('env', 'GITHUB_WORKSPACE',) }}/src/backend"
         creates: "{{ lookup('env', 'GITHUB_WORKSPACE',) }}/dist/upsnap"
       environment:
         GOOS: freebsd
         GOARCH: "{{ lookup('env', 'ARCH',) }}"
-        CGO_ENABLED: 0
+        CGO_ENABLED: '0'

@@ -16,8 +16,13 @@
 
     - name: Get latest release of a public repository
       ansible.builtin.shell:
-        cmd: gh release --repo caddyserver/xcaddy list --json tagName,isLatest --jq '.[] | select(.isLatest)|.tagName'
+        cmd: |
+          set -o pipefail
+          curl -s https://api.github.com/repos/${repo}/releases/latest | jq -r '.tag_name'
       register: latest_release
+      changed_when: latest_release.rc != 0
+      environment:
+        repo: 'caddyserver/caddy'
 
     - name: Install xCaddy
       ansible.builtin.shell:
