@@ -42,7 +42,7 @@
           VERBOSE: 1
           CHANNEL: release
           SIGN: 0
-          VERSION: "{{ latest_release.tag }}"
+          VERSION: "{{ latest_release.stdout }}"
           DIST_DIR: "../dist"
           ARCH: "{{ lookup('env', 'ARCH',) }}"
           OS: freebsd
