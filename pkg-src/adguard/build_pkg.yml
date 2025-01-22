@@ -42,6 +42,11 @@
           CHANNEL: release
           SIGN: 0
           VERSION: "{{ latest_release.stdout }}"
-          DIST_DIR: "../dist"
+          DIST_DIR: "./dist"
           ARCH: "{{ lookup('env', 'ARCH',) }}"
           OS: freebsd
+
+    - name: Move AdGuardHome build
+      ansible.builtin.command:
+        cmd: mv src/dist/AdGuardHome_freebsd_amd64/AdGuardHome/AdGuardHome dist/AdGuardHome
+        creates: dist/AdGuardHome
