@@ -66,7 +66,7 @@ jobs:
         env:
           ANSIBLE_CONFIG: ${{ github.workspace }}/ansible.cfg
         run: |
-          ansible-playbook repo/pkg-src/${{ matrix.pkg_name }}/build_pkg.yml -i ./inventory -v
+          ANSIBLE_CONFIG="${{ github.workspace }}/ansible.cfg" ansible-playbook repo/pkg-src/${{ matrix.pkg_name }}/build_pkg.yml -i ./inventory.yml -v
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
