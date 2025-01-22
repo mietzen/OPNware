@@ -62,21 +62,22 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
 
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-
       - name: Build ${{ matrix.pkg_name }}
         env:
           ABI: ${{ matrix.abi }}
           ARCH: ${{ matrix.arch }}
-          ANSIBLE_CONFIG: ${{ github.workspace }}/ansible.cfg
-        run: |
-          python3 -m venv .venv
-          source .venv/bin/activate
-          pip install ansible-core>=2.18.1
-          ansible-galaxy collection install -U community.general
-          ansible-playbook repo/pkg-src/${{ matrix.pkg_name }}/build_pkg.yml -i ./inventory.yml -v
+        uses: dawidd6/action-ansible-playbook@v2
+        with:
+          playbook: build_pkg.yml
+          directory: repo/pkg-src/${{ matrix.pkg_name }}/
+          configuration: |
+            [defaults]
+            callbacks_enabled = ansible.posix.profile_tasks, ansible.posix.timer
+            stdout_callback = yaml
+            nocows = false
+          inventory: |
+            [local]
+            localhost ansible_connection=local
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
