@@ -63,18 +63,10 @@ jobs:
           node-version: ${{ matrix.node }}
 
       - name: Build ${{ matrix.pkg_name }}
-        uses: dawidd6/action-ansible-playbook@v2
-        with:
-          playbook: build_pkg.yml
-          directory: repo/pkg-src/${{ matrix.pkg_name }}/
-          configuration: |
-            [defaults]
-            callbacks_enabled = ansible.posix.profile_tasks, ansible.posix.timer
-            stdout_callback = yaml
-            nocows = false
-          inventory: |
-            [local]
-            localhost ansible_connection=local
+        env:
+          ANSIBLE_CONFIG: ${{ github.workspace }}/ansible.cfg
+        run: |
+          ansible-playbook repo/pkg-src/${{ matrix.pkg_name }}/build_pkg.yml -i ./inventory -v
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
@@ -93,10 +85,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: artifacts
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.13'
+
       - name: Building freeBSD compatible pkg repo
         run: python .github/assets/build-pkg-repo.py
 
