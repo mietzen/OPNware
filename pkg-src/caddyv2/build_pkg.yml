@@ -3,6 +3,8 @@
   hosts: localhost
   gather_facts: false
   vars:
+    gh_ws: "{{ lookup('env', 'GITHUB_WORKSPACE',) }}"
+    repo: 'caddyserver/caddy'
     caddy_plugins:
       - github.com/caddy-dns/porkbun
       - github.com/caddy-dns/ddnss
@@ -10,7 +12,7 @@
   tasks:
     - name: Create Directories
       ansible.builtin.file:
-        path: "{{ lookup('env', 'GITHUB_WORKSPACE',) }}/dist"
+        path: "{{ gh_ws }}/dist"
         state: directory
         mode: '0755'
 
@@ -22,13 +24,12 @@
         executable: /bin/bash
       register: latest_release
       changed_when: latest_release.rc != 0
-      vars:
-        repo: 'caddyserver/caddy'
 
     - name: Install xCaddy
       ansible.builtin.shell:
         cmd: |
           go install github.com/caddyserver/xcaddy/cmd/xcaddy@latest
+          which go
         creates: "{{ lookup('env', 'GOBIN',) }}/xcaddy"
 
     - name: Build CaddyV2
@@ -37,7 +38,7 @@
           xcaddy build {{ latest_release.stdout }} \
               --with {{ caddy_plugins | join(' --with ') }} \
               --output $GITHUB_WORKSPACE/dist
-        creates: "{{ lookup('env', 'GITHUB_WORKSPACE',) }}/dist/caddy"
+        creates: "{{ gh_ws }}/dist/caddy"
       environment:
         GOOS: freebsd
         GOARCH: "{{ lookup('env', 'ARCH',) }}"
