@@ -18,10 +18,10 @@
       ansible.builtin.shell:
         cmd: |
           set -o pipefail
-          curl -s https://api.github.com/repos/${repo}/releases/latest | jq -r '.tag_name'
+          curl -s https://api.github.com/repos/${{ repo }}/releases/latest | jq -r '.tag_name'
       register: latest_release
       changed_when: latest_release.rc != 0
-      environment:
+      vars:
         repo: 'caddyserver/caddy'
 
     - name: Install xCaddy
