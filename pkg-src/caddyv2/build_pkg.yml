@@ -76,13 +76,13 @@
         creates: "{{ gh_ws }}/dist/pkg/+MANIFEST"
 
     - name: Create PKG
-      ansible.builtin.shell:
-        cmd: |
-          tar -cJf {{ pkg_name }}-{{ latest_release.stdout[1:] }}.pkg -C ./pkg/ .
-        chdir: "{{ gh_ws }}/dist"
-        creates: "{{ gh_ws }}/dist/{{ pkg_name }}-{{ latest_release.stdout[1:] }}.pkg"
+      community.general.archive:
+        path: "{{ gh_ws }}/dist/pkg/*"
+        dest: "{{ gh_ws }}/dist/{{ pkg_name }}-{{ latest_release.stdout[1:] }}.pkg"
+        format: xz
+        mode: '755'
 
-    # - name: Remove intermediate PKG Folder
-    #   ansible.builtin.file:
-    #     path: "{{ gh_ws }}/dist/pkg"
-    #     state: absent
+    - name: Remove intermediate PKG Folder
+      ansible.builtin.file:
+        path: "{{ gh_ws }}/dist/pkg"
+        state: absent
