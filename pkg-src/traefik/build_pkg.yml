@@ -51,7 +51,7 @@
 
     - name: Copy Binary
       ansible.builtin.copy:
-        src: "{{ gh_ws }}/src/dist/{{ pkg_name }}"
+        src: "{{ gh_ws }}/src/dist/freebsd/{{ lookup('env', 'ARCH',) }}/traefik{{ pkg_name }}"
         dest: "{{ gh_ws }}/dist/pkg/opt/{{ pkg_name }}/{{ pkg_name }}"
         remote_src: true
         mode: '0755'

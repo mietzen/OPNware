@@ -60,7 +60,7 @@
 
     - name: Copy Binary
       ansible.builtin.copy:
-        src: "{{ gh_ws }}/src/dist/AdGuardHome_freebsd_amd64/AdGuardHome/AdGuardHome"
+        src: "{{ gh_ws }}/src/dist/AdGuardHome_freebsd_{{ lookup('env', 'ARCH',) }}/AdGuardHome/AdGuardHome"
         dest: "{{ gh_ws }}/dist/pkg/opt/{{ pkg_name }}/{{ pkg_name }}"
         remote_src: true
         mode: '0755'
