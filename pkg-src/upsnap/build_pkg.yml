@@ -36,7 +36,8 @@
           pnpm --prefix=./frontend i
           PUBLIC_VERSION={{ latest_release.stdout }} pnpm --prefix=./frontend run build
           pnpm --prefix=./frontend run build
-          cp -rf ./frontend/build/* ./backend/pb_public/
+          rm -rf ./backend/pb_public/
+          cp -r ./frontend/build/* ./backend/pb_public/
         chdir: "{{ gh_ws }}/src"
         creates: "{{ gh_ws }}/src/backend/pb_public/"
 
