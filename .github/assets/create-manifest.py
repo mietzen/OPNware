@@ -13,6 +13,16 @@ def sha256sum(filename):
     with open(filename, 'rb', buffering=0) as f:
         return hashlib.file_digest(f, 'sha256').hexdigest()
 
+def folder_size(folder):
+    total_size = 0
+    for dirpath, _, filenames in os.walk(folder):
+        for f in filenames:
+            fp = os.path.join(dirpath, f)
+            if not os.path.islink(fp):
+                total_size += os.path.getsize(fp)
+
+    return total_size
+
 src_folder = os.environ.get('PKG_NAME')
 workspace = os.environ.get('GITHUB_WORKSPACE')
 abi = os.environ.get('ABI')
@@ -23,7 +33,7 @@ with open(config_path, "r") as f:
     pkg_config = yaml.safe_load(f)
 manifest = pkg_config["pkg_manifest"]
 manifest['arch'] = f'FreeBSD:{abi}:{arch}'
-manifest['flatsize'] = os.path.getsize(f"{manifest['name'].lower()}-{manifest['version']}.pkg")
+manifest['flatsize'] = folder_size("pkg")
 
 with open('+COMPACT_MANIFEST', "w") as f:
     json.dump(manifest, f, separators=(',', ':'))
