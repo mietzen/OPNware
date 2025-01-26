@@ -28,16 +28,16 @@ with open(config_path, "r") as f:
 manifest = pkg_config["pkg_manifest"]
 manifest['arch'] = f'FreeBSD:{abi}:{arch}'
 manifest['flatsize'] = folder_size(".")
-
-with open('+COMPACT_MANIFEST', "w") as f:
-    json.dump(manifest, f, separators=(',', ':'))
-
-manifest['files'] = {}
+files = {}
 for root, _, files in os.walk('.'):
     if files:
         for file in files:
             file_path = os.path.join(root, file)
-            manifest['files'][f'{os.sep}{os.path.relpath(file_path, ".")}'] = sha256sum(file_path)
+            files[f'{os.sep}{os.path.relpath(file_path, ".")}'] = sha256sum(file_path)
+
+with open('+COMPACT_MANIFEST', "w") as f:
+    json.dump(manifest, f, separators=(',', ':'))
 
 with open('+MANIFEST', "w") as f:
+    manifest['files'] = files
     json.dump(manifest, f, separators=(',', ':'))
