@@ -1,15 +1,15 @@
 ---
-- name: Build UpSnap
+- name: Build speedtest-go
   hosts: localhost
   gather_facts: false
   vars:
     gh_ws: "{{ lookup('env', 'GITHUB_WORKSPACE',) }}"
-    repo: 'seriousm4x/UpSnap'
-    pkg_name: 'upsnap'
+    repo: 'showwin/speedtest-go'
+    pkg_name: 'speedtest-go'
   tasks:
     - name: Create Directories
       ansible.builtin.file:
-        path: "{{ gh_ws }}/dist"
+        path: "{{ gh_ws }}/dist/pkg"
         state: directory
         recurse: true
         mode: '0755'
@@ -29,27 +29,16 @@
         dest: "{{ gh_ws }}/src"
         version: "{{ latest_release.stdout }}"
 
-    - name: Build frontend
-      ansible.builtin.shell:
-        cmd: |
-          npm i -g pnpm
-          pnpm --prefix=./frontend i
-          pnpm --prefix=./frontend run build
-          cp -r ./frontend/build/* ./backend/pb_public/
-        chdir: "{{ gh_ws }}/src"
-        creates: "{{ gh_ws }}/src/backend/pb_public/"
-
-    - name: Build backend
+    - name: Build Binary
       ansible.builtin.shell:
         cmd: |
           go mod tidy
           go build
-        chdir: "{{ gh_ws }}/src/backend"
-        creates: "{{ gh_ws }}/src/backend/{{ pkg_name }}"
+        chdir: "{{ gh_ws }}/src"
+        creates: "{{ gh_ws }}/src/{{ pkg_name }}"
       environment:
         GOOS: freebsd
         GOARCH: "{{ lookup('env', 'ARCH',) }}"
-        CGO_ENABLED: '0'
 
     - name: Create Directories
       ansible.builtin.file:
@@ -63,7 +52,7 @@
 
     - name: Copy Binary
       ansible.builtin.copy:
-        src: "{{ gh_ws }}/src/backend/{{ pkg_name }}"
+        src: "{{ gh_ws }}/src/{{ pkg_name }}"
         dest: "{{ gh_ws }}/dist/pkg/opt/{{ pkg_name }}/{{ pkg_name }}"
         remote_src: true
         mode: '0755'

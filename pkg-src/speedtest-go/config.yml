@@ -1,0 +1,21 @@
+---
+build_config:
+  include:
+    go: '1.23'
+pkg_manifest:
+  name: speedtest-go
+  origin: mietzen/speedtest-go
+  version: 1.7.10
+  comment: CLI and Go API to Test Internet Speed using speedtest.net
+  www: https://github.com/showwin/speedtest-go
+  maintainer: github.nstein@mailbox.org
+  prefix: /opt/speedtest-go
+  arch: FreeBSD:14:amd64
+  flatsize: null
+  licenses:
+    - MIT license
+  desc: |
+    Speedtest-go enables fast, reliable internet speed testing directly from the command line or your Go applications.
+    It supports latency, download, and upload measurements, multi-server testing, and custom configurations.
+    With cross-platform compatibility, JSON output, and proxy support, it's highly extensible and lightweight.
+    Results closely match Speedtest.net while being 2x faster.

@@ -1,6 +1,36 @@
 ---
-name: upsnap
 build_config:
   include:
     go: '1.23'
     node: '22'
+pkg_manifest:
+  name: upsnap
+  origin: mietzen/upsanp
+  version: 4.6.0
+  comment: A simple wake on lan web app written with SvelteKit, Go and PocketBase.
+  www: https://github.com/seriousm4x/UpSnap
+  maintainer: github.nstein@mailbox.org
+  prefix: /opt/upsanp
+  files:
+    - /opt/upsanp/upsnap
+    - /etc/rc.d/upsnap
+  arch: FreeBSD:14:amd64
+  flatsize: null
+  licenses:
+    -  MIT license
+  desc: |
+    UpSnap provides an intuitive dashboard to wake devices with one click, schedule timed events, and scan networks for devices.
+    Built with SvelteKit, Go, and PocketBase, it supports secure user management, multi-language support, and customizable themes.
+    Ideal for self-hosting with Docker or binary options, it integrates features like port pinging and network discovery.
+    While offering powerful functionality, it's recommended to use VPN for external access due to security.
+  dependencies:
+    nmap:
+      mirror_repo: freebsd
+      origin: security/nmap
+      version: 7.94_3
+  scripts:
+    post-install: echo 'upsanp_enable="YES"' >> /etc/rc.conf
+pkg_service:
+  template: default
+  vars:
+    command: /opt/upsanp/upsnap --dir /opt/upsnap serve --http=127.0.0.1:8090

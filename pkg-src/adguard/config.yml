@@ -1,6 +1,0 @@
----
-name: adguard
-build_config:
-  include:
-    go: '1.23'
-    node: '22'

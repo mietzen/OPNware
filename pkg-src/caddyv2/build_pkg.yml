@@ -5,6 +5,7 @@
   vars:
     gh_ws: "{{ lookup('env', 'GITHUB_WORKSPACE',) }}"
     repo: 'caddyserver/caddy'
+    pkg_name: 'caddy'
     caddy_plugins:
       - github.com/caddy-dns/porkbun
       - github.com/caddy-dns/ddnss
@@ -12,8 +13,9 @@
   tasks:
     - name: Create Directories
       ansible.builtin.file:
-        path: "{{ gh_ws }}/dist"
+        path: "{{ gh_ws }}/src"
         state: directory
+        recurse: true
         mode: '0755'
 
     - name: Get latest release of a public repository
@@ -29,16 +31,58 @@
       ansible.builtin.shell:
         cmd: |
           go install github.com/caddyserver/xcaddy/cmd/xcaddy@latest
-          which go
         creates: "{{ lookup('env', 'GOBIN',) }}/xcaddy"
 
-    - name: Build CaddyV2
+    - name: Build Binary
       ansible.builtin.shell:
         cmd: |
           xcaddy build {{ latest_release.stdout }} \
               --with {{ caddy_plugins | join(' --with ') }} \
-              --output $GITHUB_WORKSPACE/dist
-        creates: "{{ gh_ws }}/dist/caddy"
+              --output $GITHUB_WORKSPACE/src
+        creates: "{{ gh_ws }}/src/caddy"
       environment:
         GOOS: freebsd
         GOARCH: "{{ lookup('env', 'ARCH',) }}"
+
+    - name: Create Directories
+      ansible.builtin.file:
+        path: "{{ gh_ws }}/dist/pkg/{{ item }}"
+        state: directory
+        recurse: true
+        mode: '0755'
+      loop:
+        - 'opt/{{ pkg_name }}'
+        - 'etc/rc.d'
+
+    - name: Copy Binary
+      ansible.builtin.copy:
+        src: "{{ gh_ws }}/src/{{ pkg_name }}"
+        dest: "{{ gh_ws }}/dist/pkg/opt/{{ pkg_name }}/{{ pkg_name }}"
+        remote_src: true
+        mode: '0755'
+
+    - name: Create Service
+      ansible.builtin.shell:
+        cmd: |
+          python {{ gh_ws }}/.github/assets/create-service.py
+        chdir: "{{ gh_ws }}/dist/pkg/etc/rc.d/"
+        creates: "{{ gh_ws }}/dist/pkg/etc/rc.d/{{ pkg_name }}"
+
+    - name: Create PKG
+      community.general.archive:
+        path: "{{ gh_ws }}/dist/pkg/*"
+        dest: "{{ gh_ws }}/dist/{{ pkg_name }}.pkg"
+        format: xz
+        mode: '755'
+
+    - name: Create Manifest
+      ansible.builtin.shell:
+        cmd: |
+          python {{ gh_ws }}/.github/assets/create-manifest.py
+        chdir: "{{ gh_ws }}/dist"
+        creates: "{{ gh_ws }}/dist/+MANIFEST"
+
+    - name: Remove intermediate PKG Folder
+      ansible.builtin.file:
+        path: "{{ gh_ws }}/dist/pkg"
+        state: absent

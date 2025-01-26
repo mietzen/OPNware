@@ -1,18 +1,24 @@
 ---
-- name: Build UpSnap
+- name: Build AdGuardHome
   hosts: localhost
   gather_facts: false
   vars:
     gh_ws: "{{ lookup('env', 'GITHUB_WORKSPACE',) }}"
-    repo: 'seriousm4x/UpSnap'
-    pkg_name: 'upsnap'
+    repo: 'AdguardTeam/AdGuardHome'
+    pkg_name: 'adguardhome'
   tasks:
     - name: Create Directories
       ansible.builtin.file:
-        path: "{{ gh_ws }}/dist"
+        path: "{{ gh_ws }}/dist/pkg"
         state: directory
         recurse: true
         mode: '0755'
+
+    - name: Install snapcraft
+      ansible.builtin.command:
+        cmd: snap install snapcraft --classic
+        creates: "/snap/bin/snapcraft"
+      become: true
 
     - name: Get latest release of a public repository
       ansible.builtin.shell:
@@ -29,27 +35,18 @@
         dest: "{{ gh_ws }}/src"
         version: "{{ latest_release.stdout }}"
 
-    - name: Build frontend
-      ansible.builtin.shell:
-        cmd: |
-          npm i -g pnpm
-          pnpm --prefix=./frontend i
-          pnpm --prefix=./frontend run build
-          cp -r ./frontend/build/* ./backend/pb_public/
+    - name: Build AdGuardHome
+      community.general.make:
         chdir: "{{ gh_ws }}/src"
-        creates: "{{ gh_ws }}/src/backend/pb_public/"
-
-    - name: Build backend
-      ansible.builtin.shell:
-        cmd: |
-          go mod tidy
-          go build
-        chdir: "{{ gh_ws }}/src/backend"
-        creates: "{{ gh_ws }}/src/backend/{{ pkg_name }}"
-      environment:
-        GOOS: freebsd
-        GOARCH: "{{ lookup('env', 'ARCH',) }}"
-        CGO_ENABLED: '0'
+        target: build-release
+        params:
+          VERBOSE: 1
+          CHANNEL: release
+          SIGN: 0
+          VERSION: "{{ latest_release.stdout }}"
+          DIST_DIR: "./dist"
+          ARCH: "{{ lookup('env', 'ARCH',) }}"
+          OS: freebsd
 
     - name: Create Directories
       ansible.builtin.file:
@@ -63,7 +60,7 @@
 
     - name: Copy Binary
       ansible.builtin.copy:
-        src: "{{ gh_ws }}/src/backend/{{ pkg_name }}"
+        src: "{{ gh_ws }}/src/dist/AdGuardHome_freebsd_amd64/AdGuardHome/AdGuardHome"
         dest: "{{ gh_ws }}/dist/pkg/opt/{{ pkg_name }}/{{ pkg_name }}"
         remote_src: true
         mode: '0755'

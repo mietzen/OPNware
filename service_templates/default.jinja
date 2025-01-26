@@ -1,0 +1,16 @@
+#!/bin/sh
+
+. /etc/rc.subr
+
+name="{{ NAME }}"
+rcvar="{{ NAME }}_enable"
+{{ NAME }}_user="root"
+{{ NAME }}_command="{{ COMMAND }}"
+pidfile="{{ '${name}' }}"
+command="/usr/sbin/daemon"
+command_args="-P {{ '${pidfile}' }} -r -f {{ '${' + NAME + '_command' + '}' }}"
+
+load_rc_config {{ '${name}' }}
+: {{ '${' + NAME + '_enable' + ':=no' }} }
+
+run_rc_command "$1"

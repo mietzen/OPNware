@@ -1,5 +1,35 @@
 ---
-name: caddyv2
 build_config:
   include:
     go: '1.23'
+pkg_manifest:
+  name: CaddyV2
+  origin: mietzen/caddyv2
+  version: 2.9.1
+  comment: Fast and extensible multi-platform HTTP/1-2-3 web server with automatic HTTPS
+  www: https://caddyserver.com/
+  maintainer: github.nstein@mailbox.org
+  prefix: /opt/caddyv2
+  files:
+    - /opt/caddyv2/caddy
+    - /etc/rc.d/caddyv2
+  abi: FreeBSD:14:amd64
+  arch: freebsd:14:x86:64
+  flatsize: null
+  licenses:
+    - Apache-2.0 license
+  desc: |
+    Caddy is a platform for running Go applications and serves as a highly extensible HTTPS server.
+    Applications are implemented as Caddy modules, with tls and http included by default.
+    It supports automated documentation, live configuration updates via API, and seamless integration with other modules.
+    Configuration is primarily managed through its JSON-based API, but adapters allow the use of formats like Caddyfile, YAML, and NGINX config.
+    Caddy consolidates all settings into a single configuration document, simplifying management and reducing complexity.
+    Its design enables precise control over in-memory components, such as HTTP handlers and TLS.
+    The plugin system allows extensive customization and improvements beyond other web servers.
+    Refer to the documentation for details on configuration structure.
+  scripts:
+    post-install: echo 'caddyv2_enable="YES"' >> /etc/rc.conf
+pkg_service:
+  template: default
+  vars:
+    command: /opt/caddyv2/caddy run --envfile /opt/CaddyV2/.env

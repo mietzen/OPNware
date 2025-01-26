@@ -2,9 +2,9 @@
 pkg-repo:
   abi:
     - 14
-  latest: 14
+  latest_abi: 14
   arch:
     - amd64
   load_dependencies: true
   dependency_repos:
-    - http://pkg.freebsd.org/
+    freebsd: http://pkg.freebsd.org/

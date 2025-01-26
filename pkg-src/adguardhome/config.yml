@@ -1,0 +1,33 @@
+---
+build_config:
+  include:
+    go: '1.23'
+    node: '22'
+pkg_manifest:
+  name: AdGuardHome
+  origin: mietzen/adguardhome
+  version: 0.107.56
+  comment: Network-wide ads & trackers blocking DNS server
+  www: https://adguard.com/en/adguard-home/overview.html
+  maintainer: github.nstein@mailbox.org
+  prefix: /opt/adguardhome
+  arch: FreeBSD:14:amd64
+  flatsize: null
+  licenses:
+    - GPL-3.0 license
+  desc: |
+    AdGuard Home is a network-wide software for blocking ads & tracking.
+    After you set it up, it'll cover ALL your home devices, and you don't need any client-side software for that.
+    It operates as a DNS server that re-routes tracking domains to a "black hole," thus preventing your devices from connecting to those servers.
+    It's based on software we use for our public AdGuard DNS servers -- both share a lot of common code.
+    IMPORTANT:
+    - Once it's installed, open http://127.0.0.1:3000/ in your browser to do the initial setup and learn how to configure your devices to use AdGuard Home.
+      You don't need to Launch anything explicitly, AdGuard Home service is already started after the installation.
+    - If you're running it on Ubuntu, you may need to select a different "Listen interface" for the DNS server.
+      Listening to all interfaces is not possible because Ubuntu's systemd-resolved service uses 127.0.0.1:53 already.
+  scripts:
+    post-install: echo 'adguardhome_enable="YES"' >> /etc/rc.conf
+pkg_service:
+  template: default
+  vars:
+    command: /opt/adguardhome/AdGuardHome

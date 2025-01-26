@@ -1,0 +1,28 @@
+---
+build_config:
+  include:
+    go: '1.23'
+pkg_manifest:
+  name: traefik
+  origin: mietzen/traefik
+  version: 3.3.2
+  comment: The Cloud Native Application Proxy
+  www: https://traefik.io
+  maintainer: github.nstein@mailbox.org
+  prefix: /opt/traefik
+  #arch: FreeBSD:14:amd64
+  #flatsize: null
+  licenses:
+    -  MIT license
+  desc: |
+    Traefik (pronounced traffic) is a modern HTTP reverse proxy and load balancer that makes deploying microservices easy.
+    Traefik integrates with your existing infrastructure components:
+      Docker, Swarm mode, Kubernetes, Consul, Etcd, Rancher v2, Amazon ECS
+    and configures itself automatically and dynamically.
+    Pointing Traefik at your orchestrator should be the only configuration step you need.
+  scripts:
+    post-install: echo 'traefik_enable="YES"' >> /etc/rc.conf
+pkg_service:
+  template: default
+  vars:
+    command: /opt/traefik/traefik
