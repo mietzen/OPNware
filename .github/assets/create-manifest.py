@@ -27,7 +27,7 @@ with open(config_path, "r") as f:
     pkg_config = yaml.safe_load(f)
 manifest = pkg_config["pkg_manifest"]
 manifest['arch'] = f'FreeBSD:{abi}:{arch}'
-manifest['flatsize'] = folder_size("pkg")
+manifest['flatsize'] = folder_size(".")
 
 with open('+COMPACT_MANIFEST', "w") as f:
     json.dump(manifest, f, separators=(',', ':'))
