@@ -57,13 +57,6 @@
         remote_src: true
         mode: '0755'
 
-    - name: Create Service
-      ansible.builtin.shell:
-        cmd: |
-          python {{ gh_ws }}/repo/.github/assets/create-service.py
-        chdir: "{{ gh_ws }}/dist/pkg/etc/rc.d/"
-        creates: "{{ gh_ws }}/dist/pkg/etc/rc.d/{{ pkg_name }}"
-
     - name: Create Manifest
       ansible.builtin.shell:
         cmd: |

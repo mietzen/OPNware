@@ -10,15 +10,16 @@ config_path = os.path.join(
 with open(config_path, "r") as f:
     pkg_config = yaml.safe_load(f)
 
-if pkg_config['pkg_service']['template']:
-    env = Environment(
-        loader=FileSystemLoader(os.path.join(workspace, "repo", 'service_templates')))
-    template = env.get_template(pkg_config['pkg_service']['template'] + ".jinja")
-    service = template.render(
-        pkg_config['pkg_service']['vars'] |
-        {'NAME': pkg_config['pkg_manifest']['name'].lower()})
-else:
-    service = pkg_config['pkg_service']['service']
+if pkg_config['pkg_service']:
+    if pkg_config['pkg_service']['template']:
+        env = Environment(
+            loader=FileSystemLoader(os.path.join(workspace, "repo", 'service_templates')))
+        template = env.get_template(pkg_config['pkg_service']['template'] + ".jinja")
+        service = template.render(
+            pkg_config['pkg_service']['vars'] |
+            {'NAME': pkg_config['pkg_manifest']['name'].lower()})
+    else:
+        service = pkg_config['pkg_service']['service']
 
-with open(f"{pkg_config['pkg_manifest']['name'].lower()}", 'w') as file:
-    file.write(service)
+    with open(f"{pkg_config['pkg_manifest']['name'].lower()}", 'w') as file:
+        file.write(service)
