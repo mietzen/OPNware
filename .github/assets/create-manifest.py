@@ -3,12 +3,6 @@ import json
 import yaml
 import hashlib
 
-def chdir(folder):
-    curdir= os.getcwd()
-    os.chdir(folder)
-    try: yield
-    finally: os.chdir(curdir)
-
 def sha256sum(filename):
     with open(filename, 'rb', buffering=0) as f:
         return hashlib.file_digest(f, 'sha256').hexdigest()
@@ -39,12 +33,11 @@ with open('+COMPACT_MANIFEST', "w") as f:
     json.dump(manifest, f, separators=(',', ':'))
 
 manifest['files'] = {}
-with chdir("pkg"):
-    for root, _, files in os.walk('.'):
-        if files:
-            for file in files:
-                file_path = os.path.join(root, file)
-                manifest['files'][f'{os.sep}{os.path.relpath(file_path, ".")}'] = sha256sum(file_path)
+for root, _, files in os.walk('.'):
+    if files:
+        for file in files:
+            file_path = os.path.join(root, file)
+            manifest['files'][f'{os.sep}{os.path.relpath(file_path, ".")}'] = sha256sum(file_path)
 
 with open('+MANIFEST', "w") as f:
     json.dump(manifest, f, separators=(',', ':'))

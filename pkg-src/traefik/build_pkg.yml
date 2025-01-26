@@ -64,19 +64,19 @@
         chdir: "{{ gh_ws }}/dist/pkg/etc/rc.d/"
         creates: "{{ gh_ws }}/dist/pkg/etc/rc.d/{{ pkg_name }}"
 
+    - name: Create Manifest
+      ansible.builtin.shell:
+        cmd: |
+          python {{ gh_ws }}/repo/.github/assets/create-manifest.py
+        chdir: "{{ gh_ws }}/dist/pkg"
+        creates: "{{ gh_ws }}/dist/pkg/+MANIFEST"
+
     - name: Create PKG
       community.general.archive:
         path: "{{ gh_ws }}/dist/pkg/*"
         dest: "{{ gh_ws }}/dist/{{ pkg_name }}.pkg"
         format: xz
         mode: '755'
-
-    - name: Create Manifest
-      ansible.builtin.shell:
-        cmd: |
-          python {{ gh_ws }}/repo/.github/assets/create-manifest.py
-        chdir: "{{ gh_ws }}/dist"
-        creates: "{{ gh_ws }}/dist/+MANIFEST"
 
     - name: Remove intermediate PKG Folder
       ansible.builtin.file:
