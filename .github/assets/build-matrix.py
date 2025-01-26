@@ -21,9 +21,9 @@ for pkg in packages:
         includes.append(include)
 
 matrix = {
+    "pkg_name": packages,
     "arch": config["pkg-repo"]["arch"],
     "abi": config["pkg-repo"]["abi"],
-    "pkg_name": packages,
     "include": includes,
 }
 
