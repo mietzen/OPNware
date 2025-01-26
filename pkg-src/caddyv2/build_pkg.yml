@@ -71,7 +71,7 @@
     - name: Create PKG
       community.general.archive:
         path: "{{ gh_ws }}/dist/pkg/*"
-        dest: "{{ gh_ws }}/dist/{{ pkg_name }}-{{ latest_release.stdout }}.pkg"
+        dest: "{{ gh_ws }}/dist/{{ pkg_name }}-{{ latest_release.stdout[1:] }}.pkg"
         format: xz
         mode: '755'
 
