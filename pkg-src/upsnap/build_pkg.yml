@@ -32,9 +32,8 @@
     - name: Build frontend
       ansible.builtin.shell:
         cmd: |
-          npm install --silent -g pnpm
-          pnpm --prefix=./frontend install --silent
-          PUBLIC_VERSION={{ latest_release.stdout }} pnpm --prefix=./frontend run  --silent
+          npm --prefix=./frontend install --silent
+          PUBLIC_VERSION={{ latest_release.stdout }} npm --prefix=./frontend run build -- --logLevel error --clearScreen false
           cp -r ./frontend/build/* ./backend/pb_public/
         chdir: "{{ gh_ws }}/src"
         creates: "{{ gh_ws }}/src/backend/pb_public/index.html"
