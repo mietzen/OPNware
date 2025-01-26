@@ -15,7 +15,7 @@ if pkg_config['pkg_service']['template']:
         loader=FileSystemLoader(os.path.join(workspace, "repo", 'service_templates')))
     template = env.get_template(pkg_config['pkg_service']['template'] + ".jinja")
     service = template.render(
-        pkg_config['pkg_service']['vars'] +
+        pkg_config['pkg_service']['vars'] |
         {'NAME': pkg_config['pkg_manifest']['name']})
 else:
     service = pkg_config['pkg_service']['service']
