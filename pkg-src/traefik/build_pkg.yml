@@ -32,7 +32,9 @@
     - name: Build Binary
       ansible.builtin.shell:
         cmd: |
-          make build
+          go get github.com/containous/go-bindata/...
+          go generate
+          go build ./cmd/traefik
         chdir: "{{ gh_ws }}/src"
         creates: "{{ gh_ws }}/src/{{ pkg_name }}"
       environment:
