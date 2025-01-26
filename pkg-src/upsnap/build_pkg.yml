@@ -34,9 +34,11 @@
         cmd: |
           rm -rf ./backend/pb_public/
           npm i -g pnpm
+          rm -rf ./backend/pb_public/
           pnpm --prefix=./frontend i
+          rm -rf ./backend/pb_public/
           PUBLIC_VERSION={{ latest_release.stdout }} pnpm --prefix=./frontend run build
-          pnpm --prefix=./frontend run build
+          rm -rf ./backend/pb_public/
           cp -r ./frontend/build/* ./backend/pb_public/
         chdir: "{{ gh_ws }}/src"
         creates: "{{ gh_ws }}/src/backend/pb_public/"
