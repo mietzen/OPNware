@@ -33,7 +33,7 @@
       ansible.builtin.shell:
         cmd: |
           npm --prefix=./frontend install --silent
-          PUBLIC_VERSION={{ latest_release.stdout }} npm --prefix=./frontend run build -- --logLevel error --clearScreen false
+          PUBLIC_VERSION={{ latest_release.stdout }} npm --prefix=./frontend run build -- --logLevel error --clearScreen false  | sed -r "s/[[:cntrl:]]\[[0-9]{1,3}m//g
           cp -r ./frontend/build/* ./backend/pb_public/
         chdir: "{{ gh_ws }}/src"
         creates: "{{ gh_ws }}/src/backend/pb_public/index.html"
