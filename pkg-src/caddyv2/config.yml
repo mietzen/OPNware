@@ -32,4 +32,4 @@ pkg_manifest:
 pkg_service:
   template: default
   vars:
-    command: /opt/caddyv2/caddy run --envfile /opt/CaddyV2/.env
+    command: /opt/caddyv2/caddy run --envfile /opt/caddyv2/.env

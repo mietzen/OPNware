@@ -16,9 +16,9 @@ if pkg_config['pkg_service']['template']:
     template = env.get_template(pkg_config['pkg_service']['template'] + ".jinja")
     service = template.render(
         pkg_config['pkg_service']['vars'] |
-        {'NAME': pkg_config['pkg_manifest']['name']})
+        {'NAME': pkg_config['pkg_manifest']['name'].lower()})
 else:
     service = pkg_config['pkg_service']['service']
 
-with open(f"{pkg_config['pkg_manifest']['name']}", 'w') as file:
+with open(f"{pkg_config['pkg_manifest']['name'].lower()}", 'w') as file:
     file.write(service)

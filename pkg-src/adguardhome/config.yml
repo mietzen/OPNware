@@ -30,4 +30,4 @@ pkg_manifest:
 pkg_service:
   template: default
   vars:
-    command: /opt/adguardhome/AdGuardHome
+    command: /opt/adguardhome/adguardhome

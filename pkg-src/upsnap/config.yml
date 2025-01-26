@@ -4,7 +4,7 @@ build_config:
     go: '1.23'
     node: '22'
 pkg_manifest:
-  name: upsnap
+  name: UpSnap
   origin: mietzen/upsanp
   version: 4.6.0
   comment: A simple wake on lan web app written with SvelteKit, Go and PocketBase.
