@@ -32,8 +32,7 @@
     - name: Build frontend
       ansible.builtin.shell:
         cmd: |
-          npm config set loglevel error
-          npm install -g pnpm
+          npm install --silent -g pnpm
           pnpm --prefix=./frontend install --loglevel error --no-color
           PUBLIC_VERSION={{ latest_release.stdout }} pnpm --prefix=./frontend run --loglevel error --no-color build
           cp -r ./frontend/build/* ./backend/pb_public/
