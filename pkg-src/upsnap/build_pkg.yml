@@ -32,13 +32,12 @@
     - name: Build frontend
       ansible.builtin.shell:
         cmd: |
-          npm i -g pnpm &> /dev/null
-          pnpm --prefix=./frontend i &> /dev/null
-          PUBLIC_VERSION={{ latest_release.stdout }} pnpm --prefix=./frontend run build &> /dev/null
+          npm i -g pnpm
+          pnpm --prefix=./frontend i
+          PUBLIC_VERSION={{ latest_release.stdout }} pnpm --prefix=./frontend run build
           cp -r ./frontend/build/* ./backend/pb_public/
-          ls ./backend/pb_public/
         chdir: "{{ gh_ws }}/src"
-        #creates: "{{ gh_ws }}/src/backend/pb_public/"
+        creates: "{{ gh_ws }}/src/backend/pb_public/index.html"
 
     - name: Build backend
       ansible.builtin.shell:
