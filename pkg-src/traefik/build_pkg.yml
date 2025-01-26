@@ -32,15 +32,12 @@
     - name: Build Binary
       ansible.builtin.shell:
         cmd: |
-          go get github.com/containous/go-bindata/...
-          go generate
-          go build ./cmd/traefik
+          make binary
         chdir: "{{ gh_ws }}/src"
         creates: "{{ gh_ws }}/src/{{ pkg_name }}"
       environment:
         GOOS: freebsd
         GOARCH: "{{ lookup('env', 'ARCH',) }}"
-        GO111MODULE: 'on'
 
     - name: Create Directories
       ansible.builtin.file:
