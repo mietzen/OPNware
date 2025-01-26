@@ -93,6 +93,13 @@
         format: xz
         mode: '755'
 
+    - name: Copy Packagesite Info
+      ansible.builtin.copy:
+        src: "{{ gh_ws }}/dist/pkg/+COMPACT_MANIFEST"
+        dest: "{{ gh_ws }}/dist/packagesite_info.json"
+        remote_src: true
+        mode: '0755'
+
     - name: Remove intermediate PKG Folder
       ansible.builtin.file:
         path: "{{ gh_ws }}/dist/pkg"
