@@ -82,7 +82,7 @@
     - name: Create PKG
       ansible.builtin.shell:
         cmd: |
-          tar -cJf {{ pkg_name }}-{{ latest_release.stdoutt[1:] }}.pkg -C ./pkg/ .
+          tar -cJf {{ pkg_name }}-{{ latest_release.stdout[1:] }}.pkg -C ./pkg/ .
         chdir: "{{ gh_ws }}/dist"
         creates: "{{ gh_ws }}/dist/{{ pkg_name }}-{{ latest_release.stdout[1:] }}.pkg"
 

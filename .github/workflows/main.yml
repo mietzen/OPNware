@@ -9,6 +9,7 @@ on:
       - 'pkg-src/**'
       - 'config.yml'
       - '.github/workflows/main.yml'
+      - '.github/assets/*.py'
   push:
     branches:
       - main
@@ -16,6 +17,7 @@ on:
       - 'pkg-src/**'
       - 'config.yml'
       - '.github/workflows/main.yml'
+      - '.github/assets/*.py'
   schedule:
     - cron: "15 4 * * *"
 
