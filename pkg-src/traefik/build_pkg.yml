@@ -73,11 +73,11 @@
     - name: Create PKG
       community.general.archive:
         path: "{{ gh_ws }}/dist/pkg/*"
-        dest: "{{ gh_ws }}/dist/{{ pkg_name }}.pkg"
+        dest: "{{ gh_ws }}/dist/{{ pkg_name }}-{{ latest_release.stdout[1:] }}.pkg"
         format: xz
         mode: '755'
 
-    - name: Remove intermediate PKG Folder
-      ansible.builtin.file:
-        path: "{{ gh_ws }}/dist/pkg"
-        state: absent
+    # - name: Remove intermediate PKG Folder
+    #   ansible.builtin.file:
+    #     path: "{{ gh_ws }}/dist/pkg"
+    #     state: absent

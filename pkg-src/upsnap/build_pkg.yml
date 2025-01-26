@@ -93,7 +93,7 @@
         format: xz
         mode: '755'
 
-    - name: Remove intermediate PKG Folder
-      ansible.builtin.file:
-        path: "{{ gh_ws }}/dist/pkg"
-        state: absent
+    # - name: Remove intermediate PKG Folder
+    #   ansible.builtin.file:
+    #     path: "{{ gh_ws }}/dist/pkg"
+    #     state: absent
