@@ -13,10 +13,10 @@ def sha256sum(filename):
     with open(filename, 'rb', buffering=0) as f:
         return hashlib.file_digest(f, 'sha256').hexdigest()
 
-src_folder = os.environ('PKG_NAME')
-workspace = os.environ('GITHUB_WORKSPACE')
-abi = os.environ('ABI')
-arch = os.environ('ARCH')
+src_folder = os.environ.get('PKG_NAME')
+workspace = os.environ.get('GITHUB_WORKSPACE')
+abi = os.environ.get('ABI')
+arch = os.environ.get('ARCH')
 
 config_path = os.path.join(workspace, "repo", "pkg-src", src_folder, "config.yml")
 with open(config_path, "r") as f:

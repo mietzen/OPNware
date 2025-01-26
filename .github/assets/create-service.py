@@ -2,8 +2,8 @@ import os
 from jinja2 import Environment, FileSystemLoader
 import yaml
 
-src_folder = os.environ('PKG_NAME')
-workspace = os.environ('GITHUB_WORKSPACE')
+src_folder = os.environ.get('PKG_NAME')
+workspace = os.environ.get('GITHUB_WORKSPACE')
 
 config_path = os.path.join(
     workspace, "repo", "pkg-src", src_folder, "config.yml")
