@@ -96,28 +96,35 @@ jobs:
   deploy-repo:
     if: github.event_name == 'push'
     runs-on: ubuntu-24.04
-    environment: github-pages
     permissions:
-      pages: write
-      id-token: write
+      contents: write
     needs: build-packages
     steps:
+      - name: Checkout Pages Branch
+        uses: actions/checkout@v4
+        with:
+          ref: 'gh-pages'
+          path: pages
+
       - name: Download build artifacts
         uses: actions/download-artifact@v4
         with:
           path: artifacts
 
       - name: Create PKG Repository
+        working-directory: ./pages
         run: |
-          for artifact in artifacts/*; do
+          git reset --hard $(git rev-list --max-parents=0 HEAD)
+          for artifact in ${GITHUB_WORKSPACE}/artifacts/*; do
             arch=$(basename "${artifact}" | cut -d'_' -f3)
             abi=$(basename "${artifact}" | cut -d'_' -f4)
-            target_dir="${GITHUB_WORKSPACE}/FreeBSD:${abi}:${arch}/latest/All"
+            target_dir="${GITHUB_WORKSPACE}/pages/FreeBSD:${abi}:${arch}/latest/All"
             mkdir -p ${target_dir}
-            mv ${GITHUB_WORKSPACE}/${artifact}/*.pkg ${target_dir}/
-            cat ${GITHUB_WORKSPACE}/${artifact}/packagesite_info.json >> ${GITHUB_WORKSPACE}/packagesite.yaml
-            echo "" >> ${GITHUB_WORKSPACE}/packagesite.yaml
+            mv ${artifact}/*.pkg ${target_dir}/
+            cat ${artifact}/packagesite_info.json >> ${GITHUB_WORKSPACE}/pages/packagesite.yaml
+            echo "" >> ${GITHUB_WORKSPACE}/pages/packagesite.yaml
           done
-          rm -rf artifacts
-          tree .
-          echo "hello" > index.html
+          tree -H . > index.html
+          git add .
+          git commit -m 'Deployed PKG Repo'
+          git push -f
