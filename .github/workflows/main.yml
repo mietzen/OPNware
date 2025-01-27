@@ -114,7 +114,7 @@ jobs:
       - name: Create PKG Repository
         working-directory: ./pages
         run: |
-          git reset --hard 5d0e89d6d105101c023ab7c4d4a748930ba4ec95
+          git reset --hard "$(git rev-list --max-parents=0 HEAD)"
           git config --global user.name "${GITHUB_ACTOR}"
           git config --global user.email "${GITHUB_ACTOR}@users.noreply.github.com"
           for artifact in ${GITHUB_WORKSPACE}/artifacts/*; do
