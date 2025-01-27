@@ -131,8 +131,8 @@ jobs:
             mv ${artifact}/*.pkg ${target_dir}/
             cat ${artifact}/packagesite_info.json >> ${GITHUB_WORKSPACE}/pages/FreeBSD:${abi}:${arch}/latest/packagesite.yaml
             echo "" >> ${GITHUB_WORKSPACE}/pages/FreeBSD:${abi}:${arch}/latest/packagesite.yaml
+            yq '.meta-conf' -o json ../repo/config.yml > ${GITHUB_WORKSPACE}/pages/FreeBSD:${abi}:${arch}/latest/meta.conf
           done
-          yq '.meta-conf' -o json ../repo/config.yml > meta.conf
           python ../repo/.github/assets/create-dir-index.py .
           git add .
           git commit -m 'Deployed PKG Repo'
