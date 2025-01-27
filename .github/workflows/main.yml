@@ -127,7 +127,7 @@ jobs:
             cat ${artifact}/packagesite_info.json >> ${GITHUB_WORKSPACE}/pages/FreeBSD:${abi}:${arch}/latest/packagesite.yaml
             echo "" >> ${GITHUB_WORKSPACE}/pages/FreeBSD:${abi}:${arch}/latest/packagesite.yaml
           done
-          curl -SsL -o ../create-dir-index.py
+          curl -SsL -o ../create-dir-index.py \
             https://raw.githubusercontent.com/${{ github.repository }}/refs/heads/${{ github.ref_name }}/.github/assets/create-dir-index.py
           python ../create-dir-index.py .
           git add .
