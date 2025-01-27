@@ -5,6 +5,10 @@
   vars:
     gh_ws: "{{ lookup('env', 'GITHUB_WORKSPACE',) }}"
   tasks:
+    - name: Install bottle python package
+      ansible.builtin.pip:
+        name: zstandard
+
     - name: Create Directories
       ansible.builtin.file:
         path: "{{ gh_ws }}/dist"
