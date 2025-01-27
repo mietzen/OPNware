@@ -96,6 +96,10 @@ jobs:
   build-repo:
     if: github.event_name == 'push'
     runs-on: ubuntu-24.04
+    environment: github-pages
+    permissions:
+      pages: write
+      id-token: write
     needs: build-packages
     steps:
       - name: Download build artifacts
@@ -109,33 +113,12 @@ jobs:
           for artifact in artifacts/*; do
             arch=$(basename "${artifact}" | cut -d'_' -f3)
             abi=$(basename "${artifact}" | cut -d'_' -f4)
-            target_dir="${GITHUB_WORKSPACE}/pkg_repo/FreeBSD:${abi}:${arch}/latest/All"
+            target_dir="${GITHUB_WORKSPACE}/FreeBSD:${abi}:${arch}/latest/All"
             mkdir -p ${target_dir}
             mv ${GITHUB_WORKSPACE}/${artifact}/*.pkg ${target_dir}/
-            cat ${GITHUB_WORKSPACE}/${artifact}/packagesite_info.json >> ${GITHUB_WORKSPACE}/pkg_repo/packagesite.yaml
+            cat ${GITHUB_WORKSPACE}/${artifact}/packagesite_info.json >> ${GITHUB_WORKSPACE}/packagesite.yaml
+            echo "" >> ${GITHUB_WORKSPACE}/packagesite.yaml
           done
-          tree pkg_repo/
-          cat pkg_repo/packagesite.yaml
-
-      - name: Upload PKG Repository
-        uses: actions/upload-artifact@v4
-        with:
-          name: github-pages
-          path: pkg_repo/
-          retention-days: 1
-          compression-level: 0
-
-  deploy-pkg-repo:
-    if: github.event_name == 'push'
-    runs-on: ubuntu-24.04
-    needs: build-repo
-    permissions:
-      pages: write
-      id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+          tree .
+          cat packagesite.yaml
+          rm -rf artifacts
