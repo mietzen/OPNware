@@ -107,12 +107,12 @@ jobs:
         run: |
           tree artifacts/
           for artifact in artifacts/*; do
-            arch=$(basename "$artifact" | cut -d'_' -f3)
-            abi=$(basename "$artifact" | cut -d'_' -f4)
-            target_dir="pkg_repo/FreeBSD:$abi:$arch/latest/All"
-            mkdir -p "$target_dir"
-            mv "$artifact/*.pkg" "$target_dir/"
-            cat "$artifact/packagesite_info.json" >> pkg_repo/packagesite.yaml
+            arch=$(basename "${artifact}" | cut -d'_' -f3)
+            abi=$(basename "${artifact}" | cut -d'_' -f4)
+            target_dir="${GITHUB_WORKSPACE}/pkg_repo/FreeBSD:${abi}:${arch}/latest/All"
+            mkdir -p ${target_dir}
+            mv ${GITHUB_WORKSPACE}/${artifact}/*.pkg ${target_dir}/
+            cat "${GITHUB_WORKSPACE}/${artifact}/packagesite_info.json" >> ${GITHUB_WORKSPACE}/pkg_repo/packagesite.yaml
           done
 
       - name: Upload PKG Repository
