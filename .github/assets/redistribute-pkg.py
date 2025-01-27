@@ -2,6 +2,7 @@ import os
 import urllib.request
 import yaml
 import tarfile
+import zstandard as zstd
 
 src_folder = os.environ.get('PKG_NAME')
 workspace = os.environ.get('GITHUB_WORKSPACE')
@@ -14,9 +15,12 @@ def download_pkg(url, file):
             f.write(req.read())
 
 def create_pkgsite_info(pkg_name):
-    with tarfile.open(pkg_name, 'r:xz') as tar:
-        with open ("packagesite_info.json", "wb") as f:
-            f.write(tar.extractfile('+COMPACT_MANIFEST').read())
+    dctx = zstd.ZstdDecompressor()
+    with open(pkg_name, 'rb') as compressed_file:
+        with dctx.stream_reader(compressed_file) as decompressed_file:
+            with tarfile.open(fileobj=decompressed_file, mode='r:') as tar:
+                with open("packagesite_info.json", "wb") as f:
+                    f.write(tar.extractfile('+COMPACT_MANIFEST').read())
 
 config_path = os.path.join(workspace, "repo", "pkg-src", src_folder, "config.yml")
 with open(config_path, "r") as f:
