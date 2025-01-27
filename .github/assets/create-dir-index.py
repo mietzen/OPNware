@@ -79,7 +79,7 @@ def generate_index(directory, exclude_patterns, include_dot):
         f.write(f"<h1>Index of {directory}</h1>")
 
         f.write("<table>")
-        f.write("<tr><th>Name</th><th>Size</th><th>Creation Date</th></tr>")
+        f.write("<tr><th>Name</th><th>Size</th><th>Creation Date (UTC)</th></tr>")
 
         if directory != initial_base_directory:
             f.write("<tr><td><a href='../index.html'>..</a></td><td>-</td><td>-</td></tr>")
