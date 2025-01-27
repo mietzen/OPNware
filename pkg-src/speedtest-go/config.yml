@@ -10,8 +10,7 @@ pkg_manifest:
   www: https://github.com/showwin/speedtest-go
   maintainer: github.nstein@mailbox.org
   prefix: /opt/speedtest-go
-  arch: FreeBSD:14:amd64
-  flatsize: null
+  licenselogic: single
   licenses:
     - MIT license
   desc: |

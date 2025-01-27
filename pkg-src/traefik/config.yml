@@ -10,8 +10,7 @@ pkg_manifest:
   www: https://traefik.io
   maintainer: github.nstein@mailbox.org
   prefix: /opt/traefik
-  #arch: FreeBSD:14:amd64
-  #flatsize: null
+  licenselogic: single
   licenses:
     -  MIT license
   desc: |

@@ -4,15 +4,14 @@ build_config:
     go: '1.23'
     node: '22'
 pkg_manifest:
-  name: AdGuardHome
+  name: adguardhome
   origin: mietzen/adguardhome
   version: 0.107.56
   comment: Network-wide ads & trackers blocking DNS server
   www: https://adguard.com/en/adguard-home/overview.html
   maintainer: github.nstein@mailbox.org
   prefix: /opt/adguardhome
-  arch: FreeBSD:14:amd64
-  flatsize: null
+  licenselogic: single
   licenses:
     - GPL-3.0 license
   desc: |

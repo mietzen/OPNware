@@ -3,7 +3,7 @@ build_config:
   include:
     go: '1.23'
 pkg_manifest:
-  name: CaddyV2
+  name: caddyv2
   origin: mietzen/caddyv2
   version: 2.9.1
   comment: Fast and extensible multi-platform HTTP/1-2-3 web server with automatic HTTPS
@@ -14,8 +14,7 @@ pkg_manifest:
     - /opt/caddyv2/caddy
     - /etc/rc.d/caddyv2
   abi: FreeBSD:14:amd64
-  arch: freebsd:14:x86:64
-  flatsize: null
+  licenselogic: single
   licenses:
     - Apache-2.0 license
   desc: |

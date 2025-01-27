@@ -4,7 +4,7 @@ build_config:
     go: '1.23'
     node: '22'
 pkg_manifest:
-  name: UpSnap
+  name: upsanp
   origin: mietzen/upsanp
   version: 4.6.0
   comment: A simple wake on lan web app written with SvelteKit, Go and PocketBase.
@@ -14,8 +14,7 @@ pkg_manifest:
   files:
     - /opt/upsanp/upsnap
     - /etc/rc.d/upsnap
-  arch: FreeBSD:14:amd64
-  flatsize: null
+  licenselogic: single
   licenses:
     -  MIT license
   desc: |
@@ -26,7 +25,7 @@ pkg_manifest:
   dependencies:
     nmap:
       origin: security/nmap
-      version: 7.94_3
+      version: "7.94_3"
   scripts:
     post-install: echo 'upsanp_enable="YES"' >> /etc/rc.conf
 pkg_service:
