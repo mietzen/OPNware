@@ -6,7 +6,7 @@ on:
     branches:
       - main
     paths:
-      - 'pkg-src/**'
+      - 'pkgs/**'
       - 'config.yml'
       - '.github/workflows/main.yml'
       - '.github/assets/*.py'
@@ -14,7 +14,7 @@ on:
     branches:
       - main
     paths:
-      - 'pkg-src/**'
+      - 'pkgs/**'
       - 'config.yml'
       - '.github/workflows/main.yml'
       - '.github/assets/*.py'
@@ -73,7 +73,7 @@ jobs:
         uses: mietzen/action-ansible-playbook@v2
         with:
           playbook: build_pkg.yml
-          directory: repo/pkg-src/${{ matrix.pkg_name }}/
+          directory: repo/pkgs/${{ matrix.pkg_name }}/
           configuration: |
             [defaults]
             callbacks_enabled = ansible.posix.profile_tasks, ansible.posix.timer

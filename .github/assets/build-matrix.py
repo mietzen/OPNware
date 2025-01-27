@@ -3,7 +3,7 @@ import json
 import yaml
 
 packages = []
-for root, _, files in os.walk("pkg-src"):
+for root, _, files in os.walk("pkgs"):
     if "build_pkg.yml" in files:
         packages.append(os.path.basename(root))
 
@@ -12,7 +12,7 @@ with open("config.yml", "r") as f:
 
 includes = []
 for pkg in packages:
-    config_path = os.path.join("pkg-src", pkg, "config.yml")
+    config_path = os.path.join("pkgs", pkg, "config.yml")
     if os.path.exists(config_path):
         with open(config_path, "r") as f:
             pkg_config = yaml.safe_load(f)

@@ -6,7 +6,7 @@ src_folder = os.environ.get('PKG_NAME')
 workspace = os.environ.get('GITHUB_WORKSPACE')
 
 config_path = os.path.join(
-    workspace, "repo", "pkg-src", src_folder, "config.yml")
+    workspace, "repo", "pkgs", src_folder, "config.yml")
 with open(config_path, "r") as f:
     pkg_config = yaml.safe_load(f)
 

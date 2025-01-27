@@ -22,7 +22,7 @@ workspace = os.environ.get('GITHUB_WORKSPACE')
 abi = os.environ.get('ABI')
 arch = os.environ.get('ARCH')
 
-config_path = os.path.join(workspace, "repo", "pkg-src", src_folder, "config.yml")
+config_path = os.path.join(workspace, "repo", "pkgs", src_folder, "config.yml")
 with open(config_path, "r") as f:
     pkg_config = yaml.safe_load(f)
 manifest = pkg_config["pkg_manifest"]
