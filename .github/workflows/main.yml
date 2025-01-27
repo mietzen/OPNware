@@ -109,7 +109,6 @@ jobs:
 
       - name: Create PKG Repository
         run: |
-          tree artifacts/
           for artifact in artifacts/*; do
             arch=$(basename "${artifact}" | cut -d'_' -f3)
             abi=$(basename "${artifact}" | cut -d'_' -f4)
@@ -119,6 +118,6 @@ jobs:
             cat ${GITHUB_WORKSPACE}/${artifact}/packagesite_info.json >> ${GITHUB_WORKSPACE}/packagesite.yaml
             echo "" >> ${GITHUB_WORKSPACE}/packagesite.yaml
           done
-          tree .
-          cat packagesite.yaml
           rm -rf artifacts
+          tree .
+          echo "hello" > index.html
