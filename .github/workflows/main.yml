@@ -103,7 +103,7 @@ jobs:
           path: artifacts
 
       - name: Building freeBSD compatible pkg repo
-        run: python .github/assets/build-pkg-repo.py
+        run: ls -al artifacts && exit 1
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
