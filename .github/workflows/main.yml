@@ -127,7 +127,7 @@ jobs:
             cat ${artifact}/packagesite_info.json >> ${GITHUB_WORKSPACE}/pages/FreeBSD:${abi}:${arch}/latest/packagesite.yaml
             echo "" >> ${GITHUB_WORKSPACE}/pages/FreeBSD:${abi}:${arch}/latest/packagesite.yaml
           done
-          tree -H . > index.html
+          python .github/assets/create-dir-index.py
           git add .
           git commit -m 'Deployed PKG Repo'
           git push -f
