@@ -57,6 +57,7 @@ jobs:
         if: ${{ matrix.go }}
         with:
           go-version: ${{ matrix.go }}
+          cache: false
 
       - name: Setup NodeJS
         uses: actions/setup-node@v4
