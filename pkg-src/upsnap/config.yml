@@ -25,7 +25,6 @@ pkg_manifest:
     While offering powerful functionality, it's recommended to use VPN for external access due to security.
   dependencies:
     nmap:
-      mirror_repo: freebsd
       origin: security/nmap
       version: 7.94_3
   scripts:

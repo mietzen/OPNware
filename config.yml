@@ -5,6 +5,3 @@ pkg-repo:
   latest_abi: 14
   arch:
     - amd64
-  load_dependencies: true
-  dependency_repos:
-    freebsd: http://pkg.freebsd.org/
