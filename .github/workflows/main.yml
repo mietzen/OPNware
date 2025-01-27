@@ -105,6 +105,7 @@ jobs:
 
       - name: Create PKG Repository
         run: |
+          set -xe
           tree artifacts/
           for artifact in artifacts/*; do
             arch=$(basename "${artifact}" | cut -d'_' -f3)
@@ -114,6 +115,7 @@ jobs:
             mv ${GITHUB_WORKSPACE}/${artifact}/*.pkg ${target_dir}/
             cat "${GITHUB_WORKSPACE}/${artifact}/packagesite_info.json" >> ${GITHUB_WORKSPACE}/pkg_repo/packagesite.yaml
           done
+          tree ${GITHUB_WORKSPACE}/pkg_repo
 
       - name: Upload PKG Repository
         uses: actions/upload-artifact@v4
