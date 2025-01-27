@@ -1,0 +1,24 @@
+---
+- name: Redistribute btop
+  hosts: localhost
+  gather_facts: false
+  vars:
+    gh_ws: "{{ lookup('env', 'GITHUB_WORKSPACE',) }}"
+  tasks:
+    - name: Install zstandard python package
+      ansible.builtin.pip:
+        name: zstandard
+
+    - name: Create Directories
+      ansible.builtin.file:
+        path: "{{ gh_ws }}/dist"
+        state: directory
+        recurse: true
+        mode: '0755'
+
+    - name: Get external pkg for redistribution
+      ansible.builtin.shell:
+        cmd: |
+          python {{ gh_ws }}/repo/.github/assets/redistribute-pkg.py
+        chdir: "{{ gh_ws }}/dist"
+        creates: "{{ gh_ws }}/dist/packagesite_info.json"
