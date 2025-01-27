@@ -5,7 +5,7 @@
   vars:
     gh_ws: "{{ lookup('env', 'GITHUB_WORKSPACE',) }}"
   tasks:
-    - name: Install bottle python package
+    - name: Install zstandard python package
       ansible.builtin.pip:
         name: zstandard
 
