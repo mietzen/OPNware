@@ -2,6 +2,5 @@
 pkg-repo:
   abi:
     - 14
-  latest_abi: 14
   arch:
     - amd64
