@@ -93,7 +93,7 @@ jobs:
           retention-days: 1
           compression-level: 1
 
-  build-repo:
+  deploy-repo:
     if: github.event_name == 'push'
     runs-on: ubuntu-24.04
     environment: github-pages
