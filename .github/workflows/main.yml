@@ -121,7 +121,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: github-pages
-          path: pkg-repo/*
+          path: pkg_repo/
           retention-days: 1
           compression-level: 0
 
