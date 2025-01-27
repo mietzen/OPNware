@@ -105,7 +105,6 @@ jobs:
 
       - name: Create PKG Repository
         run: |
-          set -xe
           tree artifacts/
           for artifact in artifacts/*; do
             arch=$(basename "${artifact}" | cut -d'_' -f3)
@@ -113,15 +112,16 @@ jobs:
             target_dir="${GITHUB_WORKSPACE}/pkg_repo/FreeBSD:${abi}:${arch}/latest/All"
             mkdir -p ${target_dir}
             mv ${GITHUB_WORKSPACE}/${artifact}/*.pkg ${target_dir}/
-            cat "${GITHUB_WORKSPACE}/${artifact}/packagesite_info.json" >> ${GITHUB_WORKSPACE}/pkg_repo/packagesite.yaml
+            cat ${GITHUB_WORKSPACE}/${artifact}/packagesite_info.json >> ${GITHUB_WORKSPACE}/pkg_repo/packagesite.yaml
           done
-          tree ${GITHUB_WORKSPACE}/pkg_repo
+          tree pkg_repo/
+          cat pkg_repo/packagesite.yaml
 
       - name: Upload PKG Repository
         uses: actions/upload-artifact@v4
         with:
           name: github-pages
-          path: pkg-repo/
+          path: pkg-repo/*
           retention-days: 1
           compression-level: 0
 
