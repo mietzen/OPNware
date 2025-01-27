@@ -123,8 +123,8 @@ jobs:
             target_dir="${GITHUB_WORKSPACE}/pages/FreeBSD:${abi}:${arch}/latest/All"
             mkdir -p ${target_dir}
             mv ${artifact}/*.pkg ${target_dir}/
-            cat ${artifact}/packagesite_info.json >> ${GITHUB_WORKSPACE}/pages/packagesite.yaml
-            echo "" >> ${GITHUB_WORKSPACE}/pages/packagesite.yaml
+            cat ${artifact}/packagesite_info.json >> ${GITHUB_WORKSPACE}/pages/FreeBSD:${abi}:${arch}/latest/packagesite.yaml
+            echo "" >> ${GITHUB_WORKSPACE}/pages/FreeBSD:${abi}:${arch}/latest/packagesite.yaml
           done
           tree -H . > index.html
           git add .
