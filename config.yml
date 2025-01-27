@@ -4,3 +4,7 @@ pkg-repo:
     - 14
   arch:
     - amd64
+meta-conf:
+  version: 2
+  packing_format: tzst
+  manifests: packagesite.yaml
