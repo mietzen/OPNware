@@ -4,4 +4,4 @@ build_config:
 redistribute:
   name: nmap
   version: "7.94_3"
-  repo: http://pkg.freebsd.org/
+  repo: http://pkg.freebsd.org
