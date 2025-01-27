@@ -14,12 +14,12 @@ def download_pkg(url, file):
             f.write(req.read())
 
 def create_pkgsite_info(pkg_name):
-    with tarfile.open(pkg_name, 'r:') as tar:
+    with tarfile.open(pkg_name, 'r:xz') as tar:
         with open ("packagesite_info.json", "wb") as f:
             f.write(tar.extractfile('+COMPACT_MANIFEST').read())
 
 config_path = os.path.join(workspace, "repo", "pkg-src", src_folder, "config.yml")
-with open(config_path, "r:xz") as f:
+with open(config_path, "r") as f:
     pkg_config = yaml.safe_load(f)
 
 if pkg_config['redistribute']:
