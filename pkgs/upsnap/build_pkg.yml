@@ -96,9 +96,9 @@
     - name: Create PKG # noqa: command-instead-of-module
       ansible.builtin.shell:
         cmd: |
-          tar --zstd -cf {{ pkg_name }}-{{ latest_release.stdout[1:] }}.pkg -C ./pkg/ .
+          tar --zstd -cf {{ pkg_name }}-{{ latest_release.stdout }}.pkg -C ./pkg/ .
         chdir: "{{ gh_ws }}/dist"
-        creates: "{{ gh_ws }}/dist/{{ pkg_name }}-{{ latest_release.stdout[1:] }}.pkg.txz"
+        creates: "{{ gh_ws }}/dist/{{ pkg_name }}-{{ latest_release.stdout }}.pkg.txz"
 
     - name: Copy Packagesite Info
       ansible.builtin.copy:
