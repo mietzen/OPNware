@@ -26,6 +26,6 @@ if pkg_config['redistribute']:
     dep = pkg_config['redistribute']
     pkg_name = f'{dep['name']}-{dep['version']}.pkg'
     pkg_url = f'{dep['repo']}/FreeBSD:{abi}:{arch}/latest/ALL/{pkg_name}'
-    print('Loading {pkg_name} from: {pkg_url}')
+    print(f'Loading {pkg_name} from: {pkg_url}')
     download_pkg(pkg_url, pkg_name)
     create_pkgsite_info(pkg_name)
