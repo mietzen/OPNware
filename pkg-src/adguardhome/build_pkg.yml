@@ -50,10 +50,13 @@
 
     - name: Create Directories
       ansible.builtin.file:
-        path: "{{ gh_ws }}/dist/pkg/opt/{{ pkg_name }}"
+        path: "{{ gh_ws }}/dist/pkg/{{ item }}"
         state: directory
         recurse: true
         mode: '0755'
+      loop:
+        - 'opt/{{ pkg_name }}'
+        - 'etc/rc.d'
 
     - name: Copy Binary
       ansible.builtin.copy:
