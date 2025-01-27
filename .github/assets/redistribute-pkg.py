@@ -19,7 +19,7 @@ def create_pkgsite_info(pkg_name):
             f.write(tar.extractfile('+COMPACT_MANIFEST').read())
 
 config_path = os.path.join(workspace, "repo", "pkg-src", src_folder, "config.yml")
-with open(config_path, "r") as f:
+with open(config_path, "r:xz") as f:
     pkg_config = yaml.safe_load(f)
 
 if pkg_config['redistribute']:
