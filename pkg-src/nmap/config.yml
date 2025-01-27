@@ -1,6 +1,6 @@
 ---
 build_config:
-  include:
+  include: {}
 redistribute:
   name: nmap
   version: 7.94_3
