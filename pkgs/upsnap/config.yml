@@ -4,15 +4,15 @@ build_config:
     go: '1.23'
     node: '22'
 pkg_manifest:
-  name: upsanp
-  origin: mietzen/upsanp
+  name: upsnap
+  origin: mietzen/upsnap
   version: 4.6.0
   comment: A simple wake on lan web app written with SvelteKit, Go and PocketBase.
   www: https://github.com/seriousm4x/UpSnap
   maintainer: github.nstein@mailbox.org
-  prefix: /opt/upsanp
+  prefix: /opt/upsnap
   users:
-    - upsanp
+    - upsnap
   groups:
     - www
   licenselogic: single
@@ -29,9 +29,9 @@ pkg_manifest:
       version: "7.94_3"
   scripts:
     post-install: |
-      chown root:wheel /etc/rc.d/upsanp
-      echo 'upsanp_enable="YES"' >> /etc/rc.conf
+      chown root:wheel /etc/rc.d/upsnap
+      echo 'upsnap_enable="YES"' >> /etc/rc.conf
 pkg_service:
   template: default
   vars:
-    command: /opt/upsanp/upsnap --dir /opt/upsnap serve --http=127.0.0.1:8090
+    command: /opt/upsnap/upsnap --dir /opt/upsnap serve --http=127.0.0.1:8090
