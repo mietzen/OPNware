@@ -44,15 +44,15 @@ FOOTER = """</body>
 
 initial_base_directory = None
 
-def human_readable_size(size):
-    # Convert size to human-readable format
-    for unit in ['bytes', 'KiB', 'MiB', 'GiB', 'TiB']:
-        if size < 1024:
+def readable_size(size):
+    for unit in ['B', 'KiB', 'MiB', 'GiB', 'TiB', 'PiB']:
+        if size < 1024 or unit == 'PiB':
+            if unit == 'B':
+                return f"{size} {unit}"
             return f"{size:.1f} {unit}"
         size /= 1024
 
 def should_exclude(path, exclude_patterns, include_dot):
-    # Exclude dot directories by default if include_dot is False
     if not include_dot and any(part.startswith('.') for part in Path(path).parts):
         return True
 
@@ -91,9 +91,8 @@ def generate_index(directory, exclude_patterns, include_dot):
 
         for file in files:
             size = file.stat().st_size
-            readable_size = human_readable_size(size)
             creation_time = datetime.datetime.fromtimestamp(file.stat().st_ctime).strftime("%Y-%m-%d %H:%M:%S")
-            f.write(f"<tr><td><a href='{file.name}'>{file.name}</a></td><td>{readable_size}</td><td>{creation_time}</td></tr>")
+            f.write(f"<tr><td><a href='{file.name}'>{file.name}</a></td><td>{readable_size(size)}</td><td>{creation_time}</td></tr>")
 
         f.write("</table>")
         f.write(FOOTER)
