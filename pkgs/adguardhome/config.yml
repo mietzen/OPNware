@@ -11,6 +11,10 @@ pkg_manifest:
   www: https://adguard.com/en/adguard-home/overview.html
   maintainer: github.nstein@mailbox.org
   prefix: /opt/adguardhome
+  users:
+    - adguardhome
+  groups:
+    - www
   licenselogic: single
   licenses:
     - GPL-3.0 license
@@ -25,7 +29,9 @@ pkg_manifest:
     - If you're running it on Ubuntu, you may need to select a different "Listen interface" for the DNS server.
       Listening to all interfaces is not possible because Ubuntu's systemd-resolved service uses 127.0.0.1:53 already.
   scripts:
-    post-install: echo 'adguardhome_enable="YES"' >> /etc/rc.conf
+    post-install: |
+      chown root:wheel /etc/rc.d/adguardhome
+      echo 'adguardhome_enable="YES"' >> /etc/rc.conf
 pkg_service:
   template: default
   vars:

@@ -11,9 +11,10 @@ pkg_manifest:
   www: https://github.com/seriousm4x/UpSnap
   maintainer: github.nstein@mailbox.org
   prefix: /opt/upsanp
-  files:
-    - /opt/upsanp/upsnap
-    - /etc/rc.d/upsnap
+  users:
+    - upsanp
+  groups:
+    - www
   licenselogic: single
   licenses:
     -  MIT license
@@ -27,7 +28,9 @@ pkg_manifest:
       origin: security/nmap
       version: "7.94_3"
   scripts:
-    post-install: echo 'upsanp_enable="YES"' >> /etc/rc.conf
+    post-install: |
+      chown root:wheel /etc/rc.d/upsanp
+      echo 'upsanp_enable="YES"' >> /etc/rc.conf
 pkg_service:
   template: default
   vars:

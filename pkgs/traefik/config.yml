@@ -10,6 +10,10 @@ pkg_manifest:
   www: https://traefik.io
   maintainer: github.nstein@mailbox.org
   prefix: /opt/traefik
+  users:
+    - traefik
+  groups:
+    - www
   licenselogic: single
   licenses:
     -  MIT license
@@ -20,7 +24,9 @@ pkg_manifest:
     and configures itself automatically and dynamically.
     Pointing Traefik at your orchestrator should be the only configuration step you need.
   scripts:
-    post-install: echo 'traefik_enable="YES"' >> /etc/rc.conf
+    post-install: |
+      chown root:wheel /etc/rc.d/traefik
+      echo 'traefik_enable="YES"' >> /etc/rc.conf
 pkg_service:
   template: default
   vars:

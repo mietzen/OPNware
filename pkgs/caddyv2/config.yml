@@ -10,10 +10,10 @@ pkg_manifest:
   www: https://caddyserver.com/
   maintainer: github.nstein@mailbox.org
   prefix: /opt/caddyv2
-  files:
-    - /opt/caddyv2/caddy
-    - /etc/rc.d/caddyv2
-  abi: FreeBSD:14:amd64
+  users:
+    - caddy
+  groups:
+    - www
   licenselogic: single
   licenses:
     - Apache-2.0 license
@@ -27,7 +27,9 @@ pkg_manifest:
     The plugin system allows extensive customization and improvements beyond other web servers.
     Refer to the documentation for details on configuration structure.
   scripts:
-    post-install: echo 'caddyv2_enable="YES"' >> /etc/rc.conf
+    post-install: |
+      chown root:wheel /etc/rc.d/caddyv2
+      echo 'caddyv2_enable="YES"' >> /etc/rc.conf
 pkg_service:
   template: default
   vars:
