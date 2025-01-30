@@ -34,4 +34,4 @@ pkg_manifest:
 pkg_service:
   template: default
   vars:
-    command: /opt/grafana/grafana server
+    command: /opt/grafana/grafana server --config ./config.ini

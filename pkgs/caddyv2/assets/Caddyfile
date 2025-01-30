@@ -1,0 +1,3 @@
+localhost:8099
+root * /opt/caddyv2/example/
+file_server

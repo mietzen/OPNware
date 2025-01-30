@@ -30,4 +30,4 @@ pkg_manifest:
 pkg_service:
   template: default
   vars:
-    command: /opt/traefik/traefik
+    command: /opt/traefik/traefik --configFile=./config.yml

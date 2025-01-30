@@ -1,0 +1,17 @@
+upstreams:
+  groups:
+    default:
+      - 9.9.9.9
+      - 149.112.112.112
+      - tcp-tls://dns.quad9.net:853
+      - https://dns.quad9.net/dns-query
+blocking:
+  denylists:
+    ads:
+      - https://big.oisd.nl/regex
+  clientGroupsBlock:
+    default:
+      - ads
+ports:
+  dns: 5053
+  http: 8097

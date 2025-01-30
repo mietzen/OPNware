@@ -61,6 +61,13 @@
         remote_src: true
         mode: '0755'
 
+    - name: Copy Assets
+      ansible.builtin.copy:
+        src: "{{ gh_ws }}/repo/pkgs/{{ pkg_name }}/assets/"
+        dest: "{{ gh_ws }}/dist/pkg/opt/{{ pkg_name }}/"
+        remote_src: true
+        mode: '0755'
+
     - name: Create Service
       ansible.builtin.shell:
         cmd: |
