@@ -3,13 +3,13 @@ build_config:
   include:
     go: '1.23'
 pkg_manifest:
-  name: caddyv2
-  origin: mietzen/caddyv2
+  name: caddy
+  origin: mietzen/caddy
   version: 2.9.1
   comment: Fast and extensible multi-platform HTTP/1-2-3 web server with automatic HTTPS
   www: https://caddyserver.com/
   maintainer: github.nstein@mailbox.org
-  prefix: /opt/caddyv2
+  prefix: /opt/caddy
   users:
     - caddy
   groups:
@@ -28,9 +28,9 @@ pkg_manifest:
     Refer to the documentation for details on configuration structure.
   scripts:
     post-install: |
-      chown root:wheel /etc/rc.d/caddyv2
-      echo 'caddyv2_enable="YES"' >> /etc/rc.conf
+      chown root:wheel /etc/rc.d/caddy
+      echo 'caddy_enable="YES"' >> /etc/rc.conf
 pkg_service:
   template: default
   vars:
-    command: /opt/caddyv2/caddy run --envfile /opt/caddyv2/.env
+    command: /opt/caddy/caddy run --envfile /opt/caddy/.env
