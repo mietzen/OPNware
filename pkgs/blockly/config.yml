@@ -1,0 +1,34 @@
+---
+build_config:
+  include:
+    go: '1.23'
+pkg_manifest:
+  name: blocky
+  origin: mietzen/blocky
+  version: 0.25
+  comment: Fast and lightweight DNS proxy as ad-blocker for local network with many features 
+  www: https://0xerr0r.github.io/blocky/
+  maintainer: github.nstein@mailbox.org
+  prefix: /opt/blocky
+  users:
+    - blocky
+  groups:
+    - www
+  licenselogic: single
+  licenses:
+    - Apache-2.0 license
+  desc: |
+    Blocky is a Go-based DNS proxy and ad-blocker for local networks.
+    It blocks ads, malware, and unwanted domains with customizable allow/deny lists, regex filtering, and deep CNAME inspection.
+    It supports custom DNS resolution, conditional forwarding, and per-client upstream resolvers.
+    Performance features include caching, prefetching, and parallel resolvers. Supports DoH, DoT, and DNSSEC for security.
+    Provides Prometheus metrics, REST API, and database logging.
+    Open-source with no telemetry.
+  scripts:
+    post-install: |
+      chown root:wheel /etc/rc.d/blocky
+      echo 'blocky_enable="YES"' >> /etc/rc.conf
+pkg_service:
+  template: default
+  vars:
+    command: /opt/blocky/blocky --config config.yml
