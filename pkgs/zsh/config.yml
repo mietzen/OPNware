@@ -2,7 +2,7 @@
 build_config:
   include: {}
 redistribute:
-  name: btop
-  version: "1.4.0"
+  name: zsh
+  version: "5.9_4"
   repo: http://pkg.freebsd.org
   path: quarterly/All

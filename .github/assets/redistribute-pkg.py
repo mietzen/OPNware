@@ -31,7 +31,7 @@ with open(config_path, "r") as f:
 if pkg_config['redistribute']:
     dep = pkg_config['redistribute']
     pkg_name = f'{dep['name']}-{dep['version']}.pkg'
-    pkg_url = f'{dep['repo']}/FreeBSD:{abi}:{arch}/latest/All/{pkg_name}'
+    pkg_url = f'{dep['repo']}/FreeBSD:{abi}:{arch}/{dep['path']}/{pkg_name}'
     print(f'Loading {pkg_name} from: {pkg_url}')
     download_pkg(pkg_url, pkg_name)
     create_pkgsite_info(pkg_name)
