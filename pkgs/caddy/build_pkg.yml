@@ -63,7 +63,7 @@
 
     - name: Copy License
       ansible.builtin.get_url:
-        url: "https://raw.githubusercontent.com/{{ repo }}/refs/tags/v{{ latest_release.stdout }}/LICENSE"
+        url: "https://raw.githubusercontent.com/{{ repo }}/refs/tags/{{ latest_release.stdout }}/LICENSE"
         dest: "{{ gh_ws }}/dist/pkg/opt/{{ pkg_name }}/LICENSE"
         mode: '0644'
 
