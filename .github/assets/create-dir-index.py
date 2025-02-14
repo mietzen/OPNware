@@ -79,7 +79,7 @@ def generate_index(directory, exclude_patterns, include_dot):
         if directory == initial_base_directory:
             f.write("<h1>Index of /</h1>")
         else:
-            f.write(f"<h1>Index of {str(directory).replace('.', '')}</h1>")
+            f.write(f"<h1>Index of {str(directory)[1:]}</h1>")
 
         f.write("<table>")
         f.write("<tr><th>Name</th><th>Size</th><th>Creation Date (UTC)</th></tr>")
