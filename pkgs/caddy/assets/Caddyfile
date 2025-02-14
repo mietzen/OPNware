@@ -1,3 +1,1 @@
-localhost:8099
-root * /opt/caddy/example/
-file_server
+import conf.d/*
