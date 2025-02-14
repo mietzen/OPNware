@@ -70,7 +70,6 @@
           You may obtain a copy of the source code at:
           https://github.com/{{ repo }}/archive/refs/tags/{{ latest_release.stdout }}.tar.gz
         dest: "{{ gh_ws }}/dist/pkg/opt/{{ pkg_name }}/SOURCE"
-        remote_src: true
         mode: '0644'
 
     - name: Copy Assets
