@@ -65,6 +65,23 @@
         remote_src: true
         mode: '0755'
 
+    - name: Copy License
+      ansible.builtin.copy:
+        src: "{{ gh_ws }}/src/LICENSE.txt"
+        dest: "{{ gh_ws }}/dist/pkg/opt/{{ pkg_name }}/LICENSE"
+        remote_src: true
+        mode: '0644'
+
+    - name: Provide a link to the Source Code
+      ansible.builtin.copy:
+        content: |
+          This software is licensed under the GNU General Public License, Version 3.
+          You may obtain a copy of the original source code at:
+          https://github.com/{{ repo }}/archive/refs/tags/{{ latest_release.stdout }}.tar.gz
+        dest: "{{ gh_ws }}/dist/pkg/opt/{{ pkg_name }}/SOURCE"
+        remote_src: true
+        mode: '0644'
+
     - name: Create Service
       ansible.builtin.shell:
         cmd: |

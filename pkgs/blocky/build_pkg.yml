@@ -57,6 +57,23 @@
         remote_src: true
         mode: '0755'
 
+    - name: Copy License
+      ansible.builtin.copy:
+        src: "{{ gh_ws }}/src/LICENSE"
+        dest: "{{ gh_ws }}/dist/pkg/opt/{{ pkg_name }}/LICENSE"
+        remote_src: true
+        mode: '0644'
+
+    - name: Provide a link to the Source Code
+      ansible.builtin.copy:
+        content: |
+          This software is licensed under the Apache License, Version 2.0.
+          You may obtain a copy of the source code at:
+          https://github.com/{{ repo }}/archive/refs/tags/{{ latest_release.stdout }}.tar.gz
+        dest: "{{ gh_ws }}/dist/pkg/opt/{{ pkg_name }}/SOURCE"
+        remote_src: true
+        mode: '0644'
+
     - name: Copy Assets
       ansible.builtin.copy:
         src: "{{ gh_ws }}/repo/pkgs/{{ pkg_name }}/assets/"
