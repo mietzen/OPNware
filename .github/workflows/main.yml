@@ -70,7 +70,7 @@ jobs:
           ABI: ${{ matrix.abi }}
           ARCH: ${{ matrix.arch }}
           PKG_NAME: ${{ matrix.pkg_name }}
-        uses: mietzen/action-ansible-playbook@v2
+        uses: mietzen/action-ansible-playbook@v3
         with:
           playbook: build_pkg.yml
           directory: repo/pkgs/${{ matrix.pkg_name }}/
