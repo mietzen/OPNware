@@ -76,7 +76,10 @@ def generate_index(directory, exclude_patterns, include_dot):
     index_path = Path(directory) / "index.html"
     with open(index_path, "w") as f:
         f.write(HEADER)
-        f.write(f"<h1>Index of {directory}</h1>")
+        if directory == initial_base_directory:
+            f.write("<h1>Index of /</h1>")
+        else:
+            f.write(f"<h1>Index of {str(directory).replace('.', '')}</h1>")
 
         f.write("<table>")
         f.write("<tr><th>Name</th><th>Size</th><th>Creation Date (UTC)</th></tr>")
