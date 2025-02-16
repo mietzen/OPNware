@@ -7,7 +7,7 @@ name="{{ NAME }}"
 rcvar="{{ NAME }}_enable"
 {{ NAME }}_user="{{ NAME }}"
 {{ NAME }}_command="{{ COMMAND }}"
-pidfile="{{ '${name}' }}"
+pidfile="/opt/{{ NAME }}/{{ '${name}' }}.pid"
 command="/usr/sbin/daemon"
 command_args="-P {{ '${pidfile}' }} -r -f {{ '${' + NAME + '_command' + '}' }}"
 
