@@ -27,14 +27,20 @@ pkg_manifest:
     The plugin system allows extensive customization and improvements beyond other web servers.
     Refer to the documentation for details on configuration structure.
   scripts:
-    post-install: |
+    pre-install: |
       existing_ids=$(mktemp)
       cut -d: -f3,4 /etc/passwd | tr ':' '\n' | sort -un > $existing_ids
       service_id=$(seq 100 999 | grep -vxFf $existing_ids | tail -n1)
       rm $existing_ids
+      mkdir -p /opt/caddy
       pw adduser caddy -u $service_id -d /opt/caddy -s /usr/sbin/nologin -c "caddy service user"
       chown -R caddy:www /opt/caddy
-      sysrc caddy_enable=YES
+    post-install: |
+      /etc/rc.d/caddy enable
+      /etc/rc.d/caddy start
+    pre-deinstall: |
+      /etc/rc.d/caddy stop
+      /etc/rc.d/caddy disable
     post-deinstall: |
       pw deluser caddy
       sysrc -x caddy_enable

@@ -25,14 +25,20 @@ pkg_manifest:
     Provides Prometheus metrics, REST API, and database logging.
     Open-source with no telemetry.
   scripts:
-    post-install: |
+    pre-install: |
       existing_ids=$(mktemp)
       cut -d: -f3,4 /etc/passwd | tr ':' '\n' | sort -un > $existing_ids
       service_id=$(seq 100 999 | grep -vxFf $existing_ids | tail -n1)
       rm $existing_ids
+      mkdir -p /opt/blocky
       pw adduser blocky -u $service_id -d /opt/blocky -s /usr/sbin/nologin -c "blocky service user"
       chown -R blocky:www /opt/blocky
-      sysrc blocky_enable=YES
+    post-install: |
+      /etc/rc.d/blocky enable
+      /etc/rc.d/blocky start
+    pre-deinstall: |
+      /etc/rc.d/blocky stop
+      /etc/rc.d/blocky disable
     post-deinstall: |
       pw deluser blocky
       sysrc -x blocky_enable

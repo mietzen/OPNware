@@ -29,14 +29,20 @@ pkg_manifest:
     - If you're running it on Ubuntu, you may need to select a different "Listen interface" for the DNS server.
       Listening to all interfaces is not possible because Ubuntu's systemd-resolved service uses 127.0.0.1:53 already.
   scripts:
-    post-install: |
+    pre-install: |
       existing_ids=$(mktemp)
       cut -d: -f3,4 /etc/passwd | tr ':' '\n' | sort -un > $existing_ids
       service_id=$(seq 100 999 | grep -vxFf $existing_ids | tail -n1)
       rm $existing_ids
+      mkdir -p /opt/adguardhome
       pw adduser adguardhome -u $service_id -d /opt/adguardhome -s /usr/sbin/nologin -c "adguardhome service user"
       chown -R adguardhome:www /opt/adguardhome
-      sysrc adguardhome_enable=YES
+    post-install: |
+      /etc/rc.d/adguardhome enable
+      /etc/rc.d/adguardhome start
+    pre-deinstall: |
+      /etc/rc.d/adguardhome stop
+      /etc/rc.d/adguardhome disable
     post-deinstall: |
       pw deluser adguardhome
       sysrc -x adguardhome_enable

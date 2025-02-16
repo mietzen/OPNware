@@ -24,14 +24,20 @@ pkg_manifest:
     and configures itself automatically and dynamically.
     Pointing Traefik at your orchestrator should be the only configuration step you need.
   scripts:
-    post-install: |
+    pre-install: |
       existing_ids=$(mktemp)
       cut -d: -f3,4 /etc/passwd | tr ':' '\n' | sort -un > $existing_ids
       service_id=$(seq 100 999 | grep -vxFf $existing_ids | tail -n1)
       rm $existing_ids
+      mkdir -p /opt/traefik
       pw adduser traefik -u $service_id -d /opt/traefik -s /usr/sbin/nologin -c "traefik service user"
       chown -R traefik:www /opt/traefik
-      sysrc traefik_enable=YES
+    post-install: |
+      /etc/rc.d/traefik enable
+      /etc/rc.d/traefik start
+    pre-deinstall: |
+      /etc/rc.d/traefik stop
+      /etc/rc.d/traefik disable
     post-deinstall: |
       pw deluser traefik
       sysrc -x traefik_enable
