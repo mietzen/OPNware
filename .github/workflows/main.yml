@@ -93,27 +93,29 @@ jobs:
           retention-days: 1
           compression-level: 1
 
-  build-repo:
+  deploy-repo:
     if: github.event_name == 'push'
     runs-on: ubuntu-24.04
     needs: build-packages
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v4
         with:
           path: repo
 
-      - name: Checkout Pages Branch
-        uses: actions/checkout@v4
-        with:
-          ref: 'gh-pages'
-          path: pages
-          fetch-depth: 0
-
       - name: Download build artifacts
         uses: actions/download-artifact@v4
         with:
           path: artifacts
+
+      - name: Create pages dir
+        run: mkdir pages
 
       - name: Sort and Store Artifacts
         working-directory: ./pages
@@ -164,16 +166,6 @@ jobs:
         with:
           path: ./pages
 
-  deploy-repo:
-      needs: build-repo
-      permissions:
-        pages: write
-        id-token: write
-      environment:
-        name: github-pages
-        url: ${{ steps.deployment.outputs.page_url }}
-      runs-on: ubuntu-latest
-      steps:
-        - name: Deploy to GitHub Pages
-          uses: actions/deploy-pages@v4
-          id: deployment
+      - name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v4
+        id: deployment
