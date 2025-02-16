@@ -14,7 +14,7 @@ pkg = f'{pkg_info['name']}-{pkg_info['version']}.pkg'
 pkg_info['path'] = f'All/{pkg}'
 pkg_info['repopath'] = f'All/{pkg}'
 pkg_info['sum'] = f'{sha256sum(pkg)}'
-pkg_info['pkgsize'] = f'{os.path.getsize(pkg)}'
+pkg_info['pkgsize'] = {os.path.getsize(pkg)}
 
 with open('packagesite_info.json', "w") as f:
     json.dump(pkg_info, f, separators=(',', ':'))
