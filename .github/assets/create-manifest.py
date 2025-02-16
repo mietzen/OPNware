@@ -36,7 +36,7 @@ for root, _, files in os.walk('.'):
     if files:
         for file in files:
             file_path = os.path.join(root, file)
-            pkg_files[f'{os.sep}{os.path.relpath(file_path, ".")}'] = sha256sum(file_path)
+            pkg_files[f'{os.sep}{os.path.relpath(file_path, "./pkg")}'] = sha256sum(file_path)
 
 with open('+COMPACT_MANIFEST', "w") as f:
     json.dump(manifest, f, separators=(',', ':'))
