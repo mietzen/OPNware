@@ -87,7 +87,6 @@
       ansible.builtin.shell:
         cmd: |
           python {{ gh_ws }}/repo/.github/assets/create-service.py
-          sudo chown 0:0 {{ pkg_name }}
         chdir: "{{ gh_ws }}/dist/pkg/etc/rc.d/"
         creates: "{{ gh_ws }}/dist/pkg/etc/rc.d/{{ pkg_name }}"
 
@@ -95,15 +94,18 @@
       ansible.builtin.shell:
         cmd: |
           python {{ gh_ws }}/repo/.github/assets/create-manifest.py
-          sudo chown 0:0 +MANIFEST
-          sudo chown 0:0 +COMPACT_MANIFEST
-        chdir: "{{ gh_ws }}/dist/pkg"
-        creates: "{{ gh_ws }}/dist/pkg/+MANIFEST"
+        chdir: "{{ gh_ws }}/dist/"
+        creates: "{{ gh_ws }}/dist/+MANIFEST"
 
     - name: Create PKG # noqa: command-instead-of-module
-      ansible.builtin.shell:
+      ansible.builtin.shell: # noqa: risky-shell-pipe
         cmd: |
-          tar --zstd -cf {{ pkg_name }}-{{ latest_release.stdout[1:] }}.pkg -C ./pkg/ .
+          tar -cf {{ pkg_name }}-{{ latest_release.stdout[1:] }}.pkg \
+            --zstd \
+            --owner=0 \
+            --group=0 \
+            --transform 's|^pkg||' \
+            +COMPACT_MANIFEST +MANIFEST $(find pkg -type f)
         chdir: "{{ gh_ws }}/dist"
         creates: "{{ gh_ws }}/dist/{{ pkg_name }}-{{ latest_release.stdout[1:] }}.pkg"
 

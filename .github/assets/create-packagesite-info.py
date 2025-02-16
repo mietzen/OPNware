@@ -6,7 +6,7 @@ def sha256sum(filename):
     with open(filename, 'rb', buffering=0) as f:
         return hashlib.file_digest(f, 'sha256').hexdigest()
 
-with open('pkg/+COMPACT_MANIFEST', "r") as f:
+with open('+COMPACT_MANIFEST', "r") as f:
     pkg_info = json.load(f)
 
 pkg = f'{pkg_info['name']}-{pkg_info['version']}.pkg'
