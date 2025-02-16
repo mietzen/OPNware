@@ -27,7 +27,7 @@ with open(config_path, "r") as f:
     pkg_config = yaml.safe_load(f)
 manifest = pkg_config["pkg_manifest"]
 manifest['abi'] = f'FreeBSD:{abi}:{arch}'
-manifest['arch'] = manifest['arch'].lower()
+manifest['arch'] = manifest['abi'].lower()
 manifest['flatsize'] = folder_size(".")
 
 pkg_files = {}
