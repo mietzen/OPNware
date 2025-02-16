@@ -33,7 +33,7 @@ pkg_manifest:
       cut -d: -f3,4 /etc/passwd | tr ':' '\n' | sort -un > $existing_ids
       service_id=$(seq 100 999 | grep -vxFf $existing_ids | tail -n1)
       rm $existing_ids
-      pw adduser upsnap -u $service_id -g $service_id -d /opt/upsnap -s /usr/sbin/nologin -c "upsnap service user"
+      pw adduser upsnap -u $service_id -d /opt/upsnap -s /usr/sbin/nologin -c "upsnap service user"
       chown -R upsnap:www /opt/upsnap
       sysrc upsnap_enable=YES
     post-deinstall: |
