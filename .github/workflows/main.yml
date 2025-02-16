@@ -133,7 +133,6 @@ jobs:
             echo "" >> ${GITHUB_WORKSPACE}/pages/FreeBSD:${abi}:${arch}/latest/packagesite.yaml
             yq '.meta-conf' -o json ../repo/config.yml > ${GITHUB_WORKSPACE}/pages/FreeBSD:${abi}:${arch}/latest/meta.conf
           done
-          python ../repo/.github/assets/create-dir-index.py .
           cat << EOF > ${GITHUB_REPOSITORY_OWNER}.conf
           ${GITHUB_REPOSITORY_OWNER}: {
             url: "https://${GITHUB_REPOSITORY_OWNER}.github.io/${GITHUB_REPOSITORY#*/}/\${ABI}",
@@ -141,6 +140,7 @@ jobs:
             enabled: yes
           }
           EOF
+          python ../repo/.github/assets/create-dir-index.py .
           git add .
           git commit -m 'Deployed PKG Repo'
           git push -f
