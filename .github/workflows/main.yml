@@ -93,11 +93,9 @@ jobs:
           retention-days: 1
           compression-level: 1
 
-  deploy-repo:
+  build-repo:
     if: github.event_name == 'push'
     runs-on: ubuntu-24.04
-    permissions:
-      contents: write
     needs: build-packages
     steps:
       - name: Checkout Repo
@@ -117,24 +115,29 @@ jobs:
         with:
           path: artifacts
 
-      - name: Deploy PKG Repository
+      - name: Sort and Store Artifacts
         working-directory: ./pages
         run: |
-          git reset --hard "$(git rev-list --max-parents=0 HEAD)"
-          git config --global user.name "${GITHUB_ACTOR}"
-          git config --global user.email "${GITHUB_ACTOR}@users.noreply.github.com"
           for artifact in ${GITHUB_WORKSPACE}/artifacts/*; do
             arch=$(basename "${artifact}" | cut -d'_' -f3)
             abi=$(basename "${artifact}" | cut -d'_' -f4)
             target_dir="${GITHUB_WORKSPACE}/pages/FreeBSD:${abi}:${arch}/latest/All"
             mkdir -p ${target_dir}
             mv ${artifact}/*.pkg ${target_dir}/
-            cat ${artifact}/packagesite_info.json >> ${GITHUB_WORKSPACE}/pages/FreeBSD:${abi}:${arch}/latest/packagesite.yaml
-            echo "" >> ${GITHUB_WORKSPACE}/pages/FreeBSD:${abi}:${arch}/latest/packagesite.yaml
-            yq '.meta-conf' -o json ../repo/config.yml > ${GITHUB_WORKSPACE}/pages/FreeBSD:${abi}:${arch}/latest/meta.conf
+            echo "$(cat ${artifact}/packagesite_info.json)" >> ${GITHUB_WORKSPACE}/pages/FreeBSD:${abi}:${arch}/latest/packagesite.yaml
           done
-          tar --zstd --remove-files -cf ${GITHUB_WORKSPACE}/pages/FreeBSD:${abi}:${arch}/latest/packagesite.tzst -C ${GITHUB_WORKSPACE}/pages/FreeBSD:${abi}:${arch}/latest packagesite.yaml
-          cp ${GITHUB_WORKSPACE}/pages/FreeBSD:${abi}:${arch}/latest/packagesite.tzst ${GITHUB_WORKSPACE}/pages/FreeBSD:${abi}:${arch}/latest/packagesite.pkg
+
+      - name: Create packagesite.pkg & meta.conf
+        run: |
+          for dir in ${GITHUB_WORKSPACE}/pages/*; do
+            tar --zstd --remove-files -cf ${dir}/latest/packagesite.tzst -C ${dir}/latest packagesite.yaml
+            cd ${dir}/latest; ln -s ./packagesite.tzst ./packagesite.pkg; cd ${GITHUB_WORKSPACE}
+            yq '.meta-conf' -o json  ${GITHUB_WORKSPACE}/repo/config.yml > ${dir}/latest/meta.conf
+          done
+
+      - name: Generate Repository Config
+        working-directory: ./pages
+        run: |
           cat << EOF > ${GITHUB_WORKSPACE}/pages/${GITHUB_REPOSITORY_OWNER}.conf
           ${GITHUB_REPOSITORY_OWNER}: {
             url: "https://${GITHUB_REPOSITORY_OWNER}.github.io/${GITHUB_REPOSITORY#*/}/\${ABI}/latest",
@@ -142,11 +145,35 @@ jobs:
             enabled: yes
           }
           EOF
+
+      - name: Create Index Pages
+        working-directory: ./pages
+        run: |
           python ../repo/.github/assets/create-dir-index.py .
+
+      - name: Create robots.txt
+        working-directory: ./pages
+        run: |
           cat << EOF > ${GITHUB_WORKSPACE}/pages/robots.txt
           User-agent: *
           Disallow: /
           EOF
-          git add .
-          git commit -m 'Deployed PKG Repo'
-          git push -f
+
+      - name: Upload Pages Artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./pages
+
+  deploy-repo:
+      needs: build-repo
+      permissions:
+        pages: write
+        id-token: write
+      environment:
+        name: github-pages
+        url: ${{ steps.deployment.outputs.page_url }}
+      runs-on: ubuntu-latest
+      steps:
+        - name: Deploy to GitHub Pages
+          uses: actions/deploy-pages@v4
+          id: deployment
