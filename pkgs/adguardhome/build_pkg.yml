@@ -100,14 +100,14 @@
         cmd: |
           tar --zstd -cf {{ pkg_name }}-{{ latest_release.stdout[1:] }}.pkg -C ./pkg/ .
         chdir: "{{ gh_ws }}/dist"
-        creates: "{{ gh_ws }}/dist/{{ pkg_name }}-{{ latest_release.stdout[1:] }}.pkg.txz"
+        creates: "{{ gh_ws }}/dist/{{ pkg_name }}-{{ latest_release.stdout[1:] }}.pkg"
 
-    - name: Copy Packagesite Info
-      ansible.builtin.copy:
-        src: "{{ gh_ws }}/dist/pkg/+COMPACT_MANIFEST"
-        dest: "{{ gh_ws }}/dist/packagesite_info.json"
-        remote_src: true
-        mode: '0755'
+    - name: Create Packagesite Info
+      ansible.builtin.shell:
+        cmd: |
+          python {{ gh_ws }}/repo/.github/assets/create-packagesite-info.py
+        chdir: "{{ gh_ws }}/dist"
+        creates: "{{ gh_ws }}/dist/packagesite_info.json"
 
     - name: Remove intermediate PKG Folder
       ansible.builtin.file:

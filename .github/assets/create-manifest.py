@@ -26,7 +26,8 @@ config_path = os.path.join(workspace, "repo", "pkgs", src_folder, "config.yml")
 with open(config_path, "r") as f:
     pkg_config = yaml.safe_load(f)
 manifest = pkg_config["pkg_manifest"]
-manifest['arch'] = f'FreeBSD:{abi}:{arch}'
+manifest['abi'] = f'FreeBSD:{abi}:{arch}'
+manifest['arch'] = manifest['arch'].lower()
 manifest['flatsize'] = folder_size(".")
 
 pkg_files = {}
