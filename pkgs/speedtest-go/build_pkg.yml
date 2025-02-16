@@ -74,6 +74,8 @@
       ansible.builtin.shell:
         cmd: |
           python {{ gh_ws }}/repo/.github/assets/create-manifest.py
+          sudo chown 0:0 +MANIFEST
+          sudo chown 0:0 +COMPACT_MANIFEST
         chdir: "{{ gh_ws }}/dist/pkg"
         creates: "{{ gh_ws }}/dist/pkg/+MANIFEST"
 
