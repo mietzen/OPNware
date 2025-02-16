@@ -123,5 +123,9 @@
 
     - name: Remove intermediate PKG Folder
       ansible.builtin.file:
-        path: "{{ gh_ws }}/dist/pkg"
+        path: "{{ item }}"
         state: absent
+      loop:
+        - "{{ gh_ws }}/dist/+MANIFEST"
+        - "{{ gh_ws }}/dist/+COMPACT_MANIFEST"
+        - "{{ gh_ws }}/dist/pkg"
