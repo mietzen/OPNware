@@ -34,7 +34,7 @@ pkg_manifest:
       chown -R blocky:www /opt/blocky
       sysrc blocky_enable=YES
     post-deinstall: |
-      pw deluser -r blocky
+      pw deluser blocky
       sysrc -x blocky_enable
 pkg_service:
   template: default

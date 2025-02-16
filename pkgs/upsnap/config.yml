@@ -37,7 +37,7 @@ pkg_manifest:
       chown -R upsnap:www /opt/upsnap
       sysrc upsnap_enable=YES
     post-deinstall: |
-      pw deluser -r upsnap
+      pw deluser upsnap
       sysrc -x upsnap_enable
 pkg_service:
   template: default

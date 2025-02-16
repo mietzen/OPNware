@@ -36,7 +36,7 @@ pkg_manifest:
       chown -R caddy:www /opt/caddy
       sysrc caddy_enable=YES
     post-deinstall: |
-      pw deluser -r caddy
+      pw deluser caddy
       sysrc -x caddy_enable
 pkg_service:
   template: default

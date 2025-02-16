@@ -33,7 +33,7 @@ pkg_manifest:
       chown -R traefik:www /opt/traefik
       sysrc traefik_enable=YES
     post-deinstall: |
-      pw deluser -r traefik
+      pw deluser traefik
       sysrc -x traefik_enable
 pkg_service:
   template: default

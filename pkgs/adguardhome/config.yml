@@ -38,7 +38,7 @@ pkg_manifest:
       chown -R adguardhome:www /opt/adguardhome
       sysrc adguardhome_enable=YES
     post-deinstall: |
-      pw deluser -r adguardhome
+      pw deluser adguardhome
       sysrc -x adguardhome_enable
 pkg_service:
   template: default
