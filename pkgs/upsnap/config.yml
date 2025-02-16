@@ -29,9 +29,13 @@ pkg_manifest:
       version: "7.94_3"
   scripts:
     post-install: |
-      pw adduser upsnap -d /opt/upsnap -s /usr/sbin/nologin -c "upsnap service user"
+      service_id=$(seq 100 999 | grep -vxFf <(cut -d: -f3,4 /etc/passwd | tr ':' '\n' | sort -un) | tail -n1)
+      pw adduser upsnap -u service_id -g service_id -d /opt/upsnap -s /usr/sbin/nologin -c "upsnap service user"
       chown -R upsnap:www /opt/upsnap
-      echo 'upsnap_enable="YES"' >> /etc/rc.conf
+      sysrc upsnap_enable=YES
+    post-deinstall: |
+      pw deluser -r upsnap
+      sysrc -x upsnap_enable
 pkg_service:
   template: default
   vars:

@@ -30,9 +30,13 @@ pkg_manifest:
       Listening to all interfaces is not possible because Ubuntu's systemd-resolved service uses 127.0.0.1:53 already.
   scripts:
     post-install: |
-      pw adduser adguardhome -d /opt/adguardhome -s /usr/sbin/nologin -c "adguardhome service user"
+      service_id=$(seq 100 999 | grep -vxFf <(cut -d: -f3,4 /etc/passwd | tr ':' '\n' | sort -un) | tail -n1)
+      pw adduser adguardhome -u service_id -g service_id -d /opt/adguardhome -s /usr/sbin/nologin -c "adguardhome service user"
       chown -R adguardhome:www /opt/adguardhome
-      echo 'adguardhome_enable="YES"' >> /etc/rc.conf
+      sysrc adguardhome_enable=YES
+    post-deinstall: |
+      pw deluser -r adguardhome
+      sysrc -x adguardhome_enable
 pkg_service:
   template: default
   vars:

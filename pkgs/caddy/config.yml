@@ -28,9 +28,13 @@ pkg_manifest:
     Refer to the documentation for details on configuration structure.
   scripts:
     post-install: |
-      pw adduser caddy -d /opt/caddy -s /usr/sbin/nologin -c "caddy service user"
+      service_id=$(seq 100 999 | grep -vxFf <(cut -d: -f3,4 /etc/passwd | tr ':' '\n' | sort -un) | tail -n1)
+      pw adduser caddy -u service_id -g service_id -d /opt/caddy -s /usr/sbin/nologin -c "caddy service user"
       chown -R caddy:www /opt/caddy
-      echo 'caddy_enable="YES"' >> /etc/rc.conf
+      sysrc caddy_enable=YES
+    post-deinstall: |
+      pw deluser -r caddy
+      sysrc -x caddy_enable
 pkg_service:
   template: default
   vars:
