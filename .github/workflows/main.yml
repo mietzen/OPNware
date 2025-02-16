@@ -133,7 +133,8 @@ jobs:
             echo "" >> ${GITHUB_WORKSPACE}/pages/FreeBSD:${abi}:${arch}/latest/packagesite.yaml
             yq '.meta-conf' -o json ../repo/config.yml > ${GITHUB_WORKSPACE}/pages/FreeBSD:${abi}:${arch}/latest/meta.conf
           done
-          tar --zstd --remove-files -cf ${GITHUB_WORKSPACE}/pages/FreeBSD:${abi}:${arch}/latest/packagesite.pkg -C ${GITHUB_WORKSPACE}/pages/FreeBSD:${abi}:${arch}/latest packagesite.yaml
+          tar --zstd --remove-files -cf ${GITHUB_WORKSPACE}/pages/FreeBSD:${abi}:${arch}/latest/packagesite.tzst -C ${GITHUB_WORKSPACE}/pages/FreeBSD:${abi}:${arch}/latest packagesite.yaml
+          cp ${GITHUB_WORKSPACE}/pages/FreeBSD:${abi}:${arch}/latest/packagesite.tzst ${GITHUB_WORKSPACE}/pages/FreeBSD:${abi}:${arch}/latest/packagesite.pkg
           cat << EOF > ${GITHUB_WORKSPACE}/pages/${GITHUB_REPOSITORY_OWNER}.conf
           ${GITHUB_REPOSITORY_OWNER}: {
             url: "https://${GITHUB_REPOSITORY_OWNER}.github.io/${GITHUB_REPOSITORY#*/}/\${ABI}/latest",
