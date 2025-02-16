@@ -32,4 +32,4 @@ pkg_manifest:
 pkg_service:
   template: default
   vars:
-    command: /opt/blocky/blocky --config config.yml
+    COMMAND: /opt/blocky/blocky --config config.yml

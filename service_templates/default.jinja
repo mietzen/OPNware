@@ -3,6 +3,7 @@
 . /etc/rc.subr
 
 name="{{ NAME }}"
+{{ NAME }}_chdir="/opt/{{ NAME }}"
 rcvar="{{ NAME }}_enable"
 {{ NAME }}_user="{{ NAME }}"
 {{ NAME }}_command="{{ COMMAND }}"

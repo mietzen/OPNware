@@ -35,4 +35,4 @@ pkg_manifest:
 pkg_service:
   template: default
   vars:
-    command: /opt/upsnap/upsnap --dir /opt/upsnap serve --http=127.0.0.1:8090
+    COMMAND: /opt/upsnap/upsnap --dir /opt/upsnap serve --http=127.0.0.1:8090
