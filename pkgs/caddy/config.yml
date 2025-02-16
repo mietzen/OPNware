@@ -28,7 +28,8 @@ pkg_manifest:
     Refer to the documentation for details on configuration structure.
   scripts:
     post-install: |
-      chown root:wheel /etc/rc.d/caddy
+      pw adduser caddy -d /opt/caddy -s /usr/sbin/nologin -c "caddy service user"
+      chown -R caddy:www /opt/caddy
       echo 'caddy_enable="YES"' >> /etc/rc.conf
 pkg_service:
   template: default

@@ -29,7 +29,8 @@ pkg_manifest:
       version: "7.94_3"
   scripts:
     post-install: |
-      chown root:wheel /etc/rc.d/upsnap
+      pw adduser upsnap -d /opt/upsnap -s /usr/sbin/nologin -c "upsnap service user"
+      chown -R upsnap:www /opt/upsnap
       echo 'upsnap_enable="YES"' >> /etc/rc.conf
 pkg_service:
   template: default

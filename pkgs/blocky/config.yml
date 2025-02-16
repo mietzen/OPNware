@@ -26,7 +26,8 @@ pkg_manifest:
     Open-source with no telemetry.
   scripts:
     post-install: |
-      chown root:wheel /etc/rc.d/blocky
+      pw adduser blocky -d /opt/blocky -s /usr/sbin/nologin -c "blocky service user"
+      chown -R blocky:www /opt/blocky
       echo 'blocky_enable="YES"' >> /etc/rc.conf
 pkg_service:
   template: default

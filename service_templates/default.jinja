@@ -4,7 +4,7 @@
 
 name="{{ NAME }}"
 rcvar="{{ NAME }}_enable"
-{{ NAME }}_user="root"
+{{ NAME }}_user="{{ NAME }}"
 {{ NAME }}_command="{{ COMMAND }}"
 pidfile="{{ '${name}' }}"
 command="/usr/sbin/daemon"

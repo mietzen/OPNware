@@ -25,7 +25,8 @@ pkg_manifest:
     Pointing Traefik at your orchestrator should be the only configuration step you need.
   scripts:
     post-install: |
-      chown root:wheel /etc/rc.d/traefik
+      pw adduser traefik -d /opt/traefik -s /usr/sbin/nologin -c "traefik service user"
+      chown -R traefik:www /opt/traefik
       echo 'traefik_enable="YES"' >> /etc/rc.conf
 pkg_service:
   template: default

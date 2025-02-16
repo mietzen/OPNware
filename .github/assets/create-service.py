@@ -20,6 +20,7 @@ if pkg_config['pkg_service']:
             {'NAME': pkg_config['pkg_manifest']['name'].lower()})
     else:
         service = pkg_config['pkg_service']['service']
-
-    with open(f"{pkg_config['pkg_manifest']['name'].lower()}", 'w') as file:
+    file_name = f"{pkg_config['pkg_manifest']['name'].lower()}"
+    with open(file_name, 'w') as file:
         file.write(service)
+    os.chmod(file_name, 0o775)
