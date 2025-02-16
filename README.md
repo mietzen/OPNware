@@ -3,7 +3,7 @@
 ## Install
 
 ```Shell
-fetch -o /usr/local/etc/pkg/repos/mietzen.conf https://mietzen.github.io/freeBSD-custom-pkg-repo/mietzen.conf
+curl -fL -o /usr/local/etc/pkg/repos/mietzen.conf https://mietzen.github.io/freeBSD-custom-pkg-repo/mietzen.conf
 ```
 
 ## Browse
