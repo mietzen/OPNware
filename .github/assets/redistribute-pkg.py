@@ -29,13 +29,11 @@ def create_pkgsite_info(pkg_name):
         with tarfile.open(fileobj=decompressed_data, mode='r:') as tar:
             with open("packagesite_info.json", "w") as f:
                 pkg_info = json.loads(tar.extractfile('+COMPACT_MANIFEST').read().decode())
-                print(type(pkg_info))
                 pkg_info['path'] = f'All/{pkg_name}'
                 pkg_info['repopath'] = f'All/{pkg_name}'
                 pkg_info['sum'] = f'{sha256sum(pkg_name)}'
                 pkg_info['pkgsize'] = os.path.getsize(pkg_name)
-                print(pkg_info['pkgsize'])
-                json.dump(f, pkg_info, separators=(',', ':'))
+                json.dump(pkg_info, f, separators=(',', ':'))
 
 config_path = os.path.join(workspace, "repo", "pkgs", src_folder, "config.yml")
 with open(config_path, "r") as f:
