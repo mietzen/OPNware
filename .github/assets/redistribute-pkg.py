@@ -33,7 +33,7 @@ def create_pkgsite_info(pkg_name):
                 pkg_info['repopath'] = f'All/{pkg_name}'
                 pkg_info['sum'] = f'{sha256sum(pkg_name)}'
                 pkg_info['pkgsize'] = os.path.getsize(pkg_name)
-                json.dump(f, pkg_info, f, separators=(',', ':'))
+                json.dump(f, pkg_info, separators=(',', ':'))
 
 config_path = os.path.join(workspace, "repo", "pkgs", src_folder, "config.yml")
 with open(config_path, "r") as f:
