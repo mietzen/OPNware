@@ -42,10 +42,13 @@
 
     - name: Create Directories
       ansible.builtin.file:
-        path: "{{ gh_ws }}/dist/pkg/opt/{{ pkg_name }}"
+        path: "{{ gh_ws }}/dist/pkg/opt/{{ item }}"
         state: directory
         recurse: true
         mode: '0755'
+      loop:
+        - '{{ pkg_name }}'
+        - 'bin'
 
     - name: Copy Binary
       ansible.builtin.copy:
@@ -53,6 +56,12 @@
         dest: "{{ gh_ws }}/dist/pkg/opt/{{ pkg_name }}/{{ pkg_name }}"
         remote_src: true
         mode: '0755'
+
+    - name: Create relative symbolic link
+      ansible.builtin.command: ln -s ../{{ pkg_name }}/{{ pkg_name }} {{ pkg_name }}
+      args:
+        chdir: '{{ gh_ws }}/dist/pkg/opt/bin'
+        creates: '{{ gh_ws }}/dist/pkg/opt/bin/{{ pkg_name }}'
 
     - name: Copy License
       ansible.builtin.copy:
