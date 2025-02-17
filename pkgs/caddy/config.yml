@@ -54,3 +54,7 @@ pkg_service:
   template: default
   vars:
     COMMAND: /opt/caddy/caddy run --envfile /opt/caddy/.env
+    SRV_CMDS: |
+      reload(){
+        /opt/caddy/caddy reload
+      }

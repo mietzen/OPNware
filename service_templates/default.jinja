@@ -8,9 +8,10 @@ rcvar="{{ NAME }}_enable"
 {{ NAME }}_user="{{ NAME }}"
 {{ NAME }}_command="{{ COMMAND }}"
 pidfile="/opt/{{ NAME }}/{{ '${name}' }}.pid"
+logfile="/opt/{{ NAME }}/{{ '${name}' }}.log"
 command="/usr/sbin/daemon"
-command_args="-P {{ '${pidfile}' }} -r -f {{ '${' + NAME + '_command' + '}' }}"
-
+command_args="-t {{ '${name}_d' }} -P {{ '${pidfile}' }} -o {{ '${logfile}' }} -r -R 3 {{ '${' + NAME + '_command' + '}' }}"
+{{ SRV_CMDS }}
 load_rc_config {{ '${name}' }}
 : {{ '${' + NAME + '_enable' + ':=no' }} }
 
