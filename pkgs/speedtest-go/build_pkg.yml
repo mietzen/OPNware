@@ -94,7 +94,7 @@
             --owner=0 \
             --group=0 \
             --transform 's|^pkg||' \
-            +COMPACT_MANIFEST +MANIFEST $(find pkg -type f)
+            +COMPACT_MANIFEST +MANIFEST $(find pkg -type f)  $(find pkg -type l)
         chdir: "{{ gh_ws }}/dist"
         creates: "{{ gh_ws }}/dist/{{ pkg_name }}-{{ latest_release.stdout[1:] }}.pkg"
 
