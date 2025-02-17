@@ -27,20 +27,26 @@ pkg_manifest:
     pre-install: |
       existing_ids=$(mktemp)
       cut -d: -f3,4 /etc/passwd | tr ':' '\n' | sort -un > $existing_ids
-      service_id=$(seq 100 999 | grep -vxFf $existing_ids | tail -n1)
+      service_id=$(seq 300 999 | grep -vxFf $existing_ids | head -n1)
       rm $existing_ids
-      mkdir -p /opt/traefik
-      pw adduser traefik -u $service_id -d /opt/traefik -s /usr/sbin/nologin -c "traefik service user"
-      chown -R traefik:www /opt/traefik
+      echo "===> Creating user"
+      if ! pw usershow traefik >/dev/null 2>&1; then
+        pw adduser traefik -u $service_id -d /nonexistent -s /usr/sbin/nologin -c "traefik service user"
+      else
+        echo "Using existing user 'traefik'"
+      fi
     post-install: |
-      /etc/rc.d/traefik enable
-      /etc/rc.d/traefik start
+      chown -R traefik:www /opt/traefik
+      echo "===> Starting service"
+      service traefik enable
+      service traefik start
     pre-deinstall: |
-      /etc/rc.d/traefik stop
-      /etc/rc.d/traefik disable
+      echo "===> Stopping service"
+      service traefik stop
+      service traefik disable
     post-deinstall: |
+      echo "===> Deleting user"
       pw deluser traefik
-      sysrc -x traefik_enable
 pkg_service:
   template: default
   vars:

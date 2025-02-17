@@ -32,20 +32,26 @@ pkg_manifest:
     pre-install: |
       existing_ids=$(mktemp)
       cut -d: -f3,4 /etc/passwd | tr ':' '\n' | sort -un > $existing_ids
-      service_id=$(seq 100 999 | grep -vxFf $existing_ids | tail -n1)
+      service_id=$(seq 300 999 | grep -vxFf $existing_ids | head -n1)
       rm $existing_ids
-      mkdir -p /opt/adguardhome
-      pw adduser adguardhome -u $service_id -d /opt/adguardhome -s /usr/sbin/nologin -c "adguardhome service user"
-      chown -R adguardhome:www /opt/adguardhome
+      echo "===> Creating user"
+      if ! pw usershow adguardhome >/dev/null 2>&1; then
+        pw adduser adguardhome -u $service_id -d /nonexistent -s /usr/sbin/nologin -c "adguardhome service user"
+      else
+        echo "Using existing user 'adguardhome'"
+      fi
     post-install: |
-      /etc/rc.d/adguardhome enable
-      /etc/rc.d/adguardhome start
+      chown -R adguardhome:www /opt/adguardhome
+      echo "===> Starting service"
+      service adguardhome enable
+      service adguardhome start
     pre-deinstall: |
-      /etc/rc.d/adguardhome stop
-      /etc/rc.d/adguardhome disable
+      echo "===> Stopping service"
+      service adguardhome stop
+      service adguardhome disable
     post-deinstall: |
+      echo "===> Deleting user"
       pw deluser adguardhome
-      sysrc -x adguardhome_enable
 pkg_service:
   template: default
   vars:

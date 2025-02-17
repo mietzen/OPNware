@@ -30,20 +30,26 @@ pkg_manifest:
     pre-install: |
       existing_ids=$(mktemp)
       cut -d: -f3,4 /etc/passwd | tr ':' '\n' | sort -un > $existing_ids
-      service_id=$(seq 100 999 | grep -vxFf $existing_ids | tail -n1)
+      service_id=$(seq 300 999 | grep -vxFf $existing_ids | head -n1)
       rm $existing_ids
-      mkdir -p /opt/caddy
-      pw adduser caddy -u $service_id -d /opt/caddy -s /usr/sbin/nologin -c "caddy service user"
-      chown -R caddy:www /opt/caddy
+      echo "===> Creating user"
+      if ! pw usershow caddy >/dev/null 2>&1; then
+        pw adduser caddy -u $service_id -d /nonexistent -s /usr/sbin/nologin -c "caddy service user"
+      else
+        echo "Using existing user 'caddy'"
+      fi
     post-install: |
-      /etc/rc.d/caddy enable
-      /etc/rc.d/caddy start
+      chown -R caddy:www /opt/caddy
+      echo "===> Starting service"
+      service caddy enable
+      service caddy start
     pre-deinstall: |
-      /etc/rc.d/caddy stop
-      /etc/rc.d/caddy disable
+      echo "===> Stopping service"
+      service caddy stop
+      service caddy disable
     post-deinstall: |
+      echo "===> Deleting user"
       pw deluser caddy
-      sysrc -x caddy_enable
 pkg_service:
   template: default
   vars:

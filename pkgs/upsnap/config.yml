@@ -28,24 +28,29 @@ pkg_manifest:
       origin: security/nmap
       version: "7.94_3"
   scripts:
-    # pre-install: |
-    #   existing_ids=$(mktemp)
-    #   cut -d: -f3,4 /etc/passwd | tr ':' '\n' | sort -un > $existing_ids
-    #   service_id=$(seq 100 999 | grep -vxFf $existing_ids | tail -n1)
-    #   rm $existing_ids
-    #   mkdir -p /opt/upsnap
-    #   pw adduser upsnap -u $service_id -d /opt/upsnap -s /usr/sbin/nologin -c "upsnap service user"
-    #   chown -R upsnap:www /opt/upsnap
+    pre-install: |
+      existing_ids=$(mktemp)
+      cut -d: -f3,4 /etc/passwd | tr ':' '\n' | sort -un > $existing_ids
+      service_id=$(seq 300 999 | grep -vxFf $existing_ids | head -n1)
+      rm $existing_ids
+      echo "===> Creating user"
+      if ! pw usershow upsnap >/dev/null 2>&1; then
+        pw adduser upsnap -u $service_id -d /nonexistent -s /usr/sbin/nologin -c "upsnap service user"
+      else
+        echo "Using existing user 'upsnap'"
+      fi
     post-install: |
       chown -R upsnap:www /opt/upsnap
-      /etc/rc.d/upsnap enable
-      /etc/rc.d/upsnap start
+      echo "===> Starting service"
+      service upsnap enable
+      service upsnap start
     pre-deinstall: |
-      /etc/rc.d/upsnap stop
-      /etc/rc.d/upsnap disable
-    # post-deinstall: |
-    #   pw deluser upsnap
-    #   sysrc -x upsnap_enable
+      echo "===> Stopping service"
+      service upsnap stop
+      service upsnap disable
+    post-deinstall: |
+      echo "===> Deleting user"
+      pw deluser upsnap
 pkg_service:
   template: default
   vars:

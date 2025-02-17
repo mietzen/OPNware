@@ -28,20 +28,26 @@ pkg_manifest:
     pre-install: |
       existing_ids=$(mktemp)
       cut -d: -f3,4 /etc/passwd | tr ':' '\n' | sort -un > $existing_ids
-      service_id=$(seq 100 999 | grep -vxFf $existing_ids | tail -n1)
+      service_id=$(seq 300 999 | grep -vxFf $existing_ids | head -n1)
       rm $existing_ids
-      mkdir -p /opt/blocky
-      pw adduser blocky -u $service_id -d /opt/blocky -s /usr/sbin/nologin -c "blocky service user"
-      chown -R blocky:www /opt/blocky
+      echo "===> Creating user"
+      if ! pw usershow blocky >/dev/null 2>&1; then
+        pw adduser blocky -u $service_id -d /nonexistent -s /usr/sbin/nologin -c "blocky service user"
+      else
+        echo "Using existing user 'blocky'"
+      fi
     post-install: |
-      /etc/rc.d/blocky enable
-      /etc/rc.d/blocky start
+      chown -R blocky:www /opt/blocky
+      echo "===> Starting service"
+      service blocky enable
+      service blocky start
     pre-deinstall: |
-      /etc/rc.d/blocky stop
-      /etc/rc.d/blocky disable
+      echo "===> Stopping service"
+      service blocky stop
+      service blocky disable
     post-deinstall: |
+      echo "===> Deleting user"
       pw deluser blocky
-      sysrc -x blocky_enable
 pkg_service:
   template: default
   vars:
