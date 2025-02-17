@@ -13,7 +13,7 @@ pkg_manifest:
   users:
     - caddy
   groups:
-    - www
+    - caddy
   licenselogic: single
   licenses:
     - Apache-2.0 license

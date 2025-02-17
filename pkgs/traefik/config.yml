@@ -13,7 +13,7 @@ pkg_manifest:
   users:
     - traefik
   groups:
-    - www
+    - traefik
   licenselogic: single
   licenses:
     -  MIT license

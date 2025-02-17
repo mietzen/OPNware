@@ -14,7 +14,7 @@ pkg_manifest:
   users:
     - adguardhome
   groups:
-    - www
+    - adguardhome
   licenselogic: single
   licenses:
     - GPL-3.0 license

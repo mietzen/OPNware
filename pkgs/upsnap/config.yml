@@ -14,7 +14,7 @@ pkg_manifest:
   users:
     - upsnap
   groups:
-    - www
+    - upsnap
   licenselogic: single
   licenses:
     -  MIT license
