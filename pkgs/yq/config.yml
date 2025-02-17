@@ -1,0 +1,20 @@
+---
+build_config:
+  include:
+    go: '1.23'
+pkg_manifest:
+  name: yq
+  origin: mietzen/yq
+  version: 4.45.1
+  comment: yq is a portable command-line YAML, JSON, XML, CSV, TOML and properties processor
+  www: https://mikefarah.gitbook.io/yq
+  maintainer: github.nstein@mailbox.org
+  prefix: /opt/yq
+  licenselogic: single
+  licenses:
+    - MIT license
+  desc: |
+    a lightweight and portable command-line YAML processor. yq uses jq like syntax but works with yaml files as well as json.
+    It doesn't yet support everything jq does - but it does support the most common operations and functions, and more is being added continuously.
+    yq is written in go - so you can download a dependency free binary for your platform and you are good to go!
+    If you prefer there are a variety of package managers that can be used as well as docker, all listed below.
