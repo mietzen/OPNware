@@ -23,7 +23,7 @@ pkg_manifest:
     Built with SvelteKit, Go, and PocketBase, it supports secure user management, multi-language support, and customizable themes.
     Ideal for self-hosting with Docker or binary options, it integrates features like port pinging and network discovery.
     While offering powerful functionality, it's recommended to use VPN for external access due to security.
-  dependencies:
+  deps:
     nmap:
       origin: security/nmap
       version: "7.94_3"
