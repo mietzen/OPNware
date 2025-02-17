@@ -1,3 +1,4 @@
-localhost:8099
-root * example
-file_server
+http://localhost:8099 {
+    root * example
+    file_server
+}
