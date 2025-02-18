@@ -8,6 +8,10 @@
     pkg_name: 'speedtest-go'
     config: '{{ gh_ws }}/repo/pkgs/{{ pkg_name }}/config.yml'
   tasks:
+    - name: Install pkg-repo-tools
+      ansible.builtin.pip:
+        name: file://{{ gh_ws }}/repo/.github/assets
+
     - name: Create Directories
       ansible.builtin.file:
         path: "{{ gh_ws }}/dist/pkg"
