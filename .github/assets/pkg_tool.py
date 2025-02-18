@@ -210,7 +210,8 @@ def main():
 
     parser_create_packagesite_info = subparsers.add_parser('create-packagesite-info', help='Create package site info')
     parser_create_packagesite_info.add_argument('compact_manifest_path', help='Path to the +COMPACT_MANIFEST file')
-    parser_create_packagesite_info.add_argument('--output-dir', required=False, default='.', help='Directory to output the packagesite info file (default: current directory)')
+    parser_create_packagesite_info.add_argument('--output-dir', required=False, default='.',
+                                                help='Directory to output the packagesite info file (default: current directory)')
 
     parser_create_service = subparsers.add_parser('create-service', help='Create service file')
     parser_create_service.add_argument('config_path', help='Path to the config.yml file')
@@ -220,7 +221,8 @@ def main():
     parser_redistribute_pkg.add_argument('config_path', help='Path to the config.yml file')
     parser_redistribute_pkg.add_argument('--abi', required=True, help='ABI')
     parser_redistribute_pkg.add_argument('--arch', required=True, help='Architecture')
-    parser_create_service.add_argument('--output-dir', required=False, default='.', help='Directory to output the package & packagesite info file  (default: current directory)')
+    parser_redistribute_pkg.add_argument('--output-dir', required=False, default='.',
+                                         help='Directory to output the package & packagesite info file  (default: current directory)')
 
     args = parser.parse_args()
 

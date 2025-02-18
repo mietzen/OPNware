@@ -4,6 +4,7 @@
   gather_facts: false
   vars:
     gh_ws: "{{ lookup('env', 'GITHUB_WORKSPACE',) }}"
+    pkg_name: 'htop'
     config: '{{ gh_ws }}/repo/pkgs/{{ pkg_name }}/config.yml'
   tasks:
     - name: Install pkg-repo-tools
