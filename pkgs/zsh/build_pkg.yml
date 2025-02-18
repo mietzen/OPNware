@@ -8,7 +8,7 @@
   tasks:
     - name: Install pkg-repo-tools
       ansible.builtin.pip:
-        name: file://{{ gh_ws }}/.github/assets
+        name: file://{{ gh_ws }}/repo/.github/assets
 
     - name: Create Directories
       ansible.builtin.file:
