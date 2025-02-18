@@ -3,7 +3,7 @@ requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "pkg-repo-tools"
+name = "pkg-tool"
 version = "0.1.0"
 description = "FreeBSD Custom Package Repository CLI Tools"
 authors = [
@@ -17,5 +17,3 @@ dependencies = [
 
 [project.scripts]
 pkg-tool = "pkg_tool:main"
-build-matrix = "build_matrix:main"
-create-dir-index = "create_dir_index:main"
