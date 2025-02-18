@@ -6,6 +6,7 @@
     gh_ws: "{{ lookup('env', 'GITHUB_WORKSPACE',) }}"
     repo: 'showwin/speedtest-go'
     pkg_name: 'speedtest-go'
+    config: '{{ gh_ws }}/repo/pkgs/{{ pkg_name }}/config.yml'
   tasks:
     - name: Create Directories
       ansible.builtin.file:
@@ -82,7 +83,8 @@
     - name: Create Manifest
       ansible.builtin.shell:
         cmd: |
-          python {{ gh_ws }}/repo/.github/assets/create-manifest.py
+          pkg-tool create-manifest {{ config }} \
+            --abi ${ABI} --arch ${ARCH}
         chdir: "{{ gh_ws }}/dist/"
         creates: "{{ gh_ws }}/dist/+MANIFEST"
 
@@ -101,7 +103,7 @@
     - name: Create Packagesite Info
       ansible.builtin.shell:
         cmd: |
-          python {{ gh_ws }}/repo/.github/assets/create-packagesite-info.py
+          pkg-tool create-packagesite-info ./+COMPACT_MANIFEST
         chdir: "{{ gh_ws }}/dist"
         creates: "{{ gh_ws }}/dist/packagesite_info.json"
 

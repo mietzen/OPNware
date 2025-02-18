@@ -1,4 +1,5 @@
 import os
+import sys
 import datetime
 from pathlib import Path
 import argparse
@@ -76,10 +77,12 @@ def generate_index(directory, exclude_patterns, include_dot):
     index_path = Path(directory) / "index.html"
     with open(index_path, "w") as f:
         f.write(HEADER)
-        if directory == initial_base_directory:
+        if directory == '.':
             f.write("<h1>Index of /</h1>")
-        else:
+        elif str(directory).startswith('.'):
             f.write(f"<h1>Index of {str(directory)[1:]}</h1>")
+        else:
+            f.write(f"<h1>Index of {str(directory)}</h1>")
 
         f.write("<table>")
         f.write("<tr><th>Name</th><th>Size</th><th>Creation Date (UTC)</th></tr>")
@@ -113,17 +116,25 @@ def main():
     parser.add_argument("directory", type=str, help="The base directory to start from.")
     parser.add_argument("--exclude", action="append", default=[], help="Glob patterns to exclude (can be used multiple times).")
     parser.add_argument("--include-dot", action="store_true", help="Include directories starting with a dot (e.g., .git, .svn).")
+    parser.add_argument("--not-relative", action="store_true", help="Don't create a relative tree.")
 
     args = parser.parse_args()
-    initial_base_directory = args.directory
     exclude_patterns = args.exclude
     include_dot = args.include_dot
+    not_relative = args.not_relative
 
-    if not os.path.isdir(initial_base_directory):
-        print(f"Error: {initial_base_directory} is not a valid directory.")
+    if not os.path.isdir(args.directory):
+        print(f"Error: {args.directory} is not a valid directory.")
+        sys.exit(1)
+
+    if not_relative:
+        initial_base_directory = args.directory
     else:
-        traverse_and_generate(initial_base_directory, exclude_patterns, include_dot)
-        print("Index files generated successfully.")
+        os.chdir(args.directory)
+        initial_base_directory = '.'
+
+    traverse_and_generate(initial_base_directory, exclude_patterns, include_dot)
+    print("Index files generated successfully.")
 
 if __name__ == "__main__":
     main()

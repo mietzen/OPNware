@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pkg-repo-tools"
+version = "0.1.0"
+description = "FreeBSD Custom Package Repository CLI Tools"
+authors = [
+    { name = "Nils Stein", email = "github.nstein@mailbox.org" }
+]
+dependencies = [
+    "PyYAML",
+    "jinja2",
+    "zstandard"
+]
+
+[project.scripts]
+pkg-tool = "pkg_tool:main"
+build-matrix = "build_matrix:main"
+create-dir-index = "create_dir_index:main"
