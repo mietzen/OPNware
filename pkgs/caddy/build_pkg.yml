@@ -10,6 +10,7 @@
       - github.com/caddy-dns/porkbun
       - github.com/caddy-dns/ddnss
       - github.com/mietzen/caddy-dynamicdns-cmd-source
+      - github.com/lucaslorentz/caddy-docker-proxy/v2
     config: '{{ gh_ws }}/repo/pkgs/{{ pkg_name }}/config.yml'
   tasks:
     - name: Install pkg-repo-tools
