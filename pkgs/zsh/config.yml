@@ -3,6 +3,7 @@ build_config:
   include: {}
 redistribute:
   name: zsh
-  version: "5.9_4"
+  version:
+    FreeBSD-14-amd64: "5.9_4"
   repo: http://pkg.freebsd.org
   path: quarterly/All

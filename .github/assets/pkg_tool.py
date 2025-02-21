@@ -124,7 +124,8 @@ def redistribute_pkg(config_path, abi, arch, output_dir='.'):
 
     if pkg_config['redistribute']:
         dep = pkg_config['redistribute']
-        pkg_name = f'{dep["name"]}-{dep["version"]}.pkg'
+        version = dep[f"FreeBSD-{abi}-{arch}"]["version"]
+        pkg_name = f'{dep["name"]}-{version}.pkg'
         pkg_url = f'{dep["repo"]}/FreeBSD:{abi}:{arch}/{dep["path"]}/{pkg_name}'
         print(f'Loading {pkg_name} from: {pkg_url}')
         _download_pkg(pkg_url, os.path.join(output_dir, pkg_name))

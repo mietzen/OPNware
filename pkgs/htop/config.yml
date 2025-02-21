@@ -3,6 +3,7 @@ build_config:
   include: {}
 redistribute:
   name: htop
-  version: "3.3.0_5"
+  version:
+    FreeBSD-14-amd64: "3.3.0_5"
   repo: http://pkg.freebsd.org
   path: quarterly/All
