@@ -39,7 +39,7 @@
     - name: Build Binary
       ansible.builtin.shell:
         cmd: |
-          xcaddy build {{ latest_release.stdout }} \
+          xcaddy build v{{ latest_release.stdout }} \
               --with {{ caddy_plugins | join(' --with ') }} \
               --output $GITHUB_WORKSPACE/src
         creates: "{{ gh_ws }}/src/caddy"
@@ -66,7 +66,7 @@
 
     - name: Copy License
       ansible.builtin.get_url:
-        url: "https://raw.githubusercontent.com/{{ repo }}/refs/tags/{{ latest_release.stdout }}/LICENSE"
+        url: "https://raw.githubusercontent.com/{{ repo }}/refs/tags/v{{ latest_release.stdout }}/LICENSE"
         dest: "{{ gh_ws }}/dist/pkg/opt/{{ pkg_name }}/LICENSE"
         mode: '0644'
 
@@ -75,7 +75,7 @@
         content: |
           This software is licensed under the Apache License, Version 2.0.
           You may obtain a copy of the source code at:
-          https://github.com/{{ repo }}/archive/refs/tags/{{ latest_release.stdout }}.tar.gz
+          https://github.com/{{ repo }}/archive/refs/tags/v{{ latest_release.stdout }}.tar.gz
         dest: "{{ gh_ws }}/dist/pkg/opt/{{ pkg_name }}/SOURCE"
         mode: '0644'
 
@@ -104,14 +104,14 @@
     - name: Create PKG # noqa: command-instead-of-module
       ansible.builtin.shell: # noqa: risky-shell-pipe
         cmd: |
-          tar -cf {{ pkg_name }}-{{ latest_release.stdout[1:] }}.pkg \
+          tar -cf {{ pkg_name }}-{{ latest_release.stdout }}.pkg \
             --zstd \
             --owner=0 \
             --group=0 \
             --transform 's|^pkg||' \
             +COMPACT_MANIFEST +MANIFEST $(find pkg -type f)
         chdir: "{{ gh_ws }}/dist"
-        creates: "{{ gh_ws }}/dist/{{ pkg_name }}-{{ latest_release.stdout[1:] }}.pkg"
+        creates: "{{ gh_ws }}/dist/{{ pkg_name }}-{{ latest_release.stdout }}.pkg"
 
     - name: Create Packagesite Info
       ansible.builtin.shell:

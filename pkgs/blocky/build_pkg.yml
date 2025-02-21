@@ -29,7 +29,7 @@
       ansible.builtin.git:
         repo: 'https://github.com/{{ repo }}.git'
         dest: "{{ gh_ws }}/src"
-        version: "{{ latest_release.stdout }}"
+        version: "v{{ latest_release.stdout }}"
 
     - name: Build Binary
       ansible.builtin.shell:
@@ -71,7 +71,7 @@
         content: |
           This software is licensed under the Apache License, Version 2.0.
           You may obtain a copy of the source code at:
-          https://github.com/{{ repo }}/archive/refs/tags/{{ latest_release.stdout }}.tar.gz
+          https://github.com/{{ repo }}/archive/refs/tags/v{{ latest_release.stdout }}.tar.gz
         dest: "{{ gh_ws }}/dist/pkg/opt/{{ pkg_name }}/SOURCE"
         mode: '0644'
 
@@ -100,14 +100,14 @@
     - name: Create PKG # noqa: command-instead-of-module
       ansible.builtin.shell: # noqa: risky-shell-pipe
         cmd: |
-          tar -cf {{ pkg_name }}-{{ latest_release.stdout[1:] }}.pkg \
+          tar -cf {{ pkg_name }}-{{ latest_release.stdout }}.pkg \
             --zstd \
             --owner=0 \
             --group=0 \
             --transform 's|^pkg||' \
             +COMPACT_MANIFEST +MANIFEST $(find pkg -type f)
         chdir: "{{ gh_ws }}/dist"
-        creates: "{{ gh_ws }}/dist/{{ pkg_name }}-{{ latest_release.stdout[1:] }}.pkg"
+        creates: "{{ gh_ws }}/dist/{{ pkg_name }}-{{ latest_release.stdout }}.pkg"
 
     - name: Create Packagesite Info
       ansible.builtin.shell:
