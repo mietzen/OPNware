@@ -19,12 +19,9 @@
         recurse: true
         mode: '0755'
 
-    - name: Get latest release of a public repository
-      ansible.builtin.shell:
-        cmd: |
-          set -o pipefail
-          curl -s https://api.github.com/repos/{{ repo }}/releases/latest | jq -r '.tag_name'
-        executable: /bin/bash
+    - name: Get release from config
+      ansible.builtin.command:
+        cmd: "yq '.pkg_manifest.version' {{ config }}"
       register: latest_release
       changed_when: latest_release.rc != 0
 
