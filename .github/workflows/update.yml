@@ -3,6 +3,10 @@ name: Check for and apply updates
 on:
   workflow_dispatch:
   push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/update.yml'
   schedule:
     - cron: "15 4 * * *"
 
@@ -41,9 +45,9 @@ jobs:
                 fi
             else
               repo_url=$(yq "build_config.include.src_repo" ${pkg}/config.yml)
-              if [[ repo_url =~ "github.com" ]]; then
+              if [[ ${repo_url} =~ "github.com" ]]; then
                 local_version=$(yq ".redistribute.version.${abi_arch}" ${pkg}/config.yml)
-                repo=$(echo "$repo_url" | sed -E 's|https://github.com/([^/]+/[^/]+).*|\1|')
+                repo=$(echo "${repo_url}" | sed -E 's|https://github.com/([^/]+/[^/]+).*|\1|')
                 remote_version=$(curl -s https://api.github.com/repos/${repo}/releases/latest | jq -r '.tag_name')
                 if [[ "${remote_version}" != "${local_version}" ]]; then
                   yq e -i ".redistribute.version.${abi_arch} = \"${remote_version}\"" ${pkg}/config.yml
