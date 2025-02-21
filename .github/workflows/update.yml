@@ -44,7 +44,7 @@ jobs:
                   yq e -i ".redistribute.version.${abi_arch} = \"${remote_version}\"" ${pkg}/config.yml
                 fi
             else
-              repo_url=$(yq "build_config.include.src_repo" ${pkg}/config.yml)
+              repo_url=$(yq '.build_config.include.src_repo' ${pkg}/config.yml)
               if [[ ${repo_url} =~ "github.com" ]]; then
                 local_version=$(yq ".redistribute.version.${abi_arch}" ${pkg}/config.yml)
                 repo=$(echo "${repo_url}" | sed -E 's|https://github.com/([^/]+/[^/]+).*|\1|')
