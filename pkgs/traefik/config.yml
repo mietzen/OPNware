@@ -2,6 +2,7 @@
 build_config:
   include:
     go: '1.23'
+    src_repo: 'https://github.com/traefik/traefik'
 pkg_manifest:
   name: traefik
   origin: mietzen/traefik

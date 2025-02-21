@@ -20,8 +20,6 @@ on:
       - 'config.yml'
       - '.github/workflows/main.yml'
       - '.github/assets/*.py'
-  schedule:
-    - cron: "15 4 * * *"
 
 jobs:
   discover-packages:
@@ -72,6 +70,7 @@ jobs:
           ABI: ${{ matrix.abi }}
           ARCH: ${{ matrix.arch }}
           PKG_NAME: ${{ matrix.pkg_name }}
+          SRC_REPO: ${{ matrix.src_repo }}
         uses: mietzen/action-ansible-playbook@v3
         with:
           playbook: build_pkg.yml

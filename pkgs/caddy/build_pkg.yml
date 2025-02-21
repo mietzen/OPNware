@@ -4,7 +4,7 @@
   gather_facts: false
   vars:
     gh_ws: "{{ lookup('env', 'GITHUB_WORKSPACE',) }}"
-    repo: 'caddyserver/caddy'
+    repo: "{{ lookup('env', 'SRC_REPO',) }}"
     pkg_name: 'caddy'
     caddy_plugins:
       - github.com/caddy-dns/porkbun
@@ -66,7 +66,7 @@
 
     - name: Copy License
       ansible.builtin.get_url:
-        url: "https://raw.githubusercontent.com/{{ repo }}/refs/tags/v{{ latest_release.stdout }}/LICENSE"
+        url: "{{ repo }}/raw/refs/tags/v{{ latest_release.stdout }}/LICENSE"
         dest: "{{ gh_ws }}/dist/pkg/opt/{{ pkg_name }}/LICENSE"
         mode: '0644'
 
@@ -75,7 +75,7 @@
         content: |
           This software is licensed under the Apache License, Version 2.0.
           You may obtain a copy of the source code at:
-          https://github.com/{{ repo }}/archive/refs/tags/v{{ latest_release.stdout }}.tar.gz
+          {{ repo }}/archive/refs/tags/v{{ latest_release.stdout }}.tar.gz
         dest: "{{ gh_ws }}/dist/pkg/opt/{{ pkg_name }}/SOURCE"
         mode: '0644'
 

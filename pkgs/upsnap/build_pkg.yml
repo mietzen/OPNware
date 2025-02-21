@@ -4,7 +4,7 @@
   gather_facts: false
   vars:
     gh_ws: "{{ lookup('env', 'GITHUB_WORKSPACE',) }}"
-    repo: 'seriousm4x/UpSnap'
+    repo: "{{ lookup('env', 'SRC_REPO',) }}"
     pkg_name: 'upsnap'
     config: '{{ gh_ws }}/repo/pkgs/{{ pkg_name }}/config.yml'
   tasks:
@@ -27,7 +27,7 @@
 
     - name: Git checkout repository
       ansible.builtin.git:
-        repo: 'https://github.com/{{ repo }}.git'
+        repo: '{{ repo }}'
         dest: "{{ gh_ws }}/src"
         version: "{{ latest_release.stdout }}"
 
@@ -86,7 +86,7 @@
         content: |
           This software is licensed under the MIT license.
           You may obtain a copy of the source code at:
-          https://github.com/{{ repo }}/archive/refs/tags/{{ latest_release.stdout }}.tar.gz
+          {{ repo }}/archive/refs/tags/{{ latest_release.stdout }}.tar.gz
         dest: "{{ gh_ws }}/dist/pkg/opt/{{ pkg_name }}/SOURCE"
         mode: '0644'
 

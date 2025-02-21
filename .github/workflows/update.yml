@@ -1,0 +1,58 @@
+name: Check for and apply updates
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "15 4 * * *"
+
+jobs:
+  update:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          path: repo
+      - name: Check & Update Pkgs
+        run: |
+          for pkg in ${GITHUB_WORKSPACE}/pkgs/*; do
+            pkg_name=$(basename $pkg)
+            if [[ "$(yq 'has("redistribute")' ${pkg}/config.yml)" == 'true' ]]; then
+              for abi_arch in $(yq '.redistribute.version | keys[]' ${pkg}/config.yml):
+                url_base=$(yq '.redistribute.repo' ${pkg}/config.yml)
+                path=$(yq '.redistribute.path' ${pkg}/config.yml | cut -f1 -d'/')
+                url="${url_base}/$(echo ${abi_arch} | tr - :)/${path}/packagesite.pkg"
+                if [ ! -f ${abi_arch}-${path}-packagesite.yaml ]; then
+                  curl -SsL -o ${abi_arch}-${path}-packagesite.pkg ${url}
+                  tar -O -xf ./${abi_arch}-${path}-packagesite.pkg packagesite.yaml \
+                    > ${abi_arch}-${path}-packagesite.yaml
+                  # Prepare packagesite.yaml
+                  sed -e 's/$/,/' -i ${abi_arch}-${path}-packagesite.yaml
+                  sed -i '1i[' ${abi_arch}-${path}-packagesite.yaml
+                  echo "]" >> ${abi_arch}-${path}-packagesite.yaml
+                fi
+                remote_version=$(yq '.[] | select(.name == "${pkg_name}") | .version' ${abi_arch}-${path}-packagesite.yaml)
+                local_version=$(yq ".redistribute.version.${abi_arch}" ${pkg}/config.yml)
+                if [[ "${remote_version}" != "${local_version}" ]]; then
+                  yq e -i ".redistribute.version.${abi_arch} = \"${remote_version}\"" ${pkg}/config.yml
+                fi
+            else
+              repo_url=$(yq "build_config.include.src_repo" ${pkg}/config.yml)
+              if [[ repo_url =~ "github.com" ]]; then
+                local_version=$(yq ".redistribute.version.${abi_arch}" ${pkg}/config.yml)
+                repo=$(echo "$repo_url" | sed -E 's|https://github.com/([^/]+/[^/]+).*|\1|')
+                remote_version=$(curl -s https://api.github.com/repos/${repo}/releases/latest | jq -r '.tag_name')
+                if [[ "${remote_version}" != "${local_version}" ]]; then
+                  yq e -i ".redistribute.version.${abi_arch} = \"${remote_version}\"" ${pkg}/config.yml
+                fi
+              fi
+            fi
+          done
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git clean -fxD
+          git add .
+          git commit -m 'updated pkg versions'
+          git push
