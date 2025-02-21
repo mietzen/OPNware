@@ -22,6 +22,7 @@ jobs:
           path: repo
       - name: Check & Update Pkgs
         run: |
+          set -ex
           for pkg in ${GITHUB_WORKSPACE}/pkgs/*; do
             pkg_name=$(basename $pkg)
             if [[ "$(yq 'has("redistribute")' ${pkg}/config.yml)" == 'true' ]]; then
