@@ -170,3 +170,17 @@ jobs:
       - name: Deploy to GitHub Pages
         uses: actions/deploy-pages@v4
         id: deployment
+
+  Check-Build:
+    if: ${{ always() }}
+    runs-on: ubuntu-24.04
+    needs:
+      - build-packages
+    steps:
+      - run: |
+          result="${{ needs.build-packages.result }}"
+          if [[ $result == "success" || $result == "skipped" ]]; then
+            exit 0
+          else
+            exit 1
+          fi
