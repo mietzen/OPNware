@@ -2,6 +2,7 @@ name: Check for and apply updates
 
 on:
   workflow_dispatch:
+  push:
   schedule:
     - cron: "15 4 * * *"
 
@@ -20,8 +21,8 @@ jobs:
           for pkg in ${GITHUB_WORKSPACE}/pkgs/*; do
             pkg_name=$(basename $pkg)
             if [[ "$(yq 'has("redistribute")' ${pkg}/config.yml)" == 'true' ]]; then
-              for abi_arch in $(yq '.redistribute.version | keys[]' ${pkg}/config.yml):
-                url_base=$(yq '.redistribute.repo' ${pkg}/config.yml)
+              for abi_arch in $(yq '.redistribute.version | keys[]' ${pkg}/config.yml); do
+                url_base=$(yq '.redistribute.repo' ${pkg}/config.yml)""
                 path=$(yq '.redistribute.path' ${pkg}/config.yml | cut -f1 -d'/')
                 url="${url_base}/$(echo ${abi_arch} | tr - :)/${path}/packagesite.pkg"
                 if [ ! -f ${abi_arch}-${path}-packagesite.yaml ]; then
