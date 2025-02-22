@@ -60,9 +60,14 @@ jobs:
                   exit 1
                 fi
                 local_version=$(yq ".redistribute.version.${abi_arch}" ${pkg}/config.yml)
+                if [ -z "$local_version" ]; then
+                  echo "${pkg_name} no version found under: ${pkg}/config.yml"
+                  exit 1
+                fi
                 if [[ "${remote_version}" != "${local_version}" ]]; then
+                  msg="${pkg_name}, upgrading from: ${local_version} to: ${remote_version}"
                   echo "pkg_upgraded=true" >> $GITHUB_OUTPUT
-                  echo "Upgrading: ${pkg_name}, from: ${local_version} to: ${remote_version}"
+                  echo "${msg}" | tee -a pr-body
                   yq e -i ".redistribute.version.${abi_arch} = \"${remote_version}\"" ${pkg}/config.yml
                 fi
               done
@@ -70,6 +75,10 @@ jobs:
               repo_url=$(yq '.build_config.include.src_repo' ${pkg}/config.yml)
               if [[ ${repo_url} =~ "github.com" ]]; then
                 local_version=$(yq ".pkg_manifest.version" ${pkg}/config.yml)
+                if [ -z "$local_version" ]; then
+                  echo "${pkg_name} no version found under: ${pkg}/config.yml"
+                  exit 1
+                fi
                 repo=$(echo "${repo_url}" | sed -E 's|https://github.com/([^/]+/[^/]+).*|\1|')
                 remote_version=$(gh api repos/${repo}/releases/latest | jq -r '.tag_name' | sed 's/^[^0-9]*//')
                 if [ -z "$remote_version" ]; then
@@ -77,13 +86,22 @@ jobs:
                   exit 1
                 fi
                 if [[ "${remote_version}" != "${local_version}" ]]; then
+                  msg="${pkg_name}, upgrading from: ${local_version} to: ${remote_version}"
                   echo "pkg_upgraded=true" >> $GITHUB_OUTPUT
-                  echo "${pkg_name}, upgrading from: ${local_version} to: ${remote_version}"
+                  echo "${msg}" | tee -a pr-body
                   yq e -i ".pkg_manifest.version = \"${remote_version}\"" ${pkg}/config.yml
                 fi
+              else
+                echo "No method implemented to check new release in ${repo_url}"
+                exit 1
               fi
             fi
           done
+          if [ -f pr-body ]; then
+            echo 'pr-body<<EOF' >> $GITHUB_OUTPUT
+            cat pr-body  >> $GITHUB_OUTPUT
+            echo 'EOF' >> $GITHUB_OUTPUT
+          fi
           git clean -fxd
 
       - name: Create Pull Request
@@ -100,7 +118,7 @@ jobs:
             automated pr
             update
           body: |
-            ${{ steps.upgrades.outputs.stdout }}
+            ${{ steps.upgrades.outputs.pr-body }}
 
       - name: Enable Pull Request auto merge
         if: steps.pr.outputs.pull-request-operation == 'created'
