@@ -6,7 +6,7 @@ build_config:
 pkg_manifest:
   name: traefik
   origin: mietzen/traefik
-  version: 3.3.3
+  version: 3.3.4
   comment: The Cloud Native Application Proxy
   www: https://traefik.io
   maintainer: github.nstein@mailbox.org
@@ -17,7 +17,7 @@ pkg_manifest:
     - traefik
   licenselogic: single
   licenses:
-    -  MIT license
+    - MIT license
   desc: |
     Traefik (pronounced traffic) is a modern HTTP reverse proxy and load balancer that makes deploying microservices easy.
     Traefik integrates with your existing infrastructure components:
