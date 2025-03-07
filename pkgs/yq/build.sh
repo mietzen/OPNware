@@ -37,7 +37,7 @@ mkdir -p "${GH_WS}/dist/pkg/opt/bin"
 chmod 0755 "${GH_WS}/dist/pkg/opt/${PKG_NAME}" "${GH_WS}/dist/pkg/opt/bin"
 
 # Copy Binary
-cp "${GH_WS}/src/yq" "${GH_WS}/dist/pkg/opt/${PKG_NAME}/${PKG_NAME}"
+cp "${GH_WS}/src/${PKG_NAME}" "${GH_WS}/dist/pkg/opt/${PKG_NAME}/${PKG_NAME}"
 chmod 0755 "${GH_WS}/dist/pkg/opt/${PKG_NAME}/${PKG_NAME}"
 ln -s "../${PKG_NAME}/${PKG_NAME}" "${GH_WS}/dist/pkg/opt/bin/${PKG_NAME}"
 
@@ -51,7 +51,7 @@ This software is licensed under the MIT license.
 You may obtain a copy of the source code at:
 $SRC_REPO/archive/refs/tags/v$VERSION.tar.gz
 EOF
-chmod 0644 "${GH_WS}/dist/pkg/opt/speedtest-go/SOURCE"
+chmod 0644 "${GH_WS}/dist/pkg/opt/${PKG_NAME}/SOURCE"
 
 # Create BSD distribution pkg
 cd "${GH_WS}/dist"

@@ -33,10 +33,8 @@ chmod 0755 "${GH_WS}/build"
 
 echo "::group::Build Caddy Binary"
 cd "${GH_WS}/build"
-GOOS=freebsd
-GOARCH="$ARCH"
-xcaddy build "v${VERSION}" \
-    --with "${CADDY_PLUGINS[@]}" \
+GOOS=freebsd GOARCH="${ARCH}" xcaddy build "v${VERSION}" \
+    $(printf -- "--with %s " "${CADDY_PLUGINS[@]}") \
     --output "${GH_WS}/build/caddy"
 echo "::endgroup::"
 

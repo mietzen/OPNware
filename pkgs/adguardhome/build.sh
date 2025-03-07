@@ -28,7 +28,7 @@ fi
 echo "::endgroup::"
 
 echo "::group::Git Checkout Repository"
-git clone --branch "v${VERSION}" "${REPO}" "${GH_WS}/src"
+git clone --branch "v${VERSION}" "${SRC_REPO}" "${GH_WS}/src"
 echo "::endgroup::"
 
 echo "::group::Build Binary"

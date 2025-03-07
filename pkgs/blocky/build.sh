@@ -22,7 +22,7 @@ mkdir -p "${GH_WS}/dist"
 chmod 0755 "${GH_WS}/dist"
 
 echo "::group::Git Checkout Repository"
-git clone --branch "v${VERSION}" "${REPO}" "${GH_WS}/src"
+git clone --branch "v${VERSION}" "${SRC_REPO}" "${GH_WS}/src"
 echo "::endgroup::"
 
 echo "::group::Build Binary"

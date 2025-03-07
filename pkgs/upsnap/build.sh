@@ -60,7 +60,7 @@ This software is licensed under the MIT license.
 You may obtain a copy of the source code at:
 $SRC_REPO/archive/refs/tags/v$VERSION.tar.gz
 EOF
-chmod 0644 "${GH_WS}/dist/pkg/opt/speedtest-go/SOURCE"
+chmod 0644 "${GH_WS}/dist/pkg/opt/${PKG_NAME}/SOURCE"
 
 # Create BSD distribution pkg
 cd "${GH_WS}/dist"
