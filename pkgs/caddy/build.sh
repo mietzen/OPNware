@@ -19,7 +19,7 @@ CADDY_PLUGINS=(
 )
 
 echo "::group::Install pkg-tool"
-pip install "file://${REPO_DIR}/pkg-tool"
+pip install "file://${GH_WS}/${REPO_DIR}/pkg-tool"
 echo "::endgroup::"
 
 echo "::group::Install xCaddy"

@@ -11,7 +11,7 @@ REPO_DIR=$(echo "${SCRIPT_DIR#${GH_WS%/}/}" | cut -d'/' -f1)
 PKG_NAME=$(yq -r '.[].name | select( . != null )' ${CONFIG})
 
 echo "::group::Install pkg-tool"
-pip install "file://${REPO_DIR}/pkg-tool"
+pip install "file://${GH_WS}/${REPO_DIR}/pkg-tool"
 echo "::endgroup::"
 
 echo "Redistributing ${PKG_NAME} - ${ARCH} - ABI: ${ABI}"
