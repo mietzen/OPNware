@@ -13,7 +13,7 @@ VERSION=$(yq '.pkg_manifest.version' "${CONFIG}")
 SRC_REPO=$(yq '.build_config.src_repo' "${CONFIG}")
 
 echo "::group::Install pkg-repo-tools"
-pip install "file://${GH_WS}/repo/.github/assets"
+pip install "file://${REPO_DIR}/pkg-tool"
 echo "::endgroup::"
 
 echo "Cross Compiling ${PKG_NAME} - ${ARCH} - ABI: ${ABI}"
