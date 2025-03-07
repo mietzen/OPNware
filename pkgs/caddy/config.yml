@@ -2,7 +2,7 @@
 build_config:
   include:
     go: '1.23'
-    src_repo: 'https://github.com/caddyserver/caddy'
+  src_repo: 'https://github.com/caddyserver/caddy'
 pkg_manifest:
   name: caddy
   origin: mietzen/caddy

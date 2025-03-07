@@ -3,7 +3,7 @@ build_config:
   include:
     go: '1.23'
     node: '22'
-    src_repo: 'https://github.com/seriousm4x/UpSnap'
+  src_repo: 'https://github.com/seriousm4x/UpSnap'
 pkg_manifest:
   name: upsnap
   origin: mietzen/upsnap

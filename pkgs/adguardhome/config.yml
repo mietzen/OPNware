@@ -3,7 +3,7 @@ build_config:
   include:
     go: '1.23'
     node: '22'
-    src_repo: 'https://github.com/AdguardTeam/AdGuardHome'
+  src_repo: 'https://github.com/AdguardTeam/AdGuardHome'
 pkg_manifest:
   name: adguardhome
   origin: mietzen/adguardhome

@@ -70,22 +70,9 @@ jobs:
           ABI: ${{ matrix.abi }}
           ARCH: ${{ matrix.arch }}
           PKG_NAME: ${{ matrix.pkg_name }}
-          SRC_REPO: ${{ matrix.src_repo }}
-        uses: mietzen/action-ansible-playbook@v3
-        with:
-          playbook: build_pkg.yml
-          directory: repo/pkgs/${{ matrix.pkg_name }}/
-          configuration: |
-            [defaults]
-            callbacks_enabled = ansible.posix.profile_tasks, ansible.posix.timer
-            stdout_callback = yaml
-            nocows = false
-            interpreter_python = auto_silent
-          inventory: |
-            [local]
-            localhost ansible_connection=local
-          options: |
-            --verbose
+        working-directory: ./repo/pkgs/${{ matrix.pkg_name }}/
+        run: ./build.sh
+
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:

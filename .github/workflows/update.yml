@@ -72,7 +72,7 @@ jobs:
                 fi
               done
             else
-              repo_url=$(yq '.build_config.include.src_repo' ${pkg}/config.yml)
+              repo_url=$(yq '.build_config.src_repo' ${pkg}/config.yml)
               if [[ ${repo_url} =~ "github.com" ]]; then
                 local_version=$(yq ".pkg_manifest.version" ${pkg}/config.yml)
                 if [ -z "$local_version" ]; then
