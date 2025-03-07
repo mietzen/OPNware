@@ -65,7 +65,7 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
 
-      - name: Build ${{ matrix.pkg_name }}
+      - name: Create ${{ matrix.pkg_name }} pkg
         env:
           ABI: ${{ matrix.abi }}
           ARCH: ${{ matrix.arch }}
