@@ -56,9 +56,6 @@ chmod 0644 "${GH_WS}/dist/pkg/opt/${PKG_NAME}/SOURCE"
 # Create BSD distribution pkg
 cd "${GH_WS}/dist"
 
-# Create Service
-pkg-tool create-service "${CONFIG}" --output-dir "./pkg/etc/rc.d/"
-
 # Create Manifest
 pkg-tool create-manifest "${CONFIG}" --abi "${ABI}" --arch "${ARCH}"
 
