@@ -51,7 +51,7 @@ chmod 0644 "${GH_WS}/dist/pkg/opt/caddy/conf.d/${PKG_NAME}/LICENSE"
 cat <<EOF > "${GH_WS}/dist/pkg/opt/caddy/conf.d/${PKG_NAME}/SOURCE"
 This software is licensed under the Apache License, Version 2.0.
 You may obtain a copy of the source code at:
-${REPO}/archive/refs/tags/v${VERSION}.tar.gz
+${SRC_REPO}/archive/refs/tags/v${VERSION}.tar.gz
 EOF
 chmod 0644 "${GH_WS}/dist/pkg/opt/caddy/conf.d/${PKG_NAME}/SOURCE"
 

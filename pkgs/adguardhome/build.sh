@@ -60,7 +60,7 @@ chmod 0644 "${GH_WS}/dist/pkg/opt/${PKG_NAME}/LICENSE"
 cat <<EOF > "${GH_WS}/dist/pkg/opt/${PKG_NAME}/SOURCE"
 This software is licensed under the GNU General Public License, Version 3.
 You may obtain a copy of the original source code at:
-${REPO}/archive/refs/tags/v${VERSION}.tar.gz
+${SRC_REPO}/archive/refs/tags/v${VERSION}.tar.gz
 EOF
 chmod 0644 "${GH_WS}/dist/pkg/opt/${PKG_NAME}/SOURCE"
 
