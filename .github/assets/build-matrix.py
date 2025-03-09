@@ -5,7 +5,7 @@ import yaml
 def main():
     packages = []
     for root, _, files in os.walk("pkgs"):
-        if "build_pkg.yml" in files:
+        if "build.sh" in files:
             packages.append(os.path.basename(root))
 
     with open("config.yml", "r") as f:
