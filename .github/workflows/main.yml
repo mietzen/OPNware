@@ -36,7 +36,7 @@ jobs:
         id: set-matrix
         run: |
           if [[ ${{ github.event_name }} == 'pull_request' ]]; then
-            changed_pkgs=$(git --no-pager diff --name-only $(git merge-base main HEAD) | grep  pkgs/ | cut -d '/' -f2 | tr '\n' ' ' | xargs)
+            changed_pkgs=$(git --no-pager diff --name-only $(git merge-base origin/main HEAD) | grep  pkgs/ | cut -d '/' -f2 | sort -u | tr '\n' ' ' | xargs)
             echo "Changed Packages: ${changed_pkgs}"
             matrix=$(python ./.github/assets/build-matrix.py ${changed_pkgs})
           else
