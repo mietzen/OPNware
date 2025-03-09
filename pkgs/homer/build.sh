@@ -16,6 +16,10 @@ echo "::group::Install pkg-tool"
 pip install "file://${GH_WS}/${REPO_DIR}/pkg-tool"
 echo "::endgroup::"
 
+echo "::group::Install pnpm"
+curl -fsSL https://get.pnpm.io/install.sh | sh -
+echo "::endgroup::"
+
 echo "Building ${PKG_NAME} - ARCH: ${ARCH} - ABI: ${ABI}"
 
 mkdir -p "${GH_WS}/dist"
