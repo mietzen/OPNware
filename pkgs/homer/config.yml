@@ -1,0 +1,22 @@
+---
+build_config:
+  include:
+    node: '22'
+  src_repo: 'https://github.com/bastienwirtz/homer'
+pkg_manifest:
+  name: homer
+  origin: mietzen/homer
+  version: 25.03.2
+  comment: A very simple static homepage for your server.
+  www: https://homer-demo.netlify.app/
+  maintainer: github.nstein@mailbox.org
+  prefix: /opt/caddy/conf.d/homer
+  licenselogic: single
+  licenses:
+    - Apache-2.0 license
+  desc: |
+    Homer is a dead simple static HOMepage for your servER (or anything else) to keep your services and favorite links on hand,
+    based on a simple yaml configuration file. Learn more at https://github.com/bastienwirtz/homer
+  deps:
+    caddy:
+      origin: mietzen/caddy
