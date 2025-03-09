@@ -3,7 +3,7 @@ set -e
 
 # Setup Environment Variables
 ARCH="${1}"
-ARCH="${2}"
+ABI="${2}"
 GH_WS="${GITHUB_WORKSPACE}"
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 CONFIG="${SCRIPT_DIR}/config.yml"

@@ -67,7 +67,7 @@ jobs:
 
       - name: Create ${{ matrix.pkg_name }} pkg
         working-directory: ./repo/pkgs/${{ matrix.pkg_name }}/
-        run: ./build.sh ${{ matrix.abi }} ${{ matrix.arch }}
+        run: ./build.sh ${{ matrix.arch }} ${{ matrix.abi }}
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
