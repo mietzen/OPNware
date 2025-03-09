@@ -1,12 +1,19 @@
 import os
 import json
 import yaml
+import sys
+import re
 
 def main():
     packages = []
-    for root, _, files in os.walk("pkgs"):
-        if "build.sh" in files:
-            packages.append(os.path.basename(root))
+    if len(sys.argv) >= 2:
+        for pkg in sys.argv[1:]:
+            if re.search(r'(\w+ ?)+', pkg):
+                packages += pkg.strip().split(' ')
+    if not packages:
+        for root, _, files in os.walk("pkgs"):
+            if "build.sh" in files:
+                packages.append(os.path.basename(root))
 
     with open("config.yml", "r") as f:
         config = yaml.safe_load(f)
