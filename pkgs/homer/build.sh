@@ -17,7 +17,7 @@ pip install "file://${GH_WS}/${REPO_DIR}/pkg-tool"
 echo "::endgroup::"
 
 echo "::group::Install pnpm"
-curl -fsSL https://get.pnpm.io/install.sh | sh -
+npm install -g pnpm@latest-10
 echo "::endgroup::"
 
 echo "Building ${PKG_NAME} - ARCH: ${ARCH} - ABI: ${ABI}"
