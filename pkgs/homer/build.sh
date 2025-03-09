@@ -12,63 +12,55 @@ PKG_NAME=$(yq -r '.[].name | select( . != null )' ${CONFIG})
 VERSION=$(yq '.pkg_manifest.version' "${CONFIG}")
 SRC_REPO=$(yq '.build_config.src_repo' "${CONFIG}")
 
-echo "::group::Install pkg-repo-tools"
+echo "::group::Install pkg-tool"
 pip install "file://${GH_WS}/${REPO_DIR}/pkg-tool"
 echo "::endgroup::"
 
-echo "Cross Compiling ${PKG_NAME} - ARCH: ${ARCH} - ABI: ${ABI}"
+echo "::group::Install pnpm"
+npm install -g pnpm@latest-10
+echo "::endgroup::"
+
+echo "Building ${PKG_NAME} - ARCH: ${ARCH} - ABI: ${ABI}"
 
 mkdir -p "${GH_WS}/dist"
 chmod 0755 "${GH_WS}/dist"
-
-echo "::group::Install snapcraft"
-if ! command -v snapcraft &> /dev/null; then
-  sudo snap install snapcraft --classic
-fi
-echo "::endgroup::"
 
 echo "::group::Git Checkout Repository"
 git clone --branch "v${VERSION}" "${SRC_REPO}" "${GH_WS}/src"
 echo "::endgroup::"
 
-echo "::group::Build Binary"
-make -C "${GH_WS}/src" build-release \
-  VERBOSE=1 \
-  CHANNEL=release \
-  SIGN=0 \
-  VERSION="v${VERSION}" \
-  DIST_DIR="./dist" \
-  ARCH="${1}" \
-  OS=freebsd
+echo "::group::Generating Files"
+cd "${GH_WS}/src"
+pnpm install
+pnpm build
 echo "::endgroup::"
 
 # Create Directories for Packaging
-mkdir -p "${GH_WS}/dist/pkg/opt/${PKG_NAME}"
-mkdir -p "${GH_WS}/dist/pkg/etc/rc.d"
-chmod 0755 "${GH_WS}/dist/pkg/opt/${PKG_NAME}" "${GH_WS}/dist/pkg/etc/rc.d"
+mkdir -p "${GH_WS}/dist/pkg/opt/caddy/conf.d"
+chmod 0755 "${GH_WS}/dist/pkg/opt/caddy/conf.d"
 
-# Copy Binary
-cp "${GH_WS}/src/dist/AdGuardHome_freebsd_${ARCH}/AdGuardHome/AdGuardHome" \
-   "${GH_WS}/dist/pkg/opt/${PKG_NAME}/${PKG_NAME}"
-chmod 0755 "${GH_WS}/dist/pkg/opt/${PKG_NAME}/${PKG_NAME}"
+# Copying files
+cp -r "${GH_WS}/src/dist" "${GH_WS}/dist/pkg/opt/caddy/conf.d/${PKG_NAME}"
+chmod 0755 "${GH_WS}/dist/pkg/opt/caddy/conf.d/${PKG_NAME}"
 
 # Copy License
-cp "${GH_WS}/src/LICENSE.txt" "${GH_WS}/dist/pkg/opt/${PKG_NAME}/LICENSE"
-chmod 0644 "${GH_WS}/dist/pkg/opt/${PKG_NAME}/LICENSE"
+cp "${GH_WS}/src/LICENSE" "${GH_WS}/dist/pkg/opt/caddy/conf.d/${PKG_NAME}/"
+chmod 0644 "${GH_WS}/dist/pkg/opt/caddy/conf.d/${PKG_NAME}/LICENSE"
 
 # Provide Source Code Link
-cat <<EOF > "${GH_WS}/dist/pkg/opt/${PKG_NAME}/SOURCE"
-This software is licensed under the GNU General Public License, Version 3.
-You may obtain a copy of the original source code at:
+cat <<EOF > "${GH_WS}/dist/pkg/opt/caddy/conf.d/${PKG_NAME}/SOURCE"
+This software is licensed under the Apache License, Version 2.0.
+You may obtain a copy of the source code at:
 ${SRC_REPO}/archive/refs/tags/v${VERSION}.tar.gz
 EOF
-chmod 0644 "${GH_WS}/dist/pkg/opt/${PKG_NAME}/SOURCE"
+chmod 0644 "${GH_WS}/dist/pkg/opt/caddy/conf.d/${PKG_NAME}/SOURCE"
+
+# Copy Assets
+cp -Tr "${GH_WS}/repo/pkgs/${PKG_NAME}/assets" "${GH_WS}/dist/pkg/opt/caddy/conf.d/${PKG_NAME}/assets"
+chmod -R 0755 "${GH_WS}/dist/pkg/opt/caddy/conf.d/${PKG_NAME}/assets/"
 
 # Create BSD distribution pkg
 cd "${GH_WS}/dist"
-
-# Create Service
-pkg-tool create-service "${CONFIG}" --output-dir "./pkg/etc/rc.d/"
 
 # Create Manifest
 pkg-tool create-manifest "${CONFIG}" --abi "${ABI}" --arch "${ARCH}"
