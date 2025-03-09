@@ -39,8 +39,8 @@ echo "::endgroup::"
 mkdir -p "${GH_WS}/dist/pkg/opt/caddy/conf.d"
 chmod 0755 "${GH_WS}/dist/pkg/opt/caddy/conf.d"
 
-# Copy Binary
-cp "${GH_WS}/src/dist" "${GH_WS}/dist/pkg/opt/caddy/conf.d/${PKG_NAME}"
+# Copying files
+cp -r "${GH_WS}/src/dist" "${GH_WS}/dist/pkg/opt/caddy/conf.d/${PKG_NAME}"
 chmod 0755 "${GH_WS}/dist/pkg/opt/caddy/conf.d/${PKG_NAME}"
 
 # Copy License
