@@ -20,3 +20,4 @@ pkg_manifest:
   deps:
     caddy:
       origin: mietzen/caddy
+      version: ">=2.9.1, <3.0.0"
