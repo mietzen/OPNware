@@ -26,7 +26,7 @@ echo "::group::Install xCaddy"
 go install github.com/caddyserver/xcaddy/cmd/xcaddy@latest
 echo "::endgroup::"
 
-echo "Cross Compiling ${PKG_NAME} - ${ARCH} - ABI: ${ABI}"
+echo "Cross Compiling ${PKG_NAME} - ARCH: ${ARCH} - ABI: ${ABI}"
 
 mkdir -p "${GH_WS}/build"
 chmod 0755 "${GH_WS}/build"

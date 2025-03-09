@@ -16,7 +16,7 @@ echo "::group::Install pkg-repo-tools"
 pip install "file://${GH_WS}/${REPO_DIR}/pkg-tool"
 echo "::endgroup::"
 
-echo "Cross Compiling ${PKG_NAME} - ${ARCH} - ABI: ${ABI}"
+echo "Cross Compiling ${PKG_NAME} - ARCH: ${ARCH} - ABI: ${ABI}"
 
 echo "::group::Git checkout repository"
 git clone --branch "v$VERSION" "$SRC_REPO" "${GH_WS}/src"
