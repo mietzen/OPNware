@@ -43,9 +43,6 @@ jobs:
       fail-fast: false
     runs-on: ubuntu-24.04
     needs: discover-packages
-    env:
-      ABI: ${{ matrix.abi }}
-      ARCH: ${{ matrix.arch }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
