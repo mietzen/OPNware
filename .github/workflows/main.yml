@@ -35,11 +35,9 @@ jobs:
       - name: Parse Packages and Config
         id: set-matrix
         run: |
-          changed_pkgs=$(git --no-pager diff --name-only $(git merge-base main HEAD) | grep  pkgs/ | cut -d '/' -f2 | tr '\n' ' ' | xargs)
-
-          echo "Changed Packages: ${changed_pkgs}"
-
           if [[ {{ github.event_name }} == 'pull_request' ]]; then
+            changed_pkgs=$(git --no-pager diff --name-only $(git merge-base main HEAD) | grep  pkgs/ | cut -d '/' -f2 | tr '\n' ' ' | xargs)
+            echo "Changed Packages: ${changed_pkgs}"
             matrix=$(python ./.github/assets/build-matrix.py ${changed_pkgs})
           else
             matrix=$(python ./.github/assets/build-matrix.py)
