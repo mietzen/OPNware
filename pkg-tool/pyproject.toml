@@ -9,11 +9,10 @@ description = "FreeBSD Custom Package Repository CLI Tools"
 authors = [
     { name = "Nils Stein", email = "github.nstein@mailbox.org" }
 ]
-dependencies = [
-    "PyYAML",
-    "jinja2",
-    "zstandard"
-]
+dynamic = ["dependencies"]
+
+[tool.setuptools.dynamic]
+dependencies = {file = ["requirements.txt"]}
 
 [project.scripts]
 pkg-tool = "pkg_tool:main"
