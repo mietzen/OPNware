@@ -6,7 +6,7 @@ updates:
       interval: "weekly"
   - package-ecosystem: "pip"
     directories:
-    - "pkg-tool/requirements.txt"
-    - ".github/assets/requirements.txt"
+    - "pkg-tool"
+    - ".github/assets"
     schedule:
       interval: "weekly"
