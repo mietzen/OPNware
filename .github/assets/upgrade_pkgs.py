@@ -11,17 +11,20 @@ import tarfile
 import zstandard
 import logging
 from pathlib import Path
-from requests.compat import urljoin, urlparse
+from requests.compat import urljoin, urlparse, quote_plus
 
 # Configure logging
-logging.basicConfig(level=logging.ERROR, format='%(levelname)s: %(message)s', stream=sys.stderr)
+logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s', stream=sys.stderr)
 
 packagesite_cache = {}
+
+def multi_urljoin(*parts):
+    return urljoin(parts[0], "/".join(quote_plus(part.strip("/"), safe="/") for part in parts[1:]))
 
 def detect_pkg_comp_fmt(url_base: str, abi_arch: str, path: str) -> str:
     """Detect the compression algorithm used by checking meta.conf"""
     url_abi_arch = abi_arch.replace('-', ':')
-    meta_conf_url = urljoin(url_base, url_abi_arch, path, "meta.conf")
+    meta_conf_url = multi_urljoin(url_base, url_abi_arch, path, "meta.conf")
 
     try:
         response = requests.get(meta_conf_url)
@@ -38,21 +41,20 @@ def extract_packagesite(pkgsite_data: bytes, compression_format: str) -> None:
     pkgsite = []
     try:
         if compression_format == "tzst":
-            # Handle zstd compression
             with io.BytesIO(pkgsite_data) as f:
                 dctx = zstandard.ZstdDecompressor()
-                with dctx.stream_reader(f) as reader:
-                    with tarfile.open(fileobj=reader, mode='r|') as tar:
+                with dctx.stream_reader(f) as decompressed_stream:
+                    decompressed_data = io.BytesIO(decompressed_stream.read())
+                    with tarfile.open(fileobj=decompressed_data, mode='r:') as tar:
                         content = tar.extractfile('packagesite.yaml').read()
         else:
-            with tarfile.open(io.BytesIO(pkgsite_data), f'r:{compression_format[1:]}') as tar:
+            with tarfile.open(fileobj=io.BytesIO(pkgsite_data), mode=f'r:{compression_format[1:]}') as tar:
                 content = tar.extractfile('packagesite.yaml').read()
     except Exception as e:
         logging.error(f"Failed to extract packagesite.yaml: {e}")
         sys.exit(1)
 
-    lines = content.readlines()
-    for line in lines:
+    for line in io.StringIO(content.decode()).readlines():
         pkgsite.append(json.loads(line))
 
     return pkgsite
@@ -61,7 +63,7 @@ def load_packagesite(url_base: str, abi_arch: str, path: str) -> dict:
     domain = urlparse(url_base).netloc.replace('.', '-')
     repo_key = f"{domain}-{abi_arch}-{path}"
     url_abi_arch = abi_arch.replace('-', ':')
-    url = urljoin(url_base, url_abi_arch, path, "packagesite.pkg")
+    url = multi_urljoin(url_base, url_abi_arch, path, "packagesite.pkg")
 
     global packagesite_cache
 
@@ -163,14 +165,16 @@ def main():
             sys.exit(1)
 
         for abi_arch in local_version:
-            if remote_version[abi_arch] != local_version[abi_arch]:
+            if str(remote_version[abi_arch]) != str(local_version[abi_arch]):
                 print(f"{pkg_name}, upgrading from: {local_version[abi_arch]} to: {remote_version[abi_arch]}")
                 if config.get('redistribute', False):
                     config['redistribute']['version'][abi_arch] = remote_version[abi_arch]
                 else:
                     config['pkg_manifest']['version'] = remote_version[abi_arch]
-                with open(pkg_path / 'config.yml', 'w') as f:
-                    yaml.dump(config, f, sort_keys=False)
+                config_file.write_text(
+                    config_file.read_text().replace(
+                        str(local_version[abi_arch]),
+                        str(remote_version[abi_arch])))
 
 if __name__ == '__main__':
     main()
