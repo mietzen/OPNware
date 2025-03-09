@@ -1,5 +1,6 @@
 ---
 build_config:
+  include: {}
   src_repo: 'https://github.com/mietzen/opnsense_leases_widget'
 pkg_manifest:
   name: opnsense_leases_widget
