@@ -44,8 +44,12 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
-          pip install -r .github/assets/requirements.txt
-          .github/assets/upgrade_pkgs.py > pr-body
+          echo "::group::Install requirements"
+            pip install -r .github/assets/requirements.txt
+          echo "::endgroup::"
+
+          .github/assets/upgrade_pkgs.py | tee pr-body
+
           if [ -f pr-body ]; then
             echo 'pr-body<<EOF' >> $GITHUB_OUTPUT
             cat pr-body  >> $GITHUB_OUTPUT
