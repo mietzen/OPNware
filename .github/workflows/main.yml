@@ -66,12 +66,8 @@ jobs:
           node-version: ${{ matrix.node }}
 
       - name: Create ${{ matrix.pkg_name }} pkg
-        env:
-          ABI: ${{ matrix.abi }}
-          ARCH: ${{ matrix.arch }}
-          PKG_NAME: ${{ matrix.pkg_name }}
         working-directory: ./repo/pkgs/${{ matrix.pkg_name }}/
-        run: ./build.sh
+        run: ./build.sh ${{ matrix.abi }} ${{ matrix.arch }}
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4

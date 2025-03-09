@@ -2,8 +2,8 @@
 set -e
 
 # Setup Environment Variables
-ARCH="${ARCH}"
-ABI="${ABI}"
+ARCH="${1}"
+ARCH="${2}"
 GH_WS="${GITHUB_WORKSPACE}"
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 CONFIG="${SCRIPT_DIR}/config.yml"
@@ -38,7 +38,7 @@ make -C "${GH_WS}/src" build-release \
   SIGN=0 \
   VERSION="v${VERSION}" \
   DIST_DIR="./dist" \
-  ARCH="${ARCH}" \
+  ARCH="${1}" \
   OS=freebsd
 echo "::endgroup::"
 
