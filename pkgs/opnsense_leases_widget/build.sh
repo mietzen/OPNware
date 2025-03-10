@@ -30,18 +30,18 @@ git clone --branch "${VERSION}" "${SRC_REPO}" "${GH_WS}/src"
 echo "::endgroup::"
 
 # Create Directories for Packaging
-mkdir -p "${GH_WS}/dist/usr/local/opnsense/www/js/widgets/Metadata"
-mkdir -p "${GH_WS}/dist/usr/local/share/licenses/${PKG_NAME}"
+mkdir -p "${GH_WS}/dist/pkg/usr/local/opnsense/www/js/widgets/Metadata"
+mkdir -p "${GH_WS}/dist/pkg/usr/local/share/licenses/${PKG_NAME}"
 
 # Copying files
-cp -r "${GH_WS}/src/Leases.js" "${GH_WS}/dist/usr/local/opnsense/www/js/widgets/"
-chmod 0755 "${GH_WS}/dist/usr/local/opnsense/www/js/widgets/Leases.js"
-cp -r "${GH_WS}/src/Core.xml" "${GH_WS}/dist/usr/local/opnsense/www/js/widgets/Metadata/Leases.xml"
-chmod 0755 "${GH_WS}/dist/usr/local/opnsense/www/js/widgets/Metadata/Leases.xml"
+cp -r "${GH_WS}/src/Leases.js" "${GH_WS}/dist/pkg/usr/local/opnsense/www/js/widgets/"
+chmod 0755 "${GH_WS}/dist/pkg/usr/local/opnsense/www/js/widgets/Leases.js"
+cp -r "${GH_WS}/src/Core.xml" "${GH_WS}/dist/pkg/usr/local/opnsense/www/js/widgets/Metadata/Leases.xml"
+chmod 0755 "${GH_WS}/dist/pkg/usr/local/opnsense/www/js/widgets/Metadata/Leases.xml"
 
 # Copy License
-cp "${GH_WS}/src/LICENSE" "${GH_WS}/dist/usr/local/share/licenses/${PKG_NAME}/"
-chmod 0644 "${GH_WS}/dist/usr/local/share/licenses/${PKG_NAME}/LICENSE"
+cp "${GH_WS}/src/LICENSE" "${GH_WS}/dist/pkg/usr/local/share/licenses/${PKG_NAME}/"
+chmod 0644 "${GH_WS}/dist/pkg/usr/local/share/licenses/${PKG_NAME}/LICENSE"
 
 # Provide Source Code Link
 cat <<EOF > "${GH_WS}/dist/usr/local/share/licenses/${PKG_NAME}/SOURCE"
@@ -49,7 +49,7 @@ This software is licensed under the GNU General Public License v3.0.
 You may obtain a copy of the source code at:
 https://github.com/jbaconsult/opnsense_stuff/archive/refs/main.tar.gz
 EOF
-chmod 0644 "${GH_WS}/dist/usr/local/share/licenses/${PKG_NAME}/SOURCE"
+chmod 0644 "${GH_WS}/dist/pkg/usr/local/share/licenses/${PKG_NAME}/SOURCE"
 
 # Create BSD distribution pkg
 cd "${GH_WS}/dist"
