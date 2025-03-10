@@ -30,15 +30,14 @@ git clone --branch "${VERSION}" "${SRC_REPO}" "${GH_WS}/src"
 echo "::endgroup::"
 
 # Create Directories for Packaging
-mkdir -p "${GH_WS}/dist/usr/local/opnsense/www/js/widgets"
-mkdir -p "${GH_WS}/dist/tmp/opnsense_leases_widget"
+mkdir -p "${GH_WS}/dist/usr/local/opnsense/www/js/widgets/Metadata"
 mkdir -p "${GH_WS}/dist/usr/local/share/licenses/opnsense_leases_widget"
 
 # Copying files
 cp -r "${GH_WS}/src/Leases.js" "${GH_WS}/dist/usr/local/opnsense/www/js/widgets/"
 chmod 0755 "${GH_WS}/dist/usr/local/opnsense/www/js/widgets/Leases.js"
-cp -r "${GH_WS}/src/Core.xml" "${GH_WS}/dist/tmp/opnsense_leases_widget/"
-chmod 0755 "${GH_WS}/dist/tmp/opnsense_leases_widget/Core.xml"
+cp -r "${GH_WS}/src/Core.xml" "${GH_WS}/dist/usr/local/opnsense/www/js/widgets/Metadata/Leases.xml"
+chmod 0755 "${GH_WS}/dist/usr/local/opnsense/www/js/widgets/Metadata/Leases.xml"
 
 # Copy License
 cp "${GH_WS}/src/LICENSE" "${GH_WS}/dist/usr/local/share/licenses/${PKG_NAME}/"

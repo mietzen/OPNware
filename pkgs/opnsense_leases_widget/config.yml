@@ -9,19 +9,9 @@ pkg_manifest:
   comment: A DHCP Leases Widget for OPNsense
   www: https://github.com/jbaconsult/opnsense_stuff
   maintainer: github.nstein@mailbox.org
-  prefix: /opt/yq
+  prefix: /usr/local/
   licenselogic: single
   licenses:
     - GPL-3.0 license
   desc: |
     A DHCP Leases Widget for OPNsense
-  scripts:
-    post-install: |
-      sed -i '' -e '/<\/metadata>/ {
-          r /tmp/opnsense_leases_widget/Core.xml
-          d
-      }' /usr/local/opnsense/www/js/widgets/Metadata/Core.xml
-      echo "</metadata>" >> /usr/local/opnsense/www/js/widgets/Metadata/Core.xml
-      rm -rf /tmp/opnsense_leases_widget/Core.xml
-    post-deinstall: |
-      sed -i '' -e '/<leases>/,/<\/leases>/d' /usr/local/opnsense/www/js/widgets/Metadata/Core.xml
