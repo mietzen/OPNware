@@ -30,6 +30,7 @@ cd "${GH_WS}/src"
 go mod tidy
 GOOS=freebsd GOARCH="${ARCH}" go build
 echo "::endgroup::"
+cd "${GH_WS}"
 
 # Create Directories
 mkdir -p "${GH_WS}/dist/pkg/opt/${PKG_NAME}"
@@ -39,7 +40,9 @@ chmod 0755 "${GH_WS}/dist/pkg/opt/${PKG_NAME}" "${GH_WS}/dist/pkg/opt/bin"
 # Copy Binary
 cp "${GH_WS}/src/${PKG_NAME}" "${GH_WS}/dist/pkg/opt/${PKG_NAME}/${PKG_NAME}"
 chmod 0755 "${GH_WS}/dist/pkg/opt/${PKG_NAME}/${PKG_NAME}"
-ln -s "../${PKG_NAME}/${PKG_NAME}" "${GH_WS}/dist/pkg/opt/bin/${PKG_NAME}"
+cd "${GH_WS}/dist/pkg/opt/bin/"
+ln -s "../${PKG_NAME}/${PKG_NAME}" "${PKG_NAME}"
+cd "${GH_WS}"
 
 # Copy License
 cp "${GH_WS}/src/LICENSE" "${GH_WS}/dist/pkg/opt/${PKG_NAME}/LICENSE"

@@ -37,14 +37,18 @@ GOOS=freebsd GOARCH="${ARCH}" xcaddy build "v${VERSION}" \
     $(printf -- "--with %s " "${CADDY_PLUGINS[@]}") \
     --output "${GH_WS}/build/caddy"
 echo "::endgroup::"
+cd "${GH_WS}"
 
 # Create Directories for Packaging
-mkdir -p "${GH_WS}/dist/pkg/opt/${PKG_NAME}" "${GH_WS}/dist/pkg/etc/rc.d"
-chmod 0755 "${GH_WS}/dist/pkg/opt/${PKG_NAME}" "${GH_WS}/dist/pkg/etc/rc.d"
+mkdir -p "${GH_WS}/dist/pkg/opt/${PKG_NAME}" "${GH_WS}/dist/pkg/etc/rc.d" "${GH_WS}/dist/pkg/opt/bin"
+chmod 0755 "${GH_WS}/dist/pkg/opt/${PKG_NAME}" "${GH_WS}/dist/pkg/etc/rc.d" "${GH_WS}/dist/pkg/opt/bin"
 
 # Copy Binary
 cp "${GH_WS}/build/caddy" "${GH_WS}/dist/pkg/opt/${PKG_NAME}/${PKG_NAME}"
 chmod 0755 "${GH_WS}/dist/pkg/opt/${PKG_NAME}/${PKG_NAME}"
+cd "${GH_WS}/dist/pkg/opt/bin/"
+ln -s "../${PKG_NAME}/${PKG_NAME}" "${PKG_NAME}"
+cd "${GH_WS}"
 
 # Copy License
 curl -o "${GH_WS}/dist/pkg/opt/${PKG_NAME}/LICENSE" -L "${SRC_REPO}/raw/refs/tags/v${VERSION}/LICENSE"
