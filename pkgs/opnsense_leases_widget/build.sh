@@ -44,7 +44,7 @@ cp "${GH_WS}/src/LICENSE" "${GH_WS}/dist/pkg/usr/local/share/licenses/${PKG_NAME
 chmod 0644 "${GH_WS}/dist/pkg/usr/local/share/licenses/${PKG_NAME}/LICENSE"
 
 # Provide Source Code Link
-cat <<EOF > "${GH_WS}/dist/usr/local/share/licenses/${PKG_NAME}/SOURCE"
+cat <<EOF > "${GH_WS}/dist/pkg/usr/local/share/licenses/${PKG_NAME}/SOURCE"
 This software is licensed under the GNU General Public License v3.0.
 You may obtain a copy of the source code at:
 https://github.com/jbaconsult/opnsense_stuff/archive/refs/main.tar.gz
