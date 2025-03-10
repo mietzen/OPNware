@@ -1,4 +1,4 @@
-http://localhost:9099 {
+:9099 {
     root * conf.d/homer
     file_server
 }
