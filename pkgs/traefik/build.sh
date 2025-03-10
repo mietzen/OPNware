@@ -34,7 +34,7 @@ chmod 0755 "${GH_WS}/dist/pkg/opt/${PKG_NAME}"
 chmod 0755 "${GH_WS}/dist/pkg/etc/rc.d"
 
 # Copy Binary
-cp "${GH_WS}/src/dist/freebsd/${ARCH}/traefik" "${GH_WS}/dist/pkg/opt/${PKG_NAME}/${PKG_NAME}"
+cp "${GH_WS}/src/dist/freebsd/${ARCH}/${PKG_NAME}" "${GH_WS}/dist/pkg/opt/${PKG_NAME}/${PKG_NAME}"
 chmod 0755 "${GH_WS}/dist/pkg/opt/${PKG_NAME}/${PKG_NAME}"
 
 # Copy License
@@ -47,11 +47,11 @@ This software is licensed under the MIT license.
 You may obtain a copy of the source code at:
 ${SRC_REPO}/archive/refs/tags/v${VERSION}.tar.gz
 EOF
-chmod 0644 "${GH_WS}/dist/pkg/opt/traefik/SOURCE"
+chmod 0644 "${GH_WS}/dist/pkg/opt/${PKG_NAME}/SOURCE"
 
 # Copy Assets
-cp -r "${GH_WS}/repo/pkgs/traefik/assets/" "${GH_WS}/dist/pkg/opt/traefik/"
-chmod -R 0755 "${GH_WS}/dist/pkg/opt/traefik/assets"
+cp -Tr "${GH_WS}/repo/pkgs/${PKG_NAME}/assets" "${GH_WS}/dist/pkg/opt/${PKG_NAME}"
+chmod -R 0755 "${GH_WS}/dist/pkg/opt/${PKG_NAME}"
 
 # Create BSD distribution pkg
 cd "${GH_WS}/dist"

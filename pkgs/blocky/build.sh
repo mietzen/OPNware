@@ -53,8 +53,8 @@ EOF
 chmod 0644 "${GH_WS}/dist/pkg/opt/${PKG_NAME}/SOURCE"
 
 # Copy Assets
-cp -r "${GH_WS}/repo/pkgs/${PKG_NAME}/assets/" "${GH_WS}/dist/pkg/opt/${PKG_NAME}/"
-chmod -R 0755 "${GH_WS}/dist/pkg/opt/${PKG_NAME}/assets/"
+cp -Tr "${GH_WS}/repo/pkgs/${PKG_NAME}/assets" "${GH_WS}/dist/pkg/opt/${PKG_NAME}"
+chmod -R 0755 "${GH_WS}/dist/pkg/opt/${PKG_NAME}"
 
 # Create BSD distribution pkg
 cd "${GH_WS}/dist"
