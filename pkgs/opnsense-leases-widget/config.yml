@@ -3,8 +3,8 @@ build_config:
   include: {}
   src_repo: 'https://github.com/mietzen/opnsense_leases_widget'
 pkg_manifest:
-  name: opnsense_leases_widget
-  origin: mietzen/opnsense_leases_widget
+  name: opnsense-leases-widget
+  origin: mietzen/opnsense-leases-widget
   version: 24.07
   comment: A DHCP Leases Widget for OPNsense
   www: https://github.com/jbaconsult/opnsense_stuff
