@@ -1,4 +1,4 @@
 http://localhost:8099 {
-    root * example
+    root * conf.d/example
     file_server
 }

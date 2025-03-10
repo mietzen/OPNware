@@ -56,8 +56,10 @@ EOF
 chmod 0644 "${GH_WS}/dist/pkg/opt/caddy/conf.d/${PKG_NAME}/SOURCE"
 
 # Copy Assets
-cp -Tr "${GH_WS}/repo/pkgs/${PKG_NAME}/assets" "${GH_WS}/dist/pkg/opt/caddy/conf.d/${PKG_NAME}/assets"
-chmod -R 0755 "${GH_WS}/dist/pkg/opt/caddy/conf.d/${PKG_NAME}/assets/"
+cp "${GH_WS}/repo/pkgs/${PKG_NAME}/assets/config.yml" "${GH_WS}/dist/pkg/opt/caddy/conf.d/${PKG_NAME}/assets/config.yml"
+cp "${GH_WS}/repo/pkgs/${PKG_NAME}/assets/homer.caddy" "${GH_WS}/dist/pkg/opt/caddy/conf.d/homer.caddy"
+chmod 0755 "${GH_WS}/dist/pkg/opt/caddy/conf.d/${PKG_NAME}/assets/config.yml"
+chmod 0755 "${GH_WS}/dist/pkg/opt/caddy/conf.d/homer.caddy"
 
 # Create BSD distribution pkg
 cd "${GH_WS}/dist"

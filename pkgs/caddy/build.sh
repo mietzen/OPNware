@@ -60,6 +60,7 @@ chmod 0644 "${GH_WS}/dist/pkg/opt/${PKG_NAME}/SOURCE"
 
 # Copy Assets
 cp -Tr "${GH_WS}/repo/pkgs/${PKG_NAME}/assets" "${GH_WS}/dist/pkg/opt/${PKG_NAME}"
+cp "${GH_WS}/repo/pkgs/${PKG_NAME}/assets/.env" "${GH_WS}/dist/pkg/opt/${PKG_NAME}/.env"
 chmod -R 0755 "${GH_WS}/dist/pkg/opt/${PKG_NAME}"
 
 # Create BSD distribution pkg

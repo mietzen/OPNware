@@ -1,5 +1,6 @@
 {
-	"module": "file_system",
-	"root": "/opt/caddy"
+  storage file_system {
+    root /opt/caddy
+  }
 }
 import conf.d/*.caddy
