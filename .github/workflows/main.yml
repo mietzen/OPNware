@@ -110,8 +110,7 @@ jobs:
         working-directory: ./pages
         run: |
           for artifact in ${GITHUB_WORKSPACE}/artifacts/*; do
-            arch=$(basename "${artifact}" | cut -d'_' -f3)
-            abi=$(basename "${artifact}" | cut -d'_' -f4)
+            read arch abi <<< $(echo "${artifact}" | awk -F'_' '{print $(NF-1), $NF}')
             target_dir="${GITHUB_WORKSPACE}/pages/FreeBSD:${abi}:${arch}/latest/All"
             mkdir -p ${target_dir}
             mv ${artifact}/*.pkg ${target_dir}/

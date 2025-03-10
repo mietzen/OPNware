@@ -31,7 +31,7 @@ echo "::endgroup::"
 
 # Create Directories for Packaging
 mkdir -p "${GH_WS}/dist/usr/local/opnsense/www/js/widgets/Metadata"
-mkdir -p "${GH_WS}/dist/usr/local/share/licenses/opnsense_leases_widget"
+mkdir -p "${GH_WS}/dist/usr/local/share/licenses/${PKG_NAME}"
 
 # Copying files
 cp -r "${GH_WS}/src/Leases.js" "${GH_WS}/dist/usr/local/opnsense/www/js/widgets/"
