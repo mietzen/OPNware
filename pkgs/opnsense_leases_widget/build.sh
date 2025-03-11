@@ -36,7 +36,7 @@ mkdir -p "${GH_WS}/dist/pkg/usr/local/share/licenses/${PKG_NAME}"
 # Copying files
 cp -r "${GH_WS}/src/Leases.js" "${GH_WS}/dist/pkg/usr/local/opnsense/www/js/widgets/"
 chmod 0755 "${GH_WS}/dist/pkg/usr/local/opnsense/www/js/widgets/Leases.js"
-cp -r "${GH_WS}/src/Core.xml" "${GH_WS}/dist/pkg/usr/local/opnsense/www/js/widgets/Metadata/Leases.xml"
+cp -r "${GH_WS}/src/Leases.xml" "${GH_WS}/dist/pkg/usr/local/opnsense/www/js/widgets/Metadata/Leases.xml"
 chmod 0755 "${GH_WS}/dist/pkg/usr/local/opnsense/www/js/widgets/Metadata/Leases.xml"
 
 # Copy License
