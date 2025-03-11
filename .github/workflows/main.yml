@@ -79,8 +79,6 @@ jobs:
         if: ${{ matrix.vm_build }}
         uses: vmactions/freebsd-vm@v1
         with:
-          release: "${{ matrix.abi == '14' && '14.2' || matrix.abi'.0' }}"
-          arch: "${{ matrix.arch == 'amd64' && 'x86_64' || matrix.arch }}"
           prepare: |
             pkg install -y ${{ matrix.perquisite_pkgs }}
           run: |
