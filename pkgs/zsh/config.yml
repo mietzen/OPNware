@@ -8,10 +8,9 @@ build_config:
       ncurses
       gdbm
       pcre2
-      libcap
       llvm
-      python3
-      python3-pip
+      python311
+      py311-pip
   src_repo: https://git.code.sf.net/p/zsh/code
 pkg_manifest:
   name: zsh
