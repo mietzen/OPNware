@@ -138,6 +138,36 @@ def get_version_gh_repo(pkg_name: str, config: dict) -> str:
 
     return remote_version
 
+def get_version_sf_repo(pkg_name: str, config: dict) -> str:
+    """Process a package with Sourceforge source repository"""
+    repo_url = config.get('build_config', {}).get('src_repo', '')
+
+    if 'sf.net' not in repo_url:
+        logging.error(f"No method implemented to check new release in {repo_url}")
+        sys.exit(1)
+
+    repo_match = re.search(r'https://git.code.sf.net/p/([^/]+/code)', repo_url)
+    if not repo_match:
+        logging.error(f"Could not parse Sourceforge repository from URL: {repo_url}")
+        sys.exit(1)
+
+    sf_repo = repo_match.group(1)
+    api_url = f"https://sourceforge.net/projects/{sf_repo}/best_release.json"
+
+    response = requests.get(api_url)
+    if response.status_code != 200:
+        logging.error(f"Failed to get release info from Sourceforge API: {response.status_code}")
+        sys.exit(1)
+
+    release_data = response.json()
+    try:
+        remote_version = release_data.get('release').get('filename').split('/')[3]
+    except Exception:
+        logging.error(f"{pkg_name} no release found under: https://sourceforge.net/projects/{sf_repo}")
+        sys.exit(1)
+
+    return remote_version
+
 def main():
     for config_file in Path('./pkgs').glob('*/config.yml'):
         pkg_path = config_file.parent
@@ -156,6 +186,8 @@ def main():
             repo_url = config.get('build_config', {}).get('src_repo', '')
             if 'github.com' in repo_url:
                 remote_version = {'ALL': get_version_gh_repo(pkg_name, config)}
+            elif 'sf.net' in repo_url:
+                remote_version = {'ALL': get_version_sf_repo(pkg_name, config)}
             else:
                 logging.error(f"No method implemented to check new release in {repo_url}")
                 sys.exit(1)

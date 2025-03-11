@@ -1,9 +1,36 @@
 ---
 build_config:
-  include: {}
-redistribute:
+  include:
+    vm_build: true
+    perquisite_pkgs: >
+      gmake
+      autoconf
+      ncurses
+      gdbm
+      pcre2
+      libcap
+      llvm
+      python3
+      python3-pip
+  src_repo: https://git.code.sf.net/p/zsh/code
+pkg_manifest:
   name: zsh
-  version:
-    FreeBSD-14-amd64: "5.9_4"
-  repo: http://pkg.freebsd.org
-  path: quarterly/All
+  origin: mietzen/zsh
+  version: 5.9
+  comment: The Z shell with static modules
+  www: https://www.zsh.org/
+  maintainer: github.nstein@mailbox.org
+  prefix: /opt/zsh
+  licenselogic: single
+  licenses: ZSH
+  desc: |
+    Zsh is the Swiss Army knife of shells. It combines the most popular
+    features of every other shell, and then lets you customize every
+    inch of it. Users of bourne-style and C-style shells will feel at
+    home in it.
+
+    Zsh does intelligent completion, spell-checking, has a rich syntax
+    for precise globbing, and is fully extensible through plugin
+    systems.
+
+    This variant comes with statically linked zsh modules like zsh/regex to ease the consumption of existing scripts relying on such modules.

@@ -9,15 +9,68 @@ SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 CONFIG="${SCRIPT_DIR}/config.yml"
 REPO_DIR=$(echo "${SCRIPT_DIR#${GH_WS%/}/}" | cut -d'/' -f1)
 PKG_NAME=$(yq -r '.[].name | select( . != null )' ${CONFIG})
+VERSION=$(yq '.pkg_manifest.version' "${CONFIG}")
+SRC_REPO=$(yq '.build_config.src_repo' "${CONFIG}")
 
-echo "::group::Install pkg-tool"
+echo "::group::Install pkg-repo-tools"
 pip install "file://${GH_WS}/${REPO_DIR}/pkg-tool"
 echo "::endgroup::"
 
-echo "Redistributing ${PKG_NAME} - ARCH: ${ARCH} - ABI: ${ABI}"
+echo "Compiling ${PKG_NAME} - ARCH: ${ARCH} - ABI: ${ABI}"
 
 mkdir -p "${GH_WS}/dist"
 chmod 0755 "${GH_WS}/dist"
+
+echo "::group::Git checkout repository"
+git clone --depth=1 --branch "zsh-${VERSION}" "${SRC_REPO}" "${GH_WS}/src"
+echo "::endgroup::"
+
+echo "::group::Build Binary"
+cd "${GH_WS}/src"
+./Util/preconfig
+./configure --enable-gdbm --enable-pcre --enable-cap
+sed -i '' 's/link=no/link=static/' config.modules
+gmake
+gmake install.bin install.modules install.fns DESTDIR=${GH_WS}/dist
+echo "::endgroup::"
+cd "${GH_WS}"
+
+# Create Directories
+mkdir -p "${GH_WS}/dist/pkg/opt/bin"
+
+# Link Binary
+cd "${GH_WS}/dist/pkg/opt/bin/"
+ln -s "../${PKG_NAME}/bin/${PKG_NAME}" "${PKG_NAME}"
+cd "${GH_WS}"
+
+# Copy License
+cp "${GH_WS}/src/LICENCE" "${GH_WS}/dist/pkg/opt/${PKG_NAME}/LICENSE"
+chmod 0644 "${GH_WS}/dist/pkg/opt/${PKG_NAME}/LICENSE"
+
+# Provide a link to the Source Code
+cat <<EOF > "${GH_WS}/dist/pkg/opt/${PKG_NAME}/SOURCE"
+This software is licensed under the MIT license.
+You may obtain a copy of the source code at:
+https://www.zsh.org/pub/zsh-${VERSION}.tar.xz
+EOF
+chmod 0644 "${GH_WS}/dist/pkg/opt/${PKG_NAME}/SOURCE"
+
+# Create BSD distribution pkg
 cd "${GH_WS}/dist"
 
-pkg-tool redistribute-pkg "${CONFIG}" --abi "${ABI}" --arch "${ARCH}"
+# Create Manifest
+pkg-tool create-manifest "${CONFIG}" --abi "${ABI}" --arch "${ARCH}"
+
+# Create Package
+tar -cf "${PKG_NAME}-${VERSION}.pkg" \
+    --zstd \
+    --owner=0 \
+    --group=0 \
+    --transform 's|^pkg||' \
+    +COMPACT_MANIFEST +MANIFEST $(find pkg -type f)
+
+# Create Packagesite Info
+pkg-tool create-packagesite-info ./+COMPACT_MANIFEST
+
+# Cleanup
+rm -rf "${GH_WS}/dist/+MANIFEST" "${GH_WS}/dist/+COMPACT_MANIFEST" "${GH_WS}/dist/pkg"

@@ -70,9 +70,22 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
 
-      - name: Create ${{ matrix.pkg_name }} pkg
+      - name: Create ${{ matrix.pkg_name }} pkg on runner
+        if: ${{ ! matrix.vm_build }}
         working-directory: ./repo/pkgs/${{ matrix.pkg_name }}/
         run: ./build.sh ${{ matrix.arch }} ${{ matrix.abi }}
+
+      - name: Create ${{ matrix.pkg_name }} pkg in vm
+        if: ${{ matrix.vm_build }}
+        uses: vmactions/freebsd-vm@v1
+        with:
+          release: ${{ matrix.abi }} == '14' && '14.2' || "${{ matrix.abi }}.0"
+          arch: ${{ matrix.arch }} == 'amd64' && 'x86_64' || "${{ matrix.arch }}"
+          prepare: |
+            pkg install -y ${{ matrix.perquisite_pkgs }}
+          run: |
+            cd ./repo/pkgs/${{ matrix.pkg_name }}/
+            ./build.sh ${{ matrix.arch }} ${{ matrix.abi }}
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
