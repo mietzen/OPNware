@@ -67,7 +67,7 @@ tar -cf "${PKG_NAME}-${VERSION}.pkg" \
     --zstd \
     --owner=0 \
     --group=0 \
-    -s '|^pkg||' \
+    -s '|^pkg|/|' \
     +COMPACT_MANIFEST +MANIFEST $(find pkg -type f) $(find pkg -type l)
 
 # Create Packagesite Info
