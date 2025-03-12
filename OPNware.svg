@@ -2,9 +2,9 @@
 <!-- Created with Inkscape (http://www.inkscape.org/) -->
 
 <svg
-   width="420.10046"
+   width="423.25095"
    height="86.10141"
-   viewBox="0 0 111.15158 22.780998"
+   viewBox="0 0 111.98515 22.780998"
    version="1.1"
    id="svg1"
    inkscape:version="1.4 (e7c3feb1, 2024-10-09)"
@@ -24,7 +24,7 @@
      inkscape:deskcolor="#d1d1d1"
      inkscape:document-units="px"
      inkscape:zoom="1.4849732"
-     inkscape:cx="246.8058"
+     inkscape:cx="247.14251"
      inkscape:cy="-16.835321"
      inkscape:window-width="1800"
      inkscape:window-height="1097"
@@ -46,12 +46,28 @@
        width="319.8681"
        height="124.47356"
        id="rect2-9" />
+    <rect
+       x="163.55247"
+       y="248.94711"
+       width="319.8681"
+       height="124.47356"
+       id="rect2-9-9" />
   </defs>
   <g
      inkscape:label="Layer 1"
      inkscape:groupmode="layer"
      id="layer1"
      transform="translate(-49.435341,-68.418999)">
+    <text
+       xml:space="preserve"
+       transform="matrix(0.26458333,0,0,0.26458333,59.821303,1.0884085)"
+       id="text1-5-6"
+       style="font-size:85.3333px;line-height:1.25;font-family:sans-serif;white-space:pre;shape-inside:url(#rect2-9-9);display:inline;fill:#272727;fill-opacity:1;stroke:none;stroke-width:1.00157;stroke-dasharray:none;stroke-opacity:1"><tspan
+         x="163.55273"
+         y="330.72501"
+         id="tspan5"><tspan
+           style="font-weight:bold;font-family:'BigBlueTerm437 Nerd Font';-inkscape-font-specification:'BigBlueTerm437 Nerd Font Bold'"
+           id="tspan4">ware</tspan></tspan></text>
     <rect
        style="fill:#272727;fill-opacity:1;stroke-width:0"
        id="rect1-0"
@@ -72,19 +88,19 @@
        xml:space="preserve"
        transform="matrix(0.26458333,0,0,0.26458333,9.5250003,0.38089871)"
        id="text1"
-       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:85.3333px;line-height:1.25;font-family:'BigBlueTerm437 Nerd Font';-inkscape-font-specification:'BigBlueTerm437 Nerd Font';white-space:pre;shape-inside:url(#rect2);fill:#f9f9f9"><tspan
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:85.3333px;line-height:1.25;font-family:'BigBlueTerm437 Nerd Font';-inkscape-font-specification:'BigBlueTerm437 Nerd Font';white-space:pre;shape-inside:url(#rect2);display:inline;fill:#f9f9f9;stroke:none"><tspan
          x="163.55273"
          y="330.72501"
-         id="tspan1">OPN</tspan></text>
+         id="tspan6">OPN</tspan></text>
     <text
        xml:space="preserve"
        transform="matrix(0.26458333,0,0,0.26458333,58.855237,0.24839935)"
        id="text1-5"
-       style="font-size:85.3333px;line-height:1.25;font-family:sans-serif;white-space:pre;shape-inside:url(#rect2-9);stroke:#101219;stroke-width:1.00157;stroke-dasharray:none;stroke-opacity:1"><tspan
+       style="font-size:85.3333px;line-height:1.25;font-family:sans-serif;white-space:pre;shape-inside:url(#rect2-9);display:inline;fill:#808080;stroke:none;stroke-width:1.00157;stroke-dasharray:none;stroke-opacity:1"><tspan
          x="163.55273"
          y="330.72501"
-         id="tspan4"><tspan
+         id="tspan8"><tspan
            style="font-weight:bold;font-family:'BigBlueTerm437 Nerd Font';-inkscape-font-specification:'BigBlueTerm437 Nerd Font Bold'"
-           id="tspan2">ware</tspan></tspan></text>
+           id="tspan7">ware</tspan></tspan></text>
   </g>
 </svg>
