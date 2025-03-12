@@ -39,7 +39,7 @@ cd "${GH_WS}/src"
     --enable-cap \
     --with-tcsetpgrp
 gmake
-gmake install DESTDIR=${GH_WS}/dist/pkg
+gmake install.bin install.modules install.fns DESTDIR=${GH_WS}/dist/pkg
 echo "::endgroup::"
 cd "${GH_WS}"
 
