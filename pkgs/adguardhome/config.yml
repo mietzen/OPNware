@@ -6,7 +6,7 @@ build_config:
   src_repo: 'https://github.com/AdguardTeam/AdGuardHome'
 pkg_manifest:
   name: adguardhome
-  origin: mietzen/adguardhome
+  origin: opnware/adguardhome
   version: 0.107.57
   comment: Network-wide ads & trackers blocking DNS server
   www: https://adguard.com/en/adguard-home/overview.html

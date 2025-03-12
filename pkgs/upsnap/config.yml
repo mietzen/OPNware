@@ -6,7 +6,7 @@ build_config:
   src_repo: 'https://github.com/seriousm4x/UpSnap'
 pkg_manifest:
   name: upsnap
-  origin: mietzen/upsnap
+  origin: opnware/upsnap
   version: 4.6.1
   comment: A simple wake on lan web app written with SvelteKit, Go and PocketBase.
   www: https://github.com/seriousm4x/UpSnap

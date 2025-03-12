@@ -5,7 +5,7 @@ build_config:
   src_repo: 'https://github.com/0xERR0R/blocky'
 pkg_manifest:
   name: blocky
-  origin: mietzen/blocky
+  origin: opnware/blocky
   version: 0.25
   comment: Fast and lightweight DNS proxy as ad-blocker for local network with many features
   www: https://0xerr0r.github.io/blocky/

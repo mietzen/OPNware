@@ -138,8 +138,8 @@ jobs:
       - name: Generate Repository Config
         working-directory: ./pages
         run: |
-          cat << EOF > ${GITHUB_WORKSPACE}/pages/${GITHUB_REPOSITORY_OWNER}.conf
-          ${GITHUB_REPOSITORY_OWNER}: {
+          cat << EOF > ${GITHUB_WORKSPACE}/pages/opnware.conf
+          opnware: {
             url: "https://${GITHUB_REPOSITORY_OWNER}.github.io/${GITHUB_REPOSITORY#*/}/\${ABI}/latest",
             priority: 5,
             enabled: yes
