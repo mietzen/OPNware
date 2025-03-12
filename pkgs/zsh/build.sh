@@ -31,7 +31,7 @@ echo "::group::Build Binary"
 cd "${GH_WS}/src"
 ./Util/preconfig
 ./configure --enable-gdbm --enable-pcre --enable-cap --with-tcsetpgrp --prefix=/opt/zsh
-sed -i '' 's/link=no/link=static/' config.modules
+#sed -i '' 's/link=no/link=static/' config.modules
 gmake
 gmake install.bin install.modules install.fns DESTDIR=${GH_WS}/dist
 echo "::endgroup::"
