@@ -10,7 +10,7 @@ CONFIG="${SCRIPT_DIR}/config.yml"
 REPO_DIR=$(echo "${SCRIPT_DIR#${GH_WS%/}/}" | cut -d'/' -f1)
 PKG_NAME=$(yq -r '.[].name | select( . != null )' ${CONFIG})
 VERSION=$(yq '.pkg_manifest.version' "${CONFIG}")
-SRC_REPO=$(yq '.build_config.src_repo' "${CONFIG}")
+SRC_REPO=$(yq -r '.build_config.src_repo' "${CONFIG}")
 
 echo "::group::Install pkg-repo-tools"
 python3.11 -m venv .venv
