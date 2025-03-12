@@ -43,8 +43,10 @@ echo "::endgroup::"
 # Create Directories
 mkdir -p "${GH_WS}/dist/pkg/opt/opnware/pkgs/${PKG_NAME}"
 mkdir -p "${GH_WS}/dist/pkg/etc/rc.d"
+mkdir -p "${GH_WS}/dist/pkg/opt/opnware/services/${PKG_NAME}"
 chmod 0755 "${GH_WS}/dist/pkg/opt/opnware/pkgs/${PKG_NAME}"
 chmod 0755 "${GH_WS}/dist/pkg/etc/rc.d"
+chmod 0755 "${GH_WS}/dist/pkg/opt/opnware/services/${PKG_NAME}"
 
 # Copy Binary
 cp "${GH_WS}/src/backend/upsnap" "${GH_WS}/dist/pkg/opt/opnware/pkgs/${PKG_NAME}/${PKG_NAME}"
@@ -66,7 +68,10 @@ chmod 0644 "${GH_WS}/dist/pkg/opt/opnware/pkgs/${PKG_NAME}/SOURCE"
 cd "${GH_WS}/dist"
 
 # Create Service
-pkg-tool create-service "${CONFIG}" --output-dir "./pkg/etc/rc.d/"
+pkg-tool create-service "${CONFIG}" --output-dir "./pkg/opt/opnware/services/${PKG_NAME}"
+cd ./pkg/etc/rc.d/
+ln -s "../../opt/opnware/services/${PKG_NAME}/${PKG_NAME}" "./${PKG_NAME}"
+cd "${GH_WS}/dist"
 
 # Create Manifest
 pkg-tool create-manifest "${CONFIG}" --abi "${ABI}" --arch "${ARCH}"
