@@ -33,7 +33,7 @@ cd "${GH_WS}/src"
 ./configure --enable-gdbm --enable-pcre --enable-cap --with-tcsetpgrp --prefix=/opt/zsh
 #sed -i '' 's/link=no/link=static/' config.modules
 gmake
-gmake install.bin install.modules install.fns DESTDIR=${GH_WS}/dist
+gmake install.bin install.modules install.fns DESTDIR=${GH_WS}/dist/pkg
 echo "::endgroup::"
 cd "${GH_WS}"
 
