@@ -30,7 +30,7 @@ echo "::endgroup::"
 echo "::group::Build Binary"
 cd "${GH_WS}/src"
 ./Util/preconfig
-./configure --enable-gdbm --enable-pcre --enable-cap
+./configure --enable-gdbm --enable-pcre --enable-cap --with-tcsetpgrp
 sed -i '' 's/link=no/link=static/' config.modules
 gmake
 gmake install.bin install.modules install.fns DESTDIR=${GH_WS}/dist
