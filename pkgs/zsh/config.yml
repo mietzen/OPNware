@@ -19,7 +19,7 @@ pkg_manifest:
   name: zsh
   origin: mietzen/zsh
   version: 5.9
-  comment: The Z shell with static modules
+  comment: The Z shell
   www: https://www.zsh.org/
   maintainer: github.nstein@mailbox.org
   prefix: /opt/zsh
@@ -34,5 +34,3 @@ pkg_manifest:
     Zsh does intelligent completion, spell-checking, has a rich syntax
     for precise globbing, and is fully extensible through plugin
     systems.
-
-    This variant comes with statically linked zsh modules like zsh/regex to ease the consumption of existing scripts relying on such modules.

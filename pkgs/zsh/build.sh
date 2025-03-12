@@ -30,7 +30,14 @@ echo "::endgroup::"
 echo "::group::Build Binary"
 cd "${GH_WS}/src"
 ./Util/preconfig
-./configure --enable-gdbm --enable-pcre --enable-cap --with-tcsetpgrp --prefix=/opt/zsh
+./configure --prefix=/opt/zsh \
+    --enable-function-subdirs \
+    --enable-multibyte \
+    --enable-zsh-secure-free \
+    --enable-gdbm \
+    --enable-pcre \
+    --enable-cap \
+    --with-tcsetpgrp
 gmake
 gmake install DESTDIR=${GH_WS}/dist/pkg
 echo "::endgroup::"
