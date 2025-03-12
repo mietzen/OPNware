@@ -4,7 +4,7 @@ build_config:
   src_repo: 'https://github.com/mietzen/opnsense_leases_widget'
 pkg_manifest:
   name: opnsense_leases_widget
-  origin: mietzen/opnsense_leases_widget
+  origin: opnware/opnsense_leases_widget
   version: 1.0.0
   comment: A DHCP Leases Widget for OPNsense
   www: https://github.com/jbaconsult/opnsense_stuff

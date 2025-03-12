@@ -5,12 +5,12 @@ build_config:
   src_repo: 'https://github.com/0xERR0R/blocky'
 pkg_manifest:
   name: blocky
-  origin: mietzen/blocky
+  origin: opnware/blocky
   version: 0.25
   comment: Fast and lightweight DNS proxy as ad-blocker for local network with many features
   www: https://0xerr0r.github.io/blocky/
   maintainer: github.nstein@mailbox.org
-  prefix: /opt/blocky
+  prefix: /opt/opnware/pkgs/blocky
   users:
     - blocky
   groups:
@@ -38,7 +38,7 @@ pkg_manifest:
         echo "Using existing user 'blocky'"
       fi
     post-install: |
-      chown -R blocky:www /opt/blocky
+      chown -R blocky:www /opt/opnware/pkgs/blocky
       echo "===> Starting service"
       service blocky enable
       service blocky start
@@ -52,4 +52,4 @@ pkg_manifest:
 pkg_service:
   template: default
   vars:
-    COMMAND: /opt/blocky/blocky --config config.yml
+    COMMAND: /opt/opnware/pkgs/blocky/blocky --config config.yml

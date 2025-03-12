@@ -17,12 +17,12 @@ build_config:
   src_repo: https://git.code.sf.net/p/zsh/code
 pkg_manifest:
   name: zsh
-  origin: mietzen/zsh
+  origin: opnware/zsh
   version: 5.9
   comment: The Z shell
   www: https://www.zsh.org/
   maintainer: github.nstein@mailbox.org
-  prefix: /opt/zsh
+  prefix: /opt/opnware/pkgs/zsh
   licenselogic: single
   licenses: ZSH
   desc: |

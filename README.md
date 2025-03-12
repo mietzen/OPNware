@@ -3,7 +3,7 @@
 ## Install
 
 ```Shell
-curl -fL -o /usr/local/etc/pkg/repos/mietzen.conf https://mietzen.github.io/freeBSD-custom-pkg-repo/mietzen.conf
+curl -fL -o /usr/local/etc/pkg/repos/opnware.conf https://mietzen.github.io/freeBSD-custom-pkg-repo/opnware.conf
 ```
 
 ## Browse

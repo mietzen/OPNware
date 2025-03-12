@@ -5,12 +5,12 @@ build_config:
   src_repo: 'https://github.com/traefik/traefik'
 pkg_manifest:
   name: traefik
-  origin: mietzen/traefik
+  origin: opnware/traefik
   version: 3.3.4
   comment: The Cloud Native Application Proxy
   www: https://traefik.io
   maintainer: github.nstein@mailbox.org
-  prefix: /opt/traefik
+  prefix: /opt/opnware/pkgs/traefik
   users:
     - traefik
   groups:
@@ -37,7 +37,7 @@ pkg_manifest:
         echo "Using existing user 'traefik'"
       fi
     post-install: |
-      chown -R traefik:www /opt/traefik
+      chown -R traefik:www /opt/opnware/pkgs/traefik
       echo "===> Starting service"
       service traefik enable
       service traefik start
@@ -51,4 +51,4 @@ pkg_manifest:
 pkg_service:
   template: default
   vars:
-    COMMAND: /opt/traefik/traefik --configFile=./config.yml
+    COMMAND: /opt/opnware/pkgs/traefik/traefik --configFile=./config.yml

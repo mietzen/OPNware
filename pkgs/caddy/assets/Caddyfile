@@ -1,6 +1,6 @@
 {
   storage file_system {
-    root /opt/caddy
+    root /opt/opnware/pkgs/caddy
   }
 }
 import conf.d/*.caddy
