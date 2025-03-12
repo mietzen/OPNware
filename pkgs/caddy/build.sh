@@ -43,6 +43,15 @@ cd "${GH_WS}"
 mkdir -p "${GH_WS}/dist/pkg/opt/opnware/pkgs/${PKG_NAME}" "${GH_WS}/dist/pkg/etc/rc.d" "${GH_WS}/dist/pkg/opt/opnware/bin"
 chmod 0755 "${GH_WS}/dist/pkg/opt/opnware/pkgs/${PKG_NAME}" "${GH_WS}/dist/pkg/etc/rc.d" "${GH_WS}/dist/pkg/opt/opnware/bin"
 
+mkdir -p "${GH_WS}/dist/pkg/etc/rc.d"
+mkdir -p "${GH_WS}/dist/pkg/opt/opnware/bin"
+mkdir -p "${GH_WS}/dist/pkg/opt/opnware/pkgs/${PKG_NAME}"
+mkdir -p "${GH_WS}/dist/pkg/opt/opnware/services/${PKG_NAME}"
+chmod 0755 "${GH_WS}/dist/pkg/etc/rc.d"
+chmod 0755 "${GH_WS}/dist/pkg/opt/opnware/bin"
+chmod 0755 "${GH_WS}/dist/pkg/opt/opnware/pkgs/${PKG_NAME}"
+chmod 0755 "${GH_WS}/dist/pkg/opt/opnware/services/${PKG_NAME}"
+
 # Copy Binary
 cp "${GH_WS}/build/caddy" "${GH_WS}/dist/pkg/opt/opnware/pkgs/${PKG_NAME}/${PKG_NAME}"
 chmod 0755 "${GH_WS}/dist/pkg/opt/opnware/pkgs/${PKG_NAME}/${PKG_NAME}"
