@@ -32,7 +32,7 @@ cd "${GH_WS}/src"
 ./Util/preconfig
 ./configure --enable-gdbm --enable-pcre --enable-cap --with-tcsetpgrp --prefix=/opt/zsh
 gmake
-gmake install.bin install.modules install.fns DESTDIR=${GH_WS}/dist/pkg
+gmake install DESTDIR=${GH_WS}/dist/pkg
 echo "::endgroup::"
 cd "${GH_WS}"
 
