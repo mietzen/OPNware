@@ -50,7 +50,7 @@ chmod 0644 "${GH_WS}/dist/pkg/opt/${PKG_NAME}/LICENSE"
 
 # Provide a link to the Source Code
 cat <<EOF > "${GH_WS}/dist/pkg/opt/${PKG_NAME}/SOURCE"
-This software is licensed under the MIT license.
+This software is licensed under the proprietary ZSH license.
 You may obtain a copy of the source code at:
 https://www.zsh.org/pub/zsh-${VERSION}.tar.xz
 EOF
