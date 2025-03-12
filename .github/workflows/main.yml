@@ -82,8 +82,8 @@ jobs:
           prepare: |
             pkg install -y ${{ matrix.perquisite_pkgs }}
           run: |
-            cd ./repo/pkgs/${{ matrix.pkg_name }}/
-            ./build.sh ${{ matrix.arch }} ${{ matrix.abi }}
+            ls -al
+            bash repo/pkgs/${{ matrix.pkg_name }}/build.sh ${{ matrix.arch }} ${{ matrix.abi }}
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4

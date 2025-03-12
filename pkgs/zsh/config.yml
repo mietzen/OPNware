@@ -9,6 +9,7 @@ build_config:
       gdbm
       pcre2
       llvm
+      bash
       python311
       py311-pip
   src_repo: https://git.code.sf.net/p/zsh/code
