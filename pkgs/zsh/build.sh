@@ -12,10 +12,8 @@ PKG_NAME=$(yq -r '.[].name | select( . != null )' ${CONFIG})
 VERSION=$(yq '.pkg_manifest.version' "${CONFIG}")
 SRC_REPO=$(yq '.build_config.src_repo' "${CONFIG}")
 
-env
-
 echo "::group::Install pkg-repo-tools"
-python3 -m venv .venv
+python3.11 -m venv .venv
 source .venv/bin/activate
 pip install "file://${GH_WS}/${REPO_DIR}/pkg-tool"
 echo "::endgroup::"
