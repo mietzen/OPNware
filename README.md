@@ -1,9 +1,10 @@
-# GitHub Hosted custom FreeBSD Pkg Repo
+![OPNware Logo](OPNware.svg)
 
 ## Install
 
 ```Shell
-curl -fL -o /usr/local/etc/pkg/repos/opnware.conf https://mietzen.github.io/freeBSD-custom-pkg-repo/opnware.conf
+fetch -o /usr/local/etc/pkg/repos/opnware.conf https://mietzen.github.io/freeBSD-custom-pkg-repo/opnware.conf
+pkg update
 ```
 
 ## Browse
