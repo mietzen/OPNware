@@ -10,7 +10,7 @@ CONFIG="${SCRIPT_DIR}/config.yml"
 REPO_DIR=$(echo "${SCRIPT_DIR#${GH_WS%/}/}" | cut -d'/' -f1)
 PKG_NAME=$(yq -r '.[].name | select( . != null )' ${CONFIG})
 VERSION=$(yq '.pkg_manifest.version' "${CONFIG}")
-SRC_REPO=$(yq '.build_config.src_repo' "${CONFIG}")
+SRC_REPO=$(yq -r '.build_config.src_repo' "${CONFIG}")
 
 echo "::group::Install pkg-repo-tools"
 pip install "file://${GH_WS}/${REPO_DIR}/pkg-tool"
@@ -77,7 +77,7 @@ tar -cf "${PKG_NAME}-${VERSION}.pkg" \
     --owner=0 \
     --group=0 \
     --transform 's|^pkg||' \
-    +COMPACT_MANIFEST +MANIFEST $(find pkg -type f)
+    +COMPACT_MANIFEST +MANIFEST $(find pkg -type f) $(find pkg -type l)
 
 # Create Packagesite Info
 pkg-tool create-packagesite-info ./+COMPACT_MANIFEST
