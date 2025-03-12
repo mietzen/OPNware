@@ -10,9 +10,11 @@ CONFIG="${SCRIPT_DIR}/config.yml"
 REPO_DIR=$(echo "${SCRIPT_DIR#${GH_WS%/}/}" | cut -d'/' -f1)
 PKG_NAME=$(yq -r '.[].name | select( . != null )' ${CONFIG})
 VERSION=$(yq '.pkg_manifest.version' "${CONFIG}")
-SRC_REPO=$(yq '.build_config.src_repo' "${CONFIG}")
+SRC_REPO=$(yq -r '.build_config.src_repo' "${CONFIG}")
 
 echo "::group::Install pkg-repo-tools"
+python3.11 -m venv .venv
+source .venv/bin/activate
 pip install "file://${GH_WS}/${REPO_DIR}/pkg-tool"
 echo "::endgroup::"
 
@@ -22,16 +24,22 @@ mkdir -p "${GH_WS}/dist"
 chmod 0755 "${GH_WS}/dist"
 
 echo "::group::Git checkout repository"
-git clone --depth=1 --branch "zsh-${VERSION}" "${SRC_REPO}" "${GH_WS}/src"
+git clone --depth=1 --branch zsh-${VERSION} ${SRC_REPO} ${GH_WS}/src
 echo "::endgroup::"
 
 echo "::group::Build Binary"
 cd "${GH_WS}/src"
 ./Util/preconfig
-./configure --enable-gdbm --enable-pcre --enable-cap
-sed -i '' 's/link=no/link=static/' config.modules
+./configure --prefix=/opt/zsh \
+    --enable-function-subdirs \
+    --enable-multibyte \
+    --enable-zsh-secure-free \
+    --enable-gdbm \
+    --enable-pcre \
+    --enable-cap \
+    --with-tcsetpgrp
 gmake
-gmake install.bin install.modules install.fns DESTDIR=${GH_WS}/dist
+gmake install.bin install.modules install.fns DESTDIR=${GH_WS}/dist/pkg
 echo "::endgroup::"
 cd "${GH_WS}"
 
@@ -49,7 +57,7 @@ chmod 0644 "${GH_WS}/dist/pkg/opt/${PKG_NAME}/LICENSE"
 
 # Provide a link to the Source Code
 cat <<EOF > "${GH_WS}/dist/pkg/opt/${PKG_NAME}/SOURCE"
-This software is licensed under the MIT license.
+This software is licensed under the proprietary ZSH license.
 You may obtain a copy of the source code at:
 https://www.zsh.org/pub/zsh-${VERSION}.tar.xz
 EOF
@@ -64,10 +72,11 @@ pkg-tool create-manifest "${CONFIG}" --abi "${ABI}" --arch "${ARCH}"
 # Create Package
 tar -cf "${PKG_NAME}-${VERSION}.pkg" \
     --zstd \
+    --absolute-paths \
     --owner=0 \
     --group=0 \
-    --transform 's|^pkg||' \
-    +COMPACT_MANIFEST +MANIFEST $(find pkg -type f)
+    -s '|^pkg||' \
+    +COMPACT_MANIFEST +MANIFEST $(find pkg -type f) $(find pkg -type l)
 
 # Create Packagesite Info
 pkg-tool create-packagesite-info ./+COMPACT_MANIFEST
