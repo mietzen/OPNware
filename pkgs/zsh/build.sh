@@ -24,7 +24,7 @@ mkdir -p "${GH_WS}/dist"
 chmod 0755 "${GH_WS}/dist"
 
 echo "::group::Git checkout repository"
-git clone --depth=1 --branch "zsh-${VERSION}" "${SRC_REPO}" "${GH_WS}/src"
+git clone --depth=1 --branch zsh-${VERSION} ${SRC_REPO} ${GH_WS}/src
 echo "::endgroup::"
 
 echo "::group::Build Binary"
