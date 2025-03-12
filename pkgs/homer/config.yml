@@ -10,7 +10,7 @@ pkg_manifest:
   comment: A very simple static homepage for your server.
   www: https://homer-demo.netlify.app/
   maintainer: github.nstein@mailbox.org
-  prefix: /opt/caddy/conf.d/homer
+  prefix: /opt/opnware/pkgs/caddy/conf.d/homer
   licenselogic: single
   licenses:
     - Apache-2.0 license
@@ -22,5 +22,5 @@ pkg_manifest:
       origin: mietzen/caddy
       version: ">=2.9.1, <3.0.0"
   post-install: |
-    chown -R caddy:www /opt/caddy/conf.d/homer
-    chown -R caddy:www /opt/caddy/conf.d/homer.caddy
+    chown -R caddy:www /opt/opnware/pkgs/caddy/conf.d/homer
+    chown -R caddy:www /opt/opnware/pkgs/caddy/conf.d/homer.caddy

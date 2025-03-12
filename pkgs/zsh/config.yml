@@ -22,7 +22,7 @@ pkg_manifest:
   comment: The Z shell
   www: https://www.zsh.org/
   maintainer: github.nstein@mailbox.org
-  prefix: /opt/zsh
+  prefix: /opt/opnware/pkgs/zsh
   licenselogic: single
   licenses: ZSH
   desc: |

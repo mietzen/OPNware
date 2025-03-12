@@ -1,6 +1,6 @@
 providers:
   file:
-    filename: /opt/traefik/traefik_dynamic.yml
+    filename: /opt/opnware/pkgs/traefik/traefik_dynamic.yml
     watch: true
 entryPoints:
   web:

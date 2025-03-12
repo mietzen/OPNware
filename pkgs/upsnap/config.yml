@@ -11,7 +11,7 @@ pkg_manifest:
   comment: A simple wake on lan web app written with SvelteKit, Go and PocketBase.
   www: https://github.com/seriousm4x/UpSnap
   maintainer: github.nstein@mailbox.org
-  prefix: /opt/upsnap
+  prefix: /opt/opnware/pkgs/upsnap
   users:
     - upsnap
   groups:
@@ -41,7 +41,7 @@ pkg_manifest:
         echo "Using existing user 'upsnap'"
       fi
     post-install: |
-      chown -R upsnap:www /opt/upsnap
+      chown -R upsnap:www /opt/opnware/pkgs/upsnap
       echo "===> Starting service"
       service upsnap enable
       service upsnap start
@@ -55,4 +55,4 @@ pkg_manifest:
 pkg_service:
   template: default
   vars:
-    COMMAND: /opt/upsnap/upsnap --dir /opt/upsnap serve --http=127.0.0.1:8090
+    COMMAND: /opt/opnware/pkgs/upsnap/upsnap --dir /opt/opnware/pkgs/upsnap serve --http=127.0.0.1:8090

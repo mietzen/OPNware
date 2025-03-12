@@ -30,7 +30,7 @@ echo "::endgroup::"
 echo "::group::Build Binary"
 cd "${GH_WS}/src"
 ./Util/preconfig
-./configure --prefix=/opt/zsh \
+./configure --prefix=/opt/opnware/pkgs/zsh \
     --enable-function-subdirs \
     --enable-multibyte \
     --enable-zsh-secure-free \
@@ -44,24 +44,24 @@ echo "::endgroup::"
 cd "${GH_WS}"
 
 # Create Directories
-mkdir -p "${GH_WS}/dist/pkg/opt/bin"
+mkdir -p "${GH_WS}/dist/pkg/opt/opnware/bin"
 
 # Link Binary
-cd "${GH_WS}/dist/pkg/opt/bin/"
-ln -s "../${PKG_NAME}/bin/${PKG_NAME}" "${PKG_NAME}"
+cd "${GH_WS}/dist/pkg/opt/opnware/bin/"
+ln -s "../pkgs/${PKG_NAME}/bin/${PKG_NAME}" "${PKG_NAME}"
 cd "${GH_WS}"
 
 # Copy License
-cp "${GH_WS}/src/LICENCE" "${GH_WS}/dist/pkg/opt/${PKG_NAME}/LICENSE"
-chmod 0644 "${GH_WS}/dist/pkg/opt/${PKG_NAME}/LICENSE"
+cp "${GH_WS}/src/LICENCE" "${GH_WS}/dist/pkg/opt/opnware/pkgs/${PKG_NAME}/LICENSE"
+chmod 0644 "${GH_WS}/dist/pkg/opt/opnware/pkgs/${PKG_NAME}/LICENSE"
 
 # Provide a link to the Source Code
-cat <<EOF > "${GH_WS}/dist/pkg/opt/${PKG_NAME}/SOURCE"
+cat <<EOF > "${GH_WS}/dist/pkg/opt/opnware/pkgs/${PKG_NAME}/SOURCE"
 This software is licensed under the proprietary ZSH license.
 You may obtain a copy of the source code at:
 https://www.zsh.org/pub/zsh-${VERSION}.tar.xz
 EOF
-chmod 0644 "${GH_WS}/dist/pkg/opt/${PKG_NAME}/SOURCE"
+chmod 0644 "${GH_WS}/dist/pkg/opt/opnware/pkgs/${PKG_NAME}/SOURCE"
 
 # Create BSD distribution pkg
 cd "${GH_WS}/dist"

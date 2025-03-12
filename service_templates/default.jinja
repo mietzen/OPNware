@@ -3,12 +3,12 @@
 . /etc/rc.subr
 
 name="{{ NAME }}"
-{{ NAME }}_chdir="/opt/{{ NAME }}"
+{{ NAME }}_chdir="/opt/opnware/pkgs/{{ NAME }}"
 rcvar="{{ NAME }}_enable"
 {{ NAME }}_user="{{ NAME }}"
 {{ NAME }}_command="{{ COMMAND }}"
-pidfile="/opt/{{ NAME }}/{{ '${name}' }}.pid"
-logfile="/opt/{{ NAME }}/{{ '${name}' }}.log"
+pidfile="/opt/opnware/pkgs/{{ NAME }}/{{ '${name}' }}.pid"
+logfile="/opt/opnware/pkgs/{{ NAME }}/{{ '${name}' }}.log"
 command="/usr/sbin/daemon"
 command_args="-t {{ '${name}_d' }} -P {{ '${pidfile}' }} -o {{ '${logfile}' }} -r -R 3 {{ '${' + NAME + '_command' + '}' }}"
 {{ SRV_CMDS }}

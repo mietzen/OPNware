@@ -11,7 +11,7 @@ pkg_manifest:
   comment: Network-wide ads & trackers blocking DNS server
   www: https://adguard.com/en/adguard-home/overview.html
   maintainer: github.nstein@mailbox.org
-  prefix: /opt/adguardhome
+  prefix: /opt/opnware/pkgs/adguardhome
   users:
     - adguardhome
   groups:
@@ -42,7 +42,7 @@ pkg_manifest:
         echo "Using existing user 'adguardhome'"
       fi
     post-install: |
-      chown -R adguardhome:www /opt/adguardhome
+      chown -R adguardhome:www /opt/opnware/pkgs/adguardhome
       echo "===> Starting service"
       service adguardhome enable
       service adguardhome start
@@ -56,4 +56,4 @@ pkg_manifest:
 pkg_service:
   template: default
   vars:
-    COMMAND: /opt/adguardhome/adguardhome
+    COMMAND: /opt/opnware/pkgs/adguardhome/adguardhome

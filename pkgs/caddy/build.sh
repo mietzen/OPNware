@@ -40,32 +40,32 @@ echo "::endgroup::"
 cd "${GH_WS}"
 
 # Create Directories for Packaging
-mkdir -p "${GH_WS}/dist/pkg/opt/${PKG_NAME}" "${GH_WS}/dist/pkg/etc/rc.d" "${GH_WS}/dist/pkg/opt/bin"
-chmod 0755 "${GH_WS}/dist/pkg/opt/${PKG_NAME}" "${GH_WS}/dist/pkg/etc/rc.d" "${GH_WS}/dist/pkg/opt/bin"
+mkdir -p "${GH_WS}/dist/pkg/opt/opnware/pkgs/${PKG_NAME}" "${GH_WS}/dist/pkg/etc/rc.d" "${GH_WS}/dist/pkg/opt/opnware/bin"
+chmod 0755 "${GH_WS}/dist/pkg/opt/opnware/pkgs/${PKG_NAME}" "${GH_WS}/dist/pkg/etc/rc.d" "${GH_WS}/dist/pkg/opt/opnware/bin"
 
 # Copy Binary
-cp "${GH_WS}/build/caddy" "${GH_WS}/dist/pkg/opt/${PKG_NAME}/${PKG_NAME}"
-chmod 0755 "${GH_WS}/dist/pkg/opt/${PKG_NAME}/${PKG_NAME}"
-cd "${GH_WS}/dist/pkg/opt/bin/"
-ln -s "../${PKG_NAME}/${PKG_NAME}" "${PKG_NAME}"
+cp "${GH_WS}/build/caddy" "${GH_WS}/dist/pkg/opt/opnware/pkgs/${PKG_NAME}/${PKG_NAME}"
+chmod 0755 "${GH_WS}/dist/pkg/opt/opnware/pkgs/${PKG_NAME}/${PKG_NAME}"
+cd "${GH_WS}/dist/pkg/opt/opnware/bin/"
+ln -s "../pkgs/${PKG_NAME}/${PKG_NAME}" "${PKG_NAME}"
 cd "${GH_WS}"
 
 # Copy License
-curl -o "${GH_WS}/dist/pkg/opt/${PKG_NAME}/LICENSE" -L "${SRC_REPO}/raw/refs/tags/v${VERSION}/LICENSE"
-chmod 0644 "${GH_WS}/dist/pkg/opt/${PKG_NAME}/LICENSE"
+curl -o "${GH_WS}/dist/pkg/opt/opnware/pkgs/${PKG_NAME}/LICENSE" -L "${SRC_REPO}/raw/refs/tags/v${VERSION}/LICENSE"
+chmod 0644 "${GH_WS}/dist/pkg/opt/opnware/pkgs/${PKG_NAME}/LICENSE"
 
 # Provide Source Code Link
-cat <<EOF > "${GH_WS}/dist/pkg/opt/${PKG_NAME}/SOURCE"
+cat <<EOF > "${GH_WS}/dist/pkg/opt/opnware/pkgs/${PKG_NAME}/SOURCE"
 This software is licensed under the Apache License, Version 2.0.
 You may obtain a copy of the source code at:
 ${SRC_REPO}/archive/refs/tags/v${VERSION}.tar.gz
 EOF
-chmod 0644 "${GH_WS}/dist/pkg/opt/${PKG_NAME}/SOURCE"
+chmod 0644 "${GH_WS}/dist/pkg/opt/opnware/pkgs/${PKG_NAME}/SOURCE"
 
 # Copy Assets
-cp -Tr "${GH_WS}/repo/pkgs/${PKG_NAME}/assets" "${GH_WS}/dist/pkg/opt/${PKG_NAME}"
-cp "${GH_WS}/repo/pkgs/${PKG_NAME}/assets/.env" "${GH_WS}/dist/pkg/opt/${PKG_NAME}/.env"
-chmod -R 0755 "${GH_WS}/dist/pkg/opt/${PKG_NAME}"
+cp -Tr "${GH_WS}/repo/pkgs/${PKG_NAME}/assets" "${GH_WS}/dist/pkg/opt/opnware/pkgs/${PKG_NAME}"
+cp "${GH_WS}/repo/pkgs/${PKG_NAME}/assets/.env" "${GH_WS}/dist/pkg/opt/opnware/pkgs/${PKG_NAME}/.env"
+chmod -R 0755 "${GH_WS}/dist/pkg/opt/opnware/pkgs/${PKG_NAME}"
 
 # Create BSD distribution pkg
 cd "${GH_WS}/dist"

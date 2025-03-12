@@ -10,7 +10,7 @@ pkg_manifest:
   comment: CLI and Go API to Test Internet Speed using speedtest.net
   www: https://github.com/showwin/speedtest-go
   maintainer: github.nstein@mailbox.org
-  prefix: /opt/speedtest-go
+  prefix: /opt/opnware/pkgs/speedtest-go
   licenselogic: single
   licenses:
     - MIT license

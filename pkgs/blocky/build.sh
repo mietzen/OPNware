@@ -32,29 +32,29 @@ GOOS=freebsd GOARCH="${ARCH}" go build
 echo "::endgroup::"
 
 # Create Directories for Packaging
-mkdir -p "${GH_WS}/dist/pkg/opt/${PKG_NAME}"
+mkdir -p "${GH_WS}/dist/pkg/opt/opnware/pkgs/${PKG_NAME}"
 mkdir -p "${GH_WS}/dist/pkg/etc/rc.d"
-chmod 0755 "${GH_WS}/dist/pkg/opt/${PKG_NAME}" "${GH_WS}/dist/pkg/etc/rc.d"
+chmod 0755 "${GH_WS}/dist/pkg/opt/opnware/pkgs/${PKG_NAME}" "${GH_WS}/dist/pkg/etc/rc.d"
 
 # Copy Binary
-cp "${GH_WS}/src/${PKG_NAME}" "${GH_WS}/dist/pkg/opt/${PKG_NAME}/${PKG_NAME}"
-chmod 0755 "${GH_WS}/dist/pkg/opt/${PKG_NAME}/${PKG_NAME}"
+cp "${GH_WS}/src/${PKG_NAME}" "${GH_WS}/dist/pkg/opt/opnware/pkgs/${PKG_NAME}/${PKG_NAME}"
+chmod 0755 "${GH_WS}/dist/pkg/opt/opnware/pkgs/${PKG_NAME}/${PKG_NAME}"
 
 # Copy License
-cp "${GH_WS}/src/LICENSE" "${GH_WS}/dist/pkg/opt/${PKG_NAME}/LICENSE"
-chmod 0644 "${GH_WS}/dist/pkg/opt/${PKG_NAME}/LICENSE"
+cp "${GH_WS}/src/LICENSE" "${GH_WS}/dist/pkg/opt/opnware/pkgs/${PKG_NAME}/LICENSE"
+chmod 0644 "${GH_WS}/dist/pkg/opt/opnware/pkgs/${PKG_NAME}/LICENSE"
 
 # Provide Source Code Link
-cat <<EOF > "${GH_WS}/dist/pkg/opt/${PKG_NAME}/SOURCE"
+cat <<EOF > "${GH_WS}/dist/pkg/opt/opnware/pkgs/${PKG_NAME}/SOURCE"
 This software is licensed under the Apache License, Version 2.0.
 You may obtain a copy of the source code at:
 ${SRC_REPO}/archive/refs/tags/v${VERSION}.tar.gz
 EOF
-chmod 0644 "${GH_WS}/dist/pkg/opt/${PKG_NAME}/SOURCE"
+chmod 0644 "${GH_WS}/dist/pkg/opt/opnware/pkgs/${PKG_NAME}/SOURCE"
 
 # Copy Assets
-cp -Tr "${GH_WS}/repo/pkgs/${PKG_NAME}/assets" "${GH_WS}/dist/pkg/opt/${PKG_NAME}"
-chmod -R 0755 "${GH_WS}/dist/pkg/opt/${PKG_NAME}"
+cp -Tr "${GH_WS}/repo/pkgs/${PKG_NAME}/assets" "${GH_WS}/dist/pkg/opt/opnware/pkgs/${PKG_NAME}"
+chmod -R 0755 "${GH_WS}/dist/pkg/opt/opnware/pkgs/${PKG_NAME}"
 
 # Create BSD distribution pkg
 cd "${GH_WS}/dist"
