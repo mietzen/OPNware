@@ -10,8 +10,10 @@ build_config:
       pcre2
       llvm
       bash
+      git
       python311
       py311-pip
+      yq
   src_repo: https://git.code.sf.net/p/zsh/code
 pkg_manifest:
   name: zsh
