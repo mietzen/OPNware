@@ -1,4 +1,4 @@
-![OPNware Logo](OPNware.svg)
+![OPNware Logo](OPNware.png)
 
 ## Install
 
