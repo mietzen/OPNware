@@ -156,7 +156,8 @@ def get_version_sf_repo(pkg_name: str, config: dict) -> str:
 
     response = requests.get(api_url)
     if response.status_code != 200:
-        logging.error(f"Failed to get release info from Sourceforge API: {response.status_code}")
+        logging.error(f"Failed to get release info from Sourceforge API: {response.status_code}")        
+        logging.error(f"API URL: {api_url}")
         sys.exit(1)
 
     release_data = response.json()
