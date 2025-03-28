@@ -162,7 +162,7 @@ def get_version_sf_repo(pkg_name: str, config: dict) -> str:
 
     release_data = response.json()
     try:
-        remote_version = release_data.get('release').get('filename').split('/')[3]
+        remote_version = release_data.get('release').get('filename').split('/')[2]
     except Exception:
         logging.error(f"{pkg_name} no release found under: https://sourceforge.net/projects/{sf_repo}")
         sys.exit(1)
