@@ -6,7 +6,7 @@ build_config:
 pkg_manifest:
   name: homer
   origin: opnware/homer
-  version: 25.03.2
+  version: 25.03.3
   comment: A very simple static homepage for your server.
   www: https://homer-demo.netlify.app/
   maintainer: github.nstein@mailbox.org
