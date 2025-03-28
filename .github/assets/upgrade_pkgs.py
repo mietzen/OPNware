@@ -151,7 +151,7 @@ def get_version_sf_repo(pkg_name: str, config: dict) -> str:
         logging.error(f"Could not parse Sourceforge repository from URL: {repo_url}")
         sys.exit(1)
 
-    sf_repo = repo_match.group(1)
+    sf_repo = repo_match.group(1).split('/')[0]
     api_url = f"https://sourceforge.net/projects/{sf_repo}/best_release.json"
 
     response = requests.get(api_url)
