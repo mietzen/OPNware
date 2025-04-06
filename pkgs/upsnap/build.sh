@@ -27,7 +27,7 @@ echo "::endgroup::"
 
 echo "::group::Build frontend"
 cd "${GH_WS}/src"
-sed -i 's/daisyui: {/daisyui: { logs: false,/' frontend/tailwind.config.js
+#sed -i 's/daisyui: {/daisyui: { logs: false,/' frontend/tailwind.config.js
 jq '.scripts.build = "svelte-kit sync && vite build"' frontend/package.json > tmp.json && mv tmp.json frontend/package.json
 npm --prefix=./frontend install --silent
 PUBLIC_VERSION=$VERSION npm --prefix=./frontend run build -- --logLevel error --clearScreen false | sed -r "s/[[:cntrl:]]\[[0-9]{1,3}m//g"
