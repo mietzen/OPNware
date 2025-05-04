@@ -7,7 +7,7 @@ build_config:
 pkg_manifest:
   name: upsnap
   origin: opnware/upsnap
-  version: 5.0.4
+  version: 5.0.5
   comment: A simple wake on lan web app written with SvelteKit, Go and PocketBase.
   www: https://github.com/seriousm4x/UpSnap
   maintainer: github.nstein@mailbox.org
