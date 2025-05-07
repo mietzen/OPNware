@@ -12,7 +12,50 @@ on:
 
 jobs:
   update:
+    outputs:
+      matrix: ${{ steps.upgrades.outputs.matrix }}
+      pkg_upgraded:  ${{ steps.upgrades.outputs.pkg_upgraded }}
     runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/create-github-app-token@v2
+        id: app-token
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+          cache-dependency-path: '.github/assets/requirements.txt'
+
+      - name: Check Pkgs for updates
+        id: upgrades
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          echo "::group::Install requirements"
+            pip install -r .github/assets/requirements.txt
+          echo "::endgroup::"
+
+          matrix=$(.github/assets/pkg-update-matrix.py)
+
+          if [ -f matrix ]; then
+            echo 'pkg_upgraded=true' >> $GITHUB_OUTPUT
+            echo "matrix=$matrix" >> $GITHUB_OUTPUT
+          fi
+          git clean -fxd
+
+  create-prs:
+    if: needs.update.outputs.pkg_upgraded == 'true'
+    strategy:
+      matrix: ${{ fromJson(needs.update.outputs.matrix) }}
+      fail-fast: false
+    runs-on: ubuntu-24.04
+    needs: update
     permissions:
       contents: write
     steps:
@@ -27,53 +70,31 @@ jobs:
         with:
           token: ${{ steps.app-token.outputs.token }}
 
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-          cache: 'pip'
-          cache-dependency-path: '.github/assets/requirements.txt'
-
       - name: Get GitHub App User ID
         id: get-user-id
         run: echo "user-id=$(gh api "/users/${{ steps.app-token.outputs.app-slug }}[bot]" --jq .id)" >> "$GITHUB_OUTPUT"
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
 
-      - name: Check & Update Pkgs
-        id: upgrades
-        env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+      - name: Upgrade Pkg
         run: |
-          echo "::group::Install requirements"
-            pip install -r .github/assets/requirements.txt
-          echo "::endgroup::"
-
-          .github/assets/upgrade_pkgs.py | tee pr-body
-
-          if [ -f pr-body ]; then
-            echo 'pr-body<<EOF' >> $GITHUB_OUTPUT
-            cat pr-body  >> $GITHUB_OUTPUT
-            echo 'EOF' >> $GITHUB_OUTPUT
-
-            echo 'pkg_upgraded=true' >> $GITHUB_OUTPUT
-          fi
-          git clean -fxd
+          .github/assets/upgrade-pkg.py ${{ matrix.pkg }} ${{ matrix.version }} ${{ matrix.abi_arch }}
 
       - name: Create Pull Request
-        if: steps.upgrades.outputs.pkg_upgraded == 'true'
         id: pr
         uses: peter-evans/create-pull-request@v7
         with:
           token: ${{ steps.app-token.outputs.token }}
           committer: ${{ steps.app-token.outputs.app-slug }}[bot] <${{ steps.get-user-id.outputs.user-id }}+${{ steps.app-token.outputs.app-slug }}[bot]@users.noreply.github.com>
           author: ${{ steps.app-token.outputs.app-slug }}[bot] <${{ steps.get-user-id.outputs.user-id }}+${{ steps.app-token.outputs.app-slug }}[bot]@users.noreply.github.com>
-          branch: auto-update-${{ github.sha }}
-          title: Auto Upgrades
+          branch: auto-update-${{ matrix.pkg }}
+          title: Upgrade ${{ matrix.pkg }} to ${{ matrix.version }}
           labels: |
             automated pr
             update
+            ${{ matrix.pkg }}
           body: |
-            ${{ steps.upgrades.outputs.pr-body }}
+            Upgrading ${{ matrix.pkg }} to newest version: ${{ matrix.version }}
 
       - name: Enable Pull Request auto merge
         if: steps.pr.outputs.pull-request-operation == 'created'
