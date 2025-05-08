@@ -44,7 +44,7 @@ jobs:
           matrix=$(.github/assets/pkg-update-matrix.py)
           echo "Matrix: $matrix"
 
-          if [ -z "${matrix}" ];
+          if [ -z "${matrix}" ]; then
             echo "pkg_upgraded=false" >> $GITHUB_OUTPUT
           else
             echo "pkg_upgraded=true" >> $GITHUB_OUTPUT
