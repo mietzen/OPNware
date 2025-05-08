@@ -42,12 +42,17 @@ jobs:
           echo "::endgroup::"
 
           matrix=$(.github/assets/pkg-update-matrix.py)
-
           echo "Matrix: $matrix"
-          echo "matrix=$matrix" >> $GITHUB_OUTPUT
+
+          if [ -z "${matrix}" ];
+            echo "pkg_upgraded=false" >> $GITHUB_OUTPUT
+          else
+            echo "pkg_upgraded=true" >> $GITHUB_OUTPUT
+            echo "matrix=$matrix" >> $GITHUB_OUTPUT
+          fi
 
   create-prs:
-    #if: needs.update.outputs.pkg_upgraded == 'true'
+    if: needs.update.outputs.pkg_upgraded == 'true'
     strategy:
       matrix: ${{ fromJson(needs.update.outputs.matrix) }}
       fail-fast: false
