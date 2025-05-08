@@ -30,11 +30,11 @@ def main():
     else:
         config['pkg_manifest']['version'] = remote_version
 
-    with Path(config_file) as file:
-        file.write_text(
-            file.read_text().replace(
-                str(local_version[abi_arch]),
-                str(remote_version)))
+    file = Path(config_file)
+    file.write_text(
+        file.read_text().replace(
+            str(local_version[abi_arch]),
+            str(remote_version)))
 
 if __name__ == '__main__':
     main()
