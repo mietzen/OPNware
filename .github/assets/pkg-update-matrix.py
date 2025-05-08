@@ -197,17 +197,14 @@ def main():
             logging.error(f"{pkg_name} no version found under: {pkg_path}/config.yml")
             sys.exit(1)
 
+        matrix={'include': [] }
+
         for abi_arch in local_version:
             if str(remote_version[abi_arch]) != str(local_version[abi_arch]):
-                print(f"{pkg_name}, upgrading from: {local_version[abi_arch]} to: {remote_version[abi_arch]}")
-                if config.get('redistribute', False):
-                    config['redistribute']['version'][abi_arch] = remote_version[abi_arch]
-                else:
-                    config['pkg_manifest']['version'] = remote_version[abi_arch]
-                config_file.write_text(
-                    config_file.read_text().replace(
-                        str(local_version[abi_arch]),
-                        str(remote_version[abi_arch])))
+                matrix['include'].append({'pkg': pkg_name, 'abi_arch': abi_arch, 'version': remote_version[abi_arch]})
+
+        if matrix['include']:
+            print(json.dumps(matrix))
 
 if __name__ == '__main__':
     main()
