@@ -3,6 +3,7 @@
 import sys
 import yaml
 import logging
+from pathlib import Path
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s', stream=sys.stderr)
@@ -28,10 +29,12 @@ def main():
         config['redistribute']['version'][abi_arch] = remote_version
     else:
         config['pkg_manifest']['version'] = remote_version
-    config_file.write_text(
-        config_file.read_text().replace(
-            str(local_version[abi_arch]),
-            str(remote_version)))
+
+    with Path(config_file) as file:
+        file.write_text(
+            file.read_text().replace(
+                str(local_version[abi_arch]),
+                str(remote_version)))
 
 if __name__ == '__main__':
     main()
