@@ -43,10 +43,8 @@ jobs:
 
           matrix=$(.github/assets/pkg-update-matrix.py)
 
-          if [ -f matrix ]; then
-            echo 'pkg_upgraded=true' >> $GITHUB_OUTPUT
-            echo "matrix=$matrix" >> $GITHUB_OUTPUT
-          fi
+          echo "Matrix: $matrix"
+          echo "matrix=$matrix" >> $GITHUB_OUTPUT
 
   create-prs:
     #if: needs.update.outputs.pkg_upgraded == 'true'
