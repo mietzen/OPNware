@@ -94,7 +94,6 @@ jobs:
           labels: |
             automated pr
             update
-            ${{ matrix.pkg }}
           body: |
             Upgrading ${{ matrix.pkg }} to newest version: ${{ matrix.version }}
 
