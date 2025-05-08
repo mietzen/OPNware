@@ -47,10 +47,9 @@ jobs:
             echo 'pkg_upgraded=true' >> $GITHUB_OUTPUT
             echo "matrix=$matrix" >> $GITHUB_OUTPUT
           fi
-          git clean -fxd
 
   create-prs:
-    if: needs.update.outputs.pkg_upgraded == 'true'
+    #if: needs.update.outputs.pkg_upgraded == 'true'
     strategy:
       matrix: ${{ fromJson(needs.update.outputs.matrix) }}
       fail-fast: false
