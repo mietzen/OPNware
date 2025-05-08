@@ -197,13 +197,14 @@ def main():
             logging.error(f"{pkg_name} no version found under: {pkg_path}/config.yml")
             sys.exit(1)
 
-        matrix={'include': [] }
+        matrix={'pkg': [],'include': []}
 
         for abi_arch in local_version:
             if str(remote_version[abi_arch]) != str(local_version[abi_arch]):
+                matrix['pkg'].append(pkg_name)
                 matrix['include'].append({'pkg': pkg_name, 'abi_arch': abi_arch, 'version': remote_version[abi_arch]})
 
-        if matrix['include']:
+        if matrix['pkg']:
             print(json.dumps(matrix))
 
 if __name__ == '__main__':
