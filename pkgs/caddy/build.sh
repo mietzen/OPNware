@@ -13,7 +13,7 @@ VERSION=$(yq '.pkg_manifest.version' "${CONFIG}")
 SRC_REPO=$(yq '.build_config.src_repo' "${CONFIG}")
 CADDY_PLUGINS=(
     "github.com/caddy-dns/porkbun"
-    "github.com/caddy-dns/ddnss"
+    "github.com/mholt/caddy-dynamicdns"
     "github.com/mietzen/caddy-dynamicdns-cmd-source"
     "github.com/lucaslorentz/caddy-docker-proxy/v2"
 )
