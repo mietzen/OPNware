@@ -6,7 +6,7 @@ build_config:
 pkg_manifest:
   name: traefik
   origin: opnware/traefik
-  version: 3.4.0
+  version: 3.4.1
   comment: The Cloud Native Application Proxy
   www: https://traefik.io
   maintainer: github.nstein@mailbox.org
