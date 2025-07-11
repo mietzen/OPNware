@@ -13,22 +13,18 @@ def main():
     remote_version = sys.argv[2]
     abi_arch = sys.argv[3]
     config_file = f'./pkgs/{pkg_name}/config.yml'
+    local_version = {}
     with open(config_file, 'r') as f:
         config = yaml.safe_load(f)
 
     if config.get('redistribute', False):
         local_version[abi_arch] = config['redistribute']['version'][abi_arch]
     else:
-        local_version = {'ALL': config.get('pkg_manifest', {}).get('version')}
+        local_version['ALL'] = config.get('pkg_manifest', {}).get('version')
 
     if not local_version:
         logging.error(f"{pkg_name} no version found under: {config_file}")
         sys.exit(1)
-
-    if config.get('redistribute', False):
-        config['redistribute']['version'][abi_arch] = remote_version
-    else:
-        config['pkg_manifest']['version'] = remote_version
 
     file = Path(config_file)
     file.write_text(
