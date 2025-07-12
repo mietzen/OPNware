@@ -1,0 +1,27 @@
+name: Rebase all open Pull Requests on push to main
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  auto-rebase:
+    runs-on: ubuntu-24.04
+    steps:
+    - uses: actions/create-github-app-token@v2
+      id: app-token
+      with:
+        app-id: ${{ secrets.APP_ID }}
+        private-key: ${{ secrets.APP_PRIVATE_KEY }}
+
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Rebase all open Pull Requests
+      run: |
+        for PR in $(gh pr list --json number | jq -r '.[].number'); do
+          gh pr update-branch "$PR" --rebase || true
+        done
+      env:
+        GH_TOKEN: ${{ steps.app-token.outputs.token }}
