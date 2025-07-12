@@ -156,7 +156,7 @@ def get_version_sf_repo(pkg_name: str, config: dict) -> str:
 
     response = requests.get(api_url)
     if response.status_code != 200:
-        logging.error(f"Failed to get release info from Sourceforge API: {response.status_code}")        
+        logging.error(f"Failed to get release info from Sourceforge API: {response.status_code}")
         logging.error(f"API URL: {api_url}")
         sys.exit(1)
 
@@ -174,12 +174,12 @@ def main():
     for config_file in Path('./pkgs').glob('*/config.yml'):
         pkg_path = config_file.parent
         pkg_name = pkg_path.name
+        local_version = {}
+        remote_version = {}
         with open(config_file, 'r') as f:
             config = yaml.safe_load(f)
 
         if config.get('redistribute', False):
-            local_version = {}
-            remote_version = {}
             for abi_arch in config.get('redistribute', {}).get('version', {}).keys():
                 local_version[abi_arch] = config['redistribute']['version'][abi_arch]
                 remote_version[abi_arch] = get_version_bsd_repo(pkg_name, config, abi_arch)
