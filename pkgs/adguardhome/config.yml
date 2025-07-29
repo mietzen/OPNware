@@ -7,7 +7,7 @@ build_config:
 pkg_manifest:
   name: adguardhome
   origin: opnware/adguardhome
-  version: 0.107.63
+  version: 0.107.64
   comment: Network-wide ads & trackers blocking DNS server
   www: https://adguard.com/en/adguard-home/overview.html
   maintainer: github.nstein@mailbox.org
