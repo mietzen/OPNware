@@ -19,19 +19,21 @@ It contains packages that I use or have used:
 - [zsh](https://git.code.sf.net/p/zsh/code) (source build)
 
 Most of the packages are cross-compiled Go binaries or redistributed FreeBSD pkgs.
-Some are built from source in a FreeBSD VM.
+Some are built from source in a FreeBSD VM. 
+
+- Binary `pkgs` are installed under `/opt/opnware/pkgs/` and are linked to `/opt/opnware/bin`
+- Service `pkgs` are installed under `/opt/opnware/pkgs/`, service files can be found in `/opt/opnware/services/` and are linked to `/etc/rc.d`
+
+## Why
 
 Instead of using a full-blown [FreeBSD poudriere build system](https://github.com/freebsd/poudriere).
 
 I use: 
-- Python scripts
-- GitHub Actions
-- GitHub Pages
+- GitHub Actions to build and update `pkgs`
+- Python scripts to create FreeBSD `pkgs` and a repo layout
+- GitHub Pages to mimic a FreeBSD `pkg` repository
 
-To:
-- Build
-- Auto-Update
-- Mimic a FreeBSD `pkg` repository
+This comes at 0 costs and I don't need to maintain a FreeBSD server.
 
 ## ⚠️ Package Requests
 
@@ -39,7 +41,7 @@ To:
 
 As mentioned above, this is my **personal** repo, it comes "as is". Issues and Discussions are deactived.
 
-You are welcome to [**fork**](https://github.com/mietzen/OPNware/fork) it and build your own `pkg` repo.
+You are welcome to [**fork**](https://github.com/mietzen/OPNware/fork) it and build your own `pkg` repo with additional `pkgs`.
 
 The included GitHub workflows are generic and should work once you configure the following repository secrets:
 
