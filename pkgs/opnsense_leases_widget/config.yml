@@ -5,7 +5,7 @@ build_config:
 pkg_manifest:
   name: opnsense_leases_widget
   origin: opnware/opnsense_leases_widget
-  version: 2.0.0
+  version: 2.1.0
   comment: A DHCP Leases Widget for OPNsense
   www: https://github.com/jbaconsult/opnsense_stuff
   maintainer: github.nstein@mailbox.org
