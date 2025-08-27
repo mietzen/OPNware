@@ -39,7 +39,7 @@ This comes at 0 costs and I don't need to maintain a FreeBSD server.
 
 **I will NOT accept or respond to package requests.**
 
-As mentioned above, this is my **personal** repo, it comes "as is". Issues and Discussions are deactived.
+As mentioned above, this is my **personal** repo, at the moment I don't have much time and it comes "as is". Issues and Discussions are deactived.
 
 You are welcome to [**fork**](https://github.com/mietzen/OPNware/fork) it and build your own `pkg` repo with additional `pkgs`.
 
