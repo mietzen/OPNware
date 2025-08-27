@@ -47,7 +47,7 @@ chmod 0644 "${GH_WS}/dist/pkg/usr/local/share/licenses/${PKG_NAME}/LICENSE"
 cat <<EOF > "${GH_WS}/dist/pkg/usr/local/share/licenses/${PKG_NAME}/SOURCE"
 This software is licensed under the GNU General Public License v3.0.
 You may obtain a copy of the source code at:
-https://github.com/mietzen/opnsense_dnsmasq_leases_widget/archive/refs/tags/${VERSION}.tar.gz
+${SRC_REPO}/archive/refs/tags/${VERSION}.tar.gz
 
 This is a fork of DerMozart (jbaconsult) great OPNsense DHCPv4 Lease Widget: https://github.com/jbaconsult/opnsense_stuff
 You may obtain a copy of the pre forked source code at:
