@@ -55,6 +55,12 @@ The App will need these permissions:
 - **Contents:** Read/Write
 - **Pull requests:** Read/Write
 
+### How to add `pkgs`:
+
+As mentioned, I currently don't have much time -> There are no docs.
+
+Look at the [build scripts (`build.sh`)](https://github.com/mietzen/OPNware/blob/main/pkgs/blocky/build.sh) and [configs (`config.yml`)](https://github.com/mietzen/OPNware/blob/main/pkgs/blocky/config.yml) in the [`pkg` folders](https://github.com/mietzen/OPNware/tree/main/pkgs) and the [main `config.yml`](https://github.com/mietzen/OPNware/blob/main/config.yml) for examples on how to create new `pkgs`. If you want to add services also look at the [jinja service_template](https://github.com/mietzen/OPNware/blob/main/service_templates/default.jinja).
+
 ## Installation
 
 Open an `ssh` session on your OPNsense/FreeBSD box and run:
