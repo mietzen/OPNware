@@ -1,17 +1,17 @@
 ---
 build_config:
   include: {}
-  src_repo: 'https://github.com/mietzen/opnsense_leases_widget'
+  src_repo: 'https://github.com/mietzen/opnsense_dnsmasq_leases_widget'
 pkg_manifest:
-  name: opnsense_leases_widget
-  origin: opnware/opnsense_leases_widget
+  name: dnsmasq_leases_widget
+  origin: opnware/dnsmasq_leases_widget
   version: 2.1.0
-  comment: A DHCP Leases Widget for OPNsense
-  www: https://github.com/jbaconsult/opnsense_stuff
+  comment: A Dnsmasq Leases Widget for OPNsense
+  www: https://github.com/mietzen/opnsense_dnsmasq_leases_widget
   maintainer: github.nstein@mailbox.org
   prefix: /usr/local/
   licenselogic: single
   licenses:
     - GPLv3
   desc: |
-    A DHCP Leases Widget for OPNsense
+    A Dnsmasq Leases Widget for OPNsense
