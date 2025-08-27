@@ -37,7 +37,8 @@ To:
 
 **I will NOT accept or respond to package requests.**
 
-As mentioned above, this is my **personal** repo.\
+As mentioned above, this is my **personal** repo, it comes "as is". Issues and Discussions are deactived.
+
 You are welcome to [**fork**](https://github.com/mietzen/OPNware/fork) it and build your own `pkg` repo.
 
 The included GitHub workflows are generic and should work once you configure the following repository secrets:
