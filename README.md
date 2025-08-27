@@ -21,8 +21,9 @@ It contains packages that I use or have used:
 Most of the packages are cross-compiled Go binaries or redistributed FreeBSD pkgs.
 Some are built from source in a FreeBSD VM.
 
-Instead of using a full-blown [FreeBSD poudriere build system](https://github.com/freebsd/poudriere), I use Python scripts, GitHub Actions, and GitHub Pages to build, auto-update, distribute, and mimic a FreeBSD `pkg` repository.
+Instead of using a full-blown [FreeBSD poudriere build system](https://github.com/freebsd/poudriere).
 
+I use Python scripts, GitHub Actions, and GitHub Pages to build, auto-update, distribute, and mimic a FreeBSD `pkg` repository.
 
 ## ⚠️ Package Requests
 
