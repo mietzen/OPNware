@@ -17,7 +17,7 @@ pkg_manifest:
     - blocky
   licenselogic: single
   licenses:
-    - Apache-2.0 license
+    - APACHE20
   desc: |
     Blocky is a Go-based DNS proxy and ad-blocker for local networks.
     It blocks ads, malware, and unwanted domains with customizable allow/deny lists, regex filtering, and deep CNAME inspection.

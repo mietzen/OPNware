@@ -12,6 +12,6 @@ pkg_manifest:
   prefix: /usr/local/
   licenselogic: single
   licenses:
-    - GPL-3.0 license
+    - GPLv3
   desc: |
     A DHCP Leases Widget for OPNsense

@@ -13,7 +13,7 @@ pkg_manifest:
   prefix: /opt/opnware/pkgs/speedtest-go
   licenselogic: single
   licenses:
-    - MIT license
+    - MIT
   desc: |
     Speedtest-go enables fast, reliable internet speed testing directly from the command line or your Go applications.
     It supports latency, download, and upload measurements, multi-server testing, and custom configurations.

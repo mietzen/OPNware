@@ -17,7 +17,7 @@ pkg_manifest:
     - caddy
   licenselogic: single
   licenses:
-    - Apache-2.0 license
+    - APACHE20
   desc: |
     Caddy is a platform for running Go applications and serves as a highly extensible HTTPS server.
     Applications are implemented as Caddy modules, with tls and http included by default.

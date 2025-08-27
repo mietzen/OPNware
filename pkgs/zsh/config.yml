@@ -24,7 +24,8 @@ pkg_manifest:
   maintainer: github.nstein@mailbox.org
   prefix: /opt/opnware/pkgs/zsh
   licenselogic: single
-  licenses: ZSH
+  licenses:
+    - ZSH
   desc: |
     Zsh is the Swiss Army knife of shells. It combines the most popular
     features of every other shell, and then lets you customize every

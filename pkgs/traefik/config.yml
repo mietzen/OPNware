@@ -17,7 +17,7 @@ pkg_manifest:
     - traefik
   licenselogic: single
   licenses:
-    - MIT license
+    - MIT
   desc: |
     Traefik (pronounced traffic) is a modern HTTP reverse proxy and load balancer that makes deploying microservices easy.
     Traefik integrates with your existing infrastructure components:

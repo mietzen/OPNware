@@ -18,7 +18,7 @@ pkg_manifest:
     - upsnap
   licenselogic: single
   licenses:
-    -  MIT license
+    -  MIT
   desc: |
     UpSnap provides an intuitive dashboard to wake devices with one click, schedule timed events, and scan networks for devices.
     Built with SvelteKit, Go, and PocketBase, it supports secure user management, multi-language support, and customizable themes.
