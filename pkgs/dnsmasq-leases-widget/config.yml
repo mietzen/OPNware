@@ -5,7 +5,7 @@ build_config:
 pkg_manifest:
   name: dnsmasq-leases-widget
   origin: opnware/dnsmasq-leases-widget
-  version: 2.1.0
+  version: 2.2.0
   comment: A Dnsmasq Leases Widget for OPNsense
   www: https://github.com/mietzen/opnsense-dnsmasq-leases-widget
   maintainer: github.nstein@mailbox.org
