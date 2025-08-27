@@ -23,7 +23,15 @@ Some are built from source in a FreeBSD VM.
 
 Instead of using a full-blown [FreeBSD poudriere build system](https://github.com/freebsd/poudriere).
 
-I use Python scripts, GitHub Actions, and GitHub Pages to build, auto-update, distribute, and mimic a FreeBSD `pkg` repository.
+I use: 
+- Python scripts
+- GitHub Actions
+- GitHub Pages
+
+To:
+- Build
+- Auto-Update
+- Mimic a FreeBSD `pkg` repository
 
 ## ⚠️ Package Requests
 
