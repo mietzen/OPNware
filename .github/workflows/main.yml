@@ -58,7 +58,7 @@ jobs:
           path: repo
 
       - name: Setup GO
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         if: ${{ matrix.go }}
         with:
           go-version: ${{ matrix.go }}
