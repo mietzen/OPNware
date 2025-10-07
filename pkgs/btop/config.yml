@@ -4,6 +4,6 @@ build_config:
 redistribute:
   name: btop
   version:
-    FreeBSD-14-amd64: "1.4.3"
+    FreeBSD-14-amd64: "1.4.5"
   repo: http://pkg.freebsd.org
   path: quarterly/All
