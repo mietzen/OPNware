@@ -1,7 +1,7 @@
 ---
 build_config:
   include:
-    go: '1.23'
+    go: '1.25'
   src_repo: 'https://github.com/mikefarah/yq'
 pkg_manifest:
   name: yq
