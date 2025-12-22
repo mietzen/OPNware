@@ -28,7 +28,7 @@ jobs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -53,7 +53,7 @@ jobs:
     needs: discover-packages
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           path: repo
 
@@ -65,7 +65,7 @@ jobs:
           cache: false
 
       - name: Setup NodeJS
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         if: ${{ matrix.node }}
         with:
           node-version: ${{ matrix.node }}
@@ -86,7 +86,7 @@ jobs:
             bash -ex repo/pkgs/${{ matrix.pkg_name }}/build.sh ${{ matrix.arch }} ${{ matrix.abi }}
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: ${{ github.run_id }}_${{ matrix.pkg_name }}_${{ matrix.arch }}_${{ matrix.abi }}
           path: dist/*
@@ -105,12 +105,12 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           path: repo
 
       - name: Download build artifacts
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v7
         with:
           path: artifacts
 
