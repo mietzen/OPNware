@@ -1,7 +1,7 @@
 ---
 build_config:
   include:
-    go: '1.23'
+    go: '1.24'
   src_repo: 'https://github.com/traefik/traefik'
 pkg_manifest:
   name: traefik
