@@ -1,7 +1,7 @@
 ---
 build_config:
   include:
-    go: '1.24'
+    go: '1.25'
   src_repo: 'https://github.com/showwin/speedtest-go'
 pkg_manifest:
   name: speedtest-go
