@@ -1,0 +1,28 @@
+# Complex example:
+{
+	storage file_system {
+		root /opt/opnware/pkgs/caddy
+	}
+	acme_dns porkbun {
+		api_key {env.PORKBUN_API_KEY}
+		api_secret_key {env.PORKBUN_API_SECRET_KEY}
+	}
+	events {
+		on cert_obtained exec /opt/opnware/pkgs/caddy/dnsmasq_add_host {env.OPNSENSE_HOSTNAME} {event.data.identifier} {env.CADDY_SERVER_IP}
+	}
+	log caddy {
+		output file /opt/opnware/pkgs/caddy/caddy.log {
+			roll_size 10MiB
+			roll_local_time
+			roll_keep 5
+			roll_keep_for 336h
+		}
+		format console {
+			time_local
+			time_format wall
+		}
+		level INFO
+	}
+}
+
+import conf.d/*.caddy
