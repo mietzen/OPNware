@@ -1,4 +1,15 @@
+# Simple http example
 :8099 {
     root * conf.d/example
     file_server
 }
+
+# Reverse proxy with tls cert over DNS-01 challenge from Porkbun
+#   opnsense.example.com {
+#   	reverse_proxy {env.CADDY_SERVER_IP}:8443 {
+#   		transport http {
+#   			tls
+#   			tls_insecure_skip_verify
+#   		}
+#   	}
+#   }
