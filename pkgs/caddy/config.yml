@@ -44,9 +44,19 @@ pkg_manifest:
       if ! kldstat -q -m mac_portacl; then
         kldload mac_portacl 2>/dev/null || true
       fi
+      sysctl security.mac.portacl.port_high=1023
+      sysctl net.inet.ip.portrange.reservedlow=0
+      sysctl net.inet.ip.portrange.reservedhigh=0
+      sysctl security.mac.portacl.suser_exempt=1
       sysctl security.mac.portacl.rules="uid:${service_id}:tcp:80,uid:${service_id}:tcp:443"
-      if ! grep -q "security.mac.portacl.rules.*uid:${service_id}:" /etc/sysctl.conf 2>/dev/null; then
+      if ! grep -q "# CADDY SERVICE BLOCK" /etc/sysctl.conf 2>/dev/null; then
+        echo "# CADDY SERVICE BLOCK" >> /etc/sysctl.conf
+        echo "security.mac.portacl.port_high=1023" >> /etc/sysctl.conf
+        echo "net.inet.ip.portrange.reservedlow=0" >> /etc/sysctl.conf
+        echo "net.inet.ip.portrange.reservedhigh=0" >> /etc/sysctl.conf
+        echo "security.mac.portacl.suser_exempt=1" >> /etc/sysctl.conf
         echo "security.mac.portacl.rules=uid:${service_id}:tcp:80,uid:${service_id}:tcp:443" >> /etc/sysctl.conf
+        echo "# CADDY SERVICE BLOCK" >> /etc/sysctl.conf
       fi
     post-install: |
       chown -R caddy:www /opt/opnware/pkgs/caddy
@@ -61,11 +71,10 @@ pkg_manifest:
     
     post-deinstall: |
       echo "===> Cleaning up"
-      service_id=$(id -u caddy 2>/dev/null) || service_id=""
       pw deluser caddy 2>/dev/null || true
       rm -f /boot/loader.conf.d/99-caddy.conf
-      if [ -n "$service_id" ]; then
-        sed -i '' "/security.mac.portacl.rules.*uid:${service_id}:/d" /etc/sysctl.conf
+      if grep -q "# CADDY SERVICE BLOCK" /etc/sysctl.conf 2>/dev/null; then
+        sed -i '' '/# CADDY SERVICE BLOCK/,/# CADDY SERVICE BLOCK/d' /etc/sysctl.conf
       fi
 pkg_service:
   template: default
