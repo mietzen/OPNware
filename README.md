@@ -9,14 +9,12 @@ It contains packages that I use or have used:
 - [blocky](https://github.com/0xERR0R/blocky) (cross-compiled)
 - [btop](https://github.com/aristocratos/btop) (redistributed)
 - [caddy](https://caddyserver.com/) (cross-compiled)
-- [dnsmasq-leases-widget](https://github.com/mietzen/opnsense-dnsmasq-leases-widget) (source pkg)
 - [homer](https://homer-demo.netlify.app/) (source pkg)
 - [htop](https://htop.dev/) (redistributed)
 - [speedtest-go](https://github.com/showwin/speedtest-go) (cross-compiled)
-- [traefik](https://traefik.io) (cross-compiled)
 - [upsnap](https://github.com/seriousm4x/UpSnap) (cross-compiled)
 - [yq](https://mikefarah.gitbook.io/yq) (cross-compiled)
-- [zsh](https://git.code.sf.net/p/zsh/code) (source build)
+- [zsh](https://git.code.sf.net/p/zsh/code) (redistributed)
 
 Most of the packages are cross-compiled Go binaries or redistributed FreeBSD pkgs.
 Some are built from source in a FreeBSD VM. 
