@@ -27,8 +27,7 @@ pkg_manifest:
     Its design enables precise control over in-memory components, such as HTTP handlers and TLS.
     The plugin system allows extensive customization and improvements beyond other web servers.
     Refer to the documentation for details on configuration structure.
-  scripts:
-    pre-install: |
+    scripts:pre-install: |
       existing_ids=$(mktemp)
       cut -d: -f3,4 /etc/passwd | tr ':' '\n' | sort -un > $existing_ids
       service_id=$(seq 300 999 | grep -vxFf $existing_ids | head -n1)
@@ -38,19 +37,35 @@ pkg_manifest:
         pw adduser caddy -u $service_id -d /opt/opnware/pkgs/caddy -s /usr/sbin/nologin -c "caddy service user"
       else
         echo "Using existing user 'caddy'"
+        service_id=$(id -u caddy)
+      fi
+      echo 'mac_portacl_load="YES"' > /boot/loader.conf.d/99-caddy.conf
+      if ! kldstat -q -m mac_portacl; then
+        kldload mac_portacl 2>/dev/null || true
+      fi
+      sysctl security.mac.portacl.rules="uid:${service_id}:tcp:80,uid:${service_id}:tcp:443"
+      if ! grep -q "security.mac.portacl.rules.*uid:${service_id}:" /etc/sysctl.conf 2>/dev/null; then
+        echo "security.mac.portacl.rules=uid:${service_id}:tcp:80,uid:${service_id}:tcp:443" >> /etc/sysctl.conf
       fi
     post-install: |
       chown -R caddy:www /opt/opnware/pkgs/caddy
       echo "===> Starting service"
       service caddy enable
       service caddy start
+    
     pre-deinstall: |
       echo "===> Stopping service"
-      service caddy stop
-      service caddy disable
+      service caddy stop || true
+      service caddy disable || true
+    
     post-deinstall: |
-      echo "===> Deleting user"
-      pw deluser caddy
+      echo "===> Cleaning up"
+      service_id=$(id -u caddy 2>/dev/null) || service_id=""
+      pw deluser caddy 2>/dev/null || true
+      rm -f /boot/loader.conf.d/99-caddy.conf
+      if [ -n "$service_id" ]; then
+        sed -i '' "/security.mac.portacl.rules.*uid:${service_id}:/d" /etc/sysctl.conf
+      fi
 pkg_service:
   template: default
   vars:
