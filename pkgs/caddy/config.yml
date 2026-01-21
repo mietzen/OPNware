@@ -48,14 +48,14 @@ pkg_manifest:
       sysctl net.inet.ip.portrange.reservedlow=0
       sysctl net.inet.ip.portrange.reservedhigh=0
       sysctl security.mac.portacl.suser_exempt=1
-      sysctl security.mac.portacl.rules="uid:${service_id}:tcp:80,uid:${service_id}:tcp:443"
+      sysctl security.mac.portacl.rules="uid:${service_id}:tcp:80,uid:${service_id}:tcp:443,uid:${service_id}:udp:443"
       if ! grep -q "# CADDY SERVICE BLOCK" /etc/sysctl.conf 2>/dev/null; then
         echo "# CADDY SERVICE BLOCK" >> /etc/sysctl.conf
         echo "security.mac.portacl.port_high=1023" >> /etc/sysctl.conf
         echo "net.inet.ip.portrange.reservedlow=0" >> /etc/sysctl.conf
         echo "net.inet.ip.portrange.reservedhigh=0" >> /etc/sysctl.conf
         echo "security.mac.portacl.suser_exempt=1" >> /etc/sysctl.conf
-        echo "security.mac.portacl.rules=uid:${service_id}:tcp:80,uid:${service_id}:tcp:443" >> /etc/sysctl.conf
+        echo "security.mac.portacl.rules=uid:${service_id}:tcp:80,uid:${service_id}:tcp:443,uid:${service_id}:udp:443" >> /etc/sysctl.conf
         echo "# CADDY SERVICE BLOCK" >> /etc/sysctl.conf
       fi
     post-install: |
