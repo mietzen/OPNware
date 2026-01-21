@@ -27,7 +27,8 @@ pkg_manifest:
     Its design enables precise control over in-memory components, such as HTTP handlers and TLS.
     The plugin system allows extensive customization and improvements beyond other web servers.
     Refer to the documentation for details on configuration structure.
-    scripts:pre-install: |
+  scripts:
+    pre-install: |
       existing_ids=$(mktemp)
       cut -d: -f3,4 /etc/passwd | tr ':' '\n' | sort -un > $existing_ids
       service_id=$(seq 300 999 | grep -vxFf $existing_ids | head -n1)
