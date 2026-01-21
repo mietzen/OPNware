@@ -5,12 +5,11 @@
 name="{{ NAME }}"
 {{ NAME }}_chdir="/opt/opnware/pkgs/{{ NAME }}"
 rcvar="{{ NAME }}_enable"
-{{ NAME }}_user="{{ NAME }}"
 {{ NAME }}_command="{{ COMMAND }}"
 pidfile="/opt/opnware/pkgs/{{ NAME }}/{{ '${name}' }}.pid"
 logfile="/opt/opnware/pkgs/{{ NAME }}/{{ '${name}' }}.log"
 command="/usr/sbin/daemon"
-command_args="-u {{ '${' + NAME + '_user' + '}' }} -t {{ '${name}_d' }} -P {{ '${pidfile}' }} -o {{ '${logfile}' }} -r -R 3 {{ '${' + NAME + '_command' + '}' }}"
+command_args="-u {{ NAME }} -t {{ '${name}_d' }} -P {{ '${pidfile}' }} -o {{ '${logfile}' }} -r -R 3 {{ '${' + NAME + '_command' + '}' }}"
 {{ SRV_CMDS }}
 load_rc_config {{ '${name}' }}
 : {{ '${' + NAME + '_enable' + ':=no' }} }
