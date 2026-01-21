@@ -9,11 +9,32 @@ name="{{ NAME }}"
 {{ NAME }}_chdir="/opt/opnware/pkgs/{{ NAME }}"
 rcvar="{{ NAME }}_enable"
 {{ NAME }}_command="{{ COMMAND }}"
-pidfile="/opt/opnware/pkgs/{{ NAME }}/{{ '${name}' }}.pid"
-logfile="/opt/opnware/pkgs/{{ NAME }}/{{ '${name}' }}.log"
+pidfile="/var/run/{{ '${name}' }}.pid"
+logfile="/opt/opnware/pkgs/{{ NAME }}/{{ '${name}' }}_daemon.log"
+logdir="/opt/opnware/pkgs/{{ NAME }}/logs"
 command="/usr/sbin/daemon"
-command_args="-u {{ NAME }} -t {{ '${name}_d' }} -P {{ '${pidfile}' }} -o {{ '${logfile}' }} -r -R 3 {{ '${' + NAME + '_command' + '}' }}"
+command_args="-u {{ NAME }} -t {{ '${name}_d' }} -P {{ '${pidfile}' }} -o {{ '${logfile}' }} {{ '${' + NAME + '_command' + '}' }}"
+
+start_precmd="{{ '${name}_prestart' }}"
+stop_postcmd="{{ '${name}_poststop' }}"
 {{ SRV_CMDS }}
+
+{{ NAME }}_prestart() {
+    cd {{ '${' + NAME + '_chdir}' }} || return 1
+}
+
+{{ NAME }}_poststop() {
+    if [ -f {{ '${logfile}' }} ]; then
+        mkdir -p {{ '${logdir}' }}
+        local timestamp=$(date +%Y%m%d_%H%M%S)
+        mv {{ '${logfile}' }} {{ '${logdir}' }}/{{ NAME }}_{{ '${timestamp}' }}.log
+        gzip {{ '${logdir}' }}/{{ NAME }}_{{ '${timestamp}' }}.log
+        chown {{ NAME }} {{ '${logdir}' }}/{{ NAME }}_{{ '${timestamp}' }}.log.gz
+        # Keep only last 10 logs
+        ls -t {{ '${logdir}' }}/{{ NAME }}_*.log 2>/dev/null | tail -n +11 | xargs rm -f
+    fi
+}
+
 load_rc_config {{ '${name}' }}
 : {{ '${' + NAME + '_enable' + ':=no' }} }
 
