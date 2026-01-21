@@ -1,9 +1,0 @@
-providers:
-  file:
-    filename: /opt/opnware/pkgs/traefik/traefik_dynamic.yml
-    watch: true
-entryPoints:
-  web:
-    address: ":8098"
-api:
-  dashboard: true
