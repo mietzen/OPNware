@@ -2,5 +2,8 @@
 	storage file_system {
 		root /opt/opnware/pkgs/caddy
 	}
+	servers {
+		protocols h1 h2
+	}
 }
 import conf.d/*.caddy
