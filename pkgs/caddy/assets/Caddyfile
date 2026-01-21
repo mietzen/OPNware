@@ -1,9 +1,22 @@
 {
+	servers {
+		protocols h1 h2
+	}
 	storage file_system {
 		root /opt/opnware/pkgs/caddy
 	}
-	servers {
-		protocols h1 h2
+	log caddy {
+		output file /opt/opnware/pkgs/caddy/access.log {
+			roll_size 10MiB
+			roll_local_time
+			roll_keep 5
+			roll_keep_for 336h
+		}
+		format console {
+			time_local
+			time_format wall
+		}
+		level INFO
 	}
 }
 import conf.d/*.caddy
