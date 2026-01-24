@@ -14,9 +14,9 @@ SRC_REPO=$(yq '.build_config.src_repo' "${CONFIG}")
 CADDY_PLUGINS=(
     "github.com/caddy-dns/porkbun"
     "github.com/mholt/caddy-dynamicdns"
-    "github.com/mholt/caddy-events-exec"
-    "github.com/mietzen/caddy-dynamicdns-cmd-source"
-    "github.com/lucaslorentz/caddy-docker-proxy/v2"
+    "github.com/mietzen/caddy-dns-opnsense"
+    "github.com/mietzen/libdns-opnsense-dnsmasq"
+    "github.com/mietzen/libdns-opnsense-unbound"
 )
 
 echo "::group::Install pkg-tool"

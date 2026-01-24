@@ -7,11 +7,27 @@
 		api_key {env.PORKBUN_API_KEY}
 		api_secret_key {env.PORKBUN_API_SECRET_KEY}
 	}
-	events {
-		on cert_obtained exec /opt/opnware/pkgs/caddy/dnsmasq_add_host {env.OPNSENSE_HOSTNAME} {event.data.identifier} {env.CADDY_SERVER_IP}
-	}
+	email {$ACME_EMAIL}
 	storage file_system {
 		root /opt/opnware/pkgs/caddy
+	}
+	dynamic_dns {
+		provider opnsense {
+			host {$OPNSENSE_HOSTNAME}
+			api_key {env.OPNSENSE_API_KEY}
+			api_secret_key {env.OPNSENSE_API_SECRET_KEY}
+			dns_service {$OPNSENSE_DNS_SERVICE}
+			insecure {$OPNSENSE_INSECURE}
+			entry_description {$OPNSENSE_ENTRY_DESCRIPTION}
+		}
+		domains {
+			{$BASE_DOMAIN}
+		}
+		dynamic_domains
+		ip_source static {$CADDY_SERVER_IP}
+		check_interval 30m
+		ttl 1h
+		versions ipv4
 	}
 	log caddy {
 		output file /opt/opnware/pkgs/caddy/access.log {
