@@ -9,7 +9,9 @@ SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 CONFIG="${SCRIPT_DIR}/config.yml"
 REPO_DIR=$(echo "${SCRIPT_DIR#${GH_WS%/}/}" | cut -d'/' -f1)
 PKG_NAME=$(yq -r '.[].name | select( . != null )' ${CONFIG})
-VERSION=$(yq '.pkg_manifest.version' "${CONFIG}")
+VERSION_SEP=$(yq -r '.build_config.enhancement_version_separator' "$CONFIG")
+FULL_VERSION=$(yq -r '.pkg_manifest.version' "$CONFIG")
+VERSION=${FULL_VERSION%%"$VERSION_SEP"*}
 SRC_REPO=$(yq '.build_config.src_repo' "${CONFIG}")
 CADDY_PLUGINS=(
     "github.com/caddy-dns/porkbun"
@@ -90,7 +92,7 @@ cd "${GH_WS}/dist"
 pkg-tool create-manifest "${CONFIG}" --abi "${ABI}" --arch "${ARCH}"
 
 # Create Package
-tar -cf "${PKG_NAME}-${VERSION}.pkg" \
+tar -cf "${PKG_NAME}-${FULL_VERSION}.pkg" \
     --zstd \
     --owner=0 \
     --group=0 \

@@ -179,12 +179,16 @@ def main():
         with open(config_file, 'r') as f:
             config = yaml.safe_load(f)
 
-        if config.get('redistribute', False):
+        version_separator = config.get('build_config', {}).get('enhancement_version_separator')
+
+        if config.get('redistribute'):
             for abi_arch in config.get('redistribute', {}).get('version', {}).keys():
                 local_version[abi_arch] = config['redistribute']['version'][abi_arch]
                 remote_version[abi_arch] = get_version_bsd_repo(pkg_name, config, abi_arch)
         else:
             local_version = {'ALL': config.get('pkg_manifest', {}).get('version')}
+            if version_separator:
+                local_version['ALL'] = local_version['ALL'].split(version_separator)[0]
             repo_url = config.get('build_config', {}).get('src_repo', '')
             if 'github.com' in repo_url:
                 remote_version = {'ALL': get_version_gh_repo(pkg_name, config)}
@@ -200,6 +204,8 @@ def main():
 
         for abi_arch in local_version:
             if str(remote_version[abi_arch]) != str(local_version[abi_arch]):
+                if version_separator:
+                    remote_version[abi_arch] += version_separator + '0'
                 matrix['pkg'].append(pkg_name)
                 matrix['include'].append({'pkg': pkg_name, 'abi_arch': abi_arch, 'version': remote_version[abi_arch]})
 

@@ -3,10 +3,11 @@ build_config:
   include:
     go: '1.25'
   src_repo: 'https://github.com/caddyserver/caddy'
+  enhancement_version_separator: '_'
 pkg_manifest:
   name: caddy
   origin: opnware/caddy
-  version: 2.10.2
+  version: 2.10.2_0
   comment: Fast and extensible multi-platform HTTP/1-2-3 web server with automatic HTTPS
   www: https://caddyserver.com/
   maintainer: github.nstein@mailbox.org
@@ -15,16 +16,6 @@ pkg_manifest:
     - caddy
   groups:
     - caddy
-  deps:
-    bash:
-      origin: shells/bash
-      version: ">=5.3.9"
-    jq:
-      origin: textproc/jq
-      version: ">=1.8.1"
-    curl:
-      origin: ftp/curl
-      version: ">=8.17.0"      
   licenselogic: single
   licenses:
     - APACHE20
