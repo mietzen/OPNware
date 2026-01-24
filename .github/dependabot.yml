@@ -10,3 +10,7 @@ updates:
     - ".github/assets"
     schedule:
       interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/pkgs/caddy/assets/.depandabot"
+    schedule:
+      interval: "weekly"

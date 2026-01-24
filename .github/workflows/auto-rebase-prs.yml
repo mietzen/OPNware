@@ -21,7 +21,11 @@ jobs:
     - name: Rebase all open Pull Requests
       run: |
         for PR in $(gh pr list --json number | jq -r '.[].number'); do
-          gh pr update-branch "$PR" --rebase || true
+          if [ $(gh pr view "$PR" --json author --jq '.author.login') == "app/dependabot" ]; then
+            gh pr comment "$PR" -b '@dependabot rebase'
+          else
+            gh pr update-branch "$PR" --rebase || true
+          fi
         done
       env:
         GH_TOKEN: ${{ steps.app-token.outputs.token }}
