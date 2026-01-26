@@ -76,7 +76,7 @@ chmod 0644 "${GH_WS}/dist/pkg/opt/opnware/pkgs/${PKG_NAME}/SOURCE"
 
 # Copy Assets
 cp -Tr "${GH_WS}/repo/pkgs/${PKG_NAME}/assets" "${GH_WS}/dist/pkg/opt/opnware/pkgs/${PKG_NAME}"
-cp "${GH_WS}/repo/pkgs/${PKG_NAME}/assets/.env" "${GH_WS}/dist/pkg/opt/opnware/pkgs/${PKG_NAME}/.env"
+cp "${GH_WS}/repo/pkgs/${PKG_NAME}/assets/.env.example" "${GH_WS}/dist/pkg/opt/opnware/pkgs/${PKG_NAME}/.env.example"
 chmod -R 0755 "${GH_WS}/dist/pkg/opt/opnware/pkgs/${PKG_NAME}"
 
 # Create BSD distribution pkg
