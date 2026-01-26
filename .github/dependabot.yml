@@ -11,6 +11,6 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
-    directory: "/pkgs/caddy/assets/.depandabot"
+    directory: "/pkgs/caddy/.depandabot"
     schedule:
       interval: "weekly"
