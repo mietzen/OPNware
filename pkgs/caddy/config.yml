@@ -7,7 +7,7 @@ build_config:
 pkg_manifest:
   name: caddy
   origin: opnware/caddy
-  version: 2.10.2_0
+  version: 2.11.1_0
   comment: Fast and extensible multi-platform HTTP/1-2-3 web server with automatic HTTPS
   www: https://caddyserver.com/
   maintainer: github.nstein@mailbox.org
