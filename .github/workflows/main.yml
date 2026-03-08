@@ -86,7 +86,7 @@ jobs:
             bash -ex repo/pkgs/${{ matrix.pkg_name }}/build.sh ${{ matrix.arch }} ${{ matrix.abi }}
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ github.run_id }}_${{ matrix.pkg_name }}_${{ matrix.arch }}_${{ matrix.abi }}
           path: dist/*
