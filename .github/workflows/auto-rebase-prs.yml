@@ -9,23 +9,17 @@ jobs:
   auto-rebase:
     runs-on: ubuntu-24.04
     steps:
-    - uses: actions/create-github-app-token@v3
-      id: app-token
-      with:
-        app-id: ${{ secrets.APP_ID }}
-        private-key: ${{ secrets.APP_PRIVATE_KEY }}
-
-    - name: Checkout Code
-      uses: actions/checkout@v6
-
-    - name: Rebase all open Pull Requests
-      run: |
-        for PR in $(gh pr list --json number | jq -r '.[].number'); do
-          if [ $(gh pr view "$PR" --json author --jq '.author.login') == "app/dependabot" ]; then
-            gh pr comment "$PR" -b '@dependabot rebase'
-          else
-            gh pr update-branch "$PR" --rebase || true
-          fi
-        done
-      env:
-        GH_TOKEN: ${{ steps.app-token.outputs.token }}
+      - name: Checkout Code
+        uses: actions/checkout@v6
+  
+      - name: Rebase all open Pull Requests
+        run: |
+          for PR in $(gh pr list --json number | jq -r '.[].number'); do
+            if [ $(gh pr view "$PR" --json author --jq '.author.login') == "app/dependabot" ]; then
+              gh pr comment "$PR" -b '@dependabot rebase'
+            else
+              gh pr update-branch "$PR" --rebase || true
+            fi
+          done
+        env:
+          GH_TOKEN: ${{ secrets.REBASE_TOKEN }}
