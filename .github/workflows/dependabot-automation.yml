@@ -14,7 +14,7 @@ jobs:
   auto-merge:
     name: "Auto Merge Dependabot Github Actions & PIP Updates"
     runs-on: ubuntu-24.04
-    if: github.actor == 'dependabot[bot]' && (contains(github.event.pull_request.labels.*.name, 'github_actions') || contains(github.event.pull_request.labels.*.name, 'pip'))
+    if: github.actor == 'dependabot[bot]' && (contains(github.event.pull_request.labels.*.name, 'github_actions') || contains(github.event.pull_request.labels.*.name, 'python'))
     steps:
       - uses: actions/checkout@v6
       - uses: actions/create-github-app-token@v3
