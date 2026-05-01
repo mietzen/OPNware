@@ -7,19 +7,23 @@ on:
       - main
     paths:
       - 'pkgs/**'
+      - 'pkg-tool/requirements.txt'
       - 'service_templates/**'
       - 'config.yml'
       - '.github/workflows/main.yml'
       - '.github/assets/*.py'
+      - '.github/assets/requirements.txt'
   push:
     branches:
       - main
     paths:
       - 'pkgs/**'
+      - 'pkg-tool/requirements.txt'
       - 'service_templates/**'
       - 'config.yml'
       - '.github/workflows/main.yml'
       - '.github/assets/*.py'
+      - '.github/assets/requirements.txt'
 
 jobs:
   discover-packages:
