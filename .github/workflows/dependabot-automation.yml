@@ -57,17 +57,18 @@ jobs:
         uses: actions/checkout@v6
         with:
           token: ${{ steps.app-token.outputs.token }}
+          ref: ${{ github.head_ref }}
           fetch-depth: 0
 
       - name: Check pkgs
         run: |
           set -euo pipefail
 
-          mapfile -d '' files < <(git status --porcelain -z)
+          mapfile -d '' files < <(git diff --name-only -z $(git merge-base origin/${{ github.base_ref }} HEAD))
 
           pkgs=()
           for f in "${files[@]}"; do
-            path="${f:3}"
+            path="$f"
             [[ $path == pkgs/*/* ]] || continue
             pkgs+=( "${path#pkgs/}" )
           done
