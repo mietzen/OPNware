@@ -7,7 +7,7 @@ require (
 	github.com/caddyserver/caddy/v2 v2.11.4
 	github.com/libdns/libdns v1.1.1
 	github.com/lucaslorentz/caddy-docker-proxy/v2 v2.12.0
-	github.com/mietzen/caddy-dns-opnsense v0.9.0
+	github.com/mietzen/caddy-dns-opnsense v0.10.0
 	github.com/mietzen/libdns-opnsense-dnsmasq v0.2.0
 	github.com/mietzen/libdns-opnsense-unbound v0.2.0
 )
