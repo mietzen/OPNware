@@ -1,7 +1,7 @@
 ---
 pkg-repo:
   abi:
-    - 14
+    - 15
   arch:
     - amd64
 meta-conf:
