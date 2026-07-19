@@ -69,7 +69,7 @@ jobs:
           cache: false
 
       - name: Setup NodeJS
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         if: ${{ matrix.node }}
         with:
           node-version: ${{ matrix.node }}
