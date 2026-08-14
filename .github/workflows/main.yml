@@ -122,51 +122,16 @@ jobs:
         with:
           path: artifacts
 
-      - name: Create pages dir
-        run: mkdir pages
+      - name: Install pkg-tool
+        run: pip install "file://${GITHUB_WORKSPACE}/repo/pkg-tool"
 
-      - name: Sort and Store Artifacts
-        working-directory: ./pages
+      - name: Assemble Repo
         run: |
-          for artifact in ${GITHUB_WORKSPACE}/artifacts/*; do
-            read arch abi <<< $(echo "${artifact}" | awk -F'_' '{print $(NF-1), $NF}')
-            target_dir="${GITHUB_WORKSPACE}/pages/FreeBSD:${abi}:${arch}/latest/All"
-            mkdir -p ${target_dir}
-            mv ${artifact}/*.pkg ${target_dir}/
-            echo "$(cat ${artifact}/packagesite_info.json)" >> ${GITHUB_WORKSPACE}/pages/FreeBSD:${abi}:${arch}/latest/packagesite.yaml
-          done
-
-      - name: Create packagesite.pkg & meta.conf
-        run: |
-          for dir in ${GITHUB_WORKSPACE}/pages/*; do
-            tar --zstd --remove-files -cf ${dir}/latest/packagesite.tzst -C ${dir}/latest packagesite.yaml
-            cd ${dir}/latest; ln -s ./packagesite.tzst ./packagesite.pkg; cd ${GITHUB_WORKSPACE}
-            yq '.meta-conf' -o json  ${GITHUB_WORKSPACE}/repo/config.yml > ${dir}/latest/meta.conf
-          done
-
-      - name: Generate Repository Config
-        working-directory: ./pages
-        run: |
-          cat << EOF > ${GITHUB_WORKSPACE}/pages/opnware.conf
-          opnware: {
-            url: "https://${GITHUB_REPOSITORY_OWNER}.github.io/${GITHUB_REPOSITORY#*/}/\${ABI}/latest",
-            priority: 5,
-            enabled: yes
-          }
-          EOF
-
-      - name: Create Index Pages
-        working-directory: ./pages
-        run: |
-          python ../repo/.github/assets/create-dir-index.py .
-
-      - name: Create robots.txt
-        working-directory: ./pages
-        run: |
-          cat << EOF > ${GITHUB_WORKSPACE}/pages/robots.txt
-          User-agent: *
-          Disallow: /
-          EOF
+          mkdir pages
+          pkg-tool assemble-repo ./artifacts ./repo/config.yml \
+            --owner ${GITHUB_REPOSITORY_OWNER} \
+            --repo ${GITHUB_REPOSITORY#*/} \
+            --output-dir ./pages
 
       - name: Upload Pages Artifact
         uses: actions/upload-pages-artifact@v5
@@ -176,6 +141,36 @@ jobs:
       - name: Deploy to GitHub Pages
         uses: actions/deploy-pages@v5
         id: deployment
+
+  assemble-repo-check:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    needs: build-packages
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v7
+        with:
+          path: repo
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v8
+        with:
+          path: artifacts
+
+      - name: Install pkg-tool
+        run: pip install "file://${GITHUB_WORKSPACE}/repo/pkg-tool"
+
+      - name: Verify repo assembly
+        run: |
+          if [ -z "$(find artifacts -name '*.pkg' 2>/dev/null | head -n1)" ]; then
+            echo "No packages built in this run; skipping assembly check"
+            exit 0
+          fi
+          pkg-tool assemble-repo ./artifacts ./repo/config.yml \
+            --owner ${GITHUB_REPOSITORY_OWNER} \
+            --repo ${GITHUB_REPOSITORY#*/} \
+            --output-dir ./pages-check
+          ls ./pages-check/FreeBSD:*/*/latest/packagesite.tzst
 
   Check-Build:
     if: ${{ always() }}
