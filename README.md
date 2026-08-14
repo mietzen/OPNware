@@ -55,9 +55,40 @@ The App will need these permissions:
 
 ### How to add `pkgs`:
 
-As mentioned, I currently don't have much time -> There are no docs.
+1. Copy an existing package folder (e.g. [`pkgs/blocky`](https://github.com/mietzen/OPNware/tree/main/pkgs/blocky)) and rename it.
+2. Fill in `config.yml` — the package spec glossary lives in [`CONTEXT.md`](CONTEXT.md). For a service package add `pkg_service` and look at the [jinja service_template](https://github.com/mietzen/OPNware/blob/main/service_templates/default.jinja).
+3. Adjust `build.sh` so it produces your payload, then finishes with `pkg-tool pack`.
+4. Build locally (next section). The rest — build matrix, update checks, repo assembly — is driven by pkg-tool and GitHub Actions automatically.
 
-Look at the [build scripts (`build.sh`)](https://github.com/mietzen/OPNware/blob/main/pkgs/blocky/build.sh) and [configs (`config.yml`)](https://github.com/mietzen/OPNware/blob/main/pkgs/blocky/config.yml) in the [`pkg` folders](https://github.com/mietzen/OPNware/tree/main/pkgs) and the [main `config.yml`](https://github.com/mietzen/OPNware/blob/main/config.yml) for examples on how to create new `pkgs`. If you want to add services also look at the [jinja service_template](https://github.com/mietzen/OPNware/blob/main/service_templates/default.jinja).
+For examples see the [build scripts (`build.sh`)](https://github.com/mietzen/OPNware/blob/main/pkgs/blocky/build.sh) and [configs (`config.yml`)](https://github.com/mietzen/OPNware/blob/main/pkgs/blocky/config.yml) in the [`pkg` folders](https://github.com/mietzen/OPNware/tree/main/pkgs) and the [main `config.yml`](https://github.com/mietzen/OPNware/blob/main/config.yml).
+
+### Local build & repo preview
+
+Build a package from a plain checkout — no CI env vars needed:
+
+```sh
+pip install ./pkg-tool
+cd pkgs/blocky && ./build.sh amd64 15
+```
+
+Build outputs land in `dist/`. Assemble a local repo preview from the repo root and serve it:
+
+```sh
+pkg-tool assemble-repo dist config.yml --owner <you> --repo <repo> --output-dir pages
+python3 -m http.server 8000 -d pages
+```
+
+The generated `pages/opnware.conf` points at the published GitHub Pages URL — for a local test, point it at your server instead:
+
+```
+opnware: {
+  url: "http://<your-ip>:8000/${ABI}/latest",
+  priority: 5,
+  enabled: yes
+}
+```
+
+Then on an OPNsense/FreeBSD box: `fetch -o /usr/local/etc/pkg/repos/opnware.conf http://<your-ip>:8000/opnware.conf`, `pkg update`, and `pkg install <pkg>`.
 
 ## Installation
 

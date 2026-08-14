@@ -4,10 +4,11 @@ set -e
 # Setup Environment Variables
 ARCH="${1}"
 ABI="${2}"
-GH_WS="${GITHUB_WORKSPACE}"
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 CONFIG="${SCRIPT_DIR}/config.yml"
 PKG_NAME=$(pkg-tool dump "${CONFIG}" pkg_manifest.name)
+REPO_ROOT=$( cd "${SCRIPT_DIR}/../.." && pwd )
+DIST_ROOT="${GITHUB_WORKSPACE:-${REPO_ROOT}}"
 VERSION_SEP=$(pkg-tool dump "${CONFIG}" build_config.enhancement_version_separator)
 FULL_VERSION=$(pkg-tool dump "${CONFIG}" pkg_manifest.version)
 VERSION=${FULL_VERSION%%"$VERSION_SEP"*}
@@ -26,46 +27,46 @@ echo "::endgroup::"
 
 echo "Cross Compiling ${PKG_NAME} - ARCH: ${ARCH} - ABI: ${ABI}"
 
-mkdir -p "${GH_WS}/build"
-chmod 0755 "${GH_WS}/build"
+mkdir -p "${DIST_ROOT}/build"
+chmod 0755 "${DIST_ROOT}/build"
 
 echo "::group::Build Caddy Binary"
-cd "${GH_WS}/build"
+cd "${DIST_ROOT}/build"
 GOOS=freebsd GOARCH="${ARCH}" xcaddy build "v${VERSION}" \
     $(printf -- "--with %s " "${CADDY_PLUGINS[@]}") \
-    --output "${GH_WS}/build/caddy"
+    --output "${DIST_ROOT}/build/caddy"
 echo "::endgroup::"
-cd "${GH_WS}"
+cd "${DIST_ROOT}"
 
 # Create Directories for Packaging
-mkdir -p "${GH_WS}/dist/pkg/opt/opnware/pkgs/${PKG_NAME}"
-mkdir -p "${GH_WS}/dist/pkg/opt/opnware/bin"
-chmod 0755 "${GH_WS}/dist/pkg/opt/opnware/pkgs/${PKG_NAME}" "${GH_WS}/dist/pkg/opt/opnware/bin"
+mkdir -p "${DIST_ROOT}/dist/pkg/opt/opnware/pkgs/${PKG_NAME}"
+mkdir -p "${DIST_ROOT}/dist/pkg/opt/opnware/bin"
+chmod 0755 "${DIST_ROOT}/dist/pkg/opt/opnware/pkgs/${PKG_NAME}" "${DIST_ROOT}/dist/pkg/opt/opnware/bin"
 
 # Copy Binary
-cp "${GH_WS}/build/caddy" "${GH_WS}/dist/pkg/opt/opnware/pkgs/${PKG_NAME}/${PKG_NAME}"
-chmod 0755 "${GH_WS}/dist/pkg/opt/opnware/pkgs/${PKG_NAME}/${PKG_NAME}"
-cd "${GH_WS}/dist/pkg/opt/opnware/bin/"
+cp "${DIST_ROOT}/build/caddy" "${DIST_ROOT}/dist/pkg/opt/opnware/pkgs/${PKG_NAME}/${PKG_NAME}"
+chmod 0755 "${DIST_ROOT}/dist/pkg/opt/opnware/pkgs/${PKG_NAME}/${PKG_NAME}"
+cd "${DIST_ROOT}/dist/pkg/opt/opnware/bin/"
 ln -s "../pkgs/${PKG_NAME}/${PKG_NAME}" "${PKG_NAME}"
-cd "${GH_WS}"
+cd "${DIST_ROOT}"
 
 # Copy License
-curl -o "${GH_WS}/dist/pkg/opt/opnware/pkgs/${PKG_NAME}/LICENSE" -L "${SRC_REPO}/raw/refs/tags/v${VERSION}/LICENSE"
-chmod 0644 "${GH_WS}/dist/pkg/opt/opnware/pkgs/${PKG_NAME}/LICENSE"
+curl -o "${DIST_ROOT}/dist/pkg/opt/opnware/pkgs/${PKG_NAME}/LICENSE" -L "${SRC_REPO}/raw/refs/tags/v${VERSION}/LICENSE"
+chmod 0644 "${DIST_ROOT}/dist/pkg/opt/opnware/pkgs/${PKG_NAME}/LICENSE"
 
 # Provide Source Code Link
-cat <<EOF > "${GH_WS}/dist/pkg/opt/opnware/pkgs/${PKG_NAME}/SOURCE"
+cat <<EOF > "${DIST_ROOT}/dist/pkg/opt/opnware/pkgs/${PKG_NAME}/SOURCE"
 This software is licensed under the Apache License, Version 2.0.
 You may obtain a copy of the source code at:
 ${SRC_REPO}/archive/refs/tags/v${VERSION}.tar.gz
 EOF
-chmod 0644 "${GH_WS}/dist/pkg/opt/opnware/pkgs/${PKG_NAME}/SOURCE"
+chmod 0644 "${DIST_ROOT}/dist/pkg/opt/opnware/pkgs/${PKG_NAME}/SOURCE"
 
 # Copy Assets
-cp -Tr "${GH_WS}/repo/pkgs/${PKG_NAME}/assets" "${GH_WS}/dist/pkg/opt/opnware/pkgs/${PKG_NAME}"
-cp "${GH_WS}/repo/pkgs/${PKG_NAME}/assets/.env.example" "${GH_WS}/dist/pkg/opt/opnware/pkgs/${PKG_NAME}/.env.example"
-chmod -R 0755 "${GH_WS}/dist/pkg/opt/opnware/pkgs/${PKG_NAME}"
+cp -Tr "${REPO_ROOT}/pkgs/${PKG_NAME}/assets" "${DIST_ROOT}/dist/pkg/opt/opnware/pkgs/${PKG_NAME}"
+cp "${REPO_ROOT}/pkgs/${PKG_NAME}/assets/.env.example" "${DIST_ROOT}/dist/pkg/opt/opnware/pkgs/${PKG_NAME}/.env.example"
+chmod -R 0755 "${DIST_ROOT}/dist/pkg/opt/opnware/pkgs/${PKG_NAME}"
 
 # Create BSD distribution pkg
-cd "${GH_WS}/dist"
+cd "${DIST_ROOT}/dist"
 pkg-tool pack "${CONFIG}" --abi "${ABI}" --arch "${ARCH}"

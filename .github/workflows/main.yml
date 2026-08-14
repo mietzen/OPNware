@@ -76,21 +76,9 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
 
-      - name: Create ${{ matrix.pkg_name }} pkg on runner
-        if: ${{ ! matrix.vm_build }}
+      - name: Create ${{ matrix.pkg_name }} pkg
         working-directory: ./repo/pkgs/${{ matrix.pkg_name }}/
         run: ./build.sh ${{ matrix.arch }} ${{ matrix.abi }}
-
-      - name: Create ${{ matrix.pkg_name }} pkg in vm
-        if: ${{ matrix.vm_build }}
-        timeout-minutes: 10
-        uses: vmactions/freebsd-vm@v1
-        with:
-          prepare: |
-            pkg install -y ${{ matrix.perquisite_pkgs }}
-            pip install "file://${GITHUB_WORKSPACE}/repo/pkg-tool"
-          run: |
-            bash -ex repo/pkgs/${{ matrix.pkg_name }}/build.sh ${{ matrix.arch }} ${{ matrix.abi }}
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v7
