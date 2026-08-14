@@ -1,3 +1,0 @@
-requests>=2.34.2
-pyyaml>=6.0.3
-zstandard>=0.25.0

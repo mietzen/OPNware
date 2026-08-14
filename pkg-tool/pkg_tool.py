@@ -3,14 +3,22 @@ import datetime
 import hashlib
 import io
 import json
+import logging
 import os
+import re
 import shutil
+import sys
 import tarfile
 import urllib.request
+from pathlib import Path
 
+import requests
 import yaml
 import zstandard as zstd
 from jinja2 import Environment, FileSystemLoader
+from requests.compat import quote_plus, urljoin, urlparse
+
+logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s', stream=sys.stderr)
 
 """
 FreeBSD Custom Package Repository CLI
@@ -475,6 +483,206 @@ def _gen_pkgsite_info_from_pkg(pkg, output_dir):
     with open(os.path.join(output_dir, "packagesite_info.json"), "w") as f:
         json.dump(pkg_info, f, separators=(',', ':'))
 
+def _replace_scalar(line, new_value):
+    """Rewrite a scalar on a version line, preserving the original quoting."""
+    m = re.match(r'^(\s*[^:]+:\s*)(["\']?)(.*?)(["\']?)\s*$', line)
+    if not m:
+        raise ValueError(f"cannot rewrite version line: {line!r}")
+    prefix, open_q, _, close_q = m.groups()
+    quote = open_q or close_q or ''
+    return f"{prefix}{quote}{new_value}{quote}\n"
+
+def _replace_scalar_in_section(content, section, key, new_value):
+    """Rewrite the scalar of `key` inside the given top-level section."""
+    out = []
+    in_section = False
+    replaced = False
+    for line in content.splitlines(keepends=True):
+        stripped = line.lstrip()
+        indent = len(line) - len(stripped)
+        if indent == 0 and stripped and not stripped.startswith('#'):
+            in_section = stripped.startswith(f'{section}:')
+        elif in_section and stripped.startswith(f'{key}:'):
+            out.append(_replace_scalar(line, new_value))
+            in_section = False
+            replaced = True
+            continue
+        out.append(line)
+    if not replaced:
+        raise ValueError(f"no '{key}' line found under the '{section}' section")
+    return ''.join(out)
+
+def _replace_scalar_in_section_line(content, section, leaf, new_value):
+    """Rewrite the `leaf:` line inside the given top-level section, preserving quoting."""
+    in_section = False
+    lines = content.splitlines(keepends=True)
+    for i, line in enumerate(lines):
+        stripped = line.lstrip()
+        indent = len(line) - len(stripped)
+        if indent == 0 and stripped and not stripped.startswith('#'):
+            if in_section:
+                break
+            in_section = stripped.startswith(f'{section}:')
+        elif in_section and stripped.startswith(f'{leaf}:'):
+            lines[i] = _replace_scalar(line, new_value)
+            return ''.join(lines)
+    raise ValueError(f"no '{leaf}' line found under the '{section}' section")
+
+def bump(pkg, version=None, abi_arch=None, bump_enhancement=False):
+    """
+    Write a version back into a package spec, preserving file formatting.
+
+    Args:
+        pkg (str): Package name (a directory under pkgs/).
+        version (str): New version for build specs, or per-abi_arch for redistribute specs.
+        abi_arch (str): ABI/arch key (e.g. FreeBSD-15-amd64) for redistribute specs.
+        bump_enhancement (bool): Increment the enhancement version after the separator.
+    """
+    config_path = os.path.join('pkgs', pkg, 'config.yml')
+    with open(config_path) as f:
+        content = f.read()
+    if bump_enhancement:
+        if version is not None:
+            raise ValueError("--version and --bump-enhancement are mutually exclusive")
+        spec = yaml.safe_load(content)
+        separator = spec.get('build_config', {}).get('enhancement_version_separator')
+        if not separator:
+            raise ValueError(
+                f"{config_path}: no build_config.enhancement_version_separator; cannot bump enhancement version")
+        old = str(spec['pkg_manifest']['version'])
+        base, _, enh = old.partition(separator)
+        if not enh.isdigit():
+            raise ValueError(f"{config_path}: enhancement part of version {old!r} is not numeric")
+        new_version = f"{base}{separator}{int(enh) + 1}"
+        content = _replace_scalar_in_section(content, 'pkg_manifest', 'version', new_version)
+    else:
+        if version is None:
+            raise ValueError("--version is required (or use --bump-enhancement)")
+        spec = yaml.safe_load(content)
+        if spec.get('redistribute'):
+            if abi_arch is None:
+                raise ValueError(f"{config_path}: redistribute specs need --abi-arch")
+            if abi_arch not in spec['redistribute'].get('version', {}):
+                raise ValueError(f"{config_path}: no version entry for {abi_arch}")
+            content = _replace_scalar_in_section_line(content, 'redistribute', abi_arch, version)
+        else:
+            content = _replace_scalar_in_section(content, 'pkg_manifest', 'version', version)
+    with open(config_path, 'w') as f:
+        f.write(content)
+
+packagesite_cache = {}
+
+def _multi_urljoin(*parts):
+    return urljoin(parts[0], "/".join(quote_plus(part.strip("/"), safe="/") for part in parts[1:]))
+
+def _detect_pkg_comp_fmt(url_base, abi_arch, path):
+    meta_conf_url = _multi_urljoin(url_base, abi_arch.replace('-', ':'), path, "meta.conf")
+    response = requests.get(meta_conf_url)
+    if response.status_code != 200:
+        raise ValueError(f"failed to fetch {meta_conf_url}: HTTP {response.status_code}")
+    match = re.search(r'packing_format\s*=\s*"?([^"]+)"?', response.text)
+    if not match:
+        raise ValueError(f"no packing_format found in {meta_conf_url}")
+    return match.group(1)
+
+def _extract_packagesite(pkgsite_data, compression_format):
+    if compression_format == "tzst":
+        with io.BytesIO(pkgsite_data) as f:
+            dctx = zstd.ZstdDecompressor()
+            with dctx.stream_reader(f) as s:
+                data = io.BytesIO(s.read())
+        with tarfile.open(fileobj=data, mode='r:') as tar:
+            content = tar.extractfile('packagesite.yaml').read()
+    else:
+        with tarfile.open(fileobj=io.BytesIO(pkgsite_data), mode=f'r:{compression_format[1:]}') as tar:
+            content = tar.extractfile('packagesite.yaml').read()
+    return [json.loads(line) for line in io.StringIO(content.decode()).readlines()]
+
+def _load_packagesite(url_base, abi_arch, path):
+    domain = urlparse(url_base).netloc.replace('.', '-')
+    key = f"{domain}-{abi_arch}-{path}"
+    if key in packagesite_cache:
+        return packagesite_cache[key]
+    url = _multi_urljoin(url_base, abi_arch.replace('-', ':'), path, "packagesite.pkg")
+    response = requests.get(url)
+    if response.status_code != 200:
+        raise ValueError(f"failed to download {url}: HTTP {response.status_code}")
+    compression_format = _detect_pkg_comp_fmt(url_base, abi_arch, path)
+    packagesite_cache[key] = _extract_packagesite(response.content, compression_format)
+    return packagesite_cache[key]
+
+def _bsd_latest_version(pkg_name, config, abi_arch):
+    url_base = config.get('redistribute', {}).get('repo', '')
+    path = config.get('redistribute', {}).get('path', '').split('/')[0]
+    for package in _load_packagesite(url_base, abi_arch, path):
+        if package.get('name') == pkg_name:
+            return package.get('version')
+    raise ValueError(f"{pkg_name} not found in packagesite from {url_base}")
+
+def _gh_latest_version(src_repo, token=None):
+    match = re.search(r'https://github.com/([^/]+/[^/]+)', src_repo)
+    if not match:
+        raise ValueError(f"could not parse GitHub repository from {src_repo}")
+    headers = {'Authorization': f'token {token}'} if token else {}
+    response = requests.get(f"https://api.github.com/repos/{match.group(1)}/releases/latest", headers=headers)
+    if response.status_code != 200:
+        raise ValueError(f"failed to get release info from GitHub API: HTTP {response.status_code}")
+    remote_version = str(response.json().get('tag_name', '')).lstrip('v')
+    if not remote_version:
+        raise ValueError(f"no release found for {src_repo}")
+    return remote_version
+
+def _sf_latest_version(src_repo):
+    match = re.search(r'https://git.code.sf.net/p/([^/]+/code)', src_repo)
+    if not match:
+        raise ValueError(f"could not parse Sourceforge repository from {src_repo}")
+    sf_repo = match.group(1).split('/')[0]
+    response = requests.get(f"https://sourceforge.net/projects/{sf_repo}/best_release.json")
+    if response.status_code != 200:
+        raise ValueError(f"failed to get release info from SourceForge: HTTP {response.status_code}")
+    parts = response.json().get('release', {}).get('filename', '').split('/')
+    if len(parts) < 3:
+        raise ValueError(f"unexpected SourceForge release filename: {parts!r}")
+    return parts[-2]
+
+def check_updates(pkgs_dir='pkgs'):
+    """
+    Check all package specs for newer versions.
+
+    Returns the update matrix: {'pkg': [...], 'include': [{pkg, abi_arch, version}, ...]}.
+    Sources are adapters: FreeBSD packagesite (redistribute specs), GitHub releases
+    and SourceForge (build specs with a src_repo).
+    """
+    matrix = {'pkg': [], 'include': []}
+    for config_file in sorted(Path(pkgs_dir).glob('*/config.yml')):
+        pkg_name = config_file.parent.name
+        with open(config_file) as f:
+            config = yaml.safe_load(f)
+        separator = config.get('build_config', {}).get('enhancement_version_separator')
+        if config.get('redistribute'):
+            for abi_arch, local in config['redistribute']['version'].items():
+                remote = _bsd_latest_version(pkg_name, config, abi_arch)
+                if str(remote) != str(local):
+                    matrix['pkg'].append(pkg_name)
+                    matrix['include'].append({'pkg': pkg_name, 'abi_arch': abi_arch, 'version': remote})
+        else:
+            src_repo = config.get('build_config', {}).get('src_repo', '')
+            local = str(config.get('pkg_manifest', {}).get('version'))
+            if separator:
+                local = local.split(separator)[0]
+            if 'github.com' in src_repo:
+                remote = _gh_latest_version(src_repo, os.environ.get('GITHUB_TOKEN'))
+            elif 'sf.net' in src_repo:
+                remote = _sf_latest_version(src_repo)
+            else:
+                raise ValueError(f"{config_file}: no version source for {src_repo}")
+            if str(remote) != local:
+                if separator:
+                    remote = f"{remote}{separator}0"
+                matrix['pkg'].append(pkg_name)
+                matrix['include'].append({'pkg': pkg_name, 'abi_arch': 'ALL', 'version': remote})
+    return matrix
+
 def main():
     """
     Main function to parse command-line arguments and execute corresponding functions.
@@ -506,16 +714,38 @@ def main():
     parser_assemble_repo.add_argument('--output-dir', required=False, default='pages',
                                       help='Directory to output the repo tree (default: pages)')
 
+    parser_check_updates = subparsers.add_parser('check-updates', help='Check all package specs for newer versions')
+    parser_check_updates.add_argument('--pkgs-dir', required=False, default='pkgs',
+                                      help='Directory containing the package specs (default: pkgs)')
+
+    parser_bump = subparsers.add_parser('bump', help='Write a version back into a package spec')
+    parser_bump.add_argument('pkg', help='Package name (a directory under pkgs/)')
+    parser_bump.add_argument('--version', required=False, help='New version')
+    parser_bump.add_argument('--abi-arch', required=False,
+                             help='ABI/arch key for redistribute specs (e.g. FreeBSD-15-amd64)')
+    parser_bump.add_argument('--bump-enhancement', action='store_true',
+                             help='Increment the enhancement version after the separator')
+
     args = parser.parse_args()
 
-    if args.command == 'pack':
-        pack(args.config_path, args.abi, args.arch, args.payload_dir, args.output_dir)
-    elif args.command == 'redistribute-pkg':
-        redistribute_pkg(args.config_path, args.abi, args.arch, args.output_dir)
-    elif args.command == 'assemble-repo':
-        assemble_repo(args.artifacts_dir, args.repo_config, args.owner, args.repo, args.output_dir)
-    else:
-        parser.print_help()
+    try:
+        if args.command == 'pack':
+            pack(args.config_path, args.abi, args.arch, args.payload_dir, args.output_dir)
+        elif args.command == 'redistribute-pkg':
+            redistribute_pkg(args.config_path, args.abi, args.arch, args.output_dir)
+        elif args.command == 'assemble-repo':
+            assemble_repo(args.artifacts_dir, args.repo_config, args.owner, args.repo, args.output_dir)
+        elif args.command == 'check-updates':
+            matrix = check_updates(args.pkgs_dir)
+            if matrix['pkg']:
+                print(json.dumps(matrix))
+        elif args.command == 'bump':
+            bump(args.pkg, args.version, args.abi_arch, args.bump_enhancement)
+        else:
+            parser.print_help()
+    except (ValueError, FileNotFoundError, KeyError) as e:
+        logging.getLogger(__name__).error(str(e))
+        sys.exit(1)
 
 if __name__ == '__main__':
     main()

@@ -60,7 +60,10 @@ jobs:
           ref: ${{ github.head_ref }}
           fetch-depth: 0
 
-      - name: Check pkgs
+      - name: Install pkg-tool
+        run: pip install "file://${GITHUB_WORKSPACE}/pkg-tool"
+
+      - name: Bump enhancement versions
         run: |
           set -euo pipefail
 
@@ -81,31 +84,11 @@ jobs:
           fi
 
           for pkg in "${pkgs[@]}"; do
-            config="./pkgs/${pkg}/config.yml"
-
-            sep=$(yq -r '.build_config.enhancement_version_separator' "$config")
-            [ "$sep" != "null" ] || {
-              echo "No enhancement version separator for $pkg"
-              exit 1
-            }
-
-            old_version=$(yq -r '.pkg_manifest.version' "$config")
-
-            pkg_version="${old_version%%"$sep"*}"
-            enh_version="${old_version#*"$sep"}"
-
-            [[ $enh_version =~ ^[0-9]+$ ]] || {
-              echo "Non-numeric enhancement version for $pkg"
-              exit 1
-            }
-
-            enh_version=$(echo $enh_version+1 | bc)
-            new_version="${pkg_version}${sep}${enh_version}"
-
-            sed -i "/^pkg_manifest:/,/^[^ ]/ s/^\\([[:space:]]*version:[[:space:]]*\\).*/\\1${new_version}/" "$config"
-
-            git add "$config"
-            git commit -m "Updated ${pkg} version from ${old_version} to ${new_version}"
+            pkg-tool bump "$pkg" --bump-enhancement
+            git add "pkgs/${pkg}/config.yml"
+            old=$(git diff --cached "pkgs/${pkg}/config.yml" | sed -n 's/^-.*version:[[:space:]]*//p')
+            new=$(git diff --cached "pkgs/${pkg}/config.yml" | sed -n 's/^+.*version:[[:space:]]*//p')
+            git commit -m "Updated ${pkg} version from ${old} to ${new}"
           done
 
           git push

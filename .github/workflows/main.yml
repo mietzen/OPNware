@@ -12,7 +12,6 @@ on:
       - 'config.yml'
       - '.github/workflows/main.yml'
       - '.github/assets/*.py'
-      - '.github/assets/requirements.txt'
   push:
     branches:
       - main
@@ -23,7 +22,6 @@ on:
       - 'config.yml'
       - '.github/workflows/main.yml'
       - '.github/assets/*.py'
-      - '.github/assets/requirements.txt'
 
 jobs:
   discover-packages:
