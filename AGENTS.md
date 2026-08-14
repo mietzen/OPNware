@@ -13,3 +13,7 @@ Five canonical labels: needs-triage, needs-info, ready-for-agent, ready-for-huma
 ### Domain docs
 
 Single-context: one `CONTEXT.md` + `docs/adr/` at the repo root. See `docs/agents/domain.md`.
+
+## Review convention
+
+Final reviews of implemented issues use the `oracle` sub-agent.
