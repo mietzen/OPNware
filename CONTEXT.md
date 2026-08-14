@@ -12,4 +12,8 @@ A personal FreeBSD package repository for OPNsense. The pipeline: package specs 
 - **Repo layout** — the published `FreeBSD:<abi>:<arch>/latest/` tree served via GitHub Pages.
 - **Repo assembly** — turning built packages + repo config into the published repo tree.
 - **Redistribution** — re-shipping an upstream FreeBSD pkg unchanged (redistribute configs).
-- **ABI / arch** — FreeBSD major version (14/15) and machine architecture (amd64).
+- **ABI / arch** — FreeBSD major version (15) and machine architecture (amd64).
+- **LOCALBASE** — the FreeBSD default prefix (`/usr/local`): binaries in `bin/`, configs in `etc/`, data in `share/`.
+- **OPNsense plugin (os-* plugin)** — an OPNsense MVC (Phalcon PHP) plugin: `config.xml` model, models/controllers/services, menu + ACL, managed via the WebUI and configd.
+- **os-caddy** — the custom OPNsense plugin for Caddy (WebUI-managed, user-owned Caddyfile, module management); depends on the plain caddy pkg.
+- **os-homer** — the custom OPNsense plugin for Homer (WebUI-managed, served via caddy on 9443); replaces the plain homer pkg.
