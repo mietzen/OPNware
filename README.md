@@ -5,14 +5,9 @@
 This is my personal OPNsense `pkg` repository.\
 It contains packages that I use or have used:
 
-- [adguardhome](https://adguard.com/en/adguard-home/overview.html) (cross-compiled)
-- [blocky](https://github.com/0xERR0R/blocky) (cross-compiled)
-- [btop](https://github.com/aristocratos/btop) (redistributed)
 - [caddy](https://caddyserver.com/) (cross-compiled)
 - [homer](https://homer-demo.netlify.app/) (source pkg)
 - [htop](https://htop.dev/) (redistributed)
-- [speedtest-go](https://github.com/showwin/speedtest-go) (cross-compiled)
-- [upsnap](https://github.com/seriousm4x/UpSnap) (cross-compiled)
 - [yq](https://mikefarah.gitbook.io/yq) (cross-compiled)
 - [zsh](https://git.code.sf.net/p/zsh/code) (redistributed)
 
@@ -55,12 +50,12 @@ The App will need these permissions:
 
 ### How to add `pkgs`:
 
-1. Copy an existing package folder (e.g. [`pkgs/blocky`](https://github.com/mietzen/OPNware/tree/main/pkgs/blocky)) and rename it.
+1. Copy an existing package folder (e.g. [`pkgs/yq`](https://github.com/mietzen/OPNware/tree/main/pkgs/yq)) and rename it.
 2. Fill in `config.yml` — the package spec glossary lives in [`CONTEXT.md`](CONTEXT.md). For a service package add `pkg_service` and look at the [jinja service_template](https://github.com/mietzen/OPNware/blob/main/service_templates/default.jinja).
 3. Adjust `build.sh` so it produces your payload, then finishes with `pkg-tool pack`.
 4. Build locally (next section). The rest — build matrix, update checks, repo assembly — is driven by pkg-tool and GitHub Actions automatically.
 
-For examples see the [build scripts (`build.sh`)](https://github.com/mietzen/OPNware/blob/main/pkgs/blocky/build.sh) and [configs (`config.yml`)](https://github.com/mietzen/OPNware/blob/main/pkgs/blocky/config.yml) in the [`pkg` folders](https://github.com/mietzen/OPNware/tree/main/pkgs) and the [main `config.yml`](https://github.com/mietzen/OPNware/blob/main/config.yml).
+For examples see the [build scripts (`build.sh`)](https://github.com/mietzen/OPNware/blob/main/pkgs/yq/build.sh) and [configs (`config.yml`)](https://github.com/mietzen/OPNware/blob/main/pkgs/yq/config.yml) in the [`pkg` folders](https://github.com/mietzen/OPNware/tree/main/pkgs) and the [main `config.yml`](https://github.com/mietzen/OPNware/blob/main/config.yml).
 
 ### Local build & repo preview
 
@@ -68,7 +63,7 @@ Build a package from a plain checkout — no CI env vars needed:
 
 ```sh
 pip install ./pkg-tool
-cd pkgs/blocky && ./build.sh amd64 15
+cd pkgs/yq && ./build.sh amd64 15
 ```
 
 Build outputs land in `dist/`. Assemble a local repo preview from the repo root and serve it:
@@ -103,7 +98,7 @@ You can now install packages from this repo.\
 For example:
 
 ```sh
-pkg install btop
+pkg install zsh
 ```
 
 ## Browse

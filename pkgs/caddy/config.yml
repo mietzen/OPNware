@@ -1,7 +1,7 @@
 ---
 build_config:
   include:
-    go: '1.25'
+    go: '1.26'
   src_repo: 'https://github.com/caddyserver/caddy'
   enhancement_version_separator: '_'
 pkg_manifest:
