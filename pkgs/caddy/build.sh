@@ -19,6 +19,7 @@ CADDY_PLUGINS=(
     "github.com/mietzen/caddy-dns-opnsense"
     "github.com/mietzen/libdns-opnsense-dnsmasq"
     "github.com/mietzen/libdns-opnsense-unbound"
+    "github.com/lucaslorentz/caddy-docker-proxy/v2"
 )
 
 echo "::group::Install xCaddy"

@@ -7,6 +7,7 @@ require (
 	github.com/caddyserver/caddy/v2 v2.11.4
 	github.com/libdns/libdns v1.1.1
 	github.com/lucaslorentz/caddy-docker-proxy/v2 v2.13.1
+	github.com/mholt/caddy-dynamicdns v0.0.0-20260805195708-67d107a42c02
 	github.com/mietzen/caddy-dns-opnsense v0.10.0
 	github.com/mietzen/libdns-opnsense-dnsmasq v0.2.0
 	github.com/mietzen/libdns-opnsense-unbound v0.3.0
@@ -131,6 +132,8 @@ require (
 	github.com/yuin/goldmark v1.8.2 // indirect
 	github.com/yuin/goldmark-highlighting/v2 v2.0.0-20230729083705-37449abec8cc // indirect
 	github.com/zeebo/blake3 v0.2.4 // indirect
+	gitlab.com/NebulousLabs/fastrand v0.0.0-20181126182046-603482d69e40 // indirect
+	gitlab.com/NebulousLabs/go-upnp v0.0.0-20211002182029-11da932010b6 // indirect
 	go.etcd.io/bbolt v1.4.3 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/contrib/bridges/prometheus v0.68.0 // indirect
