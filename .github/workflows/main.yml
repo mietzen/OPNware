@@ -61,6 +61,9 @@ jobs:
         with:
           path: repo
 
+      - name: Install pkg-tool
+        run: pip install "file://${GITHUB_WORKSPACE}/repo/pkg-tool"
+
       - name: Setup GO
         uses: actions/setup-go@v7
         if: ${{ matrix.go }}
@@ -86,6 +89,7 @@ jobs:
         with:
           prepare: |
             pkg install -y ${{ matrix.perquisite_pkgs }}
+            pip install "file://${GITHUB_WORKSPACE}/repo/pkg-tool"
           run: |
             bash -ex repo/pkgs/${{ matrix.pkg_name }}/build.sh ${{ matrix.arch }} ${{ matrix.abi }}
 

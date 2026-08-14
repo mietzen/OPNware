@@ -7,7 +7,6 @@ ABI="${2}"
 GH_WS="${GITHUB_WORKSPACE}"
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 CONFIG="${SCRIPT_DIR}/config.yml"
-REPO_DIR=$(echo "${SCRIPT_DIR#${GH_WS%/}/}" | cut -d'/' -f1)
 PKG_NAME=$(yq -r '.[].name | select( . != null )' ${CONFIG})
 VERSION_SEP=$(yq -r '.build_config.enhancement_version_separator' "$CONFIG")
 FULL_VERSION=$(yq -r '.pkg_manifest.version' "$CONFIG")
@@ -20,10 +19,6 @@ CADDY_PLUGINS=(
     "github.com/mietzen/libdns-opnsense-dnsmasq"
     "github.com/mietzen/libdns-opnsense-unbound"
 )
-
-echo "::group::Install pkg-tool"
-pip install "file://${GH_WS}/${REPO_DIR}/pkg-tool"
-echo "::endgroup::"
 
 echo "::group::Install xCaddy"
 go install github.com/caddyserver/xcaddy/cmd/xcaddy@latest
@@ -43,17 +38,9 @@ echo "::endgroup::"
 cd "${GH_WS}"
 
 # Create Directories for Packaging
-mkdir -p "${GH_WS}/dist/pkg/opt/opnware/pkgs/${PKG_NAME}" "${GH_WS}/dist/pkg/etc/rc.d" "${GH_WS}/dist/pkg/opt/opnware/bin"
-chmod 0755 "${GH_WS}/dist/pkg/opt/opnware/pkgs/${PKG_NAME}" "${GH_WS}/dist/pkg/etc/rc.d" "${GH_WS}/dist/pkg/opt/opnware/bin"
-
-mkdir -p "${GH_WS}/dist/pkg/etc/rc.d"
-mkdir -p "${GH_WS}/dist/pkg/opt/opnware/bin"
 mkdir -p "${GH_WS}/dist/pkg/opt/opnware/pkgs/${PKG_NAME}"
-mkdir -p "${GH_WS}/dist/pkg/opt/opnware/services/${PKG_NAME}"
-chmod 0755 "${GH_WS}/dist/pkg/etc/rc.d"
-chmod 0755 "${GH_WS}/dist/pkg/opt/opnware/bin"
-chmod 0755 "${GH_WS}/dist/pkg/opt/opnware/pkgs/${PKG_NAME}"
-chmod 0755 "${GH_WS}/dist/pkg/opt/opnware/services/${PKG_NAME}"
+mkdir -p "${GH_WS}/dist/pkg/opt/opnware/bin"
+chmod 0755 "${GH_WS}/dist/pkg/opt/opnware/pkgs/${PKG_NAME}" "${GH_WS}/dist/pkg/opt/opnware/bin"
 
 # Copy Binary
 cp "${GH_WS}/build/caddy" "${GH_WS}/dist/pkg/opt/opnware/pkgs/${PKG_NAME}/${PKG_NAME}"
@@ -81,26 +68,4 @@ chmod -R 0755 "${GH_WS}/dist/pkg/opt/opnware/pkgs/${PKG_NAME}"
 
 # Create BSD distribution pkg
 cd "${GH_WS}/dist"
-
-# Create Service
-pkg-tool create-service "${CONFIG}" --output-dir "./pkg/opt/opnware/services/${PKG_NAME}"
-cd ./pkg/etc/rc.d/
-ln -s "../../opt/opnware/services/${PKG_NAME}/${PKG_NAME}" "./${PKG_NAME}"
-cd "${GH_WS}/dist"
-
-# Create Manifest
-pkg-tool create-manifest "${CONFIG}" --abi "${ABI}" --arch "${ARCH}"
-
-# Create Package
-tar -cf "${PKG_NAME}-${FULL_VERSION}.pkg" \
-    --zstd \
-    --owner=0 \
-    --group=0 \
-    --transform 's|^pkg||' \
-    +COMPACT_MANIFEST +MANIFEST $(find pkg -type f) $(find pkg -type l)
-
-# Create Packagesite Info
-pkg-tool create-packagesite-info ./+COMPACT_MANIFEST
-
-# Cleanup
-rm -rf "${GH_WS}/dist/+MANIFEST" "${GH_WS}/dist/+COMPACT_MANIFEST" "${GH_WS}/dist/pkg"
+pkg-tool pack "${CONFIG}" --abi "${ABI}" --arch "${ARCH}"

@@ -14,5 +14,8 @@ dynamic = ["dependencies"]
 [tool.setuptools.dynamic]
 dependencies = {file = ["requirements.txt"]}
 
+[project.optional-dependencies]
+dev = ["pytest"]
+
 [project.scripts]
 pkg-tool = "pkg_tool:main"
