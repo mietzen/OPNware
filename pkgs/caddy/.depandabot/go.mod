@@ -9,7 +9,7 @@ require (
 	github.com/lucaslorentz/caddy-docker-proxy/v2 v2.13.1
 	github.com/mietzen/caddy-dns-opnsense v0.10.0
 	github.com/mietzen/libdns-opnsense-dnsmasq v0.2.0
-	github.com/mietzen/libdns-opnsense-unbound v0.2.0
+	github.com/mietzen/libdns-opnsense-unbound v0.3.0
 )
 
 require (
