@@ -11,9 +11,9 @@ import tarfile
 
 import pytest
 import zstandard as zstd
-from test_pack import SPEC_WITH_SERVICE, make_fixture
 
 from pkg_tool import assemble_repo, pack
+from test_pack import SPEC_WITH_SERVICE, make_fixture
 
 REPO_CONFIG = """\
 pkg-repo:

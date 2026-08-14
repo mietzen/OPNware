@@ -1,0 +1,11 @@
+Metadata-Version: 2.4
+Name: pkg-tool
+Version: 0.1.0
+Summary: FreeBSD Custom Package Repository CLI Tools
+Author-email: Nils Stein <github.nstein@mailbox.org>
+Requires-Dist: Jinja2>=3.1.6
+Requires-Dist: pyyaml>=6.0.3
+Requires-Dist: zstandard>=0.25.0
+Requires-Dist: requests>=2.34.2
+Provides-Extra: dev
+Requires-Dist: pytest; extra == "dev"

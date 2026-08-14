@@ -1,0 +1,2 @@
+[console_scripts]
+pkg-tool = pkg_tool:main

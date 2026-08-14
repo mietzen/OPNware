@@ -11,7 +11,6 @@ on:
       - 'service_templates/**'
       - 'config.yml'
       - '.github/workflows/main.yml'
-      - '.github/assets/*.py'
   push:
     branches:
       - main
@@ -21,7 +20,6 @@ on:
       - 'service_templates/**'
       - 'config.yml'
       - '.github/workflows/main.yml'
-      - '.github/assets/*.py'
 
 jobs:
   discover-packages:
@@ -34,15 +32,18 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Install pkg-tool
+        run: pip install "file://${GITHUB_WORKSPACE}/pkg-tool"
+
       - name: Parse Packages and Config
         id: set-matrix
         run: |
           if [[ ${{ github.event_name }} == 'pull_request' ]]; then
             changed_pkgs=$(git --no-pager diff --name-only $(git merge-base origin/main HEAD) | grep  pkgs/ | cut -d '/' -f2 | sort -u | tr '\n' ' ' | xargs)
             echo "Changed Packages: ${changed_pkgs}"
-            matrix=$(python ./.github/assets/build-matrix.py ${changed_pkgs})
+            matrix=$(pkg-tool build-matrix ${changed_pkgs})
           else
-            matrix=$(python ./.github/assets/build-matrix.py)
+            matrix=$(pkg-tool build-matrix)
           fi
           echo "Matrix: $matrix"
           echo "matrix=$matrix" >> $GITHUB_OUTPUT

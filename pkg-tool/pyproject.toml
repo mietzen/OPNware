@@ -19,3 +19,6 @@ dev = ["pytest"]
 
 [project.scripts]
 pkg-tool = "pkg_tool:main"
+
+[tool.ruff.lint.isort]
+known-first-party = ["pkg_tool", "test_pack", "test_assemble_repo", "test_bump", "test_check_updates", "test_spec_seam"]

@@ -100,6 +100,120 @@ def _create_packagesite_info(compact_manifest_path, output_dir='.'):
 def _pkg_filename(name, version):
     return f'{name}-{version}.pkg'
 
+def _validate_spec(spec, source):
+    """Validate a package spec, raising (ValueError|TypeError) with key-path errors."""
+    if not isinstance(spec, dict):
+        raise TypeError(f"{source}: spec is not a mapping")
+    pkg_manifest = spec.get('pkg_manifest')
+    redistribute = spec.get('redistribute')
+    if pkg_manifest is None and redistribute is None:
+        raise ValueError(f"{source}: neither pkg_manifest nor redistribute present")
+    if pkg_manifest is not None and redistribute is not None:
+        raise ValueError(f"{source}: both pkg_manifest and redistribute present")
+    build_config = spec.get('build_config')
+    if not isinstance(build_config, dict):
+        raise TypeError(f"{source}: build_config is not a mapping")
+    if not isinstance(build_config.get('include'), dict):
+        raise TypeError(f"{source}: build_config.include must be a mapping")
+    if pkg_manifest is not None:
+        if not isinstance(pkg_manifest, dict):
+            raise TypeError(f"{source}: pkg_manifest is not a mapping")
+        for key in ('name', 'version', 'origin'):
+            if key not in pkg_manifest:
+                raise ValueError(f"{source}: pkg_manifest.{key} missing")
+        for key in ('name', 'origin'):
+            if isinstance(pkg_manifest[key], (dict, list)):
+                raise TypeError(f"{source}: pkg_manifest.{key} must be a scalar")
+        if isinstance(pkg_manifest['version'], (dict, list)):
+            raise TypeError(f"{source}: pkg_manifest.version must be a scalar")
+        src_repo = build_config.get('src_repo')
+        if src_repo and not isinstance(src_repo, str):
+            raise TypeError(f"{source}: build_config.src_repo must be a string")
+        if src_repo and 'github.com' not in src_repo and 'sf.net' not in src_repo:
+            raise ValueError(f"{source}: build_config.src_repo: unsupported source {src_repo!r}")
+    if redistribute is not None:
+        if not isinstance(redistribute, dict):
+            raise TypeError(f"{source}: redistribute is not a mapping")
+        if 'name' not in redistribute:
+            raise ValueError(f"{source}: redistribute.name missing")
+        if isinstance(redistribute['name'], (dict, list)):
+            raise TypeError(f"{source}: redistribute.name must be a scalar")
+        version = redistribute.get('version')
+        if not isinstance(version, dict) or not version:
+            raise TypeError(f"{source}: redistribute.version must be a non-empty mapping")
+        for abi_arch in version:
+            if not re.match(r'^FreeBSD-\d+-(amd64|aarch64|arm64|i386|x86_64)$', str(abi_arch)):
+                raise ValueError(f"{source}: redistribute.version.{abi_arch}: unexpected ABI/arch key")
+
+def _validate_repo_config(config, source):
+    """Validate the repo-level config, raising TypeError with key-path errors."""
+    if not isinstance(config, dict):
+        raise TypeError(f"{source}: repo config is not a mapping")
+    pkg_repo = config.get('pkg-repo')
+    if not isinstance(pkg_repo, dict) or not pkg_repo.get('abi') or not pkg_repo.get('arch'):
+        raise TypeError(f"{source}: pkg-repo.abi and pkg-repo.arch are required")
+
+def _load_spec(config_path):
+    with open(config_path) as f:
+        spec = yaml.safe_load(f)
+    _validate_spec(spec, config_path)
+    return spec
+
+def _load_repo_config(config_path):
+    with open(config_path) as f:
+        config = yaml.safe_load(f)
+    _validate_repo_config(config, config_path)
+    return config
+
+def dump(config_path, key_path):
+    """Print one scalar from a validated package spec."""
+    spec = _load_spec(config_path)
+    value = spec
+    for part in key_path.split('.'):
+        if not isinstance(value, dict) or part not in value:
+            raise ValueError(f"{config_path}: no '{key_path}' in spec")
+        value = value[part]
+    if isinstance(value, (dict, list)):
+        raise TypeError(f"{config_path}: '{key_path}' is not a scalar")
+    return str(value)
+
+def build_matrix(packages=None, pkgs_dir='pkgs', repo_config='config.yml'):
+    """
+    Emit the build matrix the CI consumes.
+
+    Args:
+        packages (list): Package names to include; None walks pkgs_dir for build.sh dirs.
+        pkgs_dir (str): Directory containing the package specs. Defaults to 'pkgs'.
+        repo_config (str): Path to the repo-level config.yml. Defaults to 'config.yml'.
+    """
+    if packages:
+        expanded = []
+        for pkg in packages:
+            expanded += pkg.strip().split(' ')
+        packages = expanded
+    else:
+        packages = []
+        for root, _, files in os.walk(pkgs_dir):
+            if 'build.sh' in files:
+                packages.append(os.path.basename(root))
+        packages.sort()
+
+    config = _load_repo_config(repo_config)
+    includes = []
+    for pkg in packages:
+        config_path = os.path.join(pkgs_dir, pkg, 'config.yml')
+        if os.path.exists(config_path):
+            spec = _load_spec(config_path)
+            include = dict(spec['build_config']['include'])
+            include['pkg_name'] = pkg
+            includes.append(include)
+    return {
+        'pkg_name': packages,
+        'arch': config['pkg-repo']['arch'],
+        'abi': config['pkg-repo']['abi'],
+        'include': includes,
+    }
+
 def _pinned_tarinfo(tar, path, arcname):
     """TarInfo with the reproducible metadata every package member carries."""
     info = tar.gettarinfo(path)
@@ -131,8 +245,7 @@ def assemble_repo(artifacts_dir, repo_config_path, owner, repo, output_dir='page
     """
     if not os.path.isdir(artifacts_dir):
         raise FileNotFoundError(f"Artifacts directory not found: {artifacts_dir}")
-    with open(repo_config_path, "r") as f:
-        repo_config = yaml.safe_load(f)
+    repo_config = _load_repo_config(repo_config_path)
     declared_abis = [str(a) for a in repo_config.get('pkg-repo', {}).get('abi', [])]
     declared_archs = [str(a) for a in repo_config.get('pkg-repo', {}).get('arch', [])]
 
@@ -325,8 +438,7 @@ def pack(config_path, abi, arch, payload_dir='pkg', output_dir='.'):
     """
     if not os.path.isdir(payload_dir):
         raise FileNotFoundError(f"Payload directory not found: {payload_dir}")
-    with open(config_path, "r") as f:
-        pkg_config = yaml.safe_load(f)
+    pkg_config = _load_spec(config_path)
     name = pkg_config['pkg_manifest']['name'].lower()
     version = str(pkg_config['pkg_manifest']['version'])
 
@@ -383,8 +495,7 @@ def redistribute_pkg(config_path, abi, arch, output_dir='.'):
         abi (str): ABI string.
         arch (str): Architecture string.
     """
-    with open(config_path, "r") as f:
-        pkg_config = yaml.safe_load(f)
+    pkg_config = _load_spec(config_path)
 
     if pkg_config['redistribute']:
         dep = pkg_config['redistribute']
@@ -544,7 +655,7 @@ def bump(pkg, version=None, abi_arch=None, bump_enhancement=False):
     if bump_enhancement:
         if version is not None:
             raise ValueError("--version and --bump-enhancement are mutually exclusive")
-        spec = yaml.safe_load(content)
+        spec = _load_spec(config_path)
         separator = spec.get('build_config', {}).get('enhancement_version_separator')
         if not separator:
             raise ValueError(
@@ -558,7 +669,7 @@ def bump(pkg, version=None, abi_arch=None, bump_enhancement=False):
     else:
         if version is None:
             raise ValueError("--version is required (or use --bump-enhancement)")
-        spec = yaml.safe_load(content)
+        spec = _load_spec(config_path)
         if spec.get('redistribute'):
             if abi_arch is None:
                 raise ValueError(f"{config_path}: redistribute specs need --abi-arch")
@@ -656,8 +767,7 @@ def check_updates(pkgs_dir='pkgs'):
     matrix = {'pkg': [], 'include': []}
     for config_file in sorted(Path(pkgs_dir).glob('*/config.yml')):
         pkg_name = config_file.parent.name
-        with open(config_file) as f:
-            config = yaml.safe_load(f)
+        config = _load_spec(config_file)
         separator = config.get('build_config', {}).get('enhancement_version_separator')
         if config.get('redistribute'):
             for abi_arch, local in config['redistribute']['version'].items():
@@ -726,6 +836,13 @@ def main():
     parser_bump.add_argument('--bump-enhancement', action='store_true',
                              help='Increment the enhancement version after the separator')
 
+    parser_dump = subparsers.add_parser('dump', help='Print one scalar from a validated package spec')
+    parser_dump.add_argument('config_path', help='Path to the config.yml file')
+    parser_dump.add_argument('key_path', help='Dotted key path, e.g. pkg_manifest.version')
+
+    parser_build_matrix = subparsers.add_parser('build-matrix', help='Emit the build matrix JSON')
+    parser_build_matrix.add_argument('pkgs', nargs='*', help='Packages to include (default: all with a build.sh)')
+
     args = parser.parse_args()
 
     try:
@@ -741,9 +858,13 @@ def main():
                 print(json.dumps(matrix))
         elif args.command == 'bump':
             bump(args.pkg, args.version, args.abi_arch, args.bump_enhancement)
+        elif args.command == 'dump':
+            print(dump(args.config_path, args.key_path))
+        elif args.command == 'build-matrix':
+            print(json.dumps(build_matrix(args.pkgs), separators=(',', ':')))
         else:
             parser.print_help()
-    except (ValueError, FileNotFoundError, KeyError) as e:
+    except (TypeError, ValueError, FileNotFoundError, KeyError) as e:
         logging.getLogger(__name__).error(str(e))
         sys.exit(1)
 

@@ -7,9 +7,9 @@ ABI="${2}"
 GH_WS="${GITHUB_WORKSPACE}"
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 CONFIG="${SCRIPT_DIR}/config.yml"
-PKG_NAME=$(yq -r '.[].name | select( . != null )' ${CONFIG})
-VERSION=$(yq '.pkg_manifest.version' "${CONFIG}")
-SRC_REPO=$(yq -r '.build_config.src_repo' "${CONFIG}")
+PKG_NAME=$(pkg-tool dump "${CONFIG}" pkg_manifest.name)
+VERSION=$(pkg-tool dump "${CONFIG}" pkg_manifest.version)
+SRC_REPO=$(pkg-tool dump "${CONFIG}" build_config.src_repo)
 
 echo "::group::Install pnpm"
 npm install -g pnpm@latest-10

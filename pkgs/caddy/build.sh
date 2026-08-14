@@ -7,11 +7,11 @@ ABI="${2}"
 GH_WS="${GITHUB_WORKSPACE}"
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 CONFIG="${SCRIPT_DIR}/config.yml"
-PKG_NAME=$(yq -r '.[].name | select( . != null )' ${CONFIG})
-VERSION_SEP=$(yq -r '.build_config.enhancement_version_separator' "$CONFIG")
-FULL_VERSION=$(yq -r '.pkg_manifest.version' "$CONFIG")
+PKG_NAME=$(pkg-tool dump "${CONFIG}" pkg_manifest.name)
+VERSION_SEP=$(pkg-tool dump "${CONFIG}" build_config.enhancement_version_separator)
+FULL_VERSION=$(pkg-tool dump "${CONFIG}" pkg_manifest.version)
 VERSION=${FULL_VERSION%%"$VERSION_SEP"*}
-SRC_REPO=$(yq '.build_config.src_repo' "${CONFIG}")
+SRC_REPO=$(pkg-tool dump "${CONFIG}" build_config.src_repo)
 CADDY_PLUGINS=(
     "github.com/caddy-dns/porkbun"
     "github.com/mholt/caddy-dynamicdns"
