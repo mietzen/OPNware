@@ -1,3 +1,7 @@
 .vscode/settings.json
 .venv
 .DS_Store
+.omo/run-continuation/ses_fff14a4b3ffe6VVcZYNEGjKmeR.json
+__pycache__
+*.pyc
+.omo
