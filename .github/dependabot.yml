@@ -7,7 +7,6 @@ updates:
   - package-ecosystem: "pip"
     directories:
     - "pkg-tool"
-    - ".github/assets"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
