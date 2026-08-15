@@ -136,22 +136,24 @@ Key points for a consumer:
 
 ## Refreshing the vendor (the editor package's update mechanism)
 
-The `editor` package has **no automated update source** — `check-updates`
-skips it by design (the payload is a checked-in vendor tree, not a remote
-artifact). Refreshing is a manual, guarded process — one command:
+The `editor` package's `vendor:` spec section (`vendor.npm: monaco-editor`)
+makes the daily update flow check the npm registry. When a newer
+monaco-editor release exists, `check-updates` emits a `vendor` entry and the
+workflow runs `./scripts/refresh-editor.sh` — which npm-packs the latest
+monaco-editor + TextMate stack, replaces the checked-in tree, and bumps
+`pkg_manifest.version` — then opens a PR. **The PR is NOT auto-merged**: the
+vendored diff is meant to be reviewed (a new Monaco can silently break the
+hand-rolled textmate bridge or the wasm loader — CI can't catch that), so the
+human merges it. The build-time guard (`editor/build.sh` compares the vendored
+monaco version against `pkg_manifest.version`) fails the build on mismatch, so
+the refresh PR's build only passes when the version and the files agree.
+
+The script can also be run by hand:
 
 ```sh
 ./scripts/refresh-editor.sh
 ```
 
-It npm-packs the latest monaco-editor and the TextMate stack
-(vscode-textmate, vscode-oniguruma), replaces the checked-in tree, and
-bumps `pkgs/editor/config.yml` `pkg_manifest.version` to the new monaco
-release. The hand-rolled bridge (`textmate/monaco-editor-textmate.js`) is
-never touched. Review the resulting diff and commit — that review is the
-safety gate that auto-updates would remove.
-
-The build-time guard (`editor/build.sh` compares the vendored monaco version
-against `pkg_manifest.version`) fails the build on mismatch, so a vendor
-refresh can never ship under a stale version number. The TextMate stack
-refresh does not drive the package version.
+The TextMate stack (vscode-textmate, vscode-oniguruma) is refreshed alongside
+monaco but does not drive the package version; the hand-rolled bridge
+(`textmate/monaco-editor-textmate.js`) is never touched.
