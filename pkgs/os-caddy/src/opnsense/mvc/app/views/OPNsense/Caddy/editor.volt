@@ -218,6 +218,8 @@
                     contextmenu: { items: contextMenuItems },
                     plugins: ['contextmenu', 'types', 'wholerow']
                 });
+                // Show the managed files without requiring a click on conf.d.
+                $('#editor-tree').jstree('open_all');
             });
         }
 
