@@ -33,10 +33,11 @@
         // vs/basic-languages/monaco.contribution registers the built-in
         // 'yaml' language (lazily loaded chunk); no TextMate grammar needed.
         require(['vs/editor/editor.main', 'vs/basic-languages/monaco.contribution'], function(monaco) {
+            window.opnwareHomerMonaco = monaco;
             editor = monaco.editor.create(document.getElementById('editor-container'), {
                 value: '',
                 language: 'yaml',
-                theme: 'vs-dark',          // consistent with the OPNsense dark UI
+                theme: preferredEditorTheme(),
                 automaticLayout: true,
                 minimap: { enabled: false },
                 fontSize: 13,
@@ -46,8 +47,39 @@
                 lineNumbersMinChars: 3
             });
 
+            syncEditorTheme();
             loadConfig();
         });
+
+        function preferredEditorTheme() {
+            const saved = window.localStorage.getItem('opnware-homer-editor-theme');
+            if (saved === 'vs' || saved === 'vs-dark') {
+                return saved;
+            }
+            return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+                ? 'vs-dark' : 'vs';
+        }
+
+        function syncEditorTheme() {
+            if (!editor || !window.opnwareHomerMonaco) {
+                return;
+            }
+            window.opnwareHomerMonaco.editor.setTheme(preferredEditorTheme());
+            $('#editor-theme').val(preferredEditorTheme());
+        }
+
+        $('#editor-theme').change(function() {
+            window.localStorage.setItem('opnware-homer-editor-theme', $(this).val());
+            syncEditorTheme();
+        });
+
+        if (window.matchMedia) {
+            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function() {
+                if (!window.localStorage.getItem('opnware-homer-editor-theme')) {
+                    syncEditorTheme();
+                }
+            });
+        }
 
         function loadConfig() {
             $.getJSON("/api/homer/config/get", function(data) {
@@ -113,17 +145,20 @@
 <div id="config-notice" class="alert alert-info" style="display:none;"></div>
 <div id="editor-result" class="alert" style="display:none;"></div>
 
-<div class="content-box" style="padding-bottom: 1.5em;">
-    <div class="content-box-main">
-        <h2>{{ lang._('Homer config.yml') }}</h2>
-        <p><small class="text-muted"><code>/usr/local/www/homer/config.yml</code></small></p>
-        <div id="editor-container" style="height: 450px; border: 1px solid #1d2733; border-radius: 4px; overflow: hidden;"></div>
+<div class="content-box opnware-homer-config-pane" style="padding: 15px;">
+    <div class="row">
+        <div class="col-md-8"><h2>{{ lang._('Homer config.yml') }}</h2></div>
+        <div class="col-md-4 text-right">
+            <label class="text-muted" for="editor-theme">{{ lang._('Theme') }}</label>
+            <select id="editor-theme" class="form-control input-sm" style="display:inline-block; width:auto;">
+                <option value="vs">{{ lang._('Light') }}</option>
+                <option value="vs-dark">{{ lang._('Dark') }}</option>
+            </select>
+        </div>
     </div>
-    <div class="col-md-12 __mt">
-        <hr/>
+    <div id="editor-container" style="height: 450px; border: 1px solid #1d2733; border-radius: 4px; overflow: hidden;"></div>
+    <div style="margin-top: 12px;">
         <button id="save-config" type="button" class="btn btn-primary"><b>{{ lang._('Save') }}</b></button>
-    </div>
-    <div class="content-box-main">
         <span class="help-block">
             {{ lang._('Saving YAML-parses and validates the content before writing. Invalid YAML is rejected and nothing is written. Homer re-reads config.yml in the browser — no service reload happens on save.') }}
         </span>
