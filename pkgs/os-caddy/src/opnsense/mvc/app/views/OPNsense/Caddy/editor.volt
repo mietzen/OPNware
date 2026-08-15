@@ -75,17 +75,18 @@
         }
     });
 
-    // OPNsense's CSP blocks blob: web workers. Monaco's default
-    // MonacoEnvironment.getWorker() creates blob: workers and, when the CSP
-    // refuses them, falls back to running the worker code on the main
-    // thread — which freezes the UI whenever the model changes (e.g. the
-    // tree reload after add/remove/rename). Caddyfile tokenization is done
-    // by the vendored TextMate grammar in the main thread, so refusing
-    // workers is safe. The assignment must happen inside the require()
-    // callback: editor.main.js sets its own MonacoEnvironment on load.
-    self.__opnwareDisableMonacoWorkers = function(monaco) {
+    // OPNsense's CSP blocks blob: web workers but allows same-origin
+    // workers. Monaco's default MonacoEnvironment.getWorker() creates blob:
+    // workers which the CSP refuses, and its main-thread fallback freezes
+    // the UI on model changes. Serve the worker from the vendored,
+    // same-origin editor.worker.js instead — no CSP violation, no freeze.
+    // The assignment must happen inside the require() callback:
+    // editor.main.js sets its own MonacoEnvironment on load.
+    self.__opnwareDisableMonacoWorkers = function() {
         if (self.MonacoEnvironment && typeof self.MonacoEnvironment.getWorker === 'function') {
-            self.MonacoEnvironment.getWorker = function() { return null; };
+            self.MonacoEnvironment.getWorker = function() {
+                return new Worker('/ui/js/vendor/monaco/vs/editor/editor.worker.js', { type: 'module' });
+            };
         }
     };
 
@@ -96,8 +97,7 @@
         // --- Monaco + TextMate grammar wiring -------------------------------
 
         require(['vs/editor/editor.main'], function(monaco) {
-            self.__opnwareDisableMonacoWorkers(monaco);
-            window.opnwareMonaco = monaco;
+            self.__opnwareDisableMonacoWorkers();
             monaco.languages.register({ id: 'caddyfile' });
 
             editor = monaco.editor.create(document.getElementById('editor-container'), {
