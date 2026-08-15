@@ -118,8 +118,6 @@ def _validate_spec(spec, source):
     if spec.get('pkg_service'):
         raise ValueError(f"{source}: pkg_service is retired — plain packages ship no service/rc.d machinery (ticket #205)")
     if plugin is not None:
-        if redistribute is not None:
-            raise ValueError(f"{source}: plugin specs cannot be redistributed")
         if pkg_manifest is None:
             raise ValueError(f"{source}: plugin requires pkg_manifest")
         if not isinstance(plugin, dict):
@@ -135,7 +133,7 @@ def _validate_spec(spec, source):
         tier = plugin.get('tier')
         if tier is not None and not isinstance(tier, int):
             raise TypeError(f"{source}: plugin.tier must be an integer")
-        if isinstance(pkg_manifest['name'], str) and pkg_manifest['name'].startswith('os-'):
+        if isinstance(pkg_manifest.get('name'), str) and pkg_manifest['name'].startswith('os-'):
             raise ValueError(f"{source}: plugin name must be the short name, not os- prefixed")
     build_config = spec.get('build_config')
     if not isinstance(build_config, dict):

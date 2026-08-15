@@ -2,6 +2,7 @@
     <Services>
         <Caddy cssClass="fa fa-server fa-fw">
             <General VisibleName="General Settings" order="10" url="/ui/caddy/general"/>
+            <Editor VisibleName="Editor" order="20" url="/ui/caddy/editor"/>
             <Log VisibleName="Log File" order="50" url="/ui/diagnostics/log/core/caddy"/>
         </Caddy>
     </Services>

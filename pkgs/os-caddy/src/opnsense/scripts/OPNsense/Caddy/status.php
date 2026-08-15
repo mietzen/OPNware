@@ -46,7 +46,7 @@ if (is_file($config)) {
 
 if (file_exists('/var/run/caddy/caddy.pid')) {
     $pid = trim(file_get_contents('/var/run/caddy/caddy.pid'));
-    if (is_numeric($pid) && file_exists("/proc/$pid") === false && posix_kill((int)$pid, 0)) {
+    if (is_numeric($pid) && posix_kill((int)$pid, 0)) {
         $result['running'] = true;
     }
 }

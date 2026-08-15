@@ -31,6 +31,9 @@
                 <Default>/usr/local/etc/caddy/env</Default>
                 <Required>Y</Required>
             </EnvFile>
+            <Modules type="TextField">
+                <AsList>Y</AsList>
+            </Modules>
         </general>
     </items>
 </model>

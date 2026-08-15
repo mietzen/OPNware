@@ -18,8 +18,9 @@ pkg_manifest:
   licenses:
     - BSD2CLAUSE
   desc: |
-    OPNware os-caddy: WebUI-managed Caddy web server with a user-owned
-    Caddyfile editor, module management and docker-proxy support.
+    OPNware os-caddy: WebUI-managed Caddy web server with process-level
+    settings, a user-owned Caddyfile editor and xcaddy-pinned module
+    management.
   deps:
     caddy:
       origin: opnware/caddy

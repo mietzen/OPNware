@@ -1,0 +1,105 @@
+<?php
+
+namespace OPNsense\Caddy\Api;
+
+use OPNsense\Base\ApiMutableModelControllerBase;
+use OPNsense\Core\Backend;
+
+class ModulesController extends ApiMutableModelControllerBase
+{
+    protected static $internalModelName = 'caddy';
+    protected static $internalModelClass = 'OPNsense\Caddy\Caddy';
+
+    /**
+     * Expose only the declared module set (general.Modules) to the UI.
+     * @return array
+     * @throws \ReflectionException
+     */
+    protected function getModelNodes()
+    {
+        $result = [];
+        $node = $this->getModel()->getNodeByReference('general.Modules');
+        $result['general'] = ['Modules' => $node != null ? (string)$node : ''];
+        return $result;
+    }
+
+    /**
+     * Named alias for getAction() (/api/caddy/modules/getModules).
+     * @return array
+     * @throws \ReflectionException
+     */
+    public function getModulesAction()
+    {
+        return $this->getAction();
+    }
+
+    /**
+     * Named alias for setAction() (/api/caddy/modules/setModules).
+     * @return array
+     * @throws \ReflectionException
+     */
+    public function setModulesAction()
+    {
+        return $this->setAction();
+    }
+
+    /**
+     * Rebuild the caddy binary from the declared module set, pinned to the
+     * installed caddy version (configd action "modules modules-rebuild").
+     * @return array
+     */
+    public function rebuildAction()
+    {
+        $backend = new Backend();
+        $result = $backend->configdRun('modules modules-rebuild');
+        $data = json_decode($result, true);
+        if (!is_array($data)) {
+            return ['ok' => false, 'message' => trim($result)];
+        }
+        return $data;
+    }
+
+    /**
+     * Self-healing check: rebuild only when the stored build fingerprint no
+     * longer matches the installed binary or a declared module is missing
+     * (configd action "modules modules-ensure").
+     * @return array
+     */
+    public function ensureAction()
+    {
+        $backend = new Backend();
+        $result = $backend->configdRun('modules modules-ensure');
+        $data = json_decode($result, true);
+        if (!is_array($data)) {
+            return ['ok' => false, 'message' => trim($result)];
+        }
+        return $data;
+    }
+
+    /**
+     * Current non-standard modules (from the status script) plus the stored
+     * build fingerprint and the last rebuild/ensure result.
+     * @return array
+     */
+    public function statusAction()
+    {
+        $backend = new Backend();
+        $result = $backend->configdRun('caddy status-details');
+        $data = json_decode($result, true);
+        if (!is_array($data)) {
+            $data = ['running' => false, 'error' => trim($result)];
+        }
+
+        $data['fingerprint'] = '';
+        if (is_file('/var/db/os-caddy/build.fingerprint')) {
+            $data['fingerprint'] = trim(file_get_contents('/var/db/os-caddy/build.fingerprint'));
+        }
+
+        $data['last_result'] = null;
+        if (is_file('/var/db/os-caddy/modules_result.json')) {
+            $data['last_result'] = json_decode(file_get_contents('/var/db/os-caddy/modules_result.json'), true);
+        }
+
+        return $data;
+    }
+}
