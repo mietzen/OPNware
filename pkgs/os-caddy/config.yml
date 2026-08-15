@@ -27,17 +27,17 @@ pkg_manifest:
     (Apache-2.0, from its own package).
   deps:
     caddy:
-      origin: opnware/caddy
+      origin: www/caddy
       version: ">=2.11.4, <3.0.0"
     editor:
       origin: opnware/editor
       version: ">=0.56.0"
     xcaddy:
-      origin: opnware/xcaddy
+      origin: www/xcaddy
       version: ">=0.4.5_14"
     go:
-      origin: opnware/go
+      origin: lang/go
       version: ">=1.25_20,2"
     go126:
-      origin: opnware/go126
+      origin: lang/go126
       version: ">=1.26.5"
