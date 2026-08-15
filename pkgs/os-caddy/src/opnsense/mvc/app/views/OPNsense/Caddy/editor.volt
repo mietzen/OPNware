@@ -16,7 +16,7 @@
 
 <style>
     .opnware-editor-tabs { margin-bottom: 15px; }
-    .opnware-editor-pane { padding: 15px; }
+    .content-box.opnware-editor-pane { padding: 15px; }
     .opnware-editor-actions { padding: 0 15px 15px; }
     .opnware-file-tree, .opnware-file-tree ul { list-style: none; margin: 0; padding: 0; }
     .opnware-file-tree ul { margin-left: 18px; padding-left: 10px; border-left: 1px solid #c9cfd6; }

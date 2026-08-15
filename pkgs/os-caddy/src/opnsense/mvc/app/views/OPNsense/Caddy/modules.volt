@@ -5,6 +5,12 @@
  # the installed caddy version. The rebuild is atomic (temp -> verify -> swap);
  # a failed rebuild never replaces the running binary.
  #}
+<style>
+    .content-box.opnware-editor-pane { padding: 15px; }
+    .opnware-editor-actions { padding: 0 15px 15px; }
+    .opnware-editor-tabs { margin-bottom: 15px; }
+</style>
+
 
 <script>
     $(document).ready(function() {
