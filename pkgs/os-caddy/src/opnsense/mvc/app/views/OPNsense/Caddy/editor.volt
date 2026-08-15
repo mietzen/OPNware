@@ -88,6 +88,7 @@
         // --- Monaco + TextMate grammar wiring -------------------------------
 
         require(['vs/editor/editor.main'], function(monaco) {
+            window.opnwareMonaco = monaco;
             monaco.languages.register({ id: 'caddyfile' });
 
             editor = monaco.editor.create(document.getElementById('editor-container'), {
