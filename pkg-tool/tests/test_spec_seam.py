@@ -34,6 +34,27 @@ redistribute:
   path: quarterly/All
 """
 
+PLUGIN_SPEC = """\
+build_config:
+  include: {}
+plugin:
+  opnsense_version: "26.7"
+  tier: 3
+  conflicts:
+    - os-caddy
+pkg_manifest:
+  name: caddy
+  origin: opnware/os-caddy
+  version: 2.2.0
+  comment: Test plugin fixture
+  www: https://example.com
+  maintainer: test@example.com
+  prefix: /usr/local
+  licenselogic: single
+  licenses:
+    - BSD2CLAUSE
+"""
+
 REPO_CONFIG = """\
 pkg-repo:
   abi:
@@ -113,6 +134,35 @@ class TestValidation:
         write(tmp_path, "pkg", with_service)
         with pytest.raises(ValueError, match="pkg_service"):
             _load_spec(str(tmp_path / "pkgs" / "pkg" / "config.yml"))
+
+    def test_valid_plugin_spec_passes(self, tmp_path):
+        write(tmp_path, "caddy", PLUGIN_SPEC)
+        spec = _load_spec(str(tmp_path / "pkgs" / "caddy" / "config.yml"))
+        assert spec["plugin"]["opnsense_version"] == "26.7"
+
+    def test_plugin_requires_opnsense_version(self, tmp_path):
+        broken = PLUGIN_SPEC.replace('  opnsense_version: "26.7"\n', "")
+        write(tmp_path, "caddy", broken)
+        with pytest.raises(ValueError, match="plugin.opnsense_version"):
+            _load_spec(str(tmp_path / "pkgs" / "caddy" / "config.yml"))
+
+    def test_plugin_conflicts_must_be_string_list(self, tmp_path):
+        broken = PLUGIN_SPEC.replace("    - os-caddy", "    os-caddy")
+        write(tmp_path, "caddy", broken)
+        with pytest.raises(TypeError, match="plugin.conflicts"):
+            _load_spec(str(tmp_path / "pkgs" / "caddy" / "config.yml"))
+
+    def test_plugin_cannot_be_redistributed(self, tmp_path):
+        both = PLUGIN_SPEC + "\nredistribute:\n  name: x\n  version:\n    FreeBSD-15-amd64: \"1.0\"\n"
+        write(tmp_path, "caddy", both)
+        with pytest.raises(ValueError, match="plugin specs cannot be redistributed"):
+            _load_spec(str(tmp_path / "pkgs" / "caddy" / "config.yml"))
+
+    def test_plugin_name_must_not_be_os_prefixed(self, tmp_path):
+        broken = PLUGIN_SPEC.replace("  name: caddy\n", "  name: os-caddy\n")
+        write(tmp_path, "caddy", broken)
+        with pytest.raises(ValueError, match="short name"):
+            _load_spec(str(tmp_path / "pkgs" / "caddy" / "config.yml"))
 
     def test_empty_repo_config_raises_type_error_not_attribute_error(self, tmp_path):
         write(tmp_path, "blocky", BUILD_SPEC, repo_config="\n")

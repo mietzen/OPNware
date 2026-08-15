@@ -175,6 +175,91 @@ def test_pack_golden_manifest(tmp_path):
     assert manifests["+MANIFEST"] == GOLDEN_MANIFEST
 
 
+PLUGIN_SPEC = """\
+build_config:
+  include: {}
+plugin:
+  opnsense_version: "26.7"
+  tier: 3
+  conflicts:
+    - os-caddy
+pkg_manifest:
+  name: caddy
+  origin: opnware/os-caddy
+  version: 2.2.0
+  comment: Test plugin fixture
+  www: https://example.com
+  maintainer: test@example.com
+  prefix: /usr/local
+  licenselogic: single
+  licenses:
+    - BSD2CLAUSE
+  desc: |
+    Deterministic plugin fixture.
+"""
+
+
+def make_plugin_fixture(tmp_path, spec=PLUGIN_SPEC):
+    """A caddy-like plugin payload: MVC model + configd actions + templates +
+    legacy bootstrap (each drives one auto-generated lifecycle hook)."""
+    cfg_dir = tmp_path / "pkgs" / "caddy"
+    cfg_dir.mkdir(parents=True)
+    (cfg_dir / "config.yml").write_text(spec)
+
+    payload = tmp_path / "dist" / "pkg"
+    model = payload / "usr/local/opnsense/mvc/app/models/OPNsense/Caddy"
+    model.mkdir(parents=True)
+    (model / "Caddy.xml").write_text("<model/>")
+    actions = payload / "usr/local/opnsense/service/conf/actions.d"
+    actions.mkdir(parents=True)
+    (actions / "actions_caddy.conf").write_text("[start]\n")
+    tpl = payload / "usr/local/opnsense/service/templates/OPNsense/Caddy"
+    tpl.mkdir(parents=True)
+    (tpl / "+TARGETS").write_text("Caddyfile:/usr/local/etc/caddy/Caddyfile\n")
+    inc = payload / "usr/local/etc/inc/plugins.inc.d"
+    inc.mkdir(parents=True)
+    (inc / "caddy.inc").write_text("<?php\n")
+
+    return str(cfg_dir / "config.yml"), str(payload), str(tmp_path / "dist")
+
+
+def test_pack_plugin_os_prefix_annotation_hooks_conflicts(tmp_path):
+    config, payload, dist = make_plugin_fixture(tmp_path)
+
+    pack(config, abi="15", arch="amd64", payload_dir=payload, output_dir=dist)
+
+    pkg_path = os.path.join(dist, "os-caddy-2.2.0.pkg")
+    assert os.path.exists(pkg_path)
+
+    members, manifests = unpack(pkg_path)
+    manifest = manifests["+MANIFEST"]
+    assert manifest["name"] == "os-caddy"
+    assert manifest["origin"] == "opnware/os-caddy"
+    assert manifest["conflicts"] == ["os-caddy"]
+    assert manifest["annotations"]["product_abi"] == "26.7"
+    assert manifest["annotations"]["product_arch"] == "amd64"
+    assert manifest["annotations"]["product_id"] == "os-caddy"
+    assert manifest["annotations"]["product_name"] == "caddy"
+    assert manifest["annotations"]["product_conflicts"] == "os-caddy"
+
+    assert "/usr/local/opnsense/version/caddy" in members
+
+    post = manifest["scripts"]["post-install"]
+    assert "configd restart" in post
+    assert "run_migrations.php OPNsense/Caddy" in post
+    assert "configctl template reload OPNsense/Caddy" in post
+    assert "rc.configure_plugins post-install" in post
+    assert "rc.configure_plugins post-deinstall" in manifest["scripts"]["post-deinstall"]
+
+    compact = manifests["+COMPACT_MANIFEST"]
+    assert compact["name"] == "os-caddy"
+    assert compact["conflicts"] == ["os-caddy"]
+    assert "files" not in compact
+    assert "scripts" not in compact
+
+    assert sorted(os.listdir(dist)) == ["os-caddy-2.2.0.pkg", "packagesite_info.json"]
+
+
 def test_pack_fails_loudly_when_payload_missing(tmp_path):
     config, payload, dist = make_fixture(tmp_path, SPEC)
     shutil.rmtree(payload)

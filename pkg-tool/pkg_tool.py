@@ -38,7 +38,7 @@ Examples:
     pkg-tool redistribute-pkg ./config.yml --abi 14 --arch amd64
 """
 
-def _create_manifest(config_path, abi, arch, payload_dir, output_dir='.'):
+def _create_manifest(config_path, abi, arch, payload_dir, output_dir='.', spec=None):
     """
     Create manifest files from a staged payload.
 
@@ -48,11 +48,14 @@ def _create_manifest(config_path, abi, arch, payload_dir, output_dir='.'):
         arch (str): Architecture string.
         payload_dir (str): Directory containing the staged payload.
         output_dir (str): Directory to output the manifest files. Defaults to the current directory.
+        spec (dict): Pre-validated spec; re-read from config_path when omitted.
     """
     if not os.path.isdir(payload_dir):
         raise FileNotFoundError(f"Payload directory not found: {payload_dir}")
-    with open(config_path, "r") as f:
-        pkg_config = yaml.safe_load(f)
+    if spec is None:
+        with open(config_path, "r") as f:
+            spec = yaml.safe_load(f)
+    pkg_config = spec
     manifest = pkg_config["pkg_manifest"]
     manifest['version'] = str(manifest['version'])
     manifest['abi'] = f'FreeBSD:{abi}:{arch}'
@@ -107,10 +110,33 @@ def _validate_spec(spec, source):
     redistribute = spec.get('redistribute')
     if pkg_manifest is None and redistribute is None:
         raise ValueError(f"{source}: neither pkg_manifest nor redistribute present")
+    plugin = spec.get('plugin')
+    if plugin is not None and redistribute is not None:
+        raise ValueError(f"{source}: plugin specs cannot be redistributed")
     if pkg_manifest is not None and redistribute is not None:
         raise ValueError(f"{source}: both pkg_manifest and redistribute present")
     if spec.get('pkg_service'):
         raise ValueError(f"{source}: pkg_service is retired — plain packages ship no service/rc.d machinery (ticket #205)")
+    if plugin is not None:
+        if redistribute is not None:
+            raise ValueError(f"{source}: plugin specs cannot be redistributed")
+        if pkg_manifest is None:
+            raise ValueError(f"{source}: plugin requires pkg_manifest")
+        if not isinstance(plugin, dict):
+            raise TypeError(f"{source}: plugin is not a mapping")
+        if not plugin.get('opnsense_version'):
+            raise ValueError(f"{source}: plugin.opnsense_version required")
+        if not isinstance(plugin['opnsense_version'], str):
+            raise TypeError(f"{source}: plugin.opnsense_version must be a string")
+        conflicts = plugin.get('conflicts')
+        if conflicts is not None and (
+                not isinstance(conflicts, list) or not all(isinstance(c, str) for c in conflicts)):
+            raise TypeError(f"{source}: plugin.conflicts must be a list of strings")
+        tier = plugin.get('tier')
+        if tier is not None and not isinstance(tier, int):
+            raise TypeError(f"{source}: plugin.tier must be an integer")
+        if isinstance(pkg_manifest['name'], str) and pkg_manifest['name'].startswith('os-'):
+            raise ValueError(f"{source}: plugin name must be the short name, not os- prefixed")
     build_config = spec.get('build_config')
     if not isinstance(build_config, dict):
         raise TypeError(f"{source}: build_config is not a mapping")
@@ -420,14 +446,74 @@ def _generate_index_tree(base_dir):
             fh.write('</table>')
             fh.write(INDEX_FOOTER)
 
+def _plugin_hooks(payload_dir):
+    """Derive the pkg lifecycle scripts from what the plugin payload ships.
+
+    Mirrors the opnsense/plugins framework Templates: actions.d -> configd
+    restart, MVC models -> run_migrations, service templates -> template
+    reload, plugins.inc.d -> rc.configure_plugins.
+    """
+    base = os.path.join(payload_dir, 'usr/local/opnsense')
+    post, deinstall = [], []
+    if os.path.isdir(os.path.join(base, 'service/conf/actions.d')):
+        post.append('if [ -f /usr/local/etc/rc.d/configd ]; then /usr/local/etc/rc.d/configd restart; fi')
+    models_dir = os.path.join(base, 'mvc/app/models/OPNsense')
+    if os.path.isdir(models_dir):
+        for module in sorted(os.listdir(models_dir)):
+            post.append(f'if [ -f /usr/local/opnsense/mvc/script/run_migrations.php ]; '
+                        f'then /usr/local/opnsense/mvc/script/run_migrations.php OPNsense/{module}; fi')
+    tpl_dir = os.path.join(base, 'service/templates/OPNsense')
+    if os.path.isdir(tpl_dir):
+        for module in sorted(os.listdir(tpl_dir)):
+            post.append(f'if [ -f /usr/local/sbin/configctl ]; then echo -n "Reloading template OPNsense/{module}: "; '
+                        f'/usr/local/sbin/configctl template reload OPNsense/{module}; fi')
+    if os.path.isdir(os.path.join(payload_dir, 'usr/local/etc/inc/plugins.inc.d')):
+        post.append('if [ -f /usr/local/etc/rc.configure_plugins ]; then echo "Reloading plugin configuration"; '
+                    '/usr/local/etc/rc.configure_plugins post-install; fi')
+        deinstall.append('if [ -f /usr/local/etc/rc.configure_plugins ]; then echo "Reloading plugin configuration"; '
+                         '/usr/local/etc/rc.configure_plugins post-deinstall; fi')
+    scripts = {}
+    if post:
+        scripts['post-install'] = '\n'.join(post) + '\n'
+    if deinstall:
+        scripts['post-deinstall'] = '\n'.join(deinstall) + '\n'
+    return scripts
+
+
+def _plugin_package(payload_dir, plugin, manifest, arch, version):
+    """Stage the OPNsense version annotation into the payload; return
+    (os-prefixed package name, product annotation, lifecycle scripts)."""
+    name = manifest['name']
+    pkg_name = f"os-{name}"
+    annotation = {
+        'product_abi': str(plugin.get('opnsense_version', '')),
+        'product_arch': str(arch),
+        'product_conflicts': ' '.join(str(c) for c in plugin.get('conflicts', [])),
+        'product_email': str(manifest.get('maintainer', '')),
+        'product_hash': str(plugin.get('hash', '')),
+        'product_id': pkg_name,
+        'product_name': name,
+        'product_tier': str(plugin.get('tier', 3)),
+        'product_version': str(version),
+        'product_website': str(manifest.get('www', '')),
+    }
+    ver_dir = os.path.join(payload_dir, 'usr/local/opnsense/version')
+    os.makedirs(ver_dir, exist_ok=True)
+    with open(os.path.join(ver_dir, name), 'w') as f:
+        json.dump(annotation, f, indent=2)
+    return pkg_name, annotation, _plugin_hooks(payload_dir)
+
+
 def pack(config_path, abi, arch, payload_dir='pkg', output_dir='.'):
     """
     Pack a staged payload into a FreeBSD package.
 
     The payload is a FreeBSD staging root (the tree a build script fills,
-    e.g. usr/local/...). This performs the whole packing sequence:
-    manifests, the zstd-compressed package, the packagesite info, and
-    cleanup of its own staging.
+    e.g. usr/local/...). For plugin specs the package is packed with the
+    os- prefix, the OPNsense version annotation and auto-derived lifecycle
+    hooks. This performs the whole packing sequence: manifests, the
+    zstd-compressed package, the packagesite info, and cleanup of its own
+    staging.
 
     Args:
         config_path (str): Path to the config.yml file.
@@ -439,10 +525,21 @@ def pack(config_path, abi, arch, payload_dir='pkg', output_dir='.'):
     if not os.path.isdir(payload_dir):
         raise FileNotFoundError(f"Payload directory not found: {payload_dir}")
     pkg_config = _load_spec(config_path)
-    name = pkg_config['pkg_manifest']['name'].lower()
-    version = str(pkg_config['pkg_manifest']['version'])
+    manifest = pkg_config['pkg_manifest']
+    version = str(manifest['version'])
 
-    _create_manifest(config_path, abi, arch, payload_dir, output_dir)
+    if pkg_config.get('plugin'):
+        name, annotation, scripts = _plugin_package(
+            payload_dir, pkg_config['plugin'], manifest, arch, version)
+        manifest['name'] = name
+        manifest['origin'] = f"opnware/{name}"
+        manifest['scripts'] = scripts
+        manifest['conflicts'] = [str(c) for c in pkg_config['plugin'].get('conflicts', [])]
+        manifest['annotations'] = annotation
+    else:
+        name = manifest['name'].lower()
+
+    _create_manifest(config_path, abi, arch, payload_dir, output_dir, spec=pkg_config)
     pkg_file = os.path.join(output_dir, _pkg_filename(name, version))
     _create_pkg(pkg_file, output_dir, payload_dir)
     _create_packagesite_info(os.path.join(output_dir, '+COMPACT_MANIFEST'), output_dir)
@@ -717,6 +814,8 @@ def check_updates(pkgs_dir='pkgs'):
     for config_file in sorted(Path(pkgs_dir).glob('*/config.yml')):
         pkg_name = config_file.parent.name
         config = _load_spec(config_file)
+        if config.get('plugin'):
+            continue
         if config.get('redistribute'):
             for abi_arch, local in config['redistribute']['version'].items():
                 remote = _bsd_latest_version(pkg_name, config, abi_arch)

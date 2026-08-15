@@ -13,7 +13,7 @@ import pytest
 import zstandard as zstd
 
 from pkg_tool import assemble_repo, pack
-from test_pack import SPEC, make_fixture
+from test_pack import SPEC, PLUGIN_SPEC, make_fixture, make_plugin_fixture
 
 REPO_CONFIG = """\
 pkg-repo:
@@ -122,6 +122,27 @@ def test_assemble_repo_reads_abi_from_pkg_when_no_sibling_json(tmp_path):
     line = json.loads(content["packagesite.yaml"].decode().strip())
     assert line["name"] == "blocky"
     assert line["path"] == "All/blocky-0.34.0.pkg"
+
+
+def test_assemble_repo_indexes_plugin_package(tmp_path):
+    config, payload, dist = make_plugin_fixture(tmp_path)
+    pack(config, abi="15", arch="amd64", payload_dir=payload, output_dir=dist)
+
+    artifacts = tmp_path / "artifacts"
+    artifacts.mkdir()
+    shutil.copy(os.path.join(dist, "os-caddy-2.2.0.pkg"), artifacts / "os-caddy-2.2.0.pkg")
+    repo_cfg = tmp_path / "config.yml"
+    repo_cfg.write_text(REPO_CONFIG)
+    pages = tmp_path / "pages"
+
+    assemble_repo(str(artifacts), str(repo_cfg), owner="o", repo="r", output_dir=str(pages))
+
+    assert (pages / "FreeBSD:15:amd64" / "latest" / "All" / "os-caddy-2.2.0.pkg").exists()
+    content = read_tzst(str(pages / "FreeBSD:15:amd64" / "latest" / "packagesite.tzst"))
+    line = json.loads(content["packagesite.yaml"].decode().strip())
+    assert line["name"] == "os-caddy"
+    assert line["origin"] == "opnware/os-caddy"
+    assert line["conflicts"] == ["os-caddy"]
 
 
 def test_assemble_repo_is_idempotent_on_rerun(tmp_path):

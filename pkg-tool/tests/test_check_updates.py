@@ -113,6 +113,30 @@ def test_bsd_packagesite_adapter_detects_newer_version(tmp_path, monkeypatch):
     ]
 
 
+def test_plugin_specs_are_skipped_not_errors(tmp_path):
+    plugin_spec = """\
+build_config:
+  include: {}
+plugin:
+  opnsense_version: "26.7"
+  conflicts:
+    - os-caddy
+pkg_manifest:
+  name: caddy
+  origin: opnware/os-caddy
+  version: 2.2.0
+  comment: plugin
+  www: https://example.com
+  maintainer: test@example.com
+  prefix: /usr/local
+"""
+    make_repo(tmp_path, {"caddy": plugin_spec})
+
+    matrix = check_updates(str(tmp_path / 'pkgs'))
+
+    assert matrix == {"pkg": [], "include": []}
+
+
 def test_sourceforge_adapter_detects_newer_version(tmp_path, monkeypatch):
     sf_spec = GH_SPEC.replace(
         "src_repo: 'https://github.com/0xERR0R/blocky'",
