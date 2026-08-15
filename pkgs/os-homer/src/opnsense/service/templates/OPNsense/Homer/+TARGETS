@@ -1,0 +1,2 @@
+Caddyfile:/usr/local/etc/os-homer/Caddyfile
+rc.conf.d/homer:/etc/rc.conf.d/homer

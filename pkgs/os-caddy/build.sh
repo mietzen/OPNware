@@ -13,6 +13,14 @@ echo "Building os-caddy - ARCH: ${ARCH} - ABI: ${ABI}"
 mkdir -p "${DIST_ROOT}/dist/pkg/usr/local"
 chmod 0755 "${DIST_ROOT}/dist/pkg/usr/local"
 cp -R "${SCRIPT_DIR}/src/." "${DIST_ROOT}/dist/pkg/usr/local/"
+
+# Shared vendored editor assets -> /opnsense/www/js/vendor (served as /ui/js/vendor).
+# Shared repo-level asset; other plugins copy the same tree. See docs/design/shared-editor-vendor.md.
+if [ -d "${SCRIPT_DIR}/assets/vendor" ]; then
+    mkdir -p "${DIST_ROOT}/dist/pkg/usr/local/opnsense/www/js/vendor"
+    cp -R "${SCRIPT_DIR}/assets/vendor/." "${DIST_ROOT}/dist/pkg/usr/local/opnsense/www/js/vendor/"
+fi
+
 find "${DIST_ROOT}/dist/pkg/usr/local" -type d -exec chmod 0755 {} +
 find "${DIST_ROOT}/dist/pkg/usr/local" -type f -exec chmod 0644 {} +
 

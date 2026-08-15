@@ -1,0 +1,30 @@
+<form>
+    <tab id="general-settings" description="General Settings">
+        <field>
+            <id>homer.general.enabled</id>
+            <label>Enable Homer</label>
+            <type>checkbox</type>
+            <help>Enable or disable the Homer dashboard, served via the plugin's own isolated caddy instance.</help>
+        </field>
+        <field>
+            <id>homer.general.Port</id>
+            <label>Port</label>
+            <type>text</type>
+            <hint>9443</hint>
+            <help>TCP port the dashboard listens on.</help>
+        </field>
+        <field>
+            <id>homer.general.Interface</id>
+            <label>Listen on</label>
+            <type>dropdown</type>
+            <help>Which address the dashboard binds to. "All interfaces" binds the port on every interface, "LAN IP" binds the configured LAN address, "localhost" binds the loopback address.</help>
+        </field>
+        <field>
+            <id>homer.general.TlsEnabled</id>
+            <label>Enable TLS</label>
+            <type>checkbox</type>
+            <help>Serve the dashboard over HTTPS using caddy's internal certificate authority (tls internal). When disabled the dashboard is served over plain HTTP.</help>
+        </field>
+    </tab>
+    <activetab>general-settings</activetab>
+</form>

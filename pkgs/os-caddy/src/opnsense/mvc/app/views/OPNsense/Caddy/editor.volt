@@ -6,11 +6,107 @@
  # storage, autosave, certs and keys are invisible. Saving validates the
  # staged tree with `caddy validate`, applies it atomically and reloads
  # Caddy gracefully; a reload failure rolls back to the previous config.
+ #
+ # The editor is Monaco (vendored, no CDN) with Caddyfile syntax highlighting
+ # from the vendored TextMate grammar (caddyserver/vscode-caddyfile). The
+ # hidden <textarea id="editor-content"> stays in the DOM as the transport for
+ # the existing save cycle: Monaco writes every model change back into it, so
+ # the /api/caddy/editor/save endpoint is untouched.
  #}
 
+<script src="/ui/js/vendor/monaco/vs/loader.js"></script>
 <script>
+    // Monaco's AMD loader (vs/loader.js) resolves module ids through these
+    // paths. Everything is vendored under /opnsense/www/js/vendor/ (served as
+    // /ui/js/vendor/...); see docs/design/shared-editor-vendor.md.
+    require.config({
+        paths: {
+            vs: '/ui/js/vendor/monaco/vs',
+            'vscode-textmate': '/ui/js/vendor/textmate/vscode-textmate/main',
+            'vscode-oniguruma': '/ui/js/vendor/textmate/vscode-oniguruma/release/main',
+            'monaco-editor-textmate': '/ui/js/vendor/textmate/monaco-editor-textmate'
+        }
+    });
+
     $(document).ready(function() {
         let currentFile = null;
+        let editor = null;
+
+        // --- Monaco + TextMate grammar wiring -------------------------------
+
+        require(['vs/editor/editor.main'], function(monaco) {
+            monaco.languages.register({ id: 'caddyfile' });
+
+            editor = monaco.editor.create(document.getElementById('editor-container'), {
+                value: document.getElementById('editor-content').value,
+                language: 'caddyfile',
+                theme: 'vs-dark',
+                automaticLayout: true,
+                minimap: { enabled: false },
+                fontSize: 13,
+                tabSize: 2,
+                wordWrap: 'on',
+                scrollBeyondLastLine: false,
+                lineNumbersMinChars: 3
+            });
+
+            // Keep the hidden textarea (the save transport) in sync with the
+            // Monaco model so the existing save flow works unchanged.
+            editor.onDidChangeModelContent(function() {
+                document.getElementById('editor-content').value = editor.getValue();
+            });
+
+            require(['vscode-textmate', 'vscode-oniguruma', 'monaco-editor-textmate'],
+                function(tm, onig, bridge) {
+                    wireCaddyfileGrammar(monaco, tm, onig, bridge);
+                }
+            );
+        });
+
+        // Load the vendored oniguruma wasm and register the Caddyfile TextMate
+        // grammar as Monaco token provider. The grammar JSON is passed to the
+        // vscode-textmate Registry as a raw IRawGrammar object.
+        function wireCaddyfileGrammar(monaco, tm, onig, bridge) {
+            fetch('/ui/js/vendor/textmate/vscode-oniguruma/release/onig.wasm')
+                .then(function(r) { return r.arrayBuffer(); })
+                .then(function(wasmData) { return onig.loadWASM({ data: wasmData }); })
+                .then(function() {
+                    return fetch('/ui/js/vendor/caddyfile.tmLanguage.json').then(function(r) { return r.json(); });
+                })
+                .then(function(grammarJson) {
+                    var registry = new tm.Registry({
+                        onigLib: Promise.resolve({
+                            createOnigScanner: onig.createOnigScanner,
+                            createOnigString: onig.createOnigString
+                        }),
+                        loadGrammar: function(scopeName) {
+                            return Promise.resolve(scopeName === 'source.Caddyfile' ? grammarJson : null);
+                        }
+                    });
+                    return bridge.wireTmGrammars(
+                        monaco, registry, new Map([['caddyfile', 'source.Caddyfile']])
+                    );
+                })
+                .then(function() {
+                    var model = editor && editor.getModel();
+                    if (model && typeof model.forceTokenization === 'function') {
+                        model.forceTokenization(model.getLineCount());
+                    }
+                })
+                .catch(function(err) {
+                    console.error('Caddyfile grammar wiring failed:', err);
+                });
+        }
+
+        // Set the current document in both the transport textarea and Monaco.
+        function setEditorValue(content) {
+            $("#editor-content").val(content);
+            if (editor) {
+                editor.setValue(content || '');
+            }
+        }
+
+        // --- existing file-tree logic ---------------------------------------
 
         function loadTree() {
             $.getJSON("/api/caddy/editor/list", function(data) {
@@ -54,7 +150,7 @@
                 currentFile = path;
                 $("#editor-name").text(data.name);
                 $("#editor-path").text(data.path);
-                $("#editor-content").val(data.content || '');
+                setEditorValue(data.content || '');
             });
         }
 
@@ -69,7 +165,7 @@
                 }
                 if (currentFile === path) {
                     currentFile = null;
-                    $("#editor-content").val('');
+                    setEditorValue('');
                     $("#editor-name").text('');
                     $("#editor-path").text('');
                 }
@@ -178,8 +274,10 @@
         <div class="content-box">
             <h2 id="editor-name">{{ lang._('Caddyfile') }}</h2>
             <p><code id="editor-path"></code></p>
+            <div id="editor-container" style="height: 480px; border: 1px solid #1d2733; border-radius: 4px; overflow: hidden;"></div>
+            {# Hidden transport for the existing save cycle — the Monaco model mirrors its value. #}
             <textarea id="editor-content" class="form-control" rows="20" spellcheck="false"
-                      style="font-family: monospace;"></textarea>
+                      style="font-family: monospace; display: none;"></textarea>
             <div style="margin-top:10px;">
                 <button id="save-editor" type="button" class="btn btn-primary">{{ lang._('Save') }}</button>
             </div>

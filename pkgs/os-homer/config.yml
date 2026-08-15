@@ -1,0 +1,30 @@
+---
+build_config:
+  include:
+    node: '22'
+  src_repo: 'https://github.com/bastienwirtz/homer'
+plugin:
+  opnsense_version: "26.7"
+  tier: 3
+  conflicts:
+    - os-homer
+pkg_manifest:
+  name: homer
+  origin: opnware/os-homer
+  version: 0.1.0
+  comment: Homer dashboard served via its own isolated caddy instance
+  www: https://homer-demo.netlify.app/
+  maintainer: github.nstein@mailbox.org
+  prefix: /usr/local
+  licenselogic: single
+  licenses:
+    - APACHE20
+  desc: |
+    OPNware os-homer: serves the Homer dashboard at /usr/local/www/homer via a
+    dedicated, isolated caddy instance. Settings (port, interface, TLS) regenerate
+    the plugin-owned Caddyfile and restart the instance; logs appear in the core
+    Diagnostics viewer.
+  deps:
+    caddy:
+      origin: opnware/caddy
+      version: ">=2.11.4, <3.0.0"

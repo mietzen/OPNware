@@ -1,0 +1,32 @@
+<model>
+    <mount>//OPNsense/homer</mount>
+    <description>Homer Dashboard</description>
+    <version>1.0.0</version>
+    <items>
+        <general>
+            <enabled type="BooleanField">
+                <Default>1</Default>
+                <Required>Y</Required>
+            </enabled>
+            <Port type="IntegerField">
+                <Default>9443</Default>
+                <Required>Y</Required>
+                <MinimumValue>1</MinimumValue>
+                <MaximumValue>65535</MaximumValue>
+            </Port>
+            <Interface type="OptionField">
+                <Default>all</Default>
+                <Required>Y</Required>
+                <OptionValues>
+                    <all>All interfaces</all>
+                    <lan>LAN IP</lan>
+                    <localhost>localhost</localhost>
+                </OptionValues>
+            </Interface>
+            <TlsEnabled type="BooleanField">
+                <Default>1</Default>
+                <Required>Y</Required>
+            </TlsEnabled>
+        </general>
+    </items>
+</model>

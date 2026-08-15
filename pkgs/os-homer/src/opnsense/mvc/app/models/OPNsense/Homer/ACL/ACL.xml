@@ -1,0 +1,12 @@
+<acl>
+    <page-homer>
+        <name>Services: Homer</name>
+        <description>Allow access to Homer</description>
+        <patterns>
+            <pattern>ui/homer/*</pattern>
+            <pattern>ui/diagnostics/log/core/homer</pattern>
+            <pattern>api/homer/*</pattern>
+            <pattern>api/diagnostics/log/core/homer/*</pattern>
+        </patterns>
+    </page-homer>
+</acl>
