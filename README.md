@@ -16,6 +16,16 @@ Some are built from source in a FreeBSD VM.
 All packages install on FreeBSD default paths: binaries in `/usr/local/bin`,
 `LICENSE`/`SOURCE` under `/usr/local/share/doc/<name>/`.
 
+The repo also builds two OPNsense MVC plugins via pkg-tool's plugin-package
+support:
+
+- [os-caddy](pkgs/os-caddy) — WebUI-managed Caddy: process settings, a
+  user-owned Caddyfile editor (validated save cycle, Monaco), an envfile
+  grid with masked secrets, xcaddy-pinned module management and
+  docker-proxy options
+- [os-homer](pkgs/os-homer) — Homer served via its own isolated caddy
+  instance, settings-generated config, Monaco YAML editor
+
 ## Why
 
 Instead of using a full-blown [FreeBSD poudriere build system](https://github.com/freebsd/poudriere).
