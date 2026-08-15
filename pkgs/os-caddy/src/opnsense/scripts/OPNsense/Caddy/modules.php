@@ -204,8 +204,42 @@ function rebuild($modules)
         unlink(TEMP_BIN);
     }
 
-    $cmd = '/usr/bin/env PATH=/usr/local/bin:/usr/bin:/bin '
-        . 'GOCACHE=' . escapeshellarg(STATE_DIR . '/gocache') . ' '
+    // The rebuild uses go126 when present (some modules need 1.26); its
+    // binary lives at /usr/local/go126/bin/go, off the default PATH, so a
+    // plugin-owned `go` shim is put first. Falls back to the default `go`
+    // toolchain (the go metapackage -> go125) when go126 is absent.
+    $goBinDir = STATE_DIR . '/gobin';
+    $goCandidates = array(
+        '/usr/local/go126/bin/go',
+        '/usr/local/bin/go',
+    );
+    $go = null;
+    foreach ($goCandidates as $candidate) {
+        if (is_file($candidate)) {
+            $go = $candidate;
+            break;
+        }
+    }
+    if ($go === null) {
+        flock($lock, LOCK_UN);
+        fclose($lock);
+        fail('no go toolchain found (install go126)');
+    }
+    if (!is_dir($goBinDir) && !mkdir($goBinDir, 0700, true)) {
+        fail('cannot create go bin directory');
+    }
+    $goShim = $goBinDir . '/go';
+    if (!is_link($goShim) || readlink($goShim) !== $go) {
+        @unlink($goShim);
+        if (!symlink($go, $goShim)) {
+            flock($lock, LOCK_UN);
+            fclose($lock);
+            fail('cannot create go toolchain shim');
+        }
+    }
+
+    $cmd = '/usr/bin/env PATH=' . escapeshellarg($goBinDir . ':/usr/local/bin:/usr/bin:/bin')
+        . ' GOCACHE=' . escapeshellarg(STATE_DIR . '/gocache') . ' '
         . 'HOME=' . escapeshellarg(STATE_DIR) . ' '
         . XCADDY_BIN . ' build ' . escapeshellarg('v' . $version)
         . ' --output ' . escapeshellarg(TEMP_BIN);

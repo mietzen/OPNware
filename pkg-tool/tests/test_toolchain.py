@@ -12,6 +12,7 @@ import pytest
 from pkg_tool import _load_spec, build_matrix
 
 TOOLCHAIN = {
+    "go125": ("go125", "1.25.12"),
     "go126": ("go126", "1.26.5"),
     "go": ("go", "1.25_20,2"),
     "xcaddy": ("xcaddy", "0.4.5_14"),
@@ -60,9 +61,10 @@ def test_toolchain_specs_validate_and_pin_quarterly_versions(repo):
 
 def test_toolchain_specs_are_discovered_by_build_matrix(repo):
     matrix = build_matrix(packages=None, pkgs_dir=str(repo / "pkgs"), repo_config=str(repo / "config.yml"))
-    assert sorted(matrix["pkg_name"]) == ["go", "go126", "xcaddy"]
+    assert sorted(matrix["pkg_name"]) == ["go", "go125", "go126", "xcaddy"]
     assert matrix["include"] == [
         {"pkg_name": "go"},
+        {"pkg_name": "go125"},
         {"pkg_name": "go126"},
         {"pkg_name": "xcaddy"},
     ]
