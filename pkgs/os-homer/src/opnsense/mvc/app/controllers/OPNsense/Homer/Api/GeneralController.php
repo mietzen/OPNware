@@ -41,7 +41,8 @@ class GeneralController extends ApiMutableModelControllerBase
                     'result' => 'failed',
                     'status' => 'failure',
                     'validations' => array(
-                        'general.ServerName' => gettext('A Server name (hostname) is required when TLS is enabled and the dashboard does not listen on all interfaces.'),
+                        // Key must match the form field's DOM id (dotted).
+                        'homer.general.ServerName' => gettext('A Server name (hostname) is required when TLS is enabled and the dashboard does not listen on all interfaces.'),
                     ),
                 );
             }

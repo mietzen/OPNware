@@ -260,4 +260,4 @@
     </span>
     <pre id="build-log" style="height: 8em; overflow-y: auto; background: #1d2733; color: #d7dae0; border-radius: 4px; padding: 8px; font-size: 12px; margin-top: 10px; margin-bottom: 0;">{{ lang._('No build output yet.') }}</pre>
 </div>
-<div style="height: 60px;"></div>
+<div style="height: 70px;"></div>

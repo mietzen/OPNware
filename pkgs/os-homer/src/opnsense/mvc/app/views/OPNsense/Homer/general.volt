@@ -50,7 +50,7 @@
                         function () {
                             dfObj.resolve();
                         },
-                        true,
+                        false,
                         function () {
                             dfObj.reject();
                         }
@@ -78,8 +78,14 @@
             const port = fieldVal("homer.general.Port", "9443");
             const tls = $form.find("#homer\\.general\\.TlsEnabled").is(":checked");
             const interfaceValue = $form.find("#homer\\.general\\.Interface").val() || "all";
+            const servername = $form.find("#homer\\.general\\.ServerName").val().trim();
             let host;
-            if (interfaceValue === "localhost") {
+            if (servername !== "") {
+                // A configured server name is the canonical address (used for
+                // the TLS certificate); the interface choice only binds the
+                // listener.
+                host = servername;
+            } else if (interfaceValue === "localhost") {
                 host = "127.0.0.1";
             } else if (interfaceValue === "lan") {
                 host = "{{ lanIp }}";
