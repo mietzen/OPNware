@@ -38,6 +38,14 @@ chmod 0755 "${DIST_ROOT}/dist/pkg/usr/local"
 # Stage the plugin source tree (MVC, configd actions/templates, rc script, ...).
 cp -R "${SCRIPT_DIR}/src/." "${DIST_ROOT}/dist/pkg/usr/local/"
 
+# Shared vendored editor assets -> /opnsense/www/js/vendor (served as /ui/js/vendor).
+# Single repo-level copy lives in the sibling os-caddy plugin; consumers copy
+# the same tree. See docs/design/shared-editor-vendor.md.
+if [ -d "${SCRIPT_DIR}/../os-caddy/assets/vendor" ]; then
+    mkdir -p "${DIST_ROOT}/dist/pkg/usr/local/opnsense/www/js/vendor"
+    cp -R "${SCRIPT_DIR}/../os-caddy/assets/vendor/." "${DIST_ROOT}/dist/pkg/usr/local/opnsense/www/js/vendor/"
+fi
+
 # The rc.d script is staged usr/local-prefixed in the plugin tree (everything
 # else in src is /usr/local-relative); relocate it to the payload's
 # usr/local/etc/rc.d and drop the double-prefixed copy.
@@ -66,10 +74,11 @@ ${SRC_REPO}/archive/refs/tags/v${HOMER_VERSION}.tar.gz
 EOF
 chmod 0644 "${DIST_ROOT}/dist/pkg/usr/local/share/doc/homer/SOURCE"
 
-# Normalize permissions (the rc.d script must stay executable).
+# Normalize permissions (the rc.d script and the config save script must stay executable).
 find "${DIST_ROOT}/dist/pkg/usr/local" -type d -exec chmod 0755 {} +
 find "${DIST_ROOT}/dist/pkg/usr/local" -type f -exec chmod 0644 {} +
 chmod 0755 "${DIST_ROOT}/dist/pkg/usr/local/etc/rc.d/homer"
+chmod 0755 "${DIST_ROOT}/dist/pkg/usr/local/opnsense/scripts/OPNsense/Homer/config_save.php"
 
 # Create BSD distribution pkg
 cd "${DIST_ROOT}/dist"

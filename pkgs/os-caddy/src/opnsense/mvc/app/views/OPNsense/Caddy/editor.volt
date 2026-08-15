@@ -246,6 +246,234 @@
     });
 </script>
 
+<script>
+    // --- Environment grid -----------------------------------------------
+    // Independent of Monaco: the envfile grid works even when the editor
+    // JavaScript fails to load. Rows are name · value · secret checkbox.
+    // Secret rows are masked ('********') until revealed per-row; the real
+    // value of one row is fetched from the API on demand. The plugin-owned
+    // CADDY_LOG_LEVEL row is shown read-only and is never submitted.
+    $(document).ready(function() {
+        const ENV_MASK = '********';
+        let envRows = [];
+
+        function envShowError(message) {
+            const $box = $("#env-result");
+            $box.removeClass("alert-success").addClass("alert-danger");
+            $box.text(message || "{{ lang._('Error') }}");
+            $box.show();
+        }
+
+        function envShowSuccess(message) {
+            const $box = $("#env-result");
+            $box.removeClass("alert-danger").addClass("alert-success");
+            $box.text(message);
+            $box.show();
+        }
+
+        function envClearRowError(index) {
+            if (index < 0 || index >= envRows.length) {
+                return;
+            }
+            envRows[index].error = '';
+            $("#env-table tbody tr[data-error-index='" + index + "']").remove();
+        }
+
+        function envReveal(index) {
+            const row = envRows[index];
+            $.post("/api/caddy/env/reveal", {name: row.name}, function(data) {
+                if (data.status !== "ok") {
+                    envShowError(data.message);
+                    return;
+                }
+                row.value = data.value;
+                row.revealed = true;
+                envRender();
+            });
+        }
+
+        function envHide(index) {
+            const row = envRows[index];
+            row.value = ENV_MASK;
+            row.revealed = false;
+            envRender();
+        }
+
+        function envRender() {
+            const $tbody = $("#env-table tbody");
+            $tbody.empty();
+            envRows.forEach(function(row, index) {
+                const $tr = $('<tr>').attr('data-index', index);
+
+                // Name
+                const $name = $('<input type="text" class="form-control input-sm" spellcheck="false">')
+                    .val(row.name)
+                    .attr('placeholder', 'VAR_NAME');
+                if (row.readonly) {
+                    $name.prop('disabled', true);
+                } else {
+                    $name.on('input', function() {
+                        row.name = $(this).val();
+                        envClearRowError(index);
+                    });
+                }
+                $tr.append($('<td>').append($name));
+
+                // Value
+                const $value = $('<input type="text" class="form-control input-sm" spellcheck="false">')
+                    .val(row.value);
+                if (row.readonly) {
+                    $value.prop('disabled', true);
+                } else {
+                    $value.on('input', function() {
+                        row.value = $(this).val();
+                        envClearRowError(index);
+                    });
+                }
+                $tr.append($('<td>').append($value));
+
+                // Secret checkbox (checked by default; disabled for the plugin row)
+                const $secret = $('<input type="checkbox">')
+                    .prop('checked', row.secret)
+                    .prop('disabled', row.readonly);
+                $secret.change(function() {
+                    row.secret = $(this).is(':checked');
+                    if (!row.secret && row.value === ENV_MASK) {
+                        // Non-secret rows must be visible — fetch the real value.
+                        envReveal(index);
+                    } else if (row.secret && row.revealed) {
+                        envHide(index);
+                    }
+                });
+                $tr.append($('<td>').append($secret));
+
+                // Per-row reveal toggle for secret rows
+                const $tdReveal = $('<td>');
+                if (row.secret && !row.readonly) {
+                    const $toggle = $('<button type="button" class="btn btn-xs btn-default" title="Show / hide value">')
+                        .html(row.revealed ? '<i class="fa fa-eye-slash"></i>' : '<i class="fa fa-eye"></i>')
+                        .click(function() {
+                            if (row.revealed) {
+                                envHide(index);
+                            } else if (row.value === ENV_MASK) {
+                                envReveal(index);
+                            } else {
+                                row.revealed = true;
+                                envRender();
+                            }
+                        });
+                    $tdReveal.append($toggle);
+                }
+                $tr.append($tdReveal);
+
+                // Delete
+                const $tdDelete = $('<td>');
+                if (!row.readonly) {
+                    const $del = $('<button type="button" class="btn btn-xs btn-danger">')
+                        .text("{{ lang._('Delete') }}")
+                        .click(function() {
+                            envRows.splice(index, 1);
+                            envRender();
+                        });
+                    $tdDelete.append($del);
+                }
+                $tr.append($tdDelete);
+
+                $tbody.append($tr);
+                if (row.error) {
+                    $tbody.append(
+                        $('<tr class="env-error-row" data-error-index="' + index + '">')
+                            .append($('<td colspan="5" class="text-danger">').text(row.error))
+                    );
+                }
+            });
+        }
+
+        function envSetErrors(errors) {
+            errors.forEach(function(e) {
+                const i = parseInt(e.index, 10);
+                if (i >= 0 && i < envRows.length) {
+                    envRows[i].error = e.error || "{{ lang._('Invalid row') }}";
+                }
+            });
+            envRender();
+        }
+
+        function envSave() {
+            $("#env-result").hide();
+            const payload = [];
+            const payloadMap = [];
+            envRows.forEach(function(row, i) {
+                if (row.readonly || String(row.name).trim() === '') {
+                    return;
+                }
+                payloadMap.push(i);
+                payload.push({name: row.name, value: row.value, secret: row.secret});
+            });
+            $.post("/api/caddy/env/save", {rows: payload}, function(data) {
+                if (data.status !== "ok") {
+                    envShowError(data.message || "{{ lang._('Save failed') }}");
+                    if (data.errors && data.errors.length) {
+                        envSetErrors(data.errors);
+                    }
+                    return;
+                }
+                // Mirror the file: drop empty rows, keep the last occurrence
+                // of duplicated names (later duplicates win).
+                const seen = {};
+                const dedup = [];
+                envRows.forEach(function(row) {
+                    if (row.readonly) {
+                        dedup.push(row);
+                        return;
+                    }
+                    if (String(row.name).trim() === '') {
+                        return;
+                    }
+                    if (seen.hasOwnProperty(row.name)) {
+                        dedup[seen[row.name]] = row;
+                    } else {
+                        seen[row.name] = dedup.length;
+                        dedup.push(row);
+                    }
+                });
+                envRows = dedup;
+                envRender();
+                envShowSuccess(data.message || "{{ lang._('Saved') }}");
+            });
+        }
+
+        function envLoad() {
+            $.getJSON("/api/caddy/env/get", function(data) {
+                if (data.status !== "ok") {
+                    envShowError(data.message);
+                    return;
+                }
+                envRows = (data.rows || []).map(function(r) {
+                    return {
+                        name: r.name || '',
+                        value: r.value || '',
+                        secret: !!r.secret,
+                        readonly: !!r.readonly,
+                        revealed: false,
+                        error: ''
+                    };
+                });
+                envRender();
+            });
+        }
+
+        $("#env-add-row").click(function() {
+            envRows.push({name: '', value: '', secret: true, readonly: false, revealed: false, error: ''});
+            envRender();
+        });
+
+        $("#env-save").click(envSave);
+
+        envLoad();
+    });
+</script>
+
 <div id="editor-status" class="content-box">
     <h2>{{ lang._('Last save / reload') }}</h2>
     <table class="table table-condensed">
@@ -284,4 +512,32 @@
             <span class="help-block">{{ lang._('Saving validates the whole Caddy file tree first; invalid configuration is rejected without writing anything.') }}</span>
         </div>
     </div>
+</div>
+
+<div id="env-panel" class="content-box" style="margin-top:20px;">
+    <h2>{{ lang._('Environment') }}</h2>
+    <p class="help-block">
+        {{ lang._('Environment variables are passed to the Caddy process through the envfile (--envfile). Secret rows are masked by default; use the reveal button to inspect a value. The plugin-managed CADDY_LOG_LEVEL row cannot be edited. The envfile is separate from the file tree above and is never shown there.') }}
+    </p>
+    <table class="table table-condensed" id="env-table">
+        <thead>
+            <tr>
+                <th>{{ lang._('Name') }}</th>
+                <th>{{ lang._('Value') }}</th>
+                <th>{{ lang._('Secret') }}</th>
+                <th></th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td colspan="5" class="text-muted">{{ lang._('Loading…') }}</td>
+            </tr>
+        </tbody>
+    </table>
+    <div class="form-inline" style="margin-top:10px;">
+        <button id="env-add-row" type="button" class="btn btn-primary">{{ lang._('Add row') }}</button>
+        <button id="env-save" type="button" class="btn btn-primary">{{ lang._('Save env') }}</button>
+    </div>
+    <div id="env-result" class="alert" style="display:none;"></div>
 </div>
