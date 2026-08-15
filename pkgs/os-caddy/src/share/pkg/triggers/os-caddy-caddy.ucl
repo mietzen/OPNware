@@ -1,13 +1,17 @@
-# pkg trigger: rebuild the xcaddy binary when the caddy binary changes.
+# pkg trigger: rebuild the xcaddy binary when the caddy package changes.
 #
 # A caddy package upgrade replaces /usr/local/bin/caddy with a vanilla binary,
 # silently dropping every module os-caddy added via xcaddy. pkg runs this
 # trigger at the END of any transaction that installs, upgrades or removes a
-# file matching path_regexp — i.e. only the caddy binary itself changes, not
-# every /usr/local/bin update. Modules are restored immediately instead of
-# waiting for a scheduled check; the ensure script is a cheap fingerprint
-# compare and a no-op when nothing changed.
-path_regexp: "^/usr/local/bin/caddy$"
+# file under /usr/local/bin, so modules are restored immediately instead of
+# waiting for a scheduled check.
+#
+# Note: only directory paths are supported — path_regexp and path_glob are
+# not implemented in the pkg builds shipped with FreeBSD 15 (the trigger is
+# silently skipped). A /usr/local/bin directory match is slightly broad (any
+# binary update fires it), but ensure is a cheap fingerprint compare and a
+# no-op when the caddy binary is unchanged.
+path: "/usr/local/bin"
 trigger: {
     type: lua
     sandbox: false
