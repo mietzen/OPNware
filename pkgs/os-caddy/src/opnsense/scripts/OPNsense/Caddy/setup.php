@@ -7,9 +7,9 @@
  * The envfile (/usr/local/etc/caddy/env) is user-owned (managed as a masked
  * grid on the editor page). This script only ensures it exists and keeps the
  * single plugin-owned CADDY_LOG_LEVEL row in sync with the settings; all
- * other rows are left untouched. The seeded Caddyfile references the var in
- * its global log block, so the setting reaches the process without the
- * plugin ever generating Caddyfile content.
+ * other rows are left untouched. The var is available to user-authored
+ * Caddyfile global options ({$CADDY_LOG_LEVEL}) without the plugin ever
+ * generating Caddyfile content.
  */
 
 use OPNsense\Core\Config;
