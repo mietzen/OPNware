@@ -1,4 +1,4 @@
-# Shared vendored editor asset: Monaco + TextMate (os-caddy, reused by os-homer #215)
+# Shared vendored editor asset: Monaco + TextMate (os-caddy and os-homer)
 
 The OPNsense web UI pages in this repo render a real code editor by shipping a
 **shared, vendored** copy of the Monaco editor plus the TextMate grammar
@@ -6,8 +6,8 @@ support that gives the Caddyfile (and, for os-homer, YAML) its syntax
 highlighting. Nothing is loaded from a CDN — every byte is installed with the
 plugin package and served from the WebUI origin.
 
-This document is the reference for how a plugin consumes the asset. os-homer
-(#215) follows it to build its YAML editor.
+This document is the reference for how a plugin consumes the asset. Both the
+os-caddy Caddyfile editor and the os-homer YAML config editor follow it.
 
 ## What is vendored and where
 
@@ -16,15 +16,16 @@ of the asset in this repo — the `editor` package owns it).
 
 ```
 assets/vendor/
-├── monaco/vs/                              # monaco-editor standalone min build (the `min/vs` tree)
-│   ├── loader.js                           # Monaco AMD loader (defines global require/define)
-│   └── editor/editor.main.js (+ css, worker)
-├── caddyfile.tmLanguage.json               # TextMate grammar, caddyserver/vscode-caddyfile (source.Caddyfile)
+├── monaco/
+│   ├── package.json                       # monaco-editor provenance (drives the version)
+│   └── vs/                                # monaco-editor standalone min build (the `min/vs` tree)
+│       ├── loader.js                      # Monaco AMD loader (defines global require/define)
+│       └── editor/editor.main.js (+ css, worker)
+├── caddyfile.tmLanguage.json              # TextMate grammar, caddyserver/vscode-caddyfile (source.Caddyfile)
 └── textmate/
-    ├── vscode-textmate/main.js             # TextMate grammar engine (npm vscode-textmate)
-    ├── vscode-oniguruma/release/main.js    # oniguruma→wasm bindings (npm vscode-oniguruma)
-    ├── vscode-oniguruma/release/onig.wasm  # required for tokenization
-    └── monaco-editor-textmate.js           # bridge: registers a TM grammar as a Monaco token provider
+    ├── vscode-textmate/                   # TextMate grammar engine (npm vscode-textmate)
+    ├── vscode-oniguruma/release/          # oniguruma→wasm bindings + onig.wasm (npm vscode-oniguruma)
+    └── monaco-editor-textmate.js          # hand-rolled bridge: TM grammar as a Monaco token provider
 ```
 
 The `textmate/` files are the unpacked `release`/`dist` outputs of the npm

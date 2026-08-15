@@ -6,7 +6,11 @@ This is my personal OPNsense `pkg` repository.\
 It contains packages that I use or have used:
 
 - [caddy](https://caddyserver.com/) (redistributed)
+- [editor](pkgs/editor) (vendored Monaco + TextMate assets)
+- [go](https://go.dev/) (redistributed)
+- [go126](https://go.dev/) (redistributed)
 - [htop](https://htop.dev/) (redistributed)
+- [xcaddy](https://github.com/caddyserver/xcaddy) (redistributed)
 - [yq](https://mikefarah.gitbook.io/yq) (cross-compiled)
 - [zsh](https://git.code.sf.net/p/zsh/code) (redistributed)
 
@@ -25,6 +29,9 @@ support:
   docker-proxy options
 - [os-homer](pkgs/os-homer) — Homer served via its own isolated caddy
   instance, settings-generated config, Monaco YAML editor
+
+Both plugins depend on the shared [editor](pkgs/editor) package for the
+vendored Monaco editor assets.
 
 ## Why
 
@@ -60,7 +67,7 @@ The App will need these permissions:
 ### How to add `pkgs`:
 
 1. Copy an existing package folder (e.g. [`pkgs/yq`](https://github.com/mietzen/OPNware/tree/main/pkgs/yq)) and rename it.
-2. Fill in `config.yml` — the package spec glossary lives in [`CONTEXT.md`](CONTEXT.md).
+2. Fill in `config.yml` — the package spec glossary lives in [`CONTEXT.md`](CONTEXT.md). Plain packages use `pkg_manifest` (+ `redistribute` for re-shipped pkgs); OPNsense plugins add a `plugin:` section; plugins with bundled upstream content (like os-homer's dashboard) add a `content:` section so the daily update flow can track it.
 3. Adjust `build.sh` so it produces your payload (staged on FreeBSD default paths), then finishes with `pkg-tool pack`.
 4. Build locally (next section). The rest — build matrix, update checks, repo assembly — is driven by pkg-tool and GitHub Actions automatically.
 
@@ -119,5 +126,6 @@ You can browse and download packages directly at:
 
 ## Package Licenses
 
-All packages retain their **original upstream licenses**.
-Please refer to each project’s repository or documentation for license details.
+- Redistributed and source-built packages retain their **original upstream licenses** — see each project's repository or documentation.
+- The **plugins** (os-caddy, os-homer) are original code of this repository, licensed **MIT** (their LICENSE ships inside the package). os-homer additionally bundles the Homer dashboard, which keeps its upstream **Apache-2.0** license (its LICENSE ships at `/usr/local/share/doc/homer/LICENSE`).
+- The **editor** package vendors monaco-editor and the TextMate stack — all **MIT** components (provenance `package.json` files ship alongside the vendored tree).
