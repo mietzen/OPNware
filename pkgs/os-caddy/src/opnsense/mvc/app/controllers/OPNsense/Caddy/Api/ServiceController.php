@@ -26,6 +26,11 @@ class ServiceController extends ApiMutableServiceControllerBase
             return ['status' => 'failure', 'message' => $envfile];
         }
 
+        $dockerproxy = $backend->configdRun('caddy dockerproxy-sync');
+        if ($dockerproxy !== 'OK') {
+            return ['status' => 'failure', 'message' => $dockerproxy];
+        }
+
         return $this->reload();
     }
 }

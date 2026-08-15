@@ -35,5 +35,35 @@
                 <AsList>Y</AsList>
             </Modules>
         </general>
+        <dockerproxy>
+            <enabled type="BooleanField">
+                <Default>1</Default>
+                <Required>Y</Required>
+            </enabled>
+            <mode type="OptionField">
+                <BlankDesc>Default</BlankDesc>
+                <OptionValues>
+                    <swarms>swarms</swarms>
+                    <services>services</services>
+                    <both>both</both>
+                </OptionValues>
+            </mode>
+            <docker_sockets type="TextField">
+                <Default>tcp://docker-proxy-host:2375</Default>
+                <Required>Y</Required>
+            </docker_sockets>
+            <docker_certs_path type="TextField"/>
+            <ingress_networks type="TextField"/>
+            <caddyfile_path type="TextField">
+                <Default>/usr/local/etc/caddy/Caddyfile</Default>
+            </caddyfile_path>
+            <envfile type="TextField">
+                <Default>/usr/local/etc/caddy/env</Default>
+            </envfile>
+            <docker_host type="TextField"/>
+            <docker_tls_verify type="BooleanField">
+                <Default>0</Default>
+            </docker_tls_verify>
+        </dockerproxy>
     </items>
 </model>

@@ -1,0 +1,62 @@
+<form>
+    <tab id="dockerproxy-settings" description="Docker Proxy Settings">
+        <field>
+            <id>caddy.dockerproxy.enabled</id>
+            <label>Enable docker proxy</label>
+            <type>checkbox</type>
+            <help>Write the caddy-docker-proxy connection env vars (CADDY_DOCKER_SOCKETS and friends) into the envfile. Disabling removes them; the module itself stays in the caddy binary until removed on the Modules page.</help>
+        </field>
+        <field>
+            <id>caddy.dockerproxy.mode</id>
+            <label>Mode</label>
+            <type>dropdown</type>
+            <help>How caddy-docker-proxy discovers Docker services: Swarm services, plain containers, or both. Blank keeps the module default. Delivered as CADDY_DOCKER_PROXY_MODE.</help>
+        </field>
+        <field>
+            <id>caddy.dockerproxy.docker_sockets</id>
+            <label>Docker sockets</label>
+            <type>text</type>
+            <hint>tcp://docker-proxy-host:2375</hint>
+            <help>Docker daemon endpoints, comma-separated, in the CADDY_DOCKER_SOCKETS format. The default points at a remote daemon on the docker-proxy host — Docker does not run on the OPNsense box itself.</help>
+        </field>
+        <field>
+            <id>caddy.dockerproxy.docker_certs_path</id>
+            <label>Docker certs path</label>
+            <type>text</type>
+            <help>Path to the TLS client certificates for the Docker daemon connection. Delivered as CADDY_DOCKER_CERTS_PATH. Leave empty to connect without client certificates.</help>
+        </field>
+        <field>
+            <id>caddy.dockerproxy.ingress_networks</id>
+            <label>Ingress networks</label>
+            <type>text</type>
+            <help>Comma-separated Docker networks the proxy is published on. Delivered as CADDY_DOCKER_INGRESS_NETWORKS.</help>
+        </field>
+        <field>
+            <id>caddy.dockerproxy.caddyfile_path</id>
+            <label>Caddyfile path</label>
+            <type>text</type>
+            <hint>/usr/local/etc/caddy/Caddyfile</hint>
+            <help>Path of the generated Caddyfile that caddy-docker-proxy writes. Delivered as CADDY_DOCKER_CADDYFILE_PATH.</help>
+        </field>
+        <field>
+            <id>caddy.dockerproxy.envfile</id>
+            <label>Environment file</label>
+            <type>text</type>
+            <hint>/usr/local/etc/caddy/env</hint>
+            <help>Path of the envfile caddy-docker-proxy passes to the virtual environments it generates. Delivered as CADDY_DOCKER_ENVFILE.</help>
+        </field>
+        <field>
+            <id>caddy.dockerproxy.docker_host</id>
+            <label>Docker host</label>
+            <type>text</type>
+            <help>Docker daemon endpoint override passed to the Docker client. Delivered as DOCKER_HOST. Only needed when the proxy and the daemon client disagree about the socket.</help>
+        </field>
+        <field>
+            <id>caddy.dockerproxy.docker_tls_verify</id>
+            <label>Verify Docker TLS</label>
+            <type>checkbox</type>
+            <help>Verify the Docker daemon TLS certificate. Delivered as DOCKER_TLS_VERIFY (1 when checked, 0 when not).</help>
+        </field>
+    </tab>
+    <activetab>dockerproxy-settings</activetab>
+</form>
