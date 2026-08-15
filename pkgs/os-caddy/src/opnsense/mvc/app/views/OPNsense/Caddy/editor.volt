@@ -474,70 +474,88 @@
     });
 </script>
 
-<div id="editor-status" class="content-box">
-    <h2>{{ lang._('Last save / reload') }}</h2>
-    <table class="table table-condensed">
-        <tr><td>{{ lang._('Last save') }}</td><td id="status-last-save"></td></tr>
-        <tr><td>{{ lang._('Result') }}</td><td id="status-result"></td></tr>
-        <tr><td>{{ lang._('Rolled back') }}</td><td id="status-rollback"></td></tr>
-        <tr><td>{{ lang._('Message') }}</td><td id="status-message"></td></tr>
-    </table>
+<div id="editor-status" class="content-box __mb" style="padding-bottom: 1.5em;">
+    <div class="content-box-main">
+        <h2>{{ lang._('Last save / reload') }}</h2>
+        <table class="table table-striped table-condensed">
+            <tbody>
+                <tr><td class="text-muted">{{ lang._('Last save') }}</td><td id="status-last-save"></td></tr>
+                <tr><td class="text-muted">{{ lang._('Result') }}</td><td id="status-result"></td></tr>
+                <tr><td class="text-muted">{{ lang._('Rolled back') }}</td><td id="status-rollback"></td></tr>
+                <tr><td class="text-muted">{{ lang._('Message') }}</td><td id="status-message"></td></tr>
+            </tbody>
+        </table>
+    </div>
 </div>
 
 <div id="editor-result" class="alert" style="display:none;"></div>
 
 <div class="row">
     <div class="col-md-3">
-        <div class="content-box">
-            <h2>{{ lang._('Files') }}</h2>
-            <ul id="editor-files" class="nav nav-pills nav-stacked"></ul>
-            <div class="form-inline" style="margin-top:10px;">
-                <input id="new-file-name" type="text" class="form-control" placeholder="site.caddy">
-                <button id="add-editor" type="button" class="btn btn-primary">{{ lang._('Add') }}</button>
+        <div class="content-box __mb" style="padding-bottom: 1.5em;">
+            <div class="content-box-main">
+                <h2>{{ lang._('Files') }}</h2>
+                <ul id="editor-files" class="nav nav-pills nav-stacked"></ul>
             </div>
-            <span class="help-block">{{ lang._('Add and delete are limited to .caddy files inside conf.d. The Caddyfile itself cannot be deleted.') }}</span>
+            <div class="content-box-main" style="padding-top: 0;">
+                <div class="form-group">
+                    <input id="new-file-name" type="text" class="form-control input-sm" placeholder="site.caddy">
+                </div>
+                <button id="add-editor" type="button" class="btn btn-primary btn-sm">{{ lang._('Add') }}</button>
+                <span class="help-block">{{ lang._('Add and delete are limited to .caddy files inside conf.d. The Caddyfile itself cannot be deleted.') }}</span>
+            </div>
         </div>
     </div>
     <div class="col-md-9">
-        <div class="content-box">
-            <h2 id="editor-name">{{ lang._('Caddyfile') }}</h2>
-            <p><code id="editor-path"></code></p>
-            <div id="editor-container" style="height: 480px; border: 1px solid #1d2733; border-radius: 4px; overflow: hidden;"></div>
-            {# Hidden transport for the existing save cycle — the Monaco model mirrors its value. #}
-            <textarea id="editor-content" class="form-control" rows="20" spellcheck="false"
-                      style="font-family: monospace; display: none;"></textarea>
-            <div style="margin-top:10px;">
-                <button id="save-editor" type="button" class="btn btn-primary">{{ lang._('Save') }}</button>
+        <div class="content-box __mb" style="padding-bottom: 1.5em;">
+            <div class="content-box-main">
+                <h2 id="editor-name">{{ lang._('Caddyfile') }}</h2>
+                <p><small class="text-muted"><code id="editor-path"></code></small></p>
+                <div id="editor-container" style="height: 450px; border: 1px solid #1d2733; border-radius: 4px; overflow: hidden;"></div>
+                {# Hidden transport for the existing save cycle — the Monaco model mirrors its value. #}
+                <textarea id="editor-content" class="form-control" rows="20" spellcheck="false"
+                          style="font-family: monospace; display: none;"></textarea>
             </div>
-            <span class="help-block">{{ lang._('Saving validates the whole Caddy file tree first; invalid configuration is rejected without writing anything.') }}</span>
+            <div class="col-md-12 __mt">
+                <hr/>
+                <button id="save-editor" type="button" class="btn btn-primary"><b>{{ lang._('Save') }}</b></button>
+            </div>
+            <div class="content-box-main" style="padding-top: 5px;">
+                <span class="help-block">{{ lang._('Saving validates the whole Caddy file tree first; invalid configuration is rejected without writing anything.') }}</span>
+            </div>
         </div>
     </div>
 </div>
 
-<div id="env-panel" class="content-box" style="margin-top:20px;">
-    <h2>{{ lang._('Environment') }}</h2>
-    <p class="help-block">
-        {{ lang._('Environment variables are passed to the Caddy process through the envfile (--envfile). Secret rows are masked by default; use the reveal button to inspect a value. The plugin-managed CADDY_LOG_LEVEL row cannot be edited. The envfile is separate from the file tree above and is never shown there.') }}
-    </p>
-    <table class="table table-condensed" id="env-table">
-        <thead>
-            <tr>
-                <th>{{ lang._('Name') }}</th>
-                <th>{{ lang._('Value') }}</th>
-                <th>{{ lang._('Secret') }}</th>
-                <th></th>
-                <th></th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr>
-                <td colspan="5" class="text-muted">{{ lang._('Loading…') }}</td>
-            </tr>
-        </tbody>
-    </table>
-    <div class="form-inline" style="margin-top:10px;">
-        <button id="env-add-row" type="button" class="btn btn-primary">{{ lang._('Add row') }}</button>
-        <button id="env-save" type="button" class="btn btn-primary">{{ lang._('Save env') }}</button>
+<div id="env-panel" class="content-box __mb" style="padding-bottom: 1.5em;">
+    <div class="content-box-main">
+        <h2>{{ lang._('Environment') }}</h2>
+        <p class="help-block">
+            {{ lang._('Environment variables are passed to the Caddy process through the envfile (--envfile). Secret rows are masked by default; use the reveal button to inspect a value. The plugin-managed CADDY_LOG_LEVEL row cannot be edited. The envfile is separate from the file tree above and is never shown there.') }}
+        </p>
+        <table class="table table-striped table-condensed" id="env-table">
+            <thead>
+                <tr>
+                    <th>{{ lang._('Name') }}</th>
+                    <th>{{ lang._('Value') }}</th>
+                    <th>{{ lang._('Secret') }}</th>
+                    <th></th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td colspan="5" class="text-muted">{{ lang._('Loading…') }}</td>
+                </tr>
+            </tbody>
+        </table>
     </div>
-    <div id="env-result" class="alert" style="display:none;"></div>
+    <div class="col-md-12 __mt">
+        <hr/>
+        <button id="env-add-row" type="button" class="btn btn-primary"><b>{{ lang._('Add row') }}</b></button>
+        <button id="env-save" type="button" class="btn btn-primary __ml"><b>{{ lang._('Save env') }}</b></button>
+    </div>
+    <div class="content-box-main" style="padding-top: 5px; padding-bottom: 15px;">
+        <div id="env-result" class="alert" style="display:none;"></div>
+    </div>
 </div>

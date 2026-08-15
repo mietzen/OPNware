@@ -67,34 +67,41 @@
     });
 </script>
 
-<div id="modules-status" class="content-box">
-    <h2>{{ lang._('Module status') }}</h2>
-    <table class="table table-condensed">
-        <tr><td>{{ lang._('Installed modules') }}</td><td id="status-modules"></td></tr>
-        <tr><td>{{ lang._('Build fingerprint') }}</td><td id="status-fingerprint"></td></tr>
-        <tr><td>{{ lang._('Last result') }}</td><td id="status-last-ok"></td></tr>
-        <tr><td>{{ lang._('Last run') }}</td><td id="status-last-ts"></td></tr>
-        <tr><td>{{ lang._('Last message') }}</td><td id="status-last-message"></td></tr>
-    </table>
+<div id="modules-status" class="content-box __mb" style="padding-bottom: 1.5em;">
+    <div class="content-box-main">
+        <h2>{{ lang._('Module status') }}</h2>
+        <table class="table table-striped table-condensed">
+            <tbody>
+                <tr><td class="text-muted">{{ lang._('Installed modules') }}</td><td id="status-modules"></td></tr>
+                <tr><td class="text-muted">{{ lang._('Build fingerprint') }}</td><td id="status-fingerprint"></td></tr>
+                <tr><td class="text-muted">{{ lang._('Last result') }}</td><td id="status-last-ok"></td></tr>
+                <tr><td class="text-muted">{{ lang._('Last run') }}</td><td id="status-last-ts"></td></tr>
+                <tr><td class="text-muted">{{ lang._('Last message') }}</td><td id="status-last-message"></td></tr>
+            </tbody>
+        </table>
+    </div>
 </div>
 
 <div id="modules-result" class="alert" style="display:none;"></div>
 
 <form id="frm_modules" class="form-horizontal">
-    <div class="content-box">
-        <h2>{{ lang._('Declared modules') }}</h2>
-        <div class="form-group">
-            <label class="col-sm-2 control-label" for="caddy.general.Modules">{{ lang._('Modules') }}</label>
-            <div class="col-sm-10">
-                <textarea id="caddy.general.Modules" class="form-control" rows="8"
-                          placeholder="github.com/caddy-dns/cloudflare"></textarea>
-                <span class="help-block">{{ lang._('One Go module path per line. The caddy binary is rebuilt pinned to the installed version; a failed rebuild never replaces the running binary.') }}</span>
+    <div class="content-box __mb" style="padding-bottom: 1.5em;">
+        <div class="content-box-main">
+            <h2>{{ lang._('Declared modules') }}</h2>
+            <div class="form-group">
+                <label class="col-sm-2 control-label" for="caddy.general.Modules">{{ lang._('Modules') }}</label>
+                <div class="col-sm-10">
+                    <textarea id="caddy.general.Modules" class="form-control" rows="8"
+                              placeholder="github.com/caddy-dns/cloudflare"></textarea>
+                    <span class="help-block">{{ lang._('One Go module path per line. The caddy binary is rebuilt pinned to the installed version; a failed rebuild never replaces the running binary.') }}</span>
+                </div>
             </div>
         </div>
     </div>
-    <div class="content-box">
-        <button id="save_modules" type="button" class="btn btn-primary">{{ lang._('Save') }}</button>
-        <button id="rebuild_modules" type="button" class="btn btn-warning">{{ lang._('Rebuild') }}</button>
-        <button id="ensure_modules" type="button" class="btn btn-info">{{ lang._('Check') }}</button>
+    <div class="col-md-12">
+        <hr/>
+        <button id="save_modules" type="button" class="btn btn-primary"><b>{{ lang._('Save') }}</b></button>
+        <button id="rebuild_modules" type="button" class="btn btn-warning __ml"><b>{{ lang._('Rebuild') }}</b></button>
+        <button id="ensure_modules" type="button" class="btn btn-info __ml"><b>{{ lang._('Check') }}</b></button>
     </div>
 </form>

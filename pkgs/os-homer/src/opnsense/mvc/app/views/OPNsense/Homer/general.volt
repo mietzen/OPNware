@@ -81,21 +81,25 @@
     });
 </script>
 
-<div id="homer-status" class="content-box">
-    <h2>{{ lang._('Status') }}</h2>
-    <table class="table table-condensed">
-        <tr><td>{{ lang._('Service') }}</td><td id="status-running"></td></tr>
-        <tr><td>{{ lang._('Effective URL') }}</td><td><a id="effective-url" href="{{ effectiveUrl }}" target="_blank" rel="noreferrer">{{ effectiveUrl }}</a></td></tr>
-    </table>
-    <p class="text-muted">
-        {{ lang._('The dashboard is served from the plugin-owned Caddyfile at /usr/local/etc/os-homer/Caddyfile. The Caddyfile is generated from the settings above and is not editable from the WebUI.') }}
-    </p>
+<div id="homer-status" class="content-box __mb" style="padding-bottom: 1.5em;">
+    <div class="content-box-main">
+        <h2>{{ lang._('Status') }}</h2>
+        <table class="table table-striped table-condensed">
+            <tbody>
+                <tr><td class="text-muted">{{ lang._('Service') }}</td><td id="status-running"></td></tr>
+                <tr><td class="text-muted">{{ lang._('Effective URL') }}</td><td><a id="effective-url" href="{{ effectiveUrl }}" target="_blank" rel="noreferrer">{{ effectiveUrl }}</a></td></tr>
+            </tbody>
+        </table>
+        <p class="text-muted">
+            {{ lang._('The dashboard is served from the plugin-owned Caddyfile at /usr/local/etc/os-homer/Caddyfile. The Caddyfile is generated from the settings above and is not editable from the WebUI.') }}
+        </p>
+    </div>
 </div>
 
 <ul id="generalTabsHeader" class="nav nav-tabs" role="tablist">
     {{ partial("layout_partials/base_tabs_header", ['formData': generalForm]) }}
 </ul>
 
-<div id="generalTabsContent" class="content-box tab-content">
+<div id="generalTabsContent" class="content-box tab-content" style="padding-bottom: 1.5em;">
     {{ partial("layout_partials/base_tabs_content", ['formData': generalForm]) }}
 </div>

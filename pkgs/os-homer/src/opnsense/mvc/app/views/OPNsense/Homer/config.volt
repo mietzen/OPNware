@@ -113,14 +113,19 @@
 <div id="config-notice" class="alert alert-info" style="display:none;"></div>
 <div id="editor-result" class="alert" style="display:none;"></div>
 
-<div class="content-box">
-    <h2>{{ lang._('Homer config.yml') }}</h2>
-    <p><code>/usr/local/www/homer/config.yml</code></p>
-    <div id="editor-container" style="height: 480px; border: 1px solid #1d2733; border-radius: 4px; overflow: hidden;"></div>
-    <div style="margin-top:10px;">
-        <button id="save-config" type="button" class="btn btn-primary">{{ lang._('Save') }}</button>
+<div class="content-box" style="padding-bottom: 1.5em;">
+    <div class="content-box-main">
+        <h2>{{ lang._('Homer config.yml') }}</h2>
+        <p><small class="text-muted"><code>/usr/local/www/homer/config.yml</code></small></p>
+        <div id="editor-container" style="height: 450px; border: 1px solid #1d2733; border-radius: 4px; overflow: hidden;"></div>
     </div>
-    <span class="help-block">
-        {{ lang._('Saving YAML-parses and validates the content before writing. Invalid YAML is rejected and nothing is written. Homer re-reads config.yml in the browser — no service reload happens on save.') }}
-    </span>
+    <div class="col-md-12 __mt">
+        <hr/>
+        <button id="save-config" type="button" class="btn btn-primary"><b>{{ lang._('Save') }}</b></button>
+    </div>
+    <div class="content-box-main">
+        <span class="help-block">
+            {{ lang._('Saving YAML-parses and validates the content before writing. Invalid YAML is rejected and nothing is written. Homer re-reads config.yml in the browser — no service reload happens on save.') }}
+        </span>
+    </div>
 </div>
