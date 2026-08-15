@@ -1,13 +1,13 @@
-# pkg trigger: rebuild the xcaddy binary when the caddy package changes.
+# pkg trigger: rebuild the xcaddy binary when the caddy binary changes.
 #
 # A caddy package upgrade replaces /usr/local/bin/caddy with a vanilla binary,
 # silently dropping every module os-caddy added via xcaddy. pkg runs this
-# trigger at the END of any transaction that installs, upgrades or removes
-# files under /usr/local/bin (pkg triggers match directory paths, not files),
-# so modules are restored immediately instead of waiting for the daily check.
-# The ensure script is a cheap fingerprint compare and a no-op when nothing
-# changed.
-path: "/usr/local/bin"
+# trigger at the END of any transaction that installs, upgrades or removes a
+# file matching path_regexp — i.e. only the caddy binary itself changes, not
+# every /usr/local/bin update. Modules are restored immediately instead of
+# waiting for a scheduled check; the ensure script is a cheap fingerprint
+# compare and a no-op when nothing changed.
+path_regexp: "^/usr/local/bin/caddy$"
 trigger: {
     type: lua
     sandbox: false

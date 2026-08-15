@@ -11,7 +11,7 @@
     .opnware-editor-actions { padding: 0 15px 15px; }
     .opnware-editor-tabs { margin-bottom: 0; }
     .form-inline .bootstrap-select { max-width: 420px; }
-    #status-last-message { white-space: pre-wrap; word-break: break-word; font-family: monospace; font-size: 12px; }
+    #build-log { white-space: pre-wrap; word-break: break-word; }
 </style>
 
 
@@ -20,17 +20,7 @@
         let modules = [];
         let catalog = [];
         let busy = false;
-
-        function setBusy(state, message) {
-            busy = state;
-            $("#rebuild_modules, #ensure_modules, #save_modules, #add-module, #add-custom-module").prop('disabled', state);
-            if (state) {
-                const $status = $("#modules-status");
-                $status.find("#status-last-ok").text("{{ lang._('Running…') }}");
-                $status.find("#status-last-ts").text(new Date().toLocaleTimeString());
-                $status.find("#status-last-message").text(message || "{{ lang._('Working…') }}");
-            }
-        }
+        let saveTimer = null;
 
         function updateStatus() {
             $.getJSON("/api/caddy/modules/status", function(data) {
@@ -44,13 +34,23 @@
                 if (!busy) {
                     $status.find("#status-last-ok").text(last.ok === true ? "{{ lang._('OK') }}" : (last.ok === false ? "{{ lang._('FAILED') }}" : "-"));
                     $status.find("#status-last-ts").text(last.ts ? new Date(last.ts * 1000).toLocaleString() : "-");
-                    let lastMessage = last.message || "-";
-                    if (last.output) {
-                        lastMessage += "\n" + last.output;
-                    }
-                    $status.find("#status-last-message").text(lastMessage);
                 }
             });
+        }
+
+        // The declared list is saved automatically on every change — the
+        // rebuild only compiles a binary from whatever is declared.
+        function autoSave() {
+            clearTimeout(saveTimer);
+            saveTimer = setTimeout(function() {
+                $.post("/api/caddy/modules/set", {
+                    caddy: { general: { Modules: modules.join("\n") } }
+                }, function(data) {
+                    if (!(data.status === "ok" || data.result === "saved" || data.result === "ok")) {
+                        appendLog(data.message || JSON.stringify(data));
+                    }
+                });
+            }, 400);
         }
 
         function renderModuleSelect() {
@@ -88,6 +88,7 @@
                         .click(function() {
                             modules.splice(index, 1);
                             renderModules();
+                            autoSave();
                         })
                 ));
                 $tbody.append($tr);
@@ -115,7 +116,7 @@
         function loadModules() {
             $.getJSON("/api/caddy/modules/get", function(data) {
                 if (!data || !data.caddy || !data.caddy.general) {
-                    showResult({ok: false, message: "{{ lang._('Could not load declared modules.') }}"});
+                    appendLog("{{ lang._('Could not load declared modules.') }}");
                     return;
                 }
                 modules = String(data.caddy.general.Modules || '')
@@ -125,16 +126,26 @@
             });
         }
 
-        function saveModules() {
-            $.post("/api/caddy/modules/set", {
-                caddy: { general: { Modules: modules.join("\n") } }
-            }, function(data) {
-                if (data.status === "ok" || data.result === "saved" || data.result === "ok") {
-                    showResult({ok: true, message: "{{ lang._('Declared modules saved.') }}"});
-                } else {
-                    showResult({ok: false, message: (data.message || JSON.stringify(data))});
-                }
-            });
+        function appendLog(line) {
+            const $log = $("#build-log");
+            if (!$log.length) {
+                return;
+            }
+            const text = String(line || '');
+            const existing = $log.text();
+            $log.text(existing ? existing + "\n" + text : text);
+            $log.scrollTop($log[0].scrollHeight);
+        }
+
+        function setBusy(state) {
+            busy = state;
+            $("#rebuild_modules, #add-module, #add-custom-module").prop('disabled', state);
+            const $status = $("#modules-status");
+            if (state) {
+                $status.find("#status-last-ok").text("{{ lang._('Running…') }}");
+                $status.find("#status-last-ts").text(new Date().toLocaleTimeString());
+                $("#build-log").text('');
+            }
         }
 
         $("#add-module").click(function() {
@@ -148,6 +159,7 @@
             }
             modules.push(value);
             renderModules();
+            autoSave();
         });
 
         $("#add-custom-module").click(function() {
@@ -158,6 +170,7 @@
             $("#new-module").val('');
             modules.push(value);
             renderModules();
+            autoSave();
         });
 
         $("#new-module").keydown(function(e) {
@@ -167,50 +180,32 @@
             }
         });
 
-        $("#save_modules").click(saveModules);
-
         $("#rebuild_modules").click(function() {
-            saveModules();
-            setBusy(true, "{{ lang._('Building caddy binary with the declared modules — this can take a few minutes…') }}");
+            setBusy(true);
+            appendLog("{{ lang._('Building caddy binary with the declared modules — this can take a few minutes…') }}");
             $.post("/api/caddy/modules/rebuild", function(data) {
-                showResult(data);
+                if (data.ok === true) {
+                    const $status = $("#modules-status");
+                    $status.find("#status-last-ok").text("{{ lang._('OK') }}");
+                    $status.find("#status-last-ts").text(new Date().toLocaleTimeString());
+                    appendLog(data.message || "{{ lang._('Rebuild complete.') }}");
+                } else {
+                    const $status = $("#modules-status");
+                    $status.find("#status-last-ok").text("{{ lang._('FAILED') }}");
+                    $status.find("#status-last-ts").text(new Date().toLocaleTimeString());
+                    appendLog(data.message || JSON.stringify(data));
+                    if (data.output) {
+                        appendLog(data.output);
+                    }
+                }
                 setBusy(false);
                 updateStatus();
             }).fail(function() {
+                appendLog("{{ lang._('Request failed.') }}");
                 setBusy(false);
                 updateStatus();
             });
         });
-
-        $("#ensure_modules").click(function() {
-            setBusy(true, "{{ lang._('Checking the installed binary against the declared modules…') }}");
-            $.post("/api/caddy/modules/ensure", function(data) {
-                showResult(data);
-                setBusy(false);
-                updateStatus();
-            }).fail(function() {
-                setBusy(false);
-                updateStatus();
-            });
-        });
-
-        function showResult(data) {
-            // Show build/check/save results inside the Module Status panel so
-            // the layout never shifts between panels.
-            const $status = $("#modules-status");
-            if (!$status.length) {
-                return;
-            }
-            $status.find("#status-last-ok").text(data.ok === true ? "{{ lang._('OK') }}" : (data.ok === false ? "{{ lang._('FAILED') }}" : "-"));
-            $status.find("#status-last-ts").text(new Date().toLocaleTimeString());
-            let message = data.message || (data.ok ? "{{ lang._('Done.') }}" : JSON.stringify(data));
-            if (data.output) {
-                // Surface the real failure detail (xcaddy/go output), not a
-                // generic "build failed" summary.
-                message += "\n" + data.output;
-            }
-            $status.find("#status-last-message").text(message);
-        }
 
         loadCatalog();
         loadModules();
@@ -226,7 +221,6 @@
             <tr><td class="text-muted">{{ lang._('Build fingerprint') }}</td><td id="status-fingerprint"></td></tr>
             <tr><td class="text-muted">{{ lang._('Last result') }}</td><td id="status-last-ok"></td></tr>
             <tr><td class="text-muted">{{ lang._('Last run') }}</td><td id="status-last-ts"></td></tr>
-            <tr><td class="text-muted">{{ lang._('Last message') }}</td><td id="status-last-message"></td></tr>
         </tbody>
     </table>
 </div>
@@ -234,7 +228,7 @@
 <div class="content-box opnware-editor-pane __mb">
     <h2>{{ lang._('Declared modules') }}</h2>
     <p class="help-block">
-        {{ lang._('Pick a module from the official Caddy module catalog, or paste any Go module path below. Save the list, then Install / Rebuild compiles a caddy binary pinned to the installed version. A failed rebuild never replaces the running binary.') }}
+        {{ lang._('Pick a module from the official Caddy module catalog, or paste any Go module path below. The list is saved automatically; Install / Rebuild compiles a caddy binary pinned to the installed version. A failed rebuild never replaces the running binary.') }}
     </p>
     <table class="table table-striped table-condensed" id="modules-table">
         <thead>
@@ -259,11 +253,10 @@
 </div>
 
 <div class="content-box opnware-editor-pane">
-    <h2>{{ lang._('Actions') }}</h2>
-    <button id="save_modules" type="button" class="btn btn-primary">{{ lang._('Save') }}</button>
-    <button id="rebuild_modules" type="button" class="btn btn-primary __ml">{{ lang._('Install / Rebuild') }}</button>
-    <button id="ensure_modules" type="button" class="btn btn-default __ml">{{ lang._('Check') }}</button>
+    <h2>{{ lang._('Rebuild') }}</h2>
+    <button id="rebuild_modules" type="button" class="btn btn-primary">{{ lang._('Install / Rebuild') }}</button>
     <span class="help-block">
-        {{ lang._('Save writes the module list to the configuration only — it does not touch the installed caddy binary. Install / Rebuild saves the list and then compiles a new binary with the declared modules (a failed build leaves the running binary untouched). Check compares the installed binary against the saved list and rebuilds only when a module is missing or the stored fingerprint no longer matches.') }}
+        {{ lang._('Compiles a new caddy binary with the declared modules (the list is saved automatically on every change). A failed build leaves the running binary untouched; the build output below shows what went wrong.') }}
     </span>
+    <pre id="build-log" style="height: 8em; overflow-y: auto; background: #1d2733; color: #d7dae0; border-radius: 4px; padding: 8px; font-size: 12px; margin-top: 10px;">{{ lang._('No build output yet.') }}</pre>
 </div>

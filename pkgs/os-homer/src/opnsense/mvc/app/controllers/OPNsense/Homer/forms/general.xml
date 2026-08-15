@@ -23,7 +23,14 @@
             <id>homer.general.TlsEnabled</id>
             <label>Enable TLS</label>
             <type>checkbox</type>
-            <help>Serve the dashboard over HTTPS using caddy's internal certificate authority (tls internal). When disabled the dashboard is served over plain HTTP.</help>
+            <help>Serve the dashboard over HTTPS using caddy's internal certificate authority (tls internal). When the dashboard binds to a specific interface, a Server name (hostname) is required so a certificate can be issued.</help>
+        </field>
+        <field>
+            <id>homer.general.ServerName</id>
+            <label>Server name (hostname)</label>
+            <type>text</type>
+            <hint>homer.lan</hint>
+            <help>Hostname used for the TLS certificate, e.g. homer.lan. Required when TLS is enabled and the dashboard does not listen on all interfaces.</help>
         </field>
     </tab>
     <activetab>general-settings</activetab>

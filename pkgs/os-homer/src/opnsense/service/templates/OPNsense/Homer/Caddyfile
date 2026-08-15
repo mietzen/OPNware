@@ -6,9 +6,16 @@
  # the LAN IP binds the configured address, "127.0.0.1:port" restricts the
  # instance to the loopback. When no LAN IP is configured (e.g. DHCP), the
  # port is left bare so the instance still starts.
+ #
+ # TLS rule: the internal CA can only mint a certificate for a hostname. With
+ # "all interfaces" (port-only site) on_demand issues per-SNI. On a bound
+ # interface a Server name is required — the site block then uses the
+ # hostname so caddy issues a cert for it.
  #}
 {%- set generalSettings = helpers.getNodeByTag('OPNsense.homer.general') -%}
 {%- set port = generalSettings.Port|default("9443") -%}
+{%- set tls = generalSettings.TlsEnabled|default("1") == "1" -%}
+{%- set servername = generalSettings.ServerName|default("") -%}
 {%- if generalSettings.Interface|default("all") == "localhost" -%}
 {%-   set listen = "127.0.0.1:" ~ port -%}
 {%- elif generalSettings.Interface|default("all") == "lan" -%}
@@ -41,13 +48,17 @@
 	}
 }
 
+{% if tls and servername != '' %}
+{{ servername }}:{{ port }} {
+{% else %}
 {{ listen }} {
+{% endif %}
 	root * /usr/local/www/homer
 	file_server
-{% if generalSettings.TlsEnabled|default("1") == "1" %}
-	# A port-only site has no hostname for the internal issuer to mint a
-	# SAN, so on_demand issues a cert for whatever SNI the client sends
-	# (the LAN IP or a hostname) — required for IP-based access.
+{% if tls %}
+	# The internal CA mints the certificate for the site's hostname. On a
+	# port-only (all interfaces) site there is no hostname, so on_demand
+	# issues per-SNI for whatever the client sends.
 	tls internal {
 		on_demand
 	}

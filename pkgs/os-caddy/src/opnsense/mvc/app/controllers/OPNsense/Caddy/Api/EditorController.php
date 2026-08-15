@@ -79,12 +79,20 @@ class EditorController extends ApiControllerBase
      * full copy of the tree (so deletions apply); single-file saves drop the
      * marker so only the staged file is written.
      *
+     * The staging dir is cleared first: a stale file from an aborted run
+     * (failed validation, interrupted request) would otherwise join the next
+     * staged tree and poison validation with phantom duplicates.
+     *
      * @return string|null error message or null on success
      */
     private function prepareStaging()
     {
-        if (!is_dir(self::STAGING_DIR) && !mkdir(self::STAGING_DIR, 0755, true)) {
-            return 'cannot create editor staging';
+        if (!is_dir(self::STAGING_DIR)) {
+            if (!mkdir(self::STAGING_DIR, 0755, true)) {
+                return 'cannot create editor staging';
+            }
+        } else {
+            $this->clearStaging();
         }
         foreach (editor_tree_walk_files() as $rel) {
             $target = self::STAGING_DIR . '/' . $rel;
@@ -97,6 +105,54 @@ class EditorController extends ApiControllerBase
         }
         file_put_contents(self::STAGING_MARKER, '1');
         return null;
+    }
+
+    /**
+     * Remove every entry under the staging dir (files, dirs, the marker).
+     * @return void
+     */
+    private function clearStaging()
+    {
+        $items = scandir(self::STAGING_DIR);
+        if ($items === false) {
+            return;
+        }
+        foreach ($items as $item) {
+            if ($item === '.' || $item === '..') {
+                continue;
+            }
+            $path = self::STAGING_DIR . '/' . $item;
+            if (is_dir($path) && !is_link($path)) {
+                $this->clearStagingDir($path);
+            } else {
+                @unlink($path);
+            }
+        }
+    }
+
+    /**
+     * Recursively remove a directory tree.
+     * @param string $dir
+     * @return void
+     */
+    private function clearStagingDir($dir)
+    {
+        $items = scandir($dir);
+        if ($items === false) {
+            return;
+        }
+        foreach ($items as $item) {
+            if ($item === '.' || $item === '..') {
+                continue;
+            }
+            $path = $dir . '/' . $item;
+            if (is_dir($path) && !is_link($path)) {
+                $this->clearStagingDir($path);
+            } else {
+                @unlink($path);
+            }
+        }
+        @rmdir($dir);
     }
 
     /**

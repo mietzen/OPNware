@@ -27,6 +27,11 @@
                 <Default>1</Default>
                 <Required>Y</Required>
             </TlsEnabled>
+            <ServerName type="TextField">
+                <Required>N</Required>
+                <ValidationMessage>Only a hostname (no scheme, port or path) is allowed.</ValidationMessage>
+                <mask>/^([A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?\.)*[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?$/</mask>
+            </ServerName>
         </general>
     </items>
 </model>
