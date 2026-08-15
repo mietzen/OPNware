@@ -57,11 +57,17 @@ mkdir -p "${DIST_ROOT}/dist/pkg/usr/local/www"
 chmod 0755 "${DIST_ROOT}/dist/pkg/usr/local/www"
 cp -R "${DIST_ROOT}/src/dist/." "${DIST_ROOT}/dist/pkg/usr/local/www/homer/"
 
-# Stage the license and source pointer under /usr/local/share/doc/homer.
+# The bundled Homer dashboard's own license + source pointer.
 mkdir -p "${DIST_ROOT}/dist/pkg/usr/local/share/doc/homer"
 chmod 0755 "${DIST_ROOT}/dist/pkg/usr/local/share/doc/homer"
 cp "${DIST_ROOT}/src/LICENSE" "${DIST_ROOT}/dist/pkg/usr/local/share/doc/homer/LICENSE"
 chmod 0644 "${DIST_ROOT}/dist/pkg/usr/local/share/doc/homer/LICENSE"
+
+# Our own MIT license for the plugin code (distinct from Homer's Apache-2.0).
+mkdir -p "${DIST_ROOT}/dist/pkg/usr/local/share/doc/os-homer"
+chmod 0755 "${DIST_ROOT}/dist/pkg/usr/local/share/doc/os-homer"
+cp "${SCRIPT_DIR}/LICENSE" "${DIST_ROOT}/dist/pkg/usr/local/share/doc/os-homer/LICENSE"
+chmod 0644 "${DIST_ROOT}/dist/pkg/usr/local/share/doc/os-homer/LICENSE"
 
 # Provide Source Code Link
 cat <<EOF > "${DIST_ROOT}/dist/pkg/usr/local/share/doc/homer/SOURCE"

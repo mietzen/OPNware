@@ -16,14 +16,20 @@ pkg_manifest:
   www: https://homer-demo.netlify.app/
   maintainer: github.nstein@mailbox.org
   prefix: /usr/local
-  licenselogic: single
+  licenselogic: dual
   licenses:
+    - MIT
     - APACHE20
   desc: |
     OPNware os-homer: serves the Homer dashboard at /usr/local/www/homer via a
     dedicated, isolated caddy instance. Settings (port, interface, TLS) regenerate
     the plugin-owned Caddyfile and restart the instance; logs appear in the core
     Diagnostics viewer.
+
+    Combined work: the plugin code is original work of this repository
+    (MIT, see LICENSE in the package); the bundled Homer dashboard is
+    Homer's own code (Apache-2.0, its LICENSE ships at
+    /usr/local/share/doc/homer/LICENSE).
   deps:
     caddy:
       origin: opnware/caddy

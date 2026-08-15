@@ -10,11 +10,23 @@ DIST_ROOT="${GITHUB_WORKSPACE:-${REPO_ROOT}}"
 
 echo "Building editor - ARCH: ${ARCH} - ABI: ${ABI}"
 
+VENDOR_DIR="${REPO_ROOT}/pkgs/os-caddy/assets/vendor"
+PKG_VERSION=$(pkg-tool dump "${CONFIG}" pkg_manifest.version)
+
+# The package version must track the vendored monaco-editor release; a
+# refreshed vendor without a version bump fails here instead of shipping a
+# silently mismatched package.
+MONACO_VERSION=$(python3 -c "import json;print(json.load(open('${VENDOR_DIR}/monaco/package.json'))['version'])")
+if [ "${MONACO_VERSION}" != "${PKG_VERSION}" ]; then
+    echo "ERROR: vendored monaco-editor is ${MONACO_VERSION} but config.yml says ${PKG_VERSION} — bump pkg_manifest.version"
+    exit 1
+fi
+
 mkdir -p "${DIST_ROOT}/dist/pkg/usr/local/opnsense/www/js"
 chmod 0755 "${DIST_ROOT}/dist/pkg/usr/local/opnsense/www/js"
 
 # Source of truth: the vendored tree lives in the os-caddy plugin source.
-cp -R "${REPO_ROOT}/pkgs/os-caddy/assets/vendor/." "${DIST_ROOT}/dist/pkg/usr/local/opnsense/www/js/vendor/"
+cp -R "${VENDOR_DIR}/." "${DIST_ROOT}/dist/pkg/usr/local/opnsense/www/js/vendor/"
 find "${DIST_ROOT}/dist/pkg/usr/local" -type d -exec chmod 0755 {} +
 find "${DIST_ROOT}/dist/pkg/usr/local" -type f -exec chmod 0644 {} +
 

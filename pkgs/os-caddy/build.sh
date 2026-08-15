@@ -14,6 +14,12 @@ mkdir -p "${DIST_ROOT}/dist/pkg/usr/local"
 chmod 0755 "${DIST_ROOT}/dist/pkg/usr/local"
 cp -R "${SCRIPT_DIR}/src/." "${DIST_ROOT}/dist/pkg/usr/local/"
 
+# Our own MIT license for the plugin code.
+mkdir -p "${DIST_ROOT}/dist/pkg/usr/local/share/doc/os-caddy"
+chmod 0755 "${DIST_ROOT}/dist/pkg/usr/local/share/doc/os-caddy"
+cp "${SCRIPT_DIR}/LICENSE" "${DIST_ROOT}/dist/pkg/usr/local/share/doc/os-caddy/LICENSE"
+chmod 0644 "${DIST_ROOT}/dist/pkg/usr/local/share/doc/os-caddy/LICENSE"
+
 # The vendored Monaco/TextMate tree ships in the shared `editor` package
 # (both plugins depend on it) — it is NOT copied into plugin payloads, so
 # pkg never sees duplicate file ownership. See docs/design/shared-editor-vendor.md.
