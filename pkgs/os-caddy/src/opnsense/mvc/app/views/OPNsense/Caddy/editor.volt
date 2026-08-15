@@ -222,7 +222,13 @@
                 $('#editor-tree').jstree({
                     core: {
                         data: nodes,
-                        themes: { name: 'default' }
+                        themes: { name: 'default' },
+                        // jstree's core.worker defaults to true and spawns a
+                        // blob: worker for background parsing — OPNsense's
+                        // CSP refuses blob workers, which aborts the tree
+                        // init and cascades into the Monaco load. Parsing is
+                        // cheap for a small config tree, so disable it.
+                        worker: false
                     },
                     types: {
                         'directory': { icon: 'fa fa-folder-open-o' },
