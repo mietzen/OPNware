@@ -1,0 +1,25 @@
+#!/bin/sh
+
+# PROVIDE: 500.os-caddy-modules
+# REQUIRE: LOGIN
+#
+# OPNware os-caddy — self-healing module check.
+#
+# A caddy package update replaces /usr/local/bin/caddy with a vanilla binary,
+# silently dropping every module os-caddy added via xcaddy. Nothing restarts
+# the caddy service at pkg-upgrade time, so without this hook the modules stay
+# gone until the next manual start/apply. This periodic job runs the cheap
+# ensure-modules check (build fingerprint + declared-set comparison) and
+# rebuilds only when something mismatches.
+#
+# Disable with:  daily_os_caddy_modules_enable="NO"  in /etc/periodic.conf
+
+case "$daily_os_caddy_modules_enable" in
+    [Nn][Oo]|[Ff][Aa][Ll][Ss][Ee]) exit 0 ;;
+esac
+
+if [ -x /usr/local/opnsense/scripts/OPNsense/Caddy/modules.php ] && [ -x /usr/local/bin/caddy ]; then
+    /usr/local/opnsense/scripts/OPNsense/Caddy/modules.php ensure >/dev/null 2>&1
+fi
+
+exit 0
