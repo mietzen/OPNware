@@ -8,8 +8,6 @@ content:
 plugin:
   opnsense_version: "26.7"
   tier: 3
-  conflicts:
-    - os-homer
 pkg_manifest:
   name: homer
   origin: opnware/os-homer

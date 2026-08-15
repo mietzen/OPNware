@@ -32,7 +32,7 @@
 {{ listen }} {
 	root * /usr/local/www/homer
 	file_server
-{%- if generalSettings.TlsEnabled|default("1") == "1" %}
+{% if generalSettings.TlsEnabled|default("1") == "1" %}
 	tls internal
-{%- endif %}
+{% endif %}
 }

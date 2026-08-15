@@ -4,8 +4,6 @@ build_config:
 plugin:
   opnsense_version: "26.7"
   tier: 3
-  conflicts:
-    - os-caddy
 pkg_manifest:
   name: caddy
   origin: opnware/os-caddy
