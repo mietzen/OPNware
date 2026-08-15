@@ -199,10 +199,9 @@ function editor_caddy_running()
     if (!is_numeric($pid)) {
         return false;
     }
-    if (!function_exists('posix_kill')) {
-        return true;
-    }
-    return @posix_kill((int)$pid, 0);
+    // FreeBSD-native liveness check (the PHP posix extension may be absent).
+    exec('kill -0 ' . (int)$pid . ' 2>/dev/null', $o, $code);
+    return $code === 0;
 }
 
 /**

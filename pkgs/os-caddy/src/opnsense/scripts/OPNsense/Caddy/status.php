@@ -43,8 +43,10 @@ if (is_file($config)) {
 
 if (file_exists('/var/run/caddy/caddy.pid')) {
     $pid = trim(file_get_contents('/var/run/caddy/caddy.pid'));
-    if (is_numeric($pid) && posix_kill((int)$pid, 0)) {
-        $result['running'] = true;
+    if (is_numeric($pid)) {
+        // FreeBSD-native liveness check (the PHP posix extension may be absent).
+        exec('kill -0 ' . (int)$pid . ' 2>/dev/null', $o, $code);
+        $result['running'] = ($code === 0);
     }
 }
 
