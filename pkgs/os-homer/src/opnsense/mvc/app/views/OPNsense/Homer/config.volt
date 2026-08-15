@@ -26,18 +26,15 @@
     });
 
     // OPNsense's CSP blocks blob: web workers but allows same-origin
-    // workers. Monaco's default MonacoEnvironment.getWorker() creates blob:
-    // workers which the CSP refuses, and its main-thread fallback freezes
-    // the UI on model changes. Serve a same-origin bootstrap worker
-    // (editor.worker.bootstrap.js loads the AMD loader + editor.worker.js)
-    // instead — no CSP violation, no freeze. The assignment must happen
-    // inside the require() callback: editor.main.js sets its own
-    // MonacoEnvironment on load.
-    self.__opnwareDisableMonacoWorkers = function() {
-        if (self.MonacoEnvironment && typeof self.MonacoEnvironment.getWorker === 'function') {
-            self.MonacoEnvironment.getWorker = function() {
-                return new Worker('/ui/js/vendor/monaco/vs/editor/editor.worker.bootstrap.js');
-            };
+    // workers. Monaco's AMD build instantiates its language workers during
+    // editor.main module evaluation (they are module dependencies), so
+    // MonacoEnvironment.getWorker must be patched BEFORE the require() below
+    // — editor.main.js would otherwise use its blob-based default, which the
+    // CSP refuses and aborts the module load. The same-origin bootstrap
+    // worker loads the vendored AMD loader + editor.worker.js.
+    self.MonacoEnvironment = {
+        getWorker: function() {
+            return new Worker('/ui/js/vendor/monaco/vs/editor/editor.worker.bootstrap.js');
         }
     };
 
@@ -49,7 +46,6 @@
         // vs/basic-languages/monaco.contribution registers the built-in
         // 'yaml' language (lazily loaded chunk); no TextMate grammar needed.
         require(['vs/editor/editor.main', 'vs/basic-languages/monaco.contribution'], function(monaco) {
-            self.__opnwareDisableMonacoWorkers();
             window.opnwareHomerMonaco = monaco;
             editor = monaco.editor.create(document.getElementById('editor-container'), {
                 value: '',
