@@ -100,6 +100,21 @@ class EditorController extends ApiControllerBase
     }
 
     /**
+     * Run the configd editor-save cycle against the staged tree and return
+     * its JSON contract, falling back to the status file on "Execute error".
+     * @return array
+     */
+    private function runStagedSave()
+    {
+        $result = (new Backend())->configdRun('caddy editor-save');
+        $data = json_decode($result, true);
+        if (!is_array($data)) {
+            $data = is_file(self::STATUS_FILE) ? json_decode(file_get_contents(self::STATUS_FILE), true) : null;
+        }
+        return is_array($data) ? $data : array('status' => 'failure', 'message' => trim($result));
+    }
+
+    /**
      * The recursive file tree. Generated .opnware state is never exposed.
      * @return array
      */
@@ -211,32 +226,40 @@ class EditorController extends ApiControllerBase
     }
 
     /**
-     * Create a new empty *.caddy file inside conf.d.
+     * Create a new empty *.caddy file inside conf.d (staged, then saved).
      * @return array
      */
     public function addAction()
     {
-        $name = $this->request->get('name');
-        if (!is_string($name) || !preg_match('/^[A-Za-z0-9._-]+\.caddy$/', $name)) {
+        $target = $this->request->get('path');
+        if (!is_string($target) || $target === '') {
+            $target = 'conf.d/' . $this->request->get('name');
+        }
+        if (!editor_tree_rel_safe($target)) {
             return array(
                 'status' => 'failure',
-                'message' => 'invalid file name (must be *.caddy inside conf.d)',
+                'message' => 'invalid file name (must be a relative *.caddy path inside conf.d)',
             );
         }
-        $file = self::BASE . '/conf.d/' . $name;
-        if (file_exists($file)) {
+        $error = $this->prepareStaging();
+        if ($error !== null) {
+            return array('status' => 'failure', 'message' => $error);
+        }
+        $staged = self::STAGING_DIR . '/' . $target;
+        if (file_exists($staged)) {
             return array('status' => 'failure', 'message' => 'file already exists');
         }
-        if (!is_dir(self::BASE . '/conf.d') && !mkdir(self::BASE . '/conf.d', 0755, true)) {
-            return array('status' => 'failure', 'message' => 'cannot create conf.d');
-        }
-        if (is_link(self::BASE . '/conf.d') || !$this->underBase($file)) {
+        if (is_link(self::STAGING_DIR . '/conf.d')) {
             return array('status' => 'failure', 'message' => 'conf.d must not be a symlink');
         }
-        if (file_put_contents($file, '') === false) {
+        if (!is_dir(dirname($staged)) && !mkdir(dirname($staged), 0755, true)) {
+            return array('status' => 'failure', 'message' => 'cannot create directory');
+        }
+        if (file_put_contents($staged, '') === false) {
             return array('status' => 'failure', 'message' => 'cannot create file');
         }
-        return array('status' => 'ok', 'message' => 'created');
+        editor_tree_write_imports(self::STAGING_DIR);
+        return $this->runStagedSave();
     }
 
     /** Copy one conf.d file to another whitelisted conf.d filename. */
@@ -278,16 +301,12 @@ class EditorController extends ApiControllerBase
             return array('status' => 'failure', 'message' => $move ? 'cannot move file' : 'cannot copy file');
         }
         editor_tree_write_imports(self::STAGING_DIR);
-        $result = (new Backend())->configdRun('caddy editor-save');
-        $data = json_decode($result, true);
-        if (!is_array($data)) {
-            $data = is_file(self::STATUS_FILE) ? json_decode(file_get_contents(self::STATUS_FILE), true) : null;
-        }
-        return is_array($data) ? $data : array('status' => 'failure', 'message' => trim($result));
+        return $this->runStagedSave();
     }
 
     /**
-     * Delete a conf.d/*.caddy file. Caddyfile itself is never deleted.
+     * Delete a conf.d/*.caddy file (staged, then saved). Caddyfile is never
+     * deleted.
      * @return array
      */
     public function deleteAction()
@@ -299,17 +318,19 @@ class EditorController extends ApiControllerBase
         if ($rel === 'Caddyfile') {
             return array('status' => 'failure', 'message' => 'Caddyfile cannot be deleted');
         }
-        $file = self::BASE . '/' . $rel;
-        if (!$this->underBase($file)) {
-            return array('status' => 'failure', 'message' => 'invalid path');
+        $error = $this->prepareStaging();
+        if ($error !== null) {
+            return array('status' => 'failure', 'message' => $error);
         }
-        if (!is_file($file)) {
+        $staged = self::STAGING_DIR . '/' . $rel;
+        if (!is_file($staged)) {
             return array('status' => 'failure', 'message' => 'file does not exist');
         }
-        if (!unlink($file)) {
+        if (!unlink($staged)) {
             return array('status' => 'failure', 'message' => 'cannot delete file');
         }
-        return array('status' => 'ok', 'message' => 'deleted');
+        editor_tree_write_imports(self::STAGING_DIR);
+        return $this->runStagedSave();
     }
 
     /**

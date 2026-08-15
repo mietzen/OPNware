@@ -573,40 +573,34 @@
 <div id="editor-files-tab" class="tab-pane active">
 <div class="row">
     <div class="col-md-3">
-        <div class="content-box __mb" style="padding-bottom: 1.5em;">
-            <div class="content-box-main">
-                <h2>{{ lang._('Files') }}</h2>
-                <ul id="editor-files" class="nav nav-pills nav-stacked"></ul>
+        <div class="content-box opnware-editor-pane __mb">
+            <h2>{{ lang._('Files') }}</h2>
+            <ul id="editor-files" class="nav nav-pills nav-stacked"></ul>
+            <div class="form-group __mt">
+                <input id="new-file-name" type="text" class="form-control input-sm" placeholder="site.caddy">
             </div>
-            <div class="content-box-main" style="padding-top: 0;">
-                <div class="form-group">
-                    <input id="new-file-name" type="text" class="form-control input-sm" placeholder="site.caddy">
-                </div>
-                <button id="add-editor" type="button" class="btn btn-primary btn-sm">{{ lang._('Add') }}</button>
-                <span class="help-block">{{ lang._('Add and delete are limited to .caddy files inside conf.d. The Caddyfile itself cannot be deleted.') }}</span>
-            </div>
+            <button id="add-editor" type="button" class="btn btn-primary btn-sm">{{ lang._('Add') }}</button>
+            <span class="help-block">{{ lang._('Add, copy, move and delete are limited to .caddy files inside conf.d. The Caddyfile itself cannot be deleted.') }}</span>
         </div>
     </div>
     <div class="col-md-9">
-        <div class="content-box __mb" style="padding-bottom: 1.5em;">
-            <div class="content-box-main">
-                <div class="row">
-                    <div class="col-md-8"><h2 id="editor-name">{{ lang._('Caddyfile') }}</h2></div>
-                    <div class="col-md-4 text-right __mt">
-                        <label class="text-muted" for="editor-theme">{{ lang._('Theme') }}</label>
-                        <select id="editor-theme" class="form-control input-sm" style="display:inline-block; width:auto;">
-                            <option value="vs">{{ lang._('Light') }}</option>
-                            <option value="vs-dark">{{ lang._('Dark') }}</option>
-                        </select>
-                    </div>
+        <div class="content-box opnware-editor-pane __mb">
+            <div class="row">
+                <div class="col-md-8"><h2 id="editor-name">{{ lang._('Caddyfile') }}</h2></div>
+                <div class="col-md-4 text-right __mt">
+                    <label class="text-muted" for="editor-theme">{{ lang._('Theme') }}</label>
+                    <select id="editor-theme" class="form-control input-sm" style="display:inline-block; width:auto;">
+                        <option value="vs">{{ lang._('Light') }}</option>
+                        <option value="vs-dark">{{ lang._('Dark') }}</option>
+                    </select>
                 </div>
-                <p><small class="text-muted"><code id="editor-path"></code></small></p>
-                <div id="editor-container" style="height: 450px; border: 1px solid #1d2733; border-radius: 4px; overflow: hidden;"></div>
-                {# Hidden transport for the existing save cycle — the Monaco model mirrors its value. #}
-                <textarea id="editor-content" class="form-control" rows="20" spellcheck="false"
-                          style="font-family: monospace; display: none;"></textarea>
             </div>
-            <div class="col-md-12 __mt">
+            <p><small class="text-muted"><code id="editor-path"></code></small></p>
+            <div id="editor-container" style="height: 450px; border: 1px solid #1d2733; border-radius: 4px; overflow: hidden;"></div>
+            {# Hidden transport for the existing save cycle — the Monaco model mirrors its value. #}
+            <textarea id="editor-content" class="form-control" rows="20" spellcheck="false"
+                      style="font-family: monospace; display: none;"></textarea>
+            <div class="opnware-editor-actions">
                 <hr/>
                 <button id="save-editor" type="button" class="btn btn-primary"><b>{{ lang._('Save') }}</b></button>
                 <span id="editor-status" class="text-muted __ml">
@@ -616,44 +610,38 @@
                     · <span id="status-message">-</span>
                 </span>
             </div>
-            <div class="content-box-main" style="padding-top: 5px;">
-                <span class="help-block">{{ lang._('Saving validates the whole Caddy file tree first; invalid configuration is rejected without writing anything.') }}</span>
-            </div>
+            <span class="help-block">{{ lang._('Saving validates the whole Caddy file tree first; invalid configuration is rejected without writing anything.') }}</span>
         </div>
     </div>
 </div>
 </div>
 
 <div id="editor-environment-tab" class="tab-pane">
-<div id="env-panel" class="content-box __mb" style="padding-bottom: 1.5em;">
-    <div class="content-box-main">
-        <h2>{{ lang._('Environment') }}</h2>
-        <p class="help-block">
-            {{ lang._('Environment variables are passed to the Caddy process through the envfile (--envfile). Secret rows are masked by default; use the reveal button to inspect a value. The plugin-managed CADDY_LOG_LEVEL row cannot be edited. The envfile is separate from the file tree above and is never shown there.') }}
-        </p>
-        <table class="table table-striped table-condensed" id="env-table">
-            <thead>
-                <tr>
-                    <th>{{ lang._('Name') }}</th>
-                    <th>{{ lang._('Value') }}</th>
-                    <th>{{ lang._('Secret') }}</th>
-                    <th></th>
-                    <th></th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td colspan="5" class="text-muted">{{ lang._('Loading…') }}</td>
-                </tr>
-            </tbody>
-        </table>
-    </div>
-    <div class="col-md-12 __mt">
+<div id="env-panel" class="content-box opnware-editor-pane __mb">
+    <h2>{{ lang._('Environment') }}</h2>
+    <p class="help-block">
+        {{ lang._('Environment variables are passed to the Caddy process through the envfile (--envfile). Secret rows are masked by default; use the reveal button to inspect a value. The plugin-managed CADDY_LOG_LEVEL row cannot be edited. The envfile is separate from the file tree above and is never shown there.') }}
+    </p>
+    <table class="table table-striped table-condensed" id="env-table">
+        <thead>
+            <tr>
+                <th>{{ lang._('Name') }}</th>
+                <th>{{ lang._('Value') }}</th>
+                <th>{{ lang._('Secret') }}</th>
+                <th></th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td colspan="5" class="text-muted">{{ lang._('Loading…') }}</td>
+            </tr>
+        </tbody>
+    </table>
+    <div class="opnware-editor-actions">
         <hr/>
         <button id="env-add-row" type="button" class="btn btn-primary"><b>{{ lang._('Add row') }}</b></button>
         <button id="env-save" type="button" class="btn btn-primary __ml"><b>{{ lang._('Save env') }}</b></button>
-    </div>
-    <div class="content-box-main" style="padding-top: 5px; padding-bottom: 15px;">
         <div id="env-result" class="alert" style="display:none;"></div>
     </div>
 </div>

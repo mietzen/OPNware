@@ -24,26 +24,6 @@ class ModulesController extends ApiMutableModelControllerBase
     }
 
     /**
-     * Named alias for getAction() (/api/caddy/modules/getModules).
-     * @return array
-     * @throws \ReflectionException
-     */
-    public function getAction()
-    {
-        return $this->getAction();
-    }
-
-    /**
-     * Named alias for setAction() (/api/caddy/modules/setModules).
-     * @return array
-     * @throws \ReflectionException
-     */
-    public function setAction()
-    {
-        return $this->setAction();
-    }
-
-    /**
      * The modules script writes its JSON result to modules_result.json; on a
      * non-zero exit configd swallows the output ("Execute error"), so fall
      * back to that file for the real result.

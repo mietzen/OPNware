@@ -143,7 +143,9 @@ function editor_tree_import_content($base = EDITOR_TREE_BASE)
         if ($rel === 'Caddyfile') {
             continue;
         }
-        $lines[] = 'import ' . $rel;
+        // imports.caddy lives one directory below the Caddyfile, so managed
+        // paths are relative to .opnware rather than the config root.
+        $lines[] = 'import ../' . $rel;
     }
     return implode("\n", $lines) . (empty($lines) ? '' : "\n");
 }
