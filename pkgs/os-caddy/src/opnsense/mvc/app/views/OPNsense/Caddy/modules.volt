@@ -258,5 +258,6 @@
     <span class="help-block">
         {{ lang._('Compiles a new caddy binary with the declared modules (the list is saved automatically on every change). A failed build leaves the running binary untouched; the build output below shows what went wrong.') }}
     </span>
-    <pre id="build-log" style="height: 8em; overflow-y: auto; background: #1d2733; color: #d7dae0; border-radius: 4px; padding: 8px; font-size: 12px; margin-top: 10px;">{{ lang._('No build output yet.') }}</pre>
+    <pre id="build-log" style="height: 8em; overflow-y: auto; background: #1d2733; color: #d7dae0; border-radius: 4px; padding: 8px; font-size: 12px; margin-top: 10px; margin-bottom: 0;">{{ lang._('No build output yet.') }}</pre>
 </div>
+<div style="height: 60px;"></div>
