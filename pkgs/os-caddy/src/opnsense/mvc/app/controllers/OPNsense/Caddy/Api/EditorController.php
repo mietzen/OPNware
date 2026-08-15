@@ -230,7 +230,16 @@ class EditorController extends ApiControllerBase
         $result = $backend->configdRun('caddy editor-save');
         $data = json_decode($result, true);
         if (!is_array($data)) {
-            return array('status' => 'failure', 'message' => trim($result));
+            // configd reports 'Execute error' on non-zero exits and swallows
+            // the script output — fall back to the status file for the real
+            // error message the save cycle wrote.
+            $status = self::STATUS_FILE;
+            if (is_file($status)) {
+                $data = json_decode(file_get_contents($status), true);
+            }
+            if (!is_array($data)) {
+                return array('status' => 'failure', 'message' => trim($result));
+            }
         }
         return $data;
     }

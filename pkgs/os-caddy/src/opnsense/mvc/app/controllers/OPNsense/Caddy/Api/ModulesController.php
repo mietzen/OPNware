@@ -44,6 +44,26 @@ class ModulesController extends ApiMutableModelControllerBase
     }
 
     /**
+     * The modules script writes its JSON result to modules_result.json; on a
+     * non-zero exit configd swallows the output ("Execute error"), so fall
+     * back to that file for the real result.
+     * @return array
+     */
+    private function resultOr($result)
+    {
+        $data = json_decode($result, true);
+        if (is_array($data)) {
+            return $data;
+        }
+        $file = '/var/db/os-caddy/modules_result.json';
+        $data = is_file($file) ? json_decode(file_get_contents($file), true) : null;
+        if (is_array($data)) {
+            return $data;
+        }
+        return ['ok' => false, 'message' => trim($result)];
+    }
+
+    /**
      * Rebuild the caddy binary from the declared module set, pinned to the
      * installed caddy version (configd action "modules modules-rebuild").
      * @return array
@@ -51,12 +71,7 @@ class ModulesController extends ApiMutableModelControllerBase
     public function rebuildAction()
     {
         $backend = new Backend();
-        $result = $backend->configdRun('modules modules-rebuild');
-        $data = json_decode($result, true);
-        if (!is_array($data)) {
-            return ['ok' => false, 'message' => trim($result)];
-        }
-        return $data;
+        return $this->resultOr($backend->configdRun('modules modules-rebuild'));
     }
 
     /**
@@ -68,12 +83,7 @@ class ModulesController extends ApiMutableModelControllerBase
     public function ensureAction()
     {
         $backend = new Backend();
-        $result = $backend->configdRun('modules modules-ensure');
-        $data = json_decode($result, true);
-        if (!is_array($data)) {
-            return ['ok' => false, 'message' => trim($result)];
-        }
-        return $data;
+        return $this->resultOr($backend->configdRun('modules modules-ensure'));
     }
 
     /**
