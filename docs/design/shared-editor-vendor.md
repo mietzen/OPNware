@@ -59,6 +59,21 @@ This is deliberate: shipping the same files in two plugin payloads would make
 `pkg` refuse co-installation (duplicate file ownership). Never copy the
 vendor into a plugin payload — change the `editor` package instead.
 
+> **Vendored patch — CSP-safe Monaco workers.** OPNsense's CSP
+> (`script-src 'self' 'unsafe-inline' 'unsafe-eval'`, no `worker-src blob:`)
+> blocks Monaco's default blob: web workers, and Monaco's main-thread
+> fallback freezes the editor UI on model changes. `editor.main.js` is
+> therefore patched in the vendor tree so `MonacoEnvironment.getWorker`
+> returns a classic same-origin worker loading
+> `editor/editor.worker.bootstrap.js`, which `importScripts` the vendored AMD
+> loader and boots `vs/editor/editor.worker` (module id re-based via
+> `require.config({ baseUrl })`). The patch must live in `editor.main.js`
+> itself: Monaco instantiates its workers during module evaluation, before
+> any page-level `MonacoEnvironment` override could take effect. When
+> refreshing the vendor, re-apply this patch (and keep the version contract:
+> base version must equal the monaco release, a `_N` revision suffix may be
+> used for package-only changes).
+
 ## Caddy editor tree
 
 The editor manages a flat tree: `Caddyfile` plus `conf.d/*.caddy`. The seed

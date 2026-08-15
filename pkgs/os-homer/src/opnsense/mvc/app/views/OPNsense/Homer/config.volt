@@ -19,24 +19,17 @@
     // Monaco's AMD loader (vs/loader.js) resolves module ids through these
     // paths. Everything is vendored under /opnsense/www/js/vendor/ (served as
     // /ui/js/vendor/...); see docs/design/shared-editor-vendor.md.
+    //
+    // The vendored editor.main.js is patched to serve workers from the
+    // same-origin bootstrap worker (editor.worker.bootstrap.js): OPNsense's
+    // CSP blocks Monaco's default blob: workers, and the main-thread
+    // fallback froze the UI on model changes. See
+    // docs/design/shared-editor-vendor.md.
     require.config({
         paths: {
             vs: '/ui/js/vendor/monaco/vs'
         }
     });
-
-    // OPNsense's CSP blocks blob: web workers but allows same-origin
-    // workers. Monaco's AMD build instantiates its language workers during
-    // editor.main module evaluation (they are module dependencies), so
-    // MonacoEnvironment.getWorker must be patched BEFORE the require() below
-    // — editor.main.js would otherwise use its blob-based default, which the
-    // CSP refuses and aborts the module load. The same-origin bootstrap
-    // worker loads the vendored AMD loader + editor.worker.js.
-    self.MonacoEnvironment = {
-        getWorker: function() {
-            return new Worker('/ui/js/vendor/monaco/vs/editor/editor.worker.bootstrap.js');
-        }
-    };
 
     $(document).ready(function() {
         let editor = null;
