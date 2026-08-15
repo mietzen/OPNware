@@ -8,9 +8,9 @@
 // origin, which the CSP allows. The volt patches
 // MonacoEnvironment.getWorker to return `new Worker(this file)`.
 //
-// The loader resolves module ids against its own location, so "vs/..."
-// ids must be re-based to the vendored root explicitly — otherwise
-// "vs/editor/editor.worker" resolves relative to this file's directory.
+// Module ids like "vs/editor/editor.worker" already carry the "vs" prefix,
+// so the baseUrl must be the vendor root WITHOUT it — otherwise the id
+// resolves to .../vs/vs/editor/editor.worker.js and the load fails.
 importScripts('/ui/js/vendor/monaco/vs/loader.js');
-require.config({ baseUrl: '/ui/js/vendor/monaco/vs' });
+require.config({ baseUrl: '/ui/js/vendor/monaco' });
 require(['vs/editor/editor.worker'], function() {});
