@@ -299,6 +299,21 @@ function rebuild($modules)
  */
 function ensure($modules)
 {
+    if (empty($modules)) {
+        // Nothing declared: a vanilla binary is already correct — a rebuild
+        // would just recompile the same binary (and hang the start chain on a
+        // cold box). The fingerprint only matters once a set is declared.
+        $result = array(
+            'ok' => true,
+            'noop' => true,
+            'reason' => 'no modules declared',
+            'ts' => time(),
+        );
+        file_put_contents(RESULT_FILE, json_encode($result));
+        echo json_encode($result);
+        exit(0);
+    }
+
     $stored = '';
     $stored_set = '';
     if (is_file(FINGERPRINT_FILE)) {

@@ -37,12 +37,8 @@ $result['modules'] = array_values(array_filter(array_map('trim', $mods)));
 
 if (is_file($config)) {
     $result['checksum'] = hash_file('sha256', $config);
-    run_cmd("$caddy validate --config $config --adapter caddyfile", $out);
-    if (empty($out)) {
-        $result['validate'] = 'OK';
-    } else {
-        $result['validate'] = trim(implode("\n", $out));
-    }
+    $vcode = run_cmd("$caddy validate --config $config --adapter caddyfile", $out);
+    $result['validate'] = $vcode === 0 ? 'OK' : trim(implode("\n", $out));
 }
 
 if (file_exists('/var/run/caddy/caddy.pid')) {
