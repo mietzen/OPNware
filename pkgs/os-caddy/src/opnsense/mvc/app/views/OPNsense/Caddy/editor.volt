@@ -75,15 +75,18 @@
         }
     });
 
-    // OPNsense's CSP blocks blob: web workers, so Monaco's default
-    // getWorker() throws on creation and falls back to running the worker
-    // code on the main thread — which freezes the UI whenever the model
-    // changes (e.g. the tree reload after add/remove/rename). Caddyfile
-    // tokenization is done by the vendored TextMate grammar we wire below,
-    // not by a worker, so refusing workers entirely is safe and avoids the
-    // CSP violation and the main-thread fallback.
-    self.MonacoEnvironment = {
-        getWorker: function() { return null; }
+    // OPNsense's CSP blocks blob: web workers. Monaco's default
+    // MonacoEnvironment.getWorker() creates blob: workers and, when the CSP
+    // refuses them, falls back to running the worker code on the main
+    // thread — which freezes the UI whenever the model changes (e.g. the
+    // tree reload after add/remove/rename). Caddyfile tokenization is done
+    // by the vendored TextMate grammar in the main thread, so refusing
+    // workers is safe. The assignment must happen inside the require()
+    // callback: editor.main.js sets its own MonacoEnvironment on load.
+    self.__opnwareDisableMonacoWorkers = function(monaco) {
+        if (self.MonacoEnvironment && typeof self.MonacoEnvironment.getWorker === 'function') {
+            self.MonacoEnvironment.getWorker = function() { return null; };
+        }
     };
 
     $(document).ready(function() {
@@ -93,6 +96,7 @@
         // --- Monaco + TextMate grammar wiring -------------------------------
 
         require(['vs/editor/editor.main'], function(monaco) {
+            self.__opnwareDisableMonacoWorkers(monaco);
             window.opnwareMonaco = monaco;
             monaco.languages.register({ id: 'caddyfile' });
 

@@ -25,12 +25,17 @@
         }
     });
 
-    // OPNsense's CSP blocks blob: web workers; Monaco's default getWorker()
-    // would throw and fall back to main-thread worker code, freezing the UI
+    // OPNsense's CSP blocks blob: web workers. Monaco's default
+    // MonacoEnvironment.getWorker() creates blob: workers and, when the CSP
+    // refuses them, falls back to main-thread worker code — freezing the UI
     // on model changes. YAML tokenization is built-in and main-thread safe,
-    // so refusing workers is the reliable choice here.
-    self.MonacoEnvironment = {
-        getWorker: function() { return null; }
+    // so refusing workers is the reliable choice. The assignment must happen
+    // inside the require() callback: editor.main.js sets its own
+    // MonacoEnvironment on load.
+    self.__opnwareDisableMonacoWorkers = function() {
+        if (self.MonacoEnvironment && typeof self.MonacoEnvironment.getWorker === 'function') {
+            self.MonacoEnvironment.getWorker = function() { return null; };
+        }
     };
 
     $(document).ready(function() {
@@ -41,6 +46,7 @@
         // vs/basic-languages/monaco.contribution registers the built-in
         // 'yaml' language (lazily loaded chunk); no TextMate grammar needed.
         require(['vs/editor/editor.main', 'vs/basic-languages/monaco.contribution'], function(monaco) {
+            self.__opnwareDisableMonacoWorkers();
             window.opnwareHomerMonaco = monaco;
             editor = monaco.editor.create(document.getElementById('editor-container'), {
                 value: '',
