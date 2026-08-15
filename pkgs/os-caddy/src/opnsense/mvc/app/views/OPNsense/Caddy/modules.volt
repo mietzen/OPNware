@@ -107,10 +107,8 @@
         }
 
         function saveModules() {
-            $("#modules-result").hide();
-            const joined = modules.join("\n");
             $.post("/api/caddy/modules/set", {
-                caddy: { general: { Modules: joined } }
+                caddy: { general: { Modules: modules.join("\n") } }
             }, function(data) {
                 if (data.status === "ok" || data.result === "saved" || data.result === "ok") {
                     showResult({ok: true, message: "{{ lang._('Declared modules saved.') }}"});
@@ -154,7 +152,6 @@
 
         $("#rebuild_modules").click(function() {
             saveModules();
-            $("#modules-result").hide();
             $.post("/api/caddy/modules/rebuild", function(data) {
                 showResult(data);
                 updateStatus();
@@ -162,7 +159,6 @@
         });
 
         $("#ensure_modules").click(function() {
-            $("#modules-result").hide();
             $.post("/api/caddy/modules/ensure", function(data) {
                 showResult(data);
                 updateStatus();
@@ -170,14 +166,15 @@
         });
 
         function showResult(data) {
-            const $box = $("#modules-result");
-            if (data.ok) {
-                $box.removeClass("alert-danger").addClass("alert-success");
-            } else {
-                $box.removeClass("alert-success").addClass("alert-danger");
+            // Show build/check/save results inside the Module Status panel so
+            // the layout never shifts between panels.
+            const $status = $("#modules-status");
+            if (!$status.length) {
+                return;
             }
-            $box.text(data.message || JSON.stringify(data));
-            $box.show();
+            $status.find("#status-last-ok").text(data.ok === true ? "{{ lang._('OK') }}" : (data.ok === false ? "{{ lang._('FAILED') }}" : "-"));
+            $status.find("#status-last-ts").text(new Date().toLocaleTimeString());
+            $status.find("#status-last-message").text(data.message || JSON.stringify(data));
         }
 
         loadCatalog();
@@ -199,8 +196,6 @@
     </table>
 </div>
 
-<div id="modules-result" class="alert" style="display:none;"></div>
-
 <div class="content-box opnware-editor-pane __mb">
     <h2>{{ lang._('Declared modules') }}</h2>
     <p class="help-block">
@@ -217,7 +212,7 @@
     </table>
     <div class="form-inline __mt">
         <select id="module-catalog" class="selectpicker" data-live-search="true" data-container="body"
-                data-width="auto" title="{{ lang._('Select a module…') }}"></select>
+                data-dropup-auto="false" data-width="420px" title="{{ lang._('Select a module…') }}"></select>
         <button id="add-module" type="button" class="btn btn-primary btn-sm">{{ lang._('Add') }}</button>
         <span id="catalog-note" class="help-block" style="display:none;"></span>
     </div>
@@ -228,8 +223,12 @@
     </div>
 </div>
 
-<div class="opnware-editor-actions">
-    <button id="save_modules" type="button" class="btn btn-primary"><b>{{ lang._('Save') }}</b></button>
-    <button id="rebuild_modules" type="button" class="btn btn-warning __ml"><b>{{ lang._('Install / Rebuild') }}</b></button>
-    <button id="ensure_modules" type="button" class="btn btn-info __ml"><b>{{ lang._('Check') }}</b></button>
+<div class="content-box opnware-editor-pane">
+    <h2>{{ lang._('Actions') }}</h2>
+    <button id="save_modules" type="button" class="btn btn-primary">{{ lang._('Save') }}</button>
+    <button id="rebuild_modules" type="button" class="btn btn-primary __ml">{{ lang._('Install / Rebuild') }}</button>
+    <button id="ensure_modules" type="button" class="btn btn-default __ml">{{ lang._('Check') }}</button>
+    <span class="help-block">
+        {{ lang._('Save stores the declared module list in the configuration. Install / Rebuild saves the list and compiles a new caddy binary with the declared modules (the previous binary is restored on failure). Check compares the installed binary against the saved list and rebuilds only when a module is missing or the build fingerprint changed.') }}
+    </span>
 </div>

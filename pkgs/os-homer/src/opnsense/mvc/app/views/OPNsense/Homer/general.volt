@@ -14,6 +14,15 @@
 
 <script>
     $(document).ready(function() {
+        // OPNsense MVC form fields carry dotted ids (homer.general.Port) and
+        // no name attribute; the form itself is frm_<tab-id>.
+        const $form = $("#frm_general-settings");
+
+        function fieldVal(id, fallback) {
+            const v = $form.find("#" + id.replace(/\./g, '\\.')).val();
+            return v !== undefined && v !== '' ? v : fallback;
+        }
+
         mapDataToFormUI({'frm_general': "/api/homer/general/get"}).done(function() {
             $('.selectpicker').selectpicker('refresh');
             updateServiceControlUI('homer');
@@ -66,9 +75,9 @@
         }
 
         function updateEffectiveUrl() {
-            const port = $("#frm_general input[name='homer.general.Port']").val() || "9443";
-            const tls = $("#frm_general input[name='homer.general.TlsEnabled']").is(":checked");
-            const interfaceValue = $("#frm_general select[name='homer.general.Interface']").val() || "all";
+            const port = fieldVal("homer.general.Port", "9443");
+            const tls = $form.find("#homer\\.general\\.TlsEnabled").is(":checked");
+            const interfaceValue = $form.find("#homer\\.general\\.Interface").val() || "all";
             let host;
             if (interfaceValue === "localhost") {
                 host = "127.0.0.1";

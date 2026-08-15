@@ -28,6 +28,17 @@
 {
 	auto_https disable_redirects
 	admin off
+	# Send caddy's own logs to syslog-ng via the unix socket; syslog-ng
+	# rewrites them into /var/log/homer/homer_YYYYMMDD.log (RFC5424) which
+	# the core Diagnostics log viewer reads. The rc script also captures
+	# stdout/stderr into /var/log/homer/homer.log as a fallback.
+	log {
+		output net unixgram//var/run/homer/log.sock {
+		}
+		format json {
+			time_format rfc3339
+		}
+	}
 }
 
 {{ listen }} {

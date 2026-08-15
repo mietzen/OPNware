@@ -25,9 +25,13 @@
 
 <style>
     .opnware-editor-tabs { margin-bottom: 0; }
-    .opnware-tab-pane { padding: 0 15px 15px; }
+    .opnware-tab-pane { padding: 15px 15px 15px; }
     .opnware-tab-pane h2 { margin-top: 0; }
     .content-box.opnware-editor-pane { padding: 15px; }
+    /* jstree appends its context menu to <body> with z-index auto; the Monaco
+       editor creates its own stacking context, so the menu would render
+       behind it. Lift it above the editor. */
+    .vakata-context { z-index: 10000 !important; }
     .opnware-editor-actions { padding: 0 15px 15px; }
     .opnware-editor-split { display: flex; align-items: stretch; }
     .opnware-editor-tree {
@@ -276,7 +280,8 @@
 
         $('#editor-tree').on('select_node.jstree', function(e, selected) {
             const node = selected.node;
-            if (node && node.data && node.data.path) {
+            // Only files are editable; directories just expand/collapse.
+            if (node && node.type === 'file' && node.data && node.data.path) {
                 loadFile(node.data.path);
             }
         });
@@ -344,8 +349,6 @@
                 }
                 currentFile = path;
                 $("#editor-name").text(data.name);
-                $("#editor-path").text(data.path);
-                $("#editor-path-row").show();
                 setEditorValue(data.content || '');
             });
         }
@@ -364,8 +367,6 @@
                     currentFile = null;
                     setEditorValue('');
                     $("#editor-name").text('');
-                    $("#editor-path").text('');
-                    $("#editor-path-row").hide();
                 }
                 loadTree();
             });
@@ -702,7 +703,6 @@
                     </select>
                 </div>
             </div>
-            <p id="editor-path-row" class="text-muted" style="display:none;"><small><code id="editor-path"></code></small></p>
             <div id="editor-container" style="height: 450px; border: 1px solid #1d2733; border-radius: 4px; overflow: hidden;"></div>
             {# Hidden transport for the existing save cycle — the Monaco model mirrors its value. #}
             <textarea id="editor-content" class="form-control" rows="20" spellcheck="false"

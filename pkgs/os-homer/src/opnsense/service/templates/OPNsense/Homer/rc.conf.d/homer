@@ -8,7 +8,7 @@ homer_adapter="caddyfile"
 homer_directory="/var/db/os-homer/caddy"
 homer_user="root"
 homer_group="wheel"
-homer_logdir="/var/log/os-homer"
+homer_logdir="/var/log/homer"
 {% else %}
 homer_enable="NO"
 {% endif %}

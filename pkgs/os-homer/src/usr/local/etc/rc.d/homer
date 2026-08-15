@@ -31,7 +31,7 @@ load_rc_config "${name}"
 : ${homer_config:="/usr/local/etc/os-homer/Caddyfile"}
 : ${homer_adapter:="caddyfile"}
 : ${homer_directory:="/var/db/os-homer/caddy"}
-: ${homer_logdir:="/var/log/os-homer"}
+: ${homer_logdir:="/var/log/homer"}
 : ${homer_logfile:="${homer_logdir}/homer.log"}
 : ${homer_pidfile:="/var/run/os-homer/homer.pid"}
 : ${homer_user:="www"}
