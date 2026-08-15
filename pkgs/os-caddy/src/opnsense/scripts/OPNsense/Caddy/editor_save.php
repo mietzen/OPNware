@@ -25,6 +25,7 @@
 use OPNsense\Core\Config;
 
 require_once 'config.inc';
+require_once __DIR__ . '/editor_tree.php';
 
 const CADDY_BIN = '/usr/local/bin/caddy';
 const BASE = '/usr/local/etc/caddy';
@@ -34,6 +35,7 @@ const STAGING_DIR = STATE_DIR . '/editor_staging';
 const ROLLBACK_DIR = STATE_DIR . '/rollback';
 const LOCK_FILE = RUN_DIR . '/editor.lock';
 const STATUS_FILE = STATE_DIR . '/editor_status.json';
+const COMPLETE_STAGING_MARKER = STAGING_DIR . '/.opnware/complete';
 
 /**
  * Run a command, capturing combined output.
@@ -110,20 +112,7 @@ function editor_write_target_ok($target, $base)
  */
 function editor_tree_files($base)
 {
-    $files = array();
-    $caddyfile = $base . '/Caddyfile';
-    if (is_file($caddyfile) && editor_under_base($caddyfile, $base)) {
-        $files[] = 'Caddyfile';
-    }
-    $glob = glob($base . '/conf.d/*.caddy');
-    if ($glob !== false) {
-        foreach ($glob as $file) {
-            if (is_file($file) && editor_under_base($file, $base)) {
-                $files[] = 'conf.d/' . basename($file);
-            }
-        }
-    }
-    return $files;
+    return editor_tree_walk_files($base);
 }
 
 /**
@@ -313,6 +302,12 @@ function editor_save_cycle()
         }
     }
 
+    $generated = editor_tree_write_imports($tmp);
+    if ($generated !== null) {
+        editor_rmtree($tmp);
+        return editor_complete($out, 'failure', $generated, $ts);
+    }
+
     // 2. Validate the staged tree before touching anything. Imports resolve
     //    relative to the Caddyfile location, so the temp copy keeps the
     //    relative layout.
@@ -345,6 +340,18 @@ function editor_save_cycle()
     // 4. Atomic apply: write each file as <name>.tmp then rename() over the
     //    target. Never truncate in place. The parent dir is re-checked under
     //    base immediately before each write (symlinked conf.d is refused).
+    $complete = is_file(COMPLETE_STAGING_MARKER);
+    if ($complete) {
+        foreach (array_diff(editor_tree_files(BASE), $staged) as $rel) {
+            $target = BASE . '/' . $rel;
+            if (!editor_write_target_ok($target, BASE) || !unlink($target)) {
+                editor_restore_snapshot($snapshot);
+                editor_tree_write_imports(BASE);
+                editor_rmtree($tmp);
+                return editor_complete($out, 'failure', "cannot delete $rel", $ts, true);
+            }
+        }
+    }
     foreach ($staged as $rel) {
         $target = BASE . '/' . $rel;
         if (!editor_write_target_ok($target, BASE)) {
@@ -366,12 +373,20 @@ function editor_save_cycle()
             return editor_complete($out, 'failure', "cannot write $rel", $ts, true);
         }
     }
+    $generated = editor_tree_write_imports(BASE);
+    if ($generated !== null) {
+        editor_restore_snapshot($snapshot);
+        editor_tree_write_imports(BASE);
+        editor_rmtree($tmp);
+        return editor_complete($out, 'failure', $generated, $ts, true);
+    }
 
     // 5. Graceful reload, skipped silently when the service is stopped.
     $reload = editor_reload();
     if ($reload !== true && $reload !== 'skipped') {
         // 6. Reload failure: restore the snapshot, reload the previous config.
         editor_restore_snapshot($snapshot);
+        editor_tree_write_imports(BASE);
         editor_reload();
         editor_rmtree($tmp);
         return editor_complete(

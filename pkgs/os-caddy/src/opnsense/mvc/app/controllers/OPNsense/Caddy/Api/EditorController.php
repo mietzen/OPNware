@@ -5,32 +5,19 @@ namespace OPNsense\Caddy\Api;
 use OPNsense\Base\ApiControllerBase;
 use OPNsense\Core\Backend;
 
+require_once '/usr/local/opnsense/scripts/OPNsense/Caddy/editor_tree.php';
+
 /**
  * Editor API for the user-owned Caddy file tree.
  *
- * The tree is flat by design: the import glob `conf.d/*.caddy` is
- * non-recursive, so only Caddyfile plus *.caddy files directly inside
- * conf.d exist. ACME storage, autosave, certs and keys are invisible. The
- * API never touches the live tree except through the configd editor-save
- * action (saveAction) or the plain add/delete operations on conf.d entries.
+ * The tree is recursive under conf.d. Generated .opnware state and symlinks
+ * are invisible; mutations remain confined to managed .caddy files and dirs.
  */
 class EditorController extends ApiControllerBase
 {
     const BASE = '/usr/local/etc/caddy';
     const STAGING_DIR = '/var/db/os-caddy/editor_staging';
     const STATUS_FILE = '/var/db/os-caddy/editor_status.json';
-
-    /**
-     * Seeded Caddyfile: the plugin-managed log level env reference plus the
-     * conf.d import glob. The file is user-owned after seeding.
-     */
-    const SEED = "{\n" .
-        "    log {\n" .
-        "        level {\$CADDY_LOG_LEVEL}\n" .
-        "    }\n" .
-        "}\n" .
-        "\n" .
-        "import conf.d/*.caddy\n";
 
     /**
      * Seed the user-owned Caddyfile on first access: create it with the
@@ -42,41 +29,14 @@ class EditorController extends ApiControllerBase
      */
     private function seedIfMissing()
     {
-        if (!is_dir(self::BASE) && !mkdir(self::BASE, 0755, true)) {
-            return array('status' => 'failure', 'message' => 'cannot create ' . self::BASE);
-        }
-        $confd = self::BASE . '/conf.d';
-        if (!is_dir($confd) && !mkdir($confd, 0755, true)) {
-            return array('status' => 'failure', 'message' => 'cannot create ' . $confd);
-        }
-
-        $caddyfile = self::BASE . '/Caddyfile';
-        if (!is_file($caddyfile)) {
-            if (file_put_contents($caddyfile, self::SEED) === false) {
-                return array('status' => 'failure', 'message' => 'cannot write ' . $caddyfile);
-            }
-            return null;
-        }
-
-        $content = file_get_contents($caddyfile);
-        if ($content === false) {
-            return array('status' => 'failure', 'message' => 'cannot read ' . $caddyfile);
-        }
-        if (preg_match('/^import conf\.d\/\*\.caddy$/m', $content)) {
-            return null;
-        }
-        $content = rtrim($content, "\n") . "\n\nimport conf.d/*.caddy\n";
-        if (file_put_contents($caddyfile, $content) === false) {
-            return array('status' => 'failure', 'message' => 'cannot write ' . $caddyfile);
-        }
-        return null;
+        $error = editor_tree_seed();
+        return $error === null ? null : array('status' => 'failure', 'message' => $error);
     }
 
     /**
      * Map a client-supplied path to a safe relative tree path. Accepts the
      * absolute tree paths returned by listAction() as well as their relative
-     * forms. Rejects anything outside the flat tree, traversal ("..") and
-     * any nesting.
+     * forms. Only managed recursive .caddy paths are accepted.
      *
      * @param mixed $path
      * @return string|null
@@ -89,16 +49,8 @@ class EditorController extends ApiControllerBase
         if ($path === 'Caddyfile' || $path === self::BASE . '/Caddyfile') {
             return 'Caddyfile';
         }
-        $name = null;
-        if (preg_match('#^conf\.d/([A-Za-z0-9._-]+\.caddy)$#', $path, $m)) {
-            $name = $m[1];
-        } elseif (preg_match('#^' . preg_quote(self::BASE, '#') . '/conf\.d/([A-Za-z0-9._-]+\.caddy)$#', $path, $m)) {
-            $name = $m[1];
-        }
-        if ($name === null || strpos($name, '/') !== false || $name === '.' || $name === '..') {
-            return null;
-        }
-        return 'conf.d/' . $name;
+        $relative = str_starts_with($path, self::BASE . '/') ? substr($path, strlen(self::BASE) + 1) : $path;
+        return editor_tree_rel_safe($relative) ? $relative : null;
     }
 
     /**
@@ -121,9 +73,34 @@ class EditorController extends ApiControllerBase
         return strpos($real, $base . '/') === 0;
     }
 
+    private function prepareStaging()
+    {
+        if (!is_dir(self::STAGING_DIR) && !mkdir(self::STAGING_DIR, 0755, true)) {
+            return 'cannot create editor staging';
+        }
+        foreach (editor_tree_walk_dirs() as $rel) {
+            if (!is_dir(self::STAGING_DIR . '/' . $rel) && !mkdir(self::STAGING_DIR . '/' . $rel, 0755, true)) {
+                return 'cannot stage directory ' . $rel;
+            }
+        }
+        foreach (editor_tree_walk_files() as $rel) {
+            $target = self::STAGING_DIR . '/' . $rel;
+            if (!is_dir(dirname($target)) && !mkdir(dirname($target), 0755, true)) {
+                return 'cannot stage directory ' . dirname($target);
+            }
+            if (!copy(self::BASE . '/' . $rel, $target)) {
+                return 'cannot stage ' . $rel;
+            }
+        }
+        if (!is_dir(self::STAGING_DIR . '/.opnware')) {
+            mkdir(self::STAGING_DIR . '/.opnware', 0700, true);
+        }
+        file_put_contents(self::STAGING_DIR . '/.opnware/complete', '1');
+        return editor_tree_write_imports(self::STAGING_DIR);
+    }
+
     /**
-     * The flat file tree: Caddyfile plus conf.d/*.caddy with name, absolute
-     * path and existence flag.
+     * The recursive file tree. Generated .opnware state is never exposed.
      * @return array
      */
     public function listAction()
@@ -134,26 +111,15 @@ class EditorController extends ApiControllerBase
         }
 
         $files = array();
-        $caddyfile = self::BASE . '/Caddyfile';
-        $files[] = array(
-            'name' => 'Caddyfile',
-            'path' => $caddyfile,
-            'exists' => is_file($caddyfile),
-        );
-        $glob = glob(self::BASE . '/conf.d/*.caddy');
-        if ($glob !== false) {
-            foreach ($glob as $file) {
-                if (!is_file($file) || !$this->underBase($file)) {
-                    continue;
-                }
-                $files[] = array(
-                    'name' => basename($file),
-                    'path' => $file,
-                    'exists' => true,
-                );
-            }
+        foreach (editor_tree_walk_files() as $relative) {
+            $files[] = array('name' => basename($relative), 'path' => $relative, 'exists' => true);
         }
-        return array('status' => 'ok', 'files' => $files);
+        return array(
+            'status' => 'ok',
+            'caddyfile' => array('name' => 'Caddyfile', 'path' => 'Caddyfile', 'editable' => true),
+            'tree' => editor_tree_node(),
+            'files' => $files,
+        );
     }
 
     /**
@@ -288,29 +254,36 @@ class EditorController extends ApiControllerBase
     private function copyOrMove($move)
     {
         $source = $this->treeRelPath($this->request->get('path'));
-        $name = $this->request->get('name');
-        if ($source === null || $source === 'Caddyfile'
-                || !is_string($name)
-                || !preg_match('/^[A-Za-z0-9._-]+\.caddy$/', $name)) {
+        $target = $this->treeRelPath($this->request->get('target') ?: $this->request->get('name'));
+        if ($source === null || $source === 'Caddyfile' || $target === null || $target === 'Caddyfile') {
             return array('status' => 'failure', 'message' => 'only conf.d/*.caddy files can be copied or moved');
         }
 
-        $sourcePath = self::BASE . '/' . $source;
-        $targetPath = self::BASE . '/conf.d/' . $name;
-        if (!$this->underBase($sourcePath) || is_link(self::BASE . '/conf.d')) {
-            return array('status' => 'failure', 'message' => 'invalid or symlinked file tree');
+        $error = $this->prepareStaging();
+        if ($error !== null) {
+            return array('status' => 'failure', 'message' => $error);
         }
-        if (!is_file($sourcePath)) {
-            return array('status' => 'failure', 'message' => 'source file does not exist');
+        $sourcePath = self::STAGING_DIR . '/' . $source;
+        $targetPath = self::STAGING_DIR . '/' . $target;
+        if (!is_file($sourcePath) || is_link(self::STAGING_DIR . '/conf.d')) {
+            return array('status' => 'failure', 'message' => 'invalid or symlinked file tree');
         }
         if (file_exists($targetPath)) {
             return array('status' => 'failure', 'message' => 'target file already exists');
         }
-
+        if (!is_dir(dirname($targetPath)) && !mkdir(dirname($targetPath), 0755, true)) {
+            return array('status' => 'failure', 'message' => 'cannot create target directory');
+        }
         if ($move ? !rename($sourcePath, $targetPath) : !copy($sourcePath, $targetPath)) {
             return array('status' => 'failure', 'message' => $move ? 'cannot move file' : 'cannot copy file');
         }
-        return array('status' => 'ok', 'message' => $move ? 'moved' : 'copied');
+        editor_tree_write_imports(self::STAGING_DIR);
+        $result = (new Backend())->configdRun('caddy editor-save');
+        $data = json_decode($result, true);
+        if (!is_array($data)) {
+            $data = is_file(self::STATUS_FILE) ? json_decode(file_get_contents(self::STATUS_FILE), true) : null;
+        }
+        return is_array($data) ? $data : array('status' => 'failure', 'message' => trim($result));
     }
 
     /**

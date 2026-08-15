@@ -59,6 +59,15 @@ This is deliberate: shipping the same files in two plugin payloads would make
 `pkg` refuse co-installation (duplicate file ownership). Never copy the
 vendor into a plugin payload — change the `editor` package instead.
 
+## Caddy editor tree
+
+The editor manages a recursive tree below `conf.d/`. User files are ordinary
+non-hidden `*.caddy` files; `.opnware/` is reserved for generated state and
+never appears in the tree. The plugin maintains `.opnware/imports.caddy`, an
+explicit lexical list of every managed file, because the Caddyfile import
+glob is not used as a recursive filesystem walker. `Caddyfile` imports that
+generated index and remains user-owned.
+
 ## How a volt page loads Monaco and registers a language
 
 1. Load the Monaco AMD loader and point it at the vendored modules:

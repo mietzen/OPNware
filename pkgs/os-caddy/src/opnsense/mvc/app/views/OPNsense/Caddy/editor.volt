@@ -14,6 +14,23 @@
  # the /api/caddy/editor/save endpoint is untouched.
  #}
 
+<style>
+    .opnware-editor-tabs { margin-bottom: 15px; }
+    .editor-tree-root, .editor-tree-directory, .editor-tree-file-row { padding: 5px 0; }
+    .editor-tree-children { margin: 3px 0 0 14px; border-left: 1px solid #d8dee4; padding-left: 10px; }
+    .editor-tree-toggle { width: 22px; padding: 0; text-decoration: none; }
+    .editor-tree-label { font-weight: 600; }
+    .editor-tree-file { display: inline-block; min-width: 105px; padding: 4px 6px; }
+    .editor-tree-file-row .btn { vertical-align: middle; }
+    .opnware-editor-shell { margin: 0; }
+    .opnware-editor-pane { padding: 15px; }
+    .opnware-editor-actions { padding: 0 15px 15px; }
+    @media (max-width: 767px) {
+        .editor-tree-file { min-width: 85px; }
+        .editor-tree-file-row .btn { margin-top: 4px; }
+    }
+</style>
+
 <script src="/ui/js/vendor/monaco/vs/loader.js"></script>
 <script>
     // Monaco's AMD loader (vs/loader.js) resolves module ids through these
@@ -149,53 +166,61 @@
                 }
                 const $list = $("#editor-files");
                 $list.empty();
-                $.each(data.files || [], function(i, file) {
-                    const $li = $('<li>');
-                    const $link = $('<a href="#">').text(file.name).click(function(e) {
+                const $root = $('<li class="editor-tree-root">').append(
+                    $('<a href="#" class="editor-tree-file">').text('Caddyfile').click(function(e) {
                         e.preventDefault();
-                        loadFile(file.path);
+                        loadFile('Caddyfile');
+                    })
+                );
+                $list.append($root);
+                $list.append(renderTreeNode(data.tree));
+            });
+        }
+
+        function renderTreeNode(node) {
+            const $item = $('<li class="editor-tree-directory">');
+            const $toggle = $('<button type="button" class="btn btn-link btn-xs editor-tree-toggle" aria-expanded="true">')
+                .text('▾');
+            const $label = $('<span class="editor-tree-label">').text(node.name);
+            const $children = $('<ul class="nav nav-pills nav-stacked editor-tree-children">');
+            (node.children || []).forEach(function(child) {
+                if (child.type === 'directory') {
+                    const $child = renderTreeNode(child);
+                    $children.append($child);
+                } else {
+                    const $file = $('<li class="editor-tree-file-row">');
+                    const $link = $('<a href="#" class="editor-tree-file">').text(child.name).click(function(e) {
+                        e.preventDefault();
+                        loadFile(child.path);
                     });
-                    $li.append($link);
-                    if (file.name !== 'Caddyfile') {
-                        const $del = $('<button type="button" class="btn btn-xs btn-danger">')
-                            .text("{{ lang._('Delete') }}")
-                            .click(function(e) {
-                                e.stopPropagation();
-                                deleteFile(file.path);
-                            });
-                        $li.append(' ');
-                        $li.append($del);
-                        const $copy = $('<button type="button" class="btn btn-xs btn-default __ml">')
-                            .text("{{ lang._('Copy') }}")
-                            .click(function(e) {
-                                e.stopPropagation();
-                                copyOrMoveFile(file.path, false);
-                            });
-                        const $move = $('<button type="button" class="btn btn-xs btn-default __ml">')
-                            .text("{{ lang._('Move') }}")
-                            .click(function(e) {
-                                e.stopPropagation();
-                                copyOrMoveFile(file.path, true);
-                            });
-                        $li.append($copy).append($move);
-                    }
-                    $list.append($li);
-                });
-                if (!(data.files || []).length) {
-                    $list.append($('<li>').text("{{ lang._('No files yet') }}"));
+                    const $copy = $('<button type="button" class="btn btn-xs btn-default __ml">').text('{{ lang._("Copy") }}')
+                        .click(function(e) { e.stopPropagation(); copyOrMoveFile(child.path, false); });
+                    const $move = $('<button type="button" class="btn btn-xs btn-default __ml">').text('{{ lang._("Move") }}')
+                        .click(function(e) { e.stopPropagation(); copyOrMoveFile(child.path, true); });
+                    const $del = $('<button type="button" class="btn btn-xs btn-danger __ml">').text('{{ lang._("Delete") }}')
+                        .click(function(e) { e.stopPropagation(); deleteFile(child.path); });
+                    $file.append($link).append($copy).append($move).append($del);
+                    $children.append($file);
                 }
             });
+            $toggle.click(function() {
+                const expanded = $toggle.attr('aria-expanded') === 'true';
+                $toggle.attr('aria-expanded', !expanded).text(expanded ? '▸' : '▾');
+                $children.toggle(!expanded);
+            });
+            $item.append($toggle).append($label).append($children);
+            return $item;
         }
 
         function copyOrMoveFile(path, move) {
             const name = window.prompt(
-                move ? "{{ lang._('Move to filename in conf.d') }}" : "{{ lang._('Copy to filename in conf.d') }}",
+                move ? "{{ lang._('Move to relative path, e.g. conf.d/archive/site.caddy') }}" : "{{ lang._('Copy to relative path, e.g. conf.d/archive/site.caddy') }}",
                 ''
             );
             if (!name) {
                 return;
             }
-            $.post('/api/caddy/editor/' + (move ? 'move' : 'copy'), {path: path, name: name}, function(data) {
+            $.post('/api/caddy/editor/' + (move ? 'move' : 'copy'), {path: path, target: name}, function(data) {
                 if (data.status !== 'ok') {
                     showError(data.message);
                     return;
@@ -539,7 +564,7 @@
 
 <div id="editor-result" class="alert" style="display:none;"></div>
 
-<ul class="nav nav-tabs" role="tablist">
+<ul class="nav nav-tabs opnware-editor-tabs" role="tablist">
     <li class="active"><a href="#editor-files-tab" data-toggle="tab">{{ lang._('Files') }}</a></li>
     <li><a href="#editor-environment-tab" data-toggle="tab">{{ lang._('Environment') }}</a></li>
 </ul>
