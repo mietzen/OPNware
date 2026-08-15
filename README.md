@@ -5,7 +5,7 @@
 This is my personal OPNsense `pkg` repository.\
 It contains packages that I use or have used:
 
-- [caddy](https://caddyserver.com/) (cross-compiled)
+- [caddy](https://caddyserver.com/) (redistributed)
 - [homer](https://homer-demo.netlify.app/) (source pkg)
 - [htop](https://htop.dev/) (redistributed)
 - [yq](https://mikefarah.gitbook.io/yq) (cross-compiled)

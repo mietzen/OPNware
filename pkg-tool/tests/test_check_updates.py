@@ -28,22 +28,6 @@ pkg_manifest:
 
 GH_SPEC_CURRENT = GH_SPEC.replace("version: 0.34.0", "version: 0.35.0")
 
-SEPARATOR_SPEC = """\
-build_config:
-  include:
-    go: '1.25'
-  src_repo: 'https://github.com/caddyserver/caddy'
-  enhancement_version_separator: '_'
-pkg_manifest:
-  name: caddy
-  origin: opnware/caddy
-  version: 2.11.4_2
-  comment: Test fixture package
-  www: https://example.com
-  maintainer: test@example.com
-  prefix: /opt/opnware/pkgs/caddy
-"""
-
 REDISTRIBUTE_SPEC = """\
 build_config:
   include: {}
@@ -108,16 +92,6 @@ def test_gh_adapter_no_update_emits_nothing(tmp_path, monkeypatch):
     matrix = check_updates(str(tmp_path / 'pkgs'))
 
     assert matrix == {"pkg": [], "include": []}
-
-
-def test_enhancement_separator_suffixes_new_version(tmp_path, monkeypatch):
-    make_repo(tmp_path, {"caddy": SEPARATOR_SPEC})
-    monkeypatch.setattr(requests, "get", lambda url, **kwargs: FakeResponse(json_data={"tag_name": "v2.12.0"}))
-
-    matrix = check_updates(str(tmp_path / 'pkgs'))
-
-    assert matrix["include"] == [{"pkg": "caddy", "abi_arch": "ALL", "version": "2.12.0_0"}]
-
 
 def test_bsd_packagesite_adapter_detects_newer_version(tmp_path, monkeypatch):
     make_repo(tmp_path, {"btop": REDISTRIBUTE_SPEC})

@@ -639,7 +639,7 @@ def _replace_scalar_in_section_line(content, section, leaf, new_value):
             return ''.join(lines)
     raise ValueError(f"no '{leaf}' line found under the '{section}' section")
 
-def bump(pkg, version=None, abi_arch=None, bump_enhancement=False):
+def bump(pkg, version=None, abi_arch=None):
     """
     Write a version back into a package spec, preserving file formatting.
 
@@ -647,37 +647,21 @@ def bump(pkg, version=None, abi_arch=None, bump_enhancement=False):
         pkg (str): Package name (a directory under pkgs/).
         version (str): New version for build specs, or per-abi_arch for redistribute specs.
         abi_arch (str): ABI/arch key (e.g. FreeBSD-15-amd64) for redistribute specs.
-        bump_enhancement (bool): Increment the enhancement version after the separator.
     """
     config_path = os.path.join('pkgs', pkg, 'config.yml')
     with open(config_path) as f:
         content = f.read()
-    if bump_enhancement:
-        if version is not None:
-            raise ValueError("--version and --bump-enhancement are mutually exclusive")
-        spec = _load_spec(config_path)
-        separator = spec.get('build_config', {}).get('enhancement_version_separator')
-        if not separator:
-            raise ValueError(
-                f"{config_path}: no build_config.enhancement_version_separator; cannot bump enhancement version")
-        old = str(spec['pkg_manifest']['version'])
-        base, _, enh = old.partition(separator)
-        if not enh.isdigit():
-            raise ValueError(f"{config_path}: enhancement part of version {old!r} is not numeric")
-        new_version = f"{base}{separator}{int(enh) + 1}"
-        content = _replace_scalar_in_section(content, 'pkg_manifest', 'version', new_version)
+    if version is None:
+        raise ValueError("--version is required")
+    spec = _load_spec(config_path)
+    if spec.get('redistribute'):
+        if abi_arch is None:
+            raise ValueError(f"{config_path}: redistribute specs need --abi-arch")
+        if abi_arch not in spec['redistribute'].get('version', {}):
+            raise ValueError(f"{config_path}: no version entry for {abi_arch}")
+        content = _replace_scalar_in_section_line(content, 'redistribute', abi_arch, version)
     else:
-        if version is None:
-            raise ValueError("--version is required (or use --bump-enhancement)")
-        spec = _load_spec(config_path)
-        if spec.get('redistribute'):
-            if abi_arch is None:
-                raise ValueError(f"{config_path}: redistribute specs need --abi-arch")
-            if abi_arch not in spec['redistribute'].get('version', {}):
-                raise ValueError(f"{config_path}: no version entry for {abi_arch}")
-            content = _replace_scalar_in_section_line(content, 'redistribute', abi_arch, version)
-        else:
-            content = _replace_scalar_in_section(content, 'pkg_manifest', 'version', version)
+        content = _replace_scalar_in_section(content, 'pkg_manifest', 'version', version)
     with open(config_path, 'w') as f:
         f.write(content)
 
@@ -768,7 +752,6 @@ def check_updates(pkgs_dir='pkgs'):
     for config_file in sorted(Path(pkgs_dir).glob('*/config.yml')):
         pkg_name = config_file.parent.name
         config = _load_spec(config_file)
-        separator = config.get('build_config', {}).get('enhancement_version_separator')
         if config.get('redistribute'):
             for abi_arch, local in config['redistribute']['version'].items():
                 remote = _bsd_latest_version(pkg_name, config, abi_arch)
@@ -778,8 +761,6 @@ def check_updates(pkgs_dir='pkgs'):
         else:
             src_repo = config.get('build_config', {}).get('src_repo', '')
             local = str(config.get('pkg_manifest', {}).get('version'))
-            if separator:
-                local = local.split(separator)[0]
             if 'github.com' in src_repo:
                 remote = _gh_latest_version(src_repo, os.environ.get('GITHUB_TOKEN'))
             elif 'sf.net' in src_repo:
@@ -787,8 +768,6 @@ def check_updates(pkgs_dir='pkgs'):
             else:
                 raise ValueError(f"{config_file}: no version source for {src_repo}")
             if str(remote) != local:
-                if separator:
-                    remote = f"{remote}{separator}0"
                 matrix['pkg'].append(pkg_name)
                 matrix['include'].append({'pkg': pkg_name, 'abi_arch': 'ALL', 'version': remote})
     return matrix
@@ -833,8 +812,6 @@ def main():
     parser_bump.add_argument('--version', required=False, help='New version')
     parser_bump.add_argument('--abi-arch', required=False,
                              help='ABI/arch key for redistribute specs (e.g. FreeBSD-15-amd64)')
-    parser_bump.add_argument('--bump-enhancement', action='store_true',
-                             help='Increment the enhancement version after the separator')
 
     parser_dump = subparsers.add_parser('dump', help='Print one scalar from a validated package spec')
     parser_dump.add_argument('config_path', help='Path to the config.yml file')
@@ -857,7 +834,7 @@ def main():
             if matrix['pkg']:
                 print(json.dumps(matrix))
         elif args.command == 'bump':
-            bump(args.pkg, args.version, args.abi_arch, args.bump_enhancement)
+            bump(args.pkg, args.version, args.abi_arch)
         elif args.command == 'dump':
             print(dump(args.config_path, args.key_path))
         elif args.command == 'build-matrix':

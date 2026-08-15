@@ -1,83 +1,9 @@
 ---
 build_config:
-  include:
-    go: '1.26'
-  src_repo: 'https://github.com/caddyserver/caddy'
-  enhancement_version_separator: '_'
-pkg_manifest:
+  include: {}
+redistribute:
   name: caddy
-  origin: opnware/caddy
-  version: 2.11.4_2
-  comment: Fast and extensible multi-platform HTTP/1-2-3 web server with automatic HTTPS
-  www: https://caddyserver.com/
-  maintainer: github.nstein@mailbox.org
-  prefix: /opt/opnware/pkgs/caddy
-  users:
-    - caddy
-  groups:
-    - caddy
-  licenselogic: single
-  licenses:
-    - APACHE20
-  desc: |
-    Caddy is a platform for running Go applications and serves as a highly extensible HTTPS server.
-    Applications are implemented as Caddy modules, with tls and http included by default.
-    It supports automated documentation, live configuration updates via API, and seamless integration with other modules.
-    Configuration is primarily managed through its JSON-based API, but adapters allow the use of formats like Caddyfile, YAML, and NGINX config.
-    Caddy consolidates all settings into a single configuration document, simplifying management and reducing complexity.
-    Its design enables precise control over in-memory components, such as HTTP handlers and TLS.
-    The plugin system allows extensive customization and improvements beyond other web servers.
-    Refer to the documentation for details on configuration structure.
-  scripts:
-    pre-install: |
-      existing_ids=$(mktemp)
-      cut -d: -f3,4 /etc/passwd | tr ':' '\n' | sort -un > $existing_ids
-      service_id=$(seq 300 999 | grep -vxFf $existing_ids | head -n1)
-      rm $existing_ids
-      echo "===> Creating user"
-      if ! pw usershow caddy >/dev/null 2>&1; then
-        pw adduser caddy -u $service_id -d /opt/opnware/pkgs/caddy -s /usr/sbin/nologin -c "caddy service user"
-      else
-        echo "Using existing user 'caddy'"
-        service_id=$(id -u caddy)
-      fi
-      echo 'mac_portacl_load="YES"' > /boot/loader.conf.d/99-caddy.conf
-      if ! kldstat -q -m mac_portacl; then
-        kldload mac_portacl 2>/dev/null || true
-      fi
-      sysctl security.mac.portacl.port_high=1023
-      sysctl net.inet.ip.portrange.reservedlow=0
-      sysctl net.inet.ip.portrange.reservedhigh=0
-      sysctl security.mac.portacl.suser_exempt=1
-      sysctl security.mac.portacl.rules="uid:${service_id}:tcp:80,uid:${service_id}:tcp:443,uid:${service_id}:udp:443"
-      if ! grep -q "# CADDY SERVICE BLOCK" /etc/sysctl.conf 2>/dev/null; then
-        echo "# CADDY SERVICE BLOCK" >> /etc/sysctl.conf
-        echo "security.mac.portacl.port_high=1023" >> /etc/sysctl.conf
-        echo "net.inet.ip.portrange.reservedlow=0" >> /etc/sysctl.conf
-        echo "net.inet.ip.portrange.reservedhigh=0" >> /etc/sysctl.conf
-        echo "security.mac.portacl.suser_exempt=1" >> /etc/sysctl.conf
-        echo "security.mac.portacl.rules=uid:${service_id}:tcp:80,uid:${service_id}:tcp:443,uid:${service_id}:udp:443" >> /etc/sysctl.conf
-        echo "# CADDY SERVICE BLOCK" >> /etc/sysctl.conf
-      fi
-    post-install: |
-      chown -R caddy:www /opt/opnware/pkgs/caddy
-      echo "===> Starting service"
-      service caddy enable
-      service caddy start
-    
-    pre-deinstall: |
-      echo "===> Stopping service"
-      service caddy stop || true
-      service caddy disable || true
-    
-    post-deinstall: |
-      echo "===> Cleaning up"
-      pw deluser caddy 2>/dev/null || true
-      rm -f /boot/loader.conf.d/99-caddy.conf
-      if grep -q "# CADDY SERVICE BLOCK" /etc/sysctl.conf 2>/dev/null; then
-        sed -i '' '/# CADDY SERVICE BLOCK/,/# CADDY SERVICE BLOCK/d' /etc/sysctl.conf
-      fi
-pkg_service:
-  template: default
-  vars:
-    COMMAND: /opt/opnware/pkgs/caddy/caddy run -w --envfile /opt/opnware/pkgs/caddy/.env
+  version:
+    FreeBSD-15-amd64: "2.11.4_1"
+  repo: http://pkg.freebsd.org
+  path: quarterly/All
