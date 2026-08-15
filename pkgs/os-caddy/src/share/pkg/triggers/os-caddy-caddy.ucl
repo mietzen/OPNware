@@ -12,6 +12,6 @@ trigger: {
     type: lua
     sandbox: false
     script: <<EOS
-pkg.exec({"/usr/local/opnsense/scripts/OPNsense/Caddy/modules.php", "ensure"})
+pkg.exec({"/usr/local/bin/php", "/usr/local/opnsense/scripts/OPNsense/Caddy/modules.php", "ensure"})
 EOS
 }

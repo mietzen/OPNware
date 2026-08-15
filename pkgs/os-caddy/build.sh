@@ -28,6 +28,9 @@ find "${DIST_ROOT}/dist/pkg/usr/local" -type d -exec chmod 0755 {} +
 find "${DIST_ROOT}/dist/pkg/usr/local" -type f -exec chmod 0644 {} +
 # The periodic self-healing hook is a shell script and must stay executable.
 chmod 0755 "${DIST_ROOT}/dist/pkg/usr/local/etc/periodic/daily/500.os-caddy-modules"
+# The module management script is run directly by the pkg trigger (no
+# configd php wrapper), so it must be executable.
+chmod 0755 "${DIST_ROOT}/dist/pkg/usr/local/opnsense/scripts/OPNsense/Caddy/modules.php"
 
 cd "${DIST_ROOT}/dist"
 pkg-tool pack "${CONFIG}" --abi "${ABI}" --arch "${ARCH}"
