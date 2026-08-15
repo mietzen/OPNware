@@ -25,6 +25,14 @@
         }
     });
 
+    // OPNsense's CSP blocks blob: web workers; Monaco's default getWorker()
+    // would throw and fall back to main-thread worker code, freezing the UI
+    // on model changes. YAML tokenization is built-in and main-thread safe,
+    // so refusing workers is the reliable choice here.
+    self.MonacoEnvironment = {
+        getWorker: function() { return null; }
+    };
+
     $(document).ready(function() {
         let editor = null;
 

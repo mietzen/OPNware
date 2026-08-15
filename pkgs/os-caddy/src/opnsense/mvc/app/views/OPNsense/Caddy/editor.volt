@@ -75,6 +75,17 @@
         }
     });
 
+    // OPNsense's CSP blocks blob: web workers, so Monaco's default
+    // getWorker() throws on creation and falls back to running the worker
+    // code on the main thread — which freezes the UI whenever the model
+    // changes (e.g. the tree reload after add/remove/rename). Caddyfile
+    // tokenization is done by the vendored TextMate grammar we wire below,
+    // not by a worker, so refusing workers entirely is safe and avoids the
+    // CSP violation and the main-thread fallback.
+    self.MonacoEnvironment = {
+        getWorker: function() { return null; }
+    };
+
     $(document).ready(function() {
         let currentFile = null;
         let editor = null;

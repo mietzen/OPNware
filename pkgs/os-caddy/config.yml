@@ -7,7 +7,7 @@ plugin:
 pkg_manifest:
   name: caddy
   origin: opnware/os-caddy
-  version: 0.7.0
+  version: 0.7.1
   comment: Caddy web server plugin
   www: https://caddyserver.com/
   maintainer: github.nstein@mailbox.org
