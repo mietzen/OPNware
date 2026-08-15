@@ -3,9 +3,11 @@
 # A caddy package upgrade replaces /usr/local/bin/caddy with a vanilla binary,
 # silently dropping every module os-caddy added via xcaddy. pkg runs this
 # trigger at the END of any transaction that installs, upgrades or removes
-# the caddy binary path, so modules are restored immediately instead of
-# waiting for the daily periodic check.
-path: "/usr/local/bin/caddy"
+# files under /usr/local/bin (pkg triggers match directory paths, not files),
+# so modules are restored immediately instead of waiting for the daily check.
+# The ensure script is a cheap fingerprint compare and a no-op when nothing
+# changed.
+path: "/usr/local/bin"
 trigger: {
     type: lua
     sandbox: false
