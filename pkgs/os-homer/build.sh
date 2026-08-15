@@ -9,10 +9,10 @@ CONFIG="${SCRIPT_DIR}/config.yml"
 PKG_NAME=$(pkg-tool dump "${CONFIG}" pkg_manifest.name)
 REPO_ROOT=$( cd "${SCRIPT_DIR}/../.." && pwd )
 DIST_ROOT="${GITHUB_WORKSPACE:-${REPO_ROOT}}"
-SRC_REPO=$(pkg-tool dump "${CONFIG}" build_config.src_repo)
-# Homer is versioned independently of the os-homer plugin version (0.1.0),
-# so the upstream release the dashboard is built from is pinned here.
-HOMER_VERSION="26.4.2"
+SRC_REPO=$(pkg-tool dump "${CONFIG}" content.repo)
+# The bundled dashboard version is tracked in the spec's content section so
+# the daily update flow can bump it (check-updates content adapter).
+HOMER_VERSION=$(pkg-tool dump "${CONFIG}" content.version)
 
 echo "::group::Install pnpm"
 npm install -g pnpm@latest-10

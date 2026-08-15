@@ -2,7 +2,9 @@
 build_config:
   include:
     node: '22'
-  src_repo: 'https://github.com/bastienwirtz/homer'
+content:
+  repo: https://github.com/bastienwirtz/homer
+  version: 26.4.2
 plugin:
   opnsense_version: "26.7"
   tier: 3

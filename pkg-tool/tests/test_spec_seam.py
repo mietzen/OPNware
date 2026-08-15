@@ -55,6 +55,25 @@ pkg_manifest:
     - BSD2CLAUSE
 """
 
+CONTENT_SPEC = """\
+build_config:
+  include:
+    node: '22'
+content:
+  repo: https://github.com/bastienwirtz/homer
+  version: 26.4.2
+plugin:
+  opnsense_version: "26.7"
+pkg_manifest:
+  name: homer
+  origin: opnware/os-homer
+  version: 0.1.0
+  comment: content plugin fixture
+  www: https://example.com
+  maintainer: test@example.com
+  prefix: /usr/local
+"""
+
 REPO_CONFIG = """\
 pkg-repo:
   abi:
@@ -163,6 +182,23 @@ class TestValidation:
         write(tmp_path, "caddy", broken)
         with pytest.raises(ValueError, match="short name"):
             _load_spec(str(tmp_path / "pkgs" / "caddy" / "config.yml"))
+
+    def test_valid_content_spec_passes(self, tmp_path):
+        write(tmp_path, "homer", CONTENT_SPEC)
+        spec = _load_spec(str(tmp_path / "pkgs" / "homer" / "config.yml"))
+        assert spec["content"]["version"] == "26.4.2"
+
+    def test_content_requires_version(self, tmp_path):
+        broken = CONTENT_SPEC.replace("  version: 26.4.2\n", "")
+        write(tmp_path, "homer", broken)
+        with pytest.raises(ValueError, match="content.version"):
+            _load_spec(str(tmp_path / "pkgs" / "homer" / "config.yml"))
+
+    def test_content_repo_must_be_github(self, tmp_path):
+        broken = CONTENT_SPEC.replace("https://github.com/bastienwirtz/homer", "https://gitlab.com/x/y")
+        write(tmp_path, "homer", broken)
+        with pytest.raises(ValueError, match="content.repo"):
+            _load_spec(str(tmp_path / "pkgs" / "homer" / "config.yml"))
 
     def test_empty_repo_config_raises_type_error_not_attribute_error(self, tmp_path):
         write(tmp_path, "blocky", BUILD_SPEC, repo_config="\n")

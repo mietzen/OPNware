@@ -93,6 +93,25 @@ def test_assemble_repo_builds_full_tree(tmp_path):
         assert idx.exists()
 
 
+def test_assemble_repo_accepts_arch_independent_meta_package(tmp_path):
+    # FreeBSD meta-packages (e.g. lang/go) carry abi "FreeBSD:15:*" — valid
+    # for every arch in the repo; they must land in the declared arch tree.
+    artifacts = tmp_path / "artifacts"
+    artifacts.mkdir()
+    make_artifact(str(artifacts), "go", abi_arch="FreeBSD:15:*")
+    config = tmp_path / "config.yml"
+    config.write_text(REPO_CONFIG)
+    pages = tmp_path / "pages"
+
+    assemble_repo(str(artifacts), str(config), owner="o", repo="r", output_dir=str(pages))
+
+    latest = pages / "FreeBSD:15:amd64" / "latest"
+    assert (latest / "All" / "go.pkg").exists()
+    content = read_tzst(str(latest / "packagesite.tzst"))
+    line = json.loads(content["packagesite.yaml"].decode().strip())
+    assert line["name"] == "go"
+
+
 def test_assemble_repo_rejects_undeclared_abi(tmp_path):
     artifacts = tmp_path / "artifacts"
     artifacts.mkdir()

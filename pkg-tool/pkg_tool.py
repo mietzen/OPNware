@@ -140,6 +140,17 @@ def _validate_spec(spec, source):
         raise TypeError(f"{source}: build_config is not a mapping")
     if not isinstance(build_config.get('include'), dict):
         raise TypeError(f"{source}: build_config.include must be a mapping")
+    content = spec.get('content')
+    if content is not None:
+        if not isinstance(content, dict):
+            raise TypeError(f"{source}: content is not a mapping")
+        if not content.get('repo') or not isinstance(content['repo'], str) \
+                or 'github.com' not in content['repo']:
+            raise ValueError(f"{source}: content.repo must be a github.com URL")
+        if not content.get('version'):
+            raise ValueError(f"{source}: content.version required")
+        if isinstance(content['version'], (dict, list)):
+            raise TypeError(f"{source}: content.version must be a scalar")
     if pkg_manifest is not None:
         if not isinstance(pkg_manifest, dict):
             raise TypeError(f"{source}: pkg_manifest is not a mapping")
@@ -306,11 +317,18 @@ def assemble_repo(artifacts_dir, repo_config_path, owner, repo, output_dir='page
             raise ValueError(
                 f"{pkg_path}: abi {abi} not declared in repo config {repo_config_path} "
                 f"(pkg-repo.abi: {declared_abis})")
-        if arch not in declared_archs:
+        if arch == '*':
+            # architecture-independent meta-packages (e.g. lang/go) are valid
+            # for every arch the repo declares; land them in each slot
+            archs = declared_archs
+        elif arch not in declared_archs:
             raise ValueError(
                 f"{pkg_path}: arch {arch} not declared in repo config {repo_config_path} "
                 f"(pkg-repo.arch: {declared_archs})")
-        packages_by_dir.setdefault(f'FreeBSD:{abi}:{arch}', []).append((pkg_path, info))
+        else:
+            archs = [arch]
+        for slot_arch in archs:
+            packages_by_dir.setdefault(f'FreeBSD:{abi}:{slot_arch}', []).append((pkg_path, info))
 
     for repo_dir, packages in packages_by_dir.items():
         latest = os.path.join(output_dir, repo_dir, 'latest')
@@ -714,7 +732,9 @@ def bump(pkg, version=None, abi_arch=None):
     if version is None:
         raise ValueError("--version is required")
     spec = _load_spec(config_path)
-    if spec.get('redistribute'):
+    if spec.get('content'):
+        content = _replace_scalar_in_section_line(content, 'content', 'version', version)
+    elif spec.get('redistribute'):
         if abi_arch is None:
             raise ValueError(f"{config_path}: redistribute specs need --abi-arch")
         if abi_arch not in spec['redistribute'].get('version', {}):
@@ -812,6 +832,17 @@ def check_updates(pkgs_dir='pkgs'):
     for config_file in sorted(Path(pkgs_dir).glob('*/config.yml')):
         pkg_name = config_file.parent.name
         config = _load_spec(config_file)
+        if config.get('content'):
+            # Bundled content (e.g. the Homer dashboard inside os-homer)
+            # follows the upstream repo releases — checked even though the
+            # spec is a plugin. The 'content' abi_arch routes bump to the
+            # content.version line, leaving the plugin version untouched.
+            remote = _gh_latest_version(config['content']['repo'], os.environ.get('GITHUB_TOKEN'))
+            local = str(config['content']['version'])
+            if str(remote) != local:
+                matrix['pkg'].append(pkg_name)
+                matrix['include'].append({'pkg': pkg_name, 'abi_arch': 'content', 'version': remote})
+            continue
         if config.get('plugin'):
             continue
         if config.get('redistribute'):

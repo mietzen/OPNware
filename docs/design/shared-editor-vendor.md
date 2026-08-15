@@ -11,8 +11,8 @@ This document is the reference for how a plugin consumes the asset. os-homer
 
 ## What is vendored and where
 
-Source of truth: **`pkgs/os-caddy/assets/vendor/`** (plugin source tree — the
-single copy of the asset in this repo).
+Source of truth: **`pkgs/editor/assets/vendor/`** (the single checked-in copy
+of the asset in this repo — the `editor` package owns it).
 
 ```
 assets/vendor/
@@ -43,12 +43,12 @@ packages; `package.json`/license files are kept alongside for provenance.
 OPNsense serves `/opnsense/www/js/...` as the `/ui/js/...` URL prefix, so the
 vendor tree must land under `/usr/local/opnsense/www/js/vendor/`. The files
 are owned by the **`editor` package** (`pkgs/editor/`), a plain payload
-package whose build.sh copies the checked-in `pkgs/os-caddy/assets/vendor/`
+package whose build.sh copies the checked-in `pkgs/editor/assets/vendor/`
 tree into the payload:
 
 ```bash
 # pkgs/editor/build.sh
-cp -R "${REPO_ROOT}/pkgs/os-caddy/assets/vendor/." \
+cp -R "${SCRIPT_DIR}/assets/vendor/." \
       "${DIST_ROOT}/dist/pkg/usr/local/opnsense/www/js/vendor/"
 ```
 
@@ -132,3 +132,26 @@ Key points for a consumer:
 - Token scopes are emitted space-joined, so Monaco's built-in themes
   (`vs-dark` etc.) color the grammar output via their generic comment/string/
   keyword/number rules.
+
+## Refreshing the vendor (the editor package's update mechanism)
+
+The `editor` package has **no automated update source** — `check-updates`
+skips it by design (the payload is a checked-in vendor tree, not a remote
+artifact). Refreshing is a manual, guarded process:
+
+```sh
+cd /var/folders/9z/cd6qb82n4d3g1d91x5245blc0000gn/T
+npm pack monaco-editor@latest          # -> monaco-editor-<v>.tgz
+tar -xzf monaco-editor-<v>.tgz
+rm -rf <repo>/pkgs/editor/assets/vendor/monaco/vs
+cp -R package/min/vs <repo>/pkgs/editor/assets/vendor/monaco/vs/
+cp package/package.json <repo>/pkgs/editor/assets/vendor/monaco/package.json
+# bump pkgs/editor/config.yml pkg_manifest.version to the new monaco version
+```
+
+The build-time guard (`editor/build.sh` compares the vendored monaco version
+against `pkg_manifest.version`) fails the build on mismatch, so a vendor
+refresh can never ship under a stale version number. The TextMate stack
+(`vscode-textmate`, `vscode-oniguruma`, the `monaco-editor-textmate.js`
+bridge) is refreshed the same way (npm pack + copy) and does not drive the
+package version.

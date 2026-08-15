@@ -10,7 +10,7 @@ DIST_ROOT="${GITHUB_WORKSPACE:-${REPO_ROOT}}"
 
 echo "Building editor - ARCH: ${ARCH} - ABI: ${ABI}"
 
-VENDOR_DIR="${REPO_ROOT}/pkgs/os-caddy/assets/vendor"
+VENDOR_DIR="${SCRIPT_DIR}/assets/vendor"
 PKG_VERSION=$(pkg-tool dump "${CONFIG}" pkg_manifest.version)
 
 # The package version must track the vendored monaco-editor release; a
@@ -25,7 +25,6 @@ fi
 mkdir -p "${DIST_ROOT}/dist/pkg/usr/local/opnsense/www/js"
 chmod 0755 "${DIST_ROOT}/dist/pkg/usr/local/opnsense/www/js"
 
-# Source of truth: the vendored tree lives in the os-caddy plugin source.
 cp -R "${VENDOR_DIR}/." "${DIST_ROOT}/dist/pkg/usr/local/opnsense/www/js/vendor/"
 find "${DIST_ROOT}/dist/pkg/usr/local" -type d -exec chmod 0755 {} +
 find "${DIST_ROOT}/dist/pkg/usr/local" -type f -exec chmod 0644 {} +

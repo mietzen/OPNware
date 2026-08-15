@@ -32,13 +32,34 @@ redistribute:
   path: quarterly/All
 """
 
+CONTENT_SPEC = """\
+build_config:
+  include:
+    node: '22'
+content:
+  repo: https://github.com/bastienwirtz/homer
+  version: 26.4.2
+plugin:
+  opnsense_version: "26.7"
+pkg_manifest:
+  name: homer
+  origin: opnware/os-homer
+  version: 0.1.0
+  comment: content plugin fixture
+  www: https://example.com
+  maintainer: test@example.com
+  prefix: /usr/local
+"""
+
 @pytest.fixture
 def repo(tmp_path, monkeypatch):
     pkgs = tmp_path / "pkgs"
     (pkgs / "blocky").mkdir(parents=True)
     (pkgs / "btop").mkdir()
+    (pkgs / "homer").mkdir()
     (pkgs / "blocky" / "config.yml").write_text(BUILD_SPEC)
     (pkgs / "btop" / "config.yml").write_text(REDISTRIBUTE_SPEC)
+    (pkgs / "homer" / "config.yml").write_text(CONTENT_SPEC)
     monkeypatch.chdir(tmp_path)
     return tmp_path
 
@@ -87,6 +108,14 @@ def test_bump_fails_loudly_when_version_line_missing(repo):
 
     with pytest.raises(ValueError, match="version"):
         bump("blocky", version="0.35.0")
+
+
+def test_bump_content_version_changes_only_content_line(repo):
+    bump("homer", version="26.5.0")
+
+    content = (repo / "pkgs" / "homer" / "config.yml").read_text()
+    assert content == CONTENT_SPEC.replace("  version: 26.4.2", "  version: 26.5.0")
+    assert "\n  version: 0.1.0\n" in content  # plugin version untouched
 
 
 def test_bump_redistribute_ignores_leaf_outside_section(repo):

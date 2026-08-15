@@ -41,6 +41,26 @@ redistribute:
 """
 
 
+CONTENT_SPEC = """\
+build_config:
+  include:
+    node: '22'
+content:
+  repo: https://github.com/bastienwirtz/homer
+  version: 26.4.2
+plugin:
+  opnsense_version: "26.7"
+pkg_manifest:
+  name: homer
+  origin: opnware/os-homer
+  version: 0.1.0
+  comment: content plugin
+  www: https://example.com
+  maintainer: test@example.com
+  prefix: /usr/local
+"""
+
+
 class FakeResponse:
     def __init__(self, status_code=200, text="", content=b"", json_data=None):
         self.status_code = status_code
@@ -111,6 +131,26 @@ def test_bsd_packagesite_adapter_detects_newer_version(tmp_path, monkeypatch):
         {"pkg": "btop", "abi_arch": "FreeBSD-14-amd64", "version": "1.5.0"},
         {"pkg": "btop", "abi_arch": "FreeBSD-15-amd64", "version": "1.5.0"},
     ]
+
+
+def test_content_adapter_tracks_plugin_bundled_content(tmp_path, monkeypatch):
+    # A plugin with a content section is NOT skipped: its bundled content
+    # (e.g. the Homer dashboard) follows the upstream repo releases.
+    make_repo(tmp_path, {"homer": CONTENT_SPEC})
+
+    monkeypatch.setattr(requests, "get", lambda url, **kw: FakeResponse(json_data={"tag_name": "v26.5.0"}))
+    matrix = check_updates(str(tmp_path / 'pkgs'))
+
+    assert matrix["include"] == [{"pkg": "homer", "abi_arch": "content", "version": "26.5.0"}]
+
+
+def test_content_adapter_no_update_emits_nothing(tmp_path, monkeypatch):
+    make_repo(tmp_path, {"homer": CONTENT_SPEC})
+    monkeypatch.setattr(requests, "get", lambda url, **kw: FakeResponse(json_data={"tag_name": "v26.4.2"}))
+
+    matrix = check_updates(str(tmp_path / 'pkgs'))
+
+    assert matrix == {"pkg": [], "include": []}
 
 
 def test_plugin_specs_are_skipped_not_errors(tmp_path):
