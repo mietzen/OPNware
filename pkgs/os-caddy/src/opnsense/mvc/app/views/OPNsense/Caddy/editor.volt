@@ -206,6 +206,10 @@
                 if ($('#editor-tree').hasClass('jstree')) {
                     $('#editor-tree').jstree('destroy').empty();
                 }
+                // Show the managed files without requiring a click on conf.d.
+                $('#editor-tree').one('ready.jstree', function() {
+                    $(this).jstree('open_all');
+                });
                 $('#editor-tree').jstree({
                     core: {
                         data: nodes,
@@ -218,8 +222,6 @@
                     contextmenu: { items: contextMenuItems },
                     plugins: ['contextmenu', 'types', 'wholerow']
                 });
-                // Show the managed files without requiring a click on conf.d.
-                $('#editor-tree').jstree('open_all');
             });
         }
 
