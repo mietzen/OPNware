@@ -34,6 +34,11 @@
 	root * /usr/local/www/homer
 	file_server
 {% if generalSettings.TlsEnabled|default("1") == "1" %}
-	tls internal
+	# A port-only site has no hostname for the internal issuer to mint a
+	# SAN, so on_demand issues a cert for whatever SNI the client sends
+	# (the LAN IP or a hostname) — required for IP-based access.
+	tls internal {
+		on_demand
+	}
 {% endif %}
 }
