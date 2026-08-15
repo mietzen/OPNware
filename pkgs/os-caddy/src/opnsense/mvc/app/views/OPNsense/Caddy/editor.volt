@@ -12,32 +12,47 @@
  # hidden <textarea id="editor-content"> stays in the DOM as the transport for
  # the existing save cycle: Monaco writes every model change back into it, so
  # the /api/caddy/editor/save endpoint is untouched.
+ #
+ # The file tree is jstree (vendored, no CDN): right-click context menu
+ # (new file in folder, rename, copy, move, delete) and drag-and-drop moves.
  #}
 
+<link rel="stylesheet" href="/ui/js/vendor/jstree/themes/default/style.min.css">
+
 <style>
-    .opnware-editor-tabs { margin-bottom: 15px; }
+    .opnware-editor-tabs { margin-bottom: 0; }
+    .opnware-tab-pane { padding: 0 15px 15px; }
     .content-box.opnware-editor-pane { padding: 15px; }
     .opnware-editor-actions { padding: 0 15px 15px; }
-    .opnware-file-tree, .opnware-file-tree ul { list-style: none; margin: 0; padding: 0; }
-    .opnware-file-tree ul { margin-left: 18px; padding-left: 10px; border-left: 1px solid #c9cfd6; }
-    .opnware-file-tree li { padding: 3px 0; }
-    .opnware-file-tree .tree-dir { display: flex; align-items: center; gap: 4px; }
-    .opnware-file-tree .tree-toggle {
-        width: 18px; padding: 0; border: 0; background: none; color: #58606b;
-        font-size: 11px; cursor: pointer; text-align: center;
+    .opnware-editor-split { display: flex; align-items: stretch; }
+    .opnware-editor-tree {
+        flex: 0 0 280px;
+        max-width: 280px;
+        padding-right: 15px;
+        margin-right: 15px;
+        border-right: 1px solid #E5E5E5;
     }
-    .opnware-file-tree .tree-label { font-weight: 600; }
-    .opnware-file-tree .tree-file { display: flex; align-items: center; gap: 6px; }
-    .opnware-file-tree .tree-file a { color: #2d6cdf; text-decoration: none; }
-    .opnware-file-tree .tree-file a:hover { text-decoration: underline; }
-    .opnware-file-tree .tree-file .btn { padding: 1px 6px; font-size: 11px; }
+    .opnware-editor-main { flex: 1 1 auto; min-width: 0; }
+    #editor-tree { min-height: 120px; }
+    #editor-tree .jstree-anchor { max-width: 100%; }
+    #editor-tree .jstree-anchor .jstree-icon { margin-right: 4px; }
     @media (max-width: 767px) {
-        .opnware-file-tree ul { margin-left: 10px; padding-left: 6px; }
-        .opnware-file-tree .tree-file { flex-wrap: wrap; }
+        .opnware-editor-split { flex-direction: column; }
+        .opnware-editor-tree {
+            flex: none;
+            max-width: 100%;
+            padding-right: 0;
+            margin-right: 0;
+            border-right: 0;
+            border-bottom: 1px solid #E5E5E5;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+        }
     }
 </style>
 
 <script src="/ui/js/vendor/monaco/vs/loader.js"></script>
+<script src="/ui/js/vendor/jstree/jstree.min.js"></script>
 <script>
     // Monaco's AMD loader (vs/loader.js) resolves module ids through these
     // paths. Everything is vendored under /opnsense/www/js/vendor/ (served as
@@ -104,6 +119,9 @@
             }
             window.opnwareMonaco.editor.setTheme(preferredEditorTheme());
             $('#editor-theme').val(preferredEditorTheme());
+            if ($('#editor-theme').data('bs.select')) {
+                $('#editor-theme').selectpicker('refresh');
+            }
         }
 
         $('#editor-theme').change(function() {
@@ -162,7 +180,7 @@
             }
         }
 
-        // --- existing file-tree logic ---------------------------------------
+        // --- jstree file tree ----------------------------------------------
 
         function loadTree() {
             $.getJSON("/api/caddy/editor/list", function(data) {
@@ -170,52 +188,161 @@
                     showError(data.message);
                     return;
                 }
-                const $list = $("#editor-files");
-                $list.empty();
-                const $root = $('<li class="tree-file">').append(
-                    $('<a href="#">').text('Caddyfile').click(function(e) {
-                        e.preventDefault();
-                        loadFile('Caddyfile');
-                    })
-                );
-                $list.append($root);
-                $list.append(renderTreeNode(data.tree));
+                const nodes = [];
+                if (data.caddyfile) {
+                    nodes.push({
+                        id: 'Caddyfile',
+                        text: 'Caddyfile',
+                        type: 'file',
+                        data: {path: 'Caddyfile'}
+                    });
+                }
+                nodes.push(convertTree(data.tree));
+                if ($('#editor-tree').hasClass('jstree')) {
+                    $('#editor-tree').jstree('destroy').empty();
+                }
+                $('#editor-tree').jstree({
+                    core: {
+                        data: nodes,
+                        check_callback: checkMove,
+                        themes: { name: 'default' }
+                    },
+                    types: {
+                        'directory': { icon: 'fa fa-folder-open-o' },
+                        'file': { icon: 'fa fa-file-text-o' }
+                    },
+                    dnd: { check_while_dragging: true },
+                    contextmenu: { items: contextMenuItems },
+                    plugins: ['dnd', 'contextmenu', 'types', 'wholerow']
+                });
             });
         }
 
-        function renderTreeNode(node) {
-            const $item = $('<li>');
-            const $dir = $('<div class="tree-dir">');
-            const $toggle = $('<button type="button" class="tree-toggle" aria-expanded="true">').text('▾');
-            const $label = $('<span class="tree-label">').text(node.name);
-            $dir.append($toggle).append($label);
-            const $children = $('<ul>');
-            (node.children || []).forEach(function(child) {
-                if (child.type === 'directory') {
-                    $children.append(renderTreeNode(child));
-                } else {
-                    const $file = $('<li class="tree-file">');
-                    const $link = $('<a href="#">').text(child.name).click(function(e) {
-                        e.preventDefault();
-                        loadFile(child.path);
-                    });
-                    const $copy = $('<button type="button" class="btn btn-default btn-xs">').text('{{ lang._("Copy") }}')
-                        .click(function(e) { e.stopPropagation(); copyOrMoveFile(child.path, false); });
-                    const $move = $('<button type="button" class="btn btn-default btn-xs">').text('{{ lang._("Move") }}')
-                        .click(function(e) { e.stopPropagation(); copyOrMoveFile(child.path, true); });
-                    const $del = $('<button type="button" class="btn btn-danger btn-xs">').text('{{ lang._("Delete") }}')
-                        .click(function(e) { e.stopPropagation(); deleteFile(child.path); });
-                    $file.append($link).append($copy).append($move).append($del);
-                    $children.append($file);
+        function convertTree(node) {
+            const out = {
+                id: node.path,
+                text: node.name,
+                type: node.type,
+                data: {path: node.path}
+            };
+            if (node.children && node.children.length) {
+                out.children = node.children.map(convertTree);
+            }
+            return out;
+        }
+
+        // Only files may be dragged, and only into directories.
+        function checkMove(operation, node, parent, position, more) {
+            if (operation === 'move_node') {
+                if (node.type !== 'file' || node.id === 'Caddyfile') {
+                    return false;
                 }
+                if (parent === '#' || parent.type !== 'directory') {
+                    return false;
+                }
+                return true;
+            }
+            return true;
+        }
+
+        function contextMenuItems(node) {
+            const items = {};
+            if (node.type === 'directory') {
+                items.newFile = {
+                    label: "{{ lang._('New file here') }}",
+                    action: function() { addFileIn(node.data.path); }
+                };
+            }
+            if (node.type === 'file') {
+                items.open = {
+                    label: "{{ lang._('Open') }}",
+                    action: function() { loadFile(node.data.path); }
+                };
+                if (node.id !== 'Caddyfile') {
+                    items.rename = {
+                        label: "{{ lang._('Rename') }}",
+                        action: function() { renameFile(node.data.path); }
+                    };
+                    items.copy = {
+                        label: "{{ lang._('Copy…') }}",
+                        action: function() { copyOrMoveFile(node.data.path, false); }
+                    };
+                    items.move = {
+                        label: "{{ lang._('Move…') }}",
+                        action: function() { copyOrMoveFile(node.data.path, true); }
+                    };
+                    items.delete = {
+                        label: "{{ lang._('Delete') }}",
+                        action: function() { deleteFile(node.data.path); }
+                    };
+                }
+            }
+            return items;
+        }
+
+        $('#editor-tree').on('select_node.jstree', function(e, selected) {
+            const node = selected.node;
+            if (node && node.data && node.data.path) {
+                loadFile(node.data.path);
+            }
+        });
+
+        $('#editor-tree').on('move_node.jstree', function(e, moved) {
+            const node = moved.node;
+            const newParent = moved.parent; // '#' or a node id (relative path)
+            if (!node || node.id === 'Caddyfile') {
+                $('#editor-tree').jstree('refresh');
+                return;
+            }
+            const name = node.text;
+            const target = newParent === '#' ? name : newParent + '/' + name;
+            if (target === node.id) {
+                $('#editor-tree').jstree('refresh');
+                return;
+            }
+            $.post('/api/caddy/editor/move', {path: node.id, target: target}, function(data) {
+                if (data.status !== 'ok') {
+                    showError(data.message);
+                }
+                $('#editor-tree').jstree('refresh');
             });
-            $toggle.click(function() {
-                const expanded = $toggle.attr('aria-expanded') === 'true';
-                $toggle.attr('aria-expanded', !expanded).text(expanded ? '▸' : '▾');
-                $children.toggle(!expanded);
+        });
+
+        function addFileIn(dirPath) {
+            const name = window.prompt(
+                "{{ lang._('New file name in') }} " + (dirPath || 'conf.d') + "/",
+                'site.caddy'
+            );
+            if (!name || !name.trim()) {
+                return;
+            }
+            $("#editor-result").hide();
+            const path = (dirPath || 'conf.d') + '/' + name.trim();
+            $.post("/api/caddy/editor/add", {path: path}, function(data) {
+                if (data.status !== "ok") {
+                    showError(data.message);
+                    return;
+                }
+                loadTree();
             });
-            $item.append($dir).append($children);
-            return $item;
+        }
+
+        function renameFile(path) {
+            const dir = path.lastIndexOf('/') > 0 ? path.substring(0, path.lastIndexOf('/')) : 'conf.d';
+            const oldName = path.substring(path.lastIndexOf('/') + 1);
+            const name = window.prompt("{{ lang._('Rename to') }}", oldName);
+            if (!name || !name.trim() || name.trim() === oldName) {
+                return;
+            }
+            $("#editor-result").hide();
+            const target = dir + '/' + name.trim();
+            $.post('/api/caddy/editor/move', {path: path, target: target}, function(data) {
+                if (data.status !== 'ok') {
+                    showError(data.message);
+                    return;
+                }
+                loadTree();
+            });
         }
 
         function copyOrMoveFile(path, move) {
@@ -226,6 +353,7 @@
             if (!name) {
                 return;
             }
+            $("#editor-result").hide();
             $.post('/api/caddy/editor/' + (move ? 'move' : 'copy'), {path: path, target: name}, function(data) {
                 if (data.status !== 'ok') {
                     showError(data.message);
@@ -244,6 +372,7 @@
                 currentFile = path;
                 $("#editor-name").text(data.name);
                 $("#editor-path").text(data.path);
+                $("#editor-path-row").show();
                 setEditorValue(data.content || '');
             });
         }
@@ -252,6 +381,7 @@
             if (!confirm("{{ lang._('Delete this file?') }}")) {
                 return;
             }
+            $("#editor-result").hide();
             $.post("/api/caddy/editor/delete", {path: path}, function(data) {
                 if (data.status !== "ok") {
                     showError(data.message);
@@ -262,6 +392,7 @@
                     setEditorValue('');
                     $("#editor-name").text('');
                     $("#editor-path").text('');
+                    $("#editor-path-row").hide();
                 }
                 loadTree();
             });
@@ -291,7 +422,7 @@
                 return;
             }
             $("#editor-result").hide();
-            $.post("/api/caddy/editor/add", {name: name}, function(data) {
+            $.post("/api/caddy/editor/add", {path: 'conf.d/' + name}, function(data) {
                 if (data.status !== "ok") {
                     showError(data.message);
                     return;
@@ -575,33 +706,30 @@
     <li><a href="#editor-environment-tab" data-toggle="tab">{{ lang._('Environment') }}</a></li>
 </ul>
 
-<div class="tab-content">
-<div id="editor-files-tab" class="tab-pane active">
-<div class="row">
-    <div class="col-md-3">
-        <div class="content-box opnware-editor-pane __mb">
+<div class="content-box tab-content opnware-tab-pane">
+<div id="editor-files-tab" class="tab-pane fade in active">
+    <div class="opnware-editor-split">
+        <div class="opnware-editor-tree">
             <h2>{{ lang._('Files') }}</h2>
-            <ul id="editor-files" class="opnware-file-tree"></ul>
+            <div id="editor-tree"></div>
             <div class="form-group __mt">
                 <input id="new-file-name" type="text" class="form-control input-sm" placeholder="site.caddy">
             </div>
-            <button id="add-editor" type="button" class="btn btn-primary btn-sm">{{ lang._('Add') }}</button>
-            <span class="help-block">{{ lang._('Add, copy, move and delete are limited to .caddy files inside conf.d. The Caddyfile itself cannot be deleted.') }}</span>
+            <button id="add-editor" type="button" class="btn btn-primary btn-sm">{{ lang._('Add to conf.d') }}</button>
+            <span class="help-block">{{ lang._('Right-click a file for rename, copy, move and delete; right-click a folder to create a file inside it. Files can also be dragged into folders. The Caddyfile itself cannot be renamed or deleted.') }}</span>
         </div>
-    </div>
-    <div class="col-md-9">
-        <div class="content-box opnware-editor-pane __mb">
+        <div class="opnware-editor-main">
             <div class="row">
                 <div class="col-md-8"><h2 id="editor-name">{{ lang._('Caddyfile') }}</h2></div>
                 <div class="col-md-4 text-right __mt">
                     <label class="text-muted" for="editor-theme">{{ lang._('Theme') }}</label>
-                    <select id="editor-theme" class="form-control input-sm" style="display:inline-block; width:auto;">
+                    <select id="editor-theme" class="selectpicker" data-width="110px">
                         <option value="vs">{{ lang._('Light') }}</option>
                         <option value="vs-dark">{{ lang._('Dark') }}</option>
                     </select>
                 </div>
             </div>
-            <p><small class="text-muted"><code id="editor-path"></code></small></p>
+            <p id="editor-path-row" class="text-muted" style="display:none;"><small><code id="editor-path"></code></small></p>
             <div id="editor-container" style="height: 450px; border: 1px solid #1d2733; border-radius: 4px; overflow: hidden;"></div>
             {# Hidden transport for the existing save cycle — the Monaco model mirrors its value. #}
             <textarea id="editor-content" class="form-control" rows="20" spellcheck="false"
@@ -620,10 +748,8 @@
         </div>
     </div>
 </div>
-</div>
 
-<div id="editor-environment-tab" class="tab-pane">
-<div id="env-panel" class="content-box opnware-editor-pane __mb">
+<div id="editor-environment-tab" class="tab-pane fade">
     <h2>{{ lang._('Environment') }}</h2>
     <p class="help-block">
         {{ lang._('Environment variables are passed to the Caddy process through the envfile (--envfile). Secret rows are masked by default; use the reveal button to inspect a value. The plugin-managed CADDY_LOG_LEVEL row cannot be edited. The envfile is separate from the file tree above and is never shown there.') }}
@@ -650,6 +776,5 @@
         <button id="env-save" type="button" class="btn btn-primary __ml"><b>{{ lang._('Save env') }}</b></button>
         <div id="env-result" class="alert" style="display:none;"></div>
     </div>
-</div>
 </div>
 </div>

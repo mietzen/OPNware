@@ -6,8 +6,8 @@
  #}
 <style>
     .content-box.opnware-editor-pane { padding: 15px; }
-    .opnware-editor-actions { padding: 0 15px 15px; }
-    .opnware-editor-tabs { margin-bottom: 15px; }
+    .opnware-editor-tabs { margin-bottom: 0; }
+    .opnware-tab-pane { padding: 0 15px 15px; }
 </style>
 
 
@@ -95,15 +95,16 @@
             <tr><td class="text-muted">{{ lang._('Effective URL') }}</td><td><a id="effective-url" href="{{ effectiveUrl }}" target="_blank" rel="noreferrer">{{ effectiveUrl }}</a></td></tr>
         </tbody>
     </table>
-    <p class="text-muted">
-        {{ lang._('The dashboard is served from the plugin-owned Caddyfile at /usr/local/etc/os-homer/Caddyfile. The Caddyfile is generated from the settings above and is not editable from the WebUI.') }}
-    </p>
 </div>
 
 <ul id="generalTabsHeader" class="nav nav-tabs opnware-editor-tabs" role="tablist">
     {{ partial("layout_partials/base_tabs_header", ['formData': generalForm]) }}
 </ul>
 
-<div id="generalTabsContent" class="content-box tab-content opnware-editor-pane">
+<div id="generalTabsContent" class="content-box tab-content opnware-tab-pane">
     {{ partial("layout_partials/base_tabs_content", ['formData': generalForm]) }}
 </div>
+
+<p class="help-block">
+    {{ lang._('The dashboard is served from the plugin-owned Caddyfile at /usr/local/etc/os-homer/Caddyfile. The Caddyfile is generated from the settings above and is not editable from the WebUI.') }}
+</p>

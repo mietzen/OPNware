@@ -44,6 +44,86 @@ class ModulesController extends ApiMutableModelControllerBase
     }
 
     /**
+     * The module catalog from https://caddyserver.com/api/modules, cached for
+     * 24h so the page does not depend on a live outbound connection. The
+     * caddyserver API returns a map of module id -> [entry]; each entry
+     * carries the Go import path in "package". Only the unique non-standard
+     * import paths (standard caddy modules are compiled in already) are
+     * returned, sorted.
+     *
+     * @return array
+     */
+    public function catalogAction()
+    {
+        $cacheFile = '/var/db/os-caddy/modules_catalog.json';
+        $ttl = 24 * 3600;
+
+        $cached = null;
+        if (is_file($cacheFile)) {
+            $cached = json_decode(file_get_contents($cacheFile), true);
+        }
+        if (is_array($cached) && isset($cached['modules']) && isset($cached['fetched_at'])
+            && (time() - $cached['fetched_at']) < $ttl) {
+            return $cached;
+        }
+
+        $ch = curl_init('https://caddyserver.com/api/modules');
+        curl_setopt_array($ch, array(
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT => 15,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_USERAGENT => 'OPNsense-os-caddy',
+        ));
+        $body = curl_exec($ch);
+        $error = curl_error($ch);
+        curl_close($ch);
+
+        if ($body === false || $body === '') {
+            // Stale cache beats an error — report the age so the UI can note it.
+            if (is_array($cached) && isset($cached['modules'])) {
+                $cached['stale'] = true;
+                return $cached;
+            }
+            return array('status' => 'failure', 'message' => 'catalog fetch failed: ' . $error);
+        }
+
+        $data = json_decode($body, true);
+        if (!is_array($data) || !isset($data['result']) || !is_array($data['result'])) {
+            if (is_array($cached) && isset($cached['modules'])) {
+                $cached['stale'] = true;
+                return $cached;
+            }
+            return array('status' => 'failure', 'message' => 'unexpected catalog response');
+        }
+
+        $packages = array();
+        foreach ($data['result'] as $entries) {
+            foreach ($entries as $entry) {
+                if (!is_array($entry) || empty($entry['package'])) {
+                    continue;
+                }
+                $pkg = (string)$entry['package'];
+                // Standard caddy modules ship with the binary; declaring them
+                // is pointless (xcaddy refuses or rebuilds identical code).
+                if (strpos($pkg, 'github.com/caddyserver/caddy/v2') === 0) {
+                    continue;
+                }
+                $packages[$pkg] = $pkg;
+            }
+        }
+        $modules = array_values($packages);
+        sort($modules, SORT_STRING);
+
+        $result = array(
+            'status' => 'ok',
+            'modules' => $modules,
+            'fetched_at' => time(),
+        );
+        @file_put_contents($cacheFile, json_encode($result));
+        return $result;
+    }
+
+    /**
      * Rebuild the caddy binary from the declared module set, pinned to the
      * installed caddy version (configd action "modules modules-rebuild").
      * @return array

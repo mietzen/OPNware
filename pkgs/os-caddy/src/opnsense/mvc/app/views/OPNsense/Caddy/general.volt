@@ -3,8 +3,8 @@
  #}
 <style>
     .content-box.opnware-editor-pane { padding: 15px; }
-    .opnware-editor-actions { padding: 0 15px 15px; }
-    .opnware-editor-tabs { margin-bottom: 15px; }
+    .opnware-editor-tabs { margin-bottom: 0; }
+    .opnware-tab-pane { padding: 0 15px 15px; }
 </style>
 
 
@@ -82,6 +82,6 @@
     {{ partial("layout_partials/base_tabs_header", ['formData': generalForm]) }}
 </ul>
 
-<div id="generalTabsContent" class="content-box tab-content opnware-editor-pane">
+<div id="generalTabsContent" class="content-box tab-content opnware-tab-pane">
     {{ partial("layout_partials/base_tabs_content", ['formData': generalForm]) }}
 </div>
