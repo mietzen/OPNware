@@ -61,6 +61,22 @@ pkg_manifest:
 """
 
 
+VENDOR_SPEC = """\
+build_config:
+  include: {}
+vendor:
+  npm: monaco-editor
+pkg_manifest:
+  name: editor
+  origin: opnware/editor
+  version: 0.56.0
+  comment: vendored asset
+  www: https://example.com
+  maintainer: test@example.com
+  prefix: /usr/local
+"""
+
+
 class FakeResponse:
     def __init__(self, status_code=200, text="", content=b"", json_data=None):
         self.status_code = status_code
@@ -147,6 +163,30 @@ def test_content_adapter_tracks_plugin_bundled_content(tmp_path, monkeypatch):
 def test_content_adapter_no_update_emits_nothing(tmp_path, monkeypatch):
     make_repo(tmp_path, {"homer": CONTENT_SPEC})
     monkeypatch.setattr(requests, "get", lambda url, **kw: FakeResponse(json_data={"tag_name": "v26.4.2"}))
+
+    matrix = check_updates(str(tmp_path / 'pkgs'))
+
+    assert matrix == {"pkg": [], "include": []}
+
+
+def test_vendor_adapter_emits_update_entry(tmp_path, monkeypatch):
+    # A vendored npm asset (the shared editor) is checked against the npm
+    # registry; a newer release emits a 'vendor' entry the workflow turns
+    # into a refresh PR (no auto-merge).
+    make_repo(tmp_path, {"editor": VENDOR_SPEC})
+
+    monkeypatch.setattr(requests, "get", lambda url, **kw: FakeResponse(json_data={"version": "0.57.0"}))
+    matrix = check_updates(str(tmp_path / 'pkgs'))
+
+    assert matrix == {
+        "pkg": ["editor"],
+        "include": [{"pkg": "editor", "abi_arch": "vendor", "version": "0.57.0"}],
+    }
+
+
+def test_vendor_adapter_no_update_emits_nothing(tmp_path, monkeypatch):
+    make_repo(tmp_path, {"editor": VENDOR_SPEC})
+    monkeypatch.setattr(requests, "get", lambda url, **kw: FakeResponse(json_data={"version": "0.56.0"}))
 
     matrix = check_updates(str(tmp_path / 'pkgs'))
 

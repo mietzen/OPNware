@@ -1,6 +1,8 @@
 ---
 build_config:
   include: {}
+vendor:
+  npm: monaco-editor
 pkg_manifest:
   name: editor
   origin: opnware/editor

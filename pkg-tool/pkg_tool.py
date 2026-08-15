@@ -151,6 +151,10 @@ def _validate_spec(spec, source):
             raise ValueError(f"{source}: content.version required")
         if isinstance(content['version'], (dict, list)):
             raise TypeError(f"{source}: content.version must be a scalar")
+    if 'vendor' in spec:
+        vendor = spec['vendor']
+        if not isinstance(vendor, dict) or not vendor.get('npm') or not isinstance(vendor['npm'], str):
+            raise ValueError(f"{source}: vendor.npm required (the npm package name)")
     if pkg_manifest is not None:
         if not isinstance(pkg_manifest, dict):
             raise TypeError(f"{source}: pkg_manifest is not a mapping")
@@ -828,6 +832,16 @@ def _sf_latest_version(src_repo):
         raise ValueError(f"unexpected SourceForge release filename: {parts!r}")
     return parts[-2]
 
+def _npm_latest_version(package):
+    """The latest version of an npm package (e.g. monaco-editor)."""
+    response = requests.get(f"https://registry.npmjs.org/{quote_plus(package)}/latest")
+    if response.status_code != 200:
+        raise ValueError(f"failed to get release info from npm registry: HTTP {response.status_code}")
+    remote = str(response.json().get('version', ''))
+    if not remote:
+        raise ValueError(f"no version found for npm package {package}")
+    return remote
+
 def check_updates(pkgs_dir='pkgs'):
     """
     Check all package specs for newer versions.
@@ -840,6 +854,17 @@ def check_updates(pkgs_dir='pkgs'):
     for config_file in sorted(Path(pkgs_dir).glob('*/config.yml')):
         pkg_name = config_file.parent.name
         config = _load_spec(config_file)
+        if config.get('vendor'):
+            # Vendored npm assets (e.g. the shared editor) are checked against
+            # the npm registry. The 'vendor' abi_arch routes the workflow to
+            # the refresh script (which re-vendors AND bumps — a bare bump
+            # would fail the build guard) and skips auto-merge.
+            remote = _npm_latest_version(config['vendor']['npm'])
+            local = str(config.get('pkg_manifest', {}).get('version'))
+            if str(remote) != local:
+                matrix['pkg'].append(pkg_name)
+                matrix['include'].append({'pkg': pkg_name, 'abi_arch': 'vendor', 'version': remote})
+            continue
         if config.get('content'):
             # Bundled content (e.g. the Homer dashboard inside os-homer)
             # follows the upstream repo releases — checked even though the

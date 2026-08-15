@@ -81,7 +81,14 @@ jobs:
         run: pip install "file://${GITHUB_WORKSPACE}/pkg-tool"
 
       - name: Upgrade Pkg
-        run: pkg-tool bump ${{ matrix.pkg }} --version ${{ matrix.version }} --abi-arch ${{ matrix.abi_arch }}
+        run: |
+          if [ "${{ matrix.abi_arch }}" = "vendor" ]; then
+            # Vendored npm assets (the shared editor): re-vendor AND bump via
+            # the refresh script — a bare bump would fail the build guard.
+            ./scripts/refresh-editor.sh
+          else
+            pkg-tool bump ${{ matrix.pkg }} --version ${{ matrix.version }} --abi-arch ${{ matrix.abi_arch }}
+          fi
 
       - name: Create Pull Request
         id: pr
@@ -97,9 +104,10 @@ jobs:
             update
           body: |
             Upgrading ${{ matrix.pkg }} to newest version: ${{ matrix.version }}
+            ${{ matrix.abi_arch == 'vendor' && 'Vendored npm asset — review the diff, then merge manually.' || '' }}
 
       - name: Enable Pull Request auto merge
-        if: steps.pr.outputs.pull-request-operation == 'created'
+        if: steps.pr.outputs.pull-request-operation == 'created' && matrix.abi_arch != 'vendor'
         run: gh pr merge --merge --auto "${{ steps.pr.outputs.pull-request-number }}"
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}

@@ -74,6 +74,21 @@ pkg_manifest:
   prefix: /usr/local
 """
 
+VENDOR_SPEC = """\
+build_config:
+  include: {}
+vendor:
+  npm: monaco-editor
+pkg_manifest:
+  name: editor
+  origin: opnware/editor
+  version: 0.56.0
+  comment: vendored asset fixture
+  www: https://example.com
+  maintainer: test@example.com
+  prefix: /usr/local
+"""
+
 REPO_CONFIG = """\
 pkg-repo:
   abi:
@@ -199,6 +214,17 @@ class TestValidation:
         write(tmp_path, "homer", broken)
         with pytest.raises(ValueError, match="content.repo"):
             _load_spec(str(tmp_path / "pkgs" / "homer" / "config.yml"))
+
+    def test_valid_vendor_spec_passes(self, tmp_path):
+        write(tmp_path, "editor", VENDOR_SPEC)
+        spec = _load_spec(str(tmp_path / "pkgs" / "editor" / "config.yml"))
+        assert spec["vendor"]["npm"] == "monaco-editor"
+
+    def test_vendor_requires_npm_name(self, tmp_path):
+        broken = VENDOR_SPEC.replace("  npm: monaco-editor\n", "")
+        write(tmp_path, "editor", broken)
+        with pytest.raises(ValueError, match="vendor.npm"):
+            _load_spec(str(tmp_path / "pkgs" / "editor" / "config.yml"))
 
     def test_empty_repo_config_raises_type_error_not_attribute_error(self, tmp_path):
         write(tmp_path, "blocky", BUILD_SPEC, repo_config="\n")
