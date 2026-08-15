@@ -17,12 +17,12 @@ function envfile_path()
 {
     $path = '/usr/local/etc/caddy/env';
     try {
-        $cfg = Config::getInstance()->object();
+        $cfg = \OPNsense\Core\Config::getInstance()->object();
         if (isset($cfg->OPNsense->caddy->general->EnvFile)
                 && (string)$cfg->OPNsense->caddy->general->EnvFile !== '') {
             $path = (string)$cfg->OPNsense->caddy->general->EnvFile;
         }
-    } catch (Exception $e) {
+    } catch (\Throwable $e) {
         // config unavailable in this context — keep the default
     }
     return $path;
