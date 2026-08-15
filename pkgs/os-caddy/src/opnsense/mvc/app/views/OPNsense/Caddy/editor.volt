@@ -252,22 +252,12 @@
                 };
             }
             if (node.type === 'file') {
-                items.open = {
-                    label: "{{ lang._('Open') }}",
-                    action: function() { loadFile(node.data.path); }
-                };
+                // Left-click opens a file; the context menu only carries
+                // mutations (rename, delete). The Caddyfile is never mutated.
                 if (node.id !== 'Caddyfile') {
                     items.rename = {
                         label: "{{ lang._('Rename') }}",
                         action: function() { renameFile(node.data.path); }
-                    };
-                    items.copy = {
-                        label: "{{ lang._('Copy…') }}",
-                        action: function() { copyOrMoveFile(node.data.path, false); }
-                    };
-                    items.move = {
-                        label: "{{ lang._('Move…') }}",
-                        action: function() { copyOrMoveFile(node.data.path, true); }
                     };
                     items.delete = {
                         label: "{{ lang._('Delete') }}",
@@ -315,24 +305,6 @@
             $("#editor-result").hide();
             const target = dir + '/' + name.trim();
             $.post('/api/caddy/editor/move', {path: path, target: target}, function(data) {
-                if (data.status !== 'ok') {
-                    showError(data.message);
-                    return;
-                }
-                loadTree();
-            });
-        }
-
-        function copyOrMoveFile(path, move) {
-            const name = window.prompt(
-                move ? "{{ lang._('Move to conf.d/<new name>, e.g. conf.d/renamed.caddy') }}" : "{{ lang._('Copy to conf.d/<new name>, e.g. conf.d/renamed.caddy') }}",
-                ''
-            );
-            if (!name) {
-                return;
-            }
-            $("#editor-result").hide();
-            $.post('/api/caddy/editor/' + (move ? 'move' : 'copy'), {path: path, target: name}, function(data) {
                 if (data.status !== 'ok') {
                     showError(data.message);
                     return;
@@ -690,7 +662,7 @@
                 <input id="new-file-name" type="text" class="form-control input-sm" placeholder="site.caddy">
             </div>
             <button id="add-editor" type="button" class="btn btn-primary btn-sm">{{ lang._('Add to conf.d') }}</button>
-            <span class="help-block">{{ lang._('The tree is flat: Caddyfile plus conf.d/*.caddy. Right-click a file for rename, copy, move and delete, or drag it onto the conf.d folder. The Caddyfile itself cannot be renamed or deleted.') }}</span>
+            <span class="help-block">{{ lang._('The tree is flat: Caddyfile plus conf.d/*.caddy. Click a file to open it; right-click for rename and delete. The Caddyfile itself cannot be renamed or deleted.') }}</span>
         </div>
         <div class="opnware-editor-main">
             <div class="row">

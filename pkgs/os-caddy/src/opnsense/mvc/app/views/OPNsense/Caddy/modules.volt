@@ -11,6 +11,7 @@
     .opnware-editor-actions { padding: 0 15px 15px; }
     .opnware-editor-tabs { margin-bottom: 0; }
     .form-inline .bootstrap-select { max-width: 420px; }
+    #status-last-message { white-space: pre-wrap; word-break: break-word; font-family: monospace; font-size: 12px; }
 </style>
 
 
@@ -18,6 +19,18 @@
     $(document).ready(function() {
         let modules = [];
         let catalog = [];
+        let busy = false;
+
+        function setBusy(state, message) {
+            busy = state;
+            $("#rebuild_modules, #ensure_modules, #save_modules, #add-module, #add-custom-module").prop('disabled', state);
+            if (state) {
+                const $status = $("#modules-status");
+                $status.find("#status-last-ok").text("{{ lang._('Running…') }}");
+                $status.find("#status-last-ts").text(new Date().toLocaleTimeString());
+                $status.find("#status-last-message").text(message || "{{ lang._('Working…') }}");
+            }
+        }
 
         function updateStatus() {
             $.getJSON("/api/caddy/modules/status", function(data) {
@@ -28,9 +41,15 @@
                 $status.find("#status-modules").text((data.modules || []).join(", ") || "-");
                 $status.find("#status-fingerprint").text(data.fingerprint || "-");
                 const last = data.last_result || {};
-                $status.find("#status-last-ok").text(last.ok === true ? "{{ lang._('OK') }}" : (last.ok === false ? "{{ lang._('FAILED') }}" : "-"));
-                $status.find("#status-last-ts").text(last.ts ? new Date(last.ts * 1000).toLocaleString() : "-");
-                $status.find("#status-last-message").text(last.message || "-");
+                if (!busy) {
+                    $status.find("#status-last-ok").text(last.ok === true ? "{{ lang._('OK') }}" : (last.ok === false ? "{{ lang._('FAILED') }}" : "-"));
+                    $status.find("#status-last-ts").text(last.ts ? new Date(last.ts * 1000).toLocaleString() : "-");
+                    let lastMessage = last.message || "-";
+                    if (last.output) {
+                        lastMessage += "\n" + last.output;
+                    }
+                    $status.find("#status-last-message").text(lastMessage);
+                }
             });
         }
 
@@ -152,15 +171,25 @@
 
         $("#rebuild_modules").click(function() {
             saveModules();
+            setBusy(true, "{{ lang._('Building caddy binary with the declared modules — this can take a few minutes…') }}");
             $.post("/api/caddy/modules/rebuild", function(data) {
                 showResult(data);
+                setBusy(false);
+                updateStatus();
+            }).fail(function() {
+                setBusy(false);
                 updateStatus();
             });
         });
 
         $("#ensure_modules").click(function() {
+            setBusy(true, "{{ lang._('Checking the installed binary against the declared modules…') }}");
             $.post("/api/caddy/modules/ensure", function(data) {
                 showResult(data);
+                setBusy(false);
+                updateStatus();
+            }).fail(function() {
+                setBusy(false);
                 updateStatus();
             });
         });
@@ -174,7 +203,13 @@
             }
             $status.find("#status-last-ok").text(data.ok === true ? "{{ lang._('OK') }}" : (data.ok === false ? "{{ lang._('FAILED') }}" : "-"));
             $status.find("#status-last-ts").text(new Date().toLocaleTimeString());
-            $status.find("#status-last-message").text(data.message || JSON.stringify(data));
+            let message = data.message || (data.ok ? "{{ lang._('Done.') }}" : JSON.stringify(data));
+            if (data.output) {
+                // Surface the real failure detail (xcaddy/go output), not a
+                // generic "build failed" summary.
+                message += "\n" + data.output;
+            }
+            $status.find("#status-last-message").text(message);
         }
 
         loadCatalog();
@@ -229,6 +264,6 @@
     <button id="rebuild_modules" type="button" class="btn btn-primary __ml">{{ lang._('Install / Rebuild') }}</button>
     <button id="ensure_modules" type="button" class="btn btn-default __ml">{{ lang._('Check') }}</button>
     <span class="help-block">
-        {{ lang._('Save stores the declared module list in the configuration. Install / Rebuild saves the list and compiles a new caddy binary with the declared modules (the previous binary is restored on failure). Check compares the installed binary against the saved list and rebuilds only when a module is missing or the build fingerprint changed.') }}
+        {{ lang._('Save writes the module list to the configuration only — it does not touch the installed caddy binary. Install / Rebuild saves the list and then compiles a new binary with the declared modules (a failed build leaves the running binary untouched). Check compares the installed binary against the saved list and rebuilds only when a module is missing or the stored fingerprint no longer matches.') }}
     </span>
 </div>

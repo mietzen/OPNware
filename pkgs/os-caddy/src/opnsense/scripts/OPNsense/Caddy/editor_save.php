@@ -283,16 +283,26 @@ function editor_save_cycle()
         return editor_complete($out, 'failure', 'nothing staged to save', $ts);
     }
 
-    // 1. Build the full file set to validate: current tree + staged overlay.
+    // A complete staging run (add / copy / move / delete — prepareStaging
+    // copies the whole tree) means the staged set IS the intended tree, so
+    // validation must run against the staged files alone. Validating
+    // BASE + staged instead would keep the original of a renamed/removed
+    // file in the temp tree, producing phantom duplicate site definitions.
+    $complete = is_file(COMPLETE_STAGING_MARKER);
+
+    // 1. Build the file set to validate: the staged tree, or (single-file
+    //    save) the current tree with the staged file overlaid.
     $tmp = sys_get_temp_dir() . '/os-caddy-validate-' . uniqid();
     if (!mkdir($tmp, 0700, true)) {
         return editor_complete($out, 'failure', "cannot create staging directory $tmp", $ts);
     }
 
-    foreach (editor_tree_files(BASE) as $rel) {
-        if (!editor_copy_file(BASE . '/' . $rel, $tmp . '/' . $rel)) {
-            editor_rmtree($tmp);
-            return editor_complete($out, 'failure', "cannot stage $rel", $ts);
+    if (!$complete) {
+        foreach (editor_tree_files(BASE) as $rel) {
+            if (!editor_copy_file(BASE . '/' . $rel, $tmp . '/' . $rel)) {
+                editor_rmtree($tmp);
+                return editor_complete($out, 'failure', "cannot stage $rel", $ts);
+            }
         }
     }
     foreach ($staged as $rel) {
@@ -334,7 +344,6 @@ function editor_save_cycle()
     // 4. Atomic apply: write each file as <name>.tmp then rename() over the
     //    target. Never truncate in place. The parent dir is re-checked under
     //    base immediately before each write (symlinked conf.d is refused).
-    $complete = is_file(COMPLETE_STAGING_MARKER);
     if ($complete) {
         foreach (array_diff(editor_tree_files(BASE), $staged) as $rel) {
             $target = BASE . '/' . $rel;

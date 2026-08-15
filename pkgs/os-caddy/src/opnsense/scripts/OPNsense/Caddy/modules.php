@@ -287,6 +287,11 @@ function rebuild($modules)
         'fingerprint' => $fingerprint,
         'ts' => time(),
     );
+    if (count($modules) === 0) {
+        $result['message'] = 'rebuilt caddy ' . $version . ' (no modules declared)';
+    } else {
+        $result['message'] = 'rebuilt caddy ' . $version . ' with ' . count($modules) . ' module(s)';
+    }
     file_put_contents(RESULT_FILE, json_encode($result));
     echo json_encode($result);
     exit(0);
@@ -307,6 +312,7 @@ function ensure($modules)
             'ok' => true,
             'noop' => true,
             'reason' => 'no modules declared',
+            'message' => 'no modules declared — the vanilla binary is already correct',
             'ts' => time(),
         );
         file_put_contents(RESULT_FILE, json_encode($result));

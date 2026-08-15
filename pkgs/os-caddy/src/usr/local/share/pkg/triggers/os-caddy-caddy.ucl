@@ -1,0 +1,15 @@
+# pkg trigger: rebuild the xcaddy binary when the caddy package changes.
+#
+# A caddy package upgrade replaces /usr/local/bin/caddy with a vanilla binary,
+# silently dropping every module os-caddy added via xcaddy. pkg runs this
+# trigger at the END of any transaction that installs, upgrades or removes
+# the caddy binary path, so modules are restored immediately instead of
+# waiting for the daily periodic check.
+path: "/usr/local/bin/caddy"
+trigger: {
+    type: lua
+    sandbox: false
+    script: <<EOS
+pkg.exec({"/usr/local/opnsense/scripts/OPNsense/Caddy/modules.php", "ensure"})
+EOS
+}
