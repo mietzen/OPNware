@@ -15,9 +15,12 @@ PKG_VERSION=$(pkg-tool dump "${CONFIG}" pkg_manifest.version)
 
 # The package version must track the vendored monaco-editor release; a
 # refreshed vendor without a version bump fails here instead of shipping a
-# silently mismatched package.
+# silently mismatched package. A FreeBSD revision suffix (_1) is allowed for
+# package-only changes (e.g. an added bootstrap worker) — the base version
+# still must equal the vendored monaco release.
 MONACO_VERSION=$(python3 -c "import json;print(json.load(open('${VENDOR_DIR}/monaco/package.json'))['version'])")
-if [ "${MONACO_VERSION}" != "${PKG_VERSION}" ]; then
+PKG_BASE=$(printf '%s' "${PKG_VERSION}" | sed -E 's/_[0-9]+$//')
+if [ "${MONACO_VERSION}" != "${PKG_BASE}" ]; then
     echo "ERROR: vendored monaco-editor is ${MONACO_VERSION} but config.yml says ${PKG_VERSION} — bump pkg_manifest.version"
     exit 1
 fi
