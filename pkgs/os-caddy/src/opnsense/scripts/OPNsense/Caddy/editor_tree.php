@@ -164,7 +164,7 @@ function editor_tree_seed($base = EDITOR_TREE_BASE)
     }
     $caddyfile = $base . '/Caddyfile';
     if (!is_file($caddyfile)) {
-        $seed = "{\n    log {\n        level {\$CADDY_LOG_LEVEL}\n    }\n}\n\nimport .opnware/imports.caddy\n";
+        $seed = "{\n    log {\n        level {\$CADDY_LOG_LEVEL:INFO}\n    }\n}\n\nimport .opnware/imports.caddy\n";
         if (file_put_contents($caddyfile, $seed) === false) {
             return 'cannot create Caddyfile';
         }
