@@ -27,6 +27,7 @@
 {%- endif -%}
 {
 	auto_https disable_redirects
+	admin off
 }
 
 {{ listen }} {

@@ -31,30 +31,37 @@ load_rc_config "${name}"
 : ${homer_config:="/usr/local/etc/os-homer/Caddyfile"}
 : ${homer_adapter:="caddyfile"}
 : ${homer_directory:="/var/db/os-homer/caddy"}
-: ${homer_admin:="off"}
 : ${homer_logdir:="/var/log/os-homer"}
 : ${homer_logfile:="${homer_logdir}/homer.log"}
 : ${homer_pidfile:="/var/run/os-homer/homer.pid"}
 : ${homer_user:="www"}
 : ${homer_group:="www"}
 
-# Isolated instance: own XDG roots under ${homer_directory}, admin API off
-# (CADDY_ADMIN=off), no envfile.
+# Isolated instance: own XDG roots under ${homer_directory}, no envfile.
+# The admin API is disabled via the Caddyfile global 'admin off' (generated
+# by the settings template) — CADDY_ADMIN env would be read as an address.
 XDG_CONFIG_HOME="${homer_directory}"
 XDG_DATA_HOME="${homer_directory}"
-CADDY_ADMIN="${homer_admin}"
-export XDG_CONFIG_HOME XDG_DATA_HOME CADDY_ADMIN
+export XDG_CONFIG_HOME XDG_DATA_HOME
 
 command="${homer_caddy}"
 pidfile="${homer_pidfile}"
 
-homer_flags="--config ${homer_config} --adapter ${homer_adapter} --envfile off"
+homer_flags="--config ${homer_config} --adapter ${homer_adapter}"
 
 homer_prestart()
 {
     /usr/bin/install -d -m 755 -o "${homer_user}" -g "${homer_group}" "${homer_directory}"
     /usr/bin/install -d -m 755 -o "${homer_user}" -g "${homer_group}" "${homer_logdir}"
     /usr/bin/install -d -m 755 -o "${homer_user}" -g "${homer_group}" /var/run/os-homer
+    # The settings-generated config is created root:wheel 0750/0640 by the
+    # template system; the unprivileged run user must be able to read it.
+    if [ -d "$(dirname "${homer_config}")" ]; then
+        chmod 0755 "$(dirname "${homer_config}")"
+    fi
+    if [ -f "${homer_config}" ]; then
+        chmod 0644 "${homer_config}"
+    fi
     if [ ! -f "${homer_logfile}" ]; then
         /usr/bin/install -m 644 -o "${homer_user}" -g "${homer_group}" /dev/null "${homer_logfile}"
     fi
