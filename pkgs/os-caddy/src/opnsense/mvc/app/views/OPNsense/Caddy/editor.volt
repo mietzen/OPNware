@@ -35,12 +35,13 @@
         // --- Monaco + TextMate grammar wiring -------------------------------
 
         require(['vs/editor/editor.main'], function(monaco) {
+            window.opnwareMonaco = monaco;
             monaco.languages.register({ id: 'caddyfile' });
 
             editor = monaco.editor.create(document.getElementById('editor-container'), {
                 value: document.getElementById('editor-content').value,
                 language: 'caddyfile',
-                theme: 'vs-dark',
+                theme: preferredEditorTheme(),
                 automaticLayout: true,
                 minimap: { enabled: false },
                 fontSize: 13,
@@ -49,6 +50,8 @@
                 scrollBeyondLastLine: false,
                 lineNumbersMinChars: 3
             });
+
+            syncEditorTheme();
 
             // Keep the hidden textarea (the save transport) in sync with the
             // Monaco model so the existing save flow works unchanged.
@@ -62,6 +65,36 @@
                 }
             );
         });
+
+        function preferredEditorTheme() {
+            const saved = window.localStorage.getItem('opnware-editor-theme');
+            if (saved === 'vs' || saved === 'vs-dark') {
+                return saved;
+            }
+            return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+                ? 'vs-dark' : 'vs';
+        }
+
+        function syncEditorTheme() {
+            if (!editor || !window.opnwareMonaco) {
+                return;
+            }
+            window.opnwareMonaco.editor.setTheme(preferredEditorTheme());
+            $('#editor-theme').val(preferredEditorTheme());
+        }
+
+        $('#editor-theme').change(function() {
+            window.localStorage.setItem('opnware-editor-theme', $(this).val());
+            syncEditorTheme();
+        });
+
+        if (window.matchMedia) {
+            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function() {
+                if (!window.localStorage.getItem('opnware-editor-theme')) {
+                    syncEditorTheme();
+                }
+            });
+        }
 
         // Load the vendored oniguruma wasm and register the Caddyfile TextMate
         // grammar as Monaco token provider. The grammar JSON is passed to the
@@ -132,12 +165,42 @@
                             });
                         $li.append(' ');
                         $li.append($del);
+                        const $copy = $('<button type="button" class="btn btn-xs btn-default __ml">')
+                            .text("{{ lang._('Copy') }}")
+                            .click(function(e) {
+                                e.stopPropagation();
+                                copyOrMoveFile(file.path, false);
+                            });
+                        const $move = $('<button type="button" class="btn btn-xs btn-default __ml">')
+                            .text("{{ lang._('Move') }}")
+                            .click(function(e) {
+                                e.stopPropagation();
+                                copyOrMoveFile(file.path, true);
+                            });
+                        $li.append($copy).append($move);
                     }
                     $list.append($li);
                 });
                 if (!(data.files || []).length) {
                     $list.append($('<li>').text("{{ lang._('No files yet') }}"));
                 }
+            });
+        }
+
+        function copyOrMoveFile(path, move) {
+            const name = window.prompt(
+                move ? "{{ lang._('Move to filename in conf.d') }}" : "{{ lang._('Copy to filename in conf.d') }}",
+                ''
+            );
+            if (!name) {
+                return;
+            }
+            $.post('/api/caddy/editor/' + (move ? 'move' : 'copy'), {path: path, name: name}, function(data) {
+                if (data.status !== 'ok') {
+                    showError(data.message);
+                    return;
+                }
+                loadTree();
             });
         }
 
@@ -474,22 +537,15 @@
     });
 </script>
 
-<div id="editor-status" class="content-box __mb" style="padding-bottom: 1.5em;">
-    <div class="content-box-main">
-        <h2>{{ lang._('Last save / reload') }}</h2>
-        <table class="table table-striped table-condensed">
-            <tbody>
-                <tr><td class="text-muted">{{ lang._('Last save') }}</td><td id="status-last-save"></td></tr>
-                <tr><td class="text-muted">{{ lang._('Result') }}</td><td id="status-result"></td></tr>
-                <tr><td class="text-muted">{{ lang._('Rolled back') }}</td><td id="status-rollback"></td></tr>
-                <tr><td class="text-muted">{{ lang._('Message') }}</td><td id="status-message"></td></tr>
-            </tbody>
-        </table>
-    </div>
-</div>
-
 <div id="editor-result" class="alert" style="display:none;"></div>
 
+<ul class="nav nav-tabs" role="tablist">
+    <li class="active"><a href="#editor-files-tab" data-toggle="tab">{{ lang._('Files') }}</a></li>
+    <li><a href="#editor-environment-tab" data-toggle="tab">{{ lang._('Environment') }}</a></li>
+</ul>
+
+<div class="tab-content">
+<div id="editor-files-tab" class="tab-pane active">
 <div class="row">
     <div class="col-md-3">
         <div class="content-box __mb" style="padding-bottom: 1.5em;">
@@ -509,7 +565,16 @@
     <div class="col-md-9">
         <div class="content-box __mb" style="padding-bottom: 1.5em;">
             <div class="content-box-main">
-                <h2 id="editor-name">{{ lang._('Caddyfile') }}</h2>
+                <div class="row">
+                    <div class="col-md-8"><h2 id="editor-name">{{ lang._('Caddyfile') }}</h2></div>
+                    <div class="col-md-4 text-right __mt">
+                        <label class="text-muted" for="editor-theme">{{ lang._('Theme') }}</label>
+                        <select id="editor-theme" class="form-control input-sm" style="display:inline-block; width:auto;">
+                            <option value="vs">{{ lang._('Light') }}</option>
+                            <option value="vs-dark">{{ lang._('Dark') }}</option>
+                        </select>
+                    </div>
+                </div>
                 <p><small class="text-muted"><code id="editor-path"></code></small></p>
                 <div id="editor-container" style="height: 450px; border: 1px solid #1d2733; border-radius: 4px; overflow: hidden;"></div>
                 {# Hidden transport for the existing save cycle — the Monaco model mirrors its value. #}
@@ -519,6 +584,12 @@
             <div class="col-md-12 __mt">
                 <hr/>
                 <button id="save-editor" type="button" class="btn btn-primary"><b>{{ lang._('Save') }}</b></button>
+                <span id="editor-status" class="text-muted __ml">
+                    {{ lang._('Last save') }}: <span id="status-last-save">-</span>
+                    · <span id="status-result">-</span>
+                    · <span id="status-rollback">-</span>
+                    · <span id="status-message">-</span>
+                </span>
             </div>
             <div class="content-box-main" style="padding-top: 5px;">
                 <span class="help-block">{{ lang._('Saving validates the whole Caddy file tree first; invalid configuration is rejected without writing anything.') }}</span>
@@ -526,7 +597,9 @@
         </div>
     </div>
 </div>
+</div>
 
+<div id="editor-environment-tab" class="tab-pane">
 <div id="env-panel" class="content-box __mb" style="padding-bottom: 1.5em;">
     <div class="content-box-main">
         <h2>{{ lang._('Environment') }}</h2>
@@ -558,4 +631,6 @@
     <div class="content-box-main" style="padding-top: 5px; padding-bottom: 15px;">
         <div id="env-result" class="alert" style="display:none;"></div>
     </div>
+</div>
+</div>
 </div>

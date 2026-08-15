@@ -273,6 +273,46 @@ class EditorController extends ApiControllerBase
         return array('status' => 'ok', 'message' => 'created');
     }
 
+    /** Copy one conf.d file to another whitelisted conf.d filename. */
+    public function copyAction()
+    {
+        return $this->copyOrMove(false);
+    }
+
+    /** Move one conf.d file to another whitelisted conf.d filename. */
+    public function moveAction()
+    {
+        return $this->copyOrMove(true);
+    }
+
+    private function copyOrMove($move)
+    {
+        $source = $this->treeRelPath($this->request->get('path'));
+        $name = $this->request->get('name');
+        if ($source === null || $source === 'Caddyfile'
+                || !is_string($name)
+                || !preg_match('/^[A-Za-z0-9._-]+\.caddy$/', $name)) {
+            return array('status' => 'failure', 'message' => 'only conf.d/*.caddy files can be copied or moved');
+        }
+
+        $sourcePath = self::BASE . '/' . $source;
+        $targetPath = self::BASE . '/conf.d/' . $name;
+        if (!$this->underBase($sourcePath) || is_link(self::BASE . '/conf.d')) {
+            return array('status' => 'failure', 'message' => 'invalid or symlinked file tree');
+        }
+        if (!is_file($sourcePath)) {
+            return array('status' => 'failure', 'message' => 'source file does not exist');
+        }
+        if (file_exists($targetPath)) {
+            return array('status' => 'failure', 'message' => 'target file already exists');
+        }
+
+        if ($move ? !rename($sourcePath, $targetPath) : !copy($sourcePath, $targetPath)) {
+            return array('status' => 'failure', 'message' => $move ? 'cannot move file' : 'cannot copy file');
+        }
+        return array('status' => 'ok', 'message' => $move ? 'moved' : 'copied');
+    }
+
     /**
      * Delete a conf.d/*.caddy file. Caddyfile itself is never deleted.
      * @return array

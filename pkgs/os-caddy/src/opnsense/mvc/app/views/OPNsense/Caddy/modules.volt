@@ -93,7 +93,7 @@
                 <div class="col-sm-10">
                     <textarea id="caddy.general.Modules" class="form-control" rows="8"
                               placeholder="github.com/caddy-dns/cloudflare"></textarea>
-                    <span class="help-block">{{ lang._('One Go module path per line. The caddy binary is rebuilt pinned to the installed version; a failed rebuild never replaces the running binary.') }}</span>
+                    <span class="help-block">{{ lang._('Add one Go module path per line. Save the list, then use Install / Rebuild to compile a caddy binary pinned to the installed version. A failed rebuild never replaces the running binary.') }}</span>
                 </div>
             </div>
         </div>
@@ -101,7 +101,7 @@
     <div class="col-md-12">
         <hr/>
         <button id="save_modules" type="button" class="btn btn-primary"><b>{{ lang._('Save') }}</b></button>
-        <button id="rebuild_modules" type="button" class="btn btn-warning __ml"><b>{{ lang._('Rebuild') }}</b></button>
+        <button id="rebuild_modules" type="button" class="btn btn-warning __ml"><b>{{ lang._('Install / Rebuild') }}</b></button>
         <button id="ensure_modules" type="button" class="btn btn-info __ml"><b>{{ lang._('Check') }}</b></button>
     </div>
 </form>
