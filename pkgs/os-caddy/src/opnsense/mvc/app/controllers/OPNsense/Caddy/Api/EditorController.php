@@ -18,7 +18,7 @@ class EditorController extends ApiControllerBase
     const BASE = '/usr/local/etc/caddy';
     const STAGING_DIR = '/var/db/os-caddy/editor_staging';
     const STATUS_FILE = '/var/db/os-caddy/editor_status.json';
-    const STAGING_MARKER = STAGING_DIR . '/.complete';
+    const STAGING_MARKER = self::STAGING_DIR . '/.complete';
 
     /**
      * Seed the user-owned Caddyfile on first access: create it with the
