@@ -255,6 +255,9 @@ class EditorController extends ApiControllerBase
         if (!is_dir(self::BASE . '/conf.d') && !mkdir(self::BASE . '/conf.d', 0755, true)) {
             return array('status' => 'failure', 'message' => 'cannot create conf.d');
         }
+        if (is_link(self::BASE . '/conf.d') || !$this->underBase($file)) {
+            return array('status' => 'failure', 'message' => 'conf.d must not be a symlink');
+        }
         if (file_put_contents($file, '') === false) {
             return array('status' => 'failure', 'message' => 'cannot create file');
         }

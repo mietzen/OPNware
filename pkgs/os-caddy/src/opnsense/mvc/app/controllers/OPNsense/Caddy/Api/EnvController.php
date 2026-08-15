@@ -215,6 +215,20 @@ class EnvController extends ApiControllerBase
         }
 
         $envfile = $this->envfilePath();
+
+        // Serialize with the other envfile writers (setup.php, dockerproxy.php)
+        // on the same lock so a concurrent reconfigure never loses rows.
+        if (!is_dir('/var/run/os-caddy')) {
+            @mkdir('/var/run/os-caddy', 0755, true);
+        }
+        $lock = @fopen('/var/run/os-caddy/env.lock', 'c');
+        if ($lock === false || !flock($lock, LOCK_EX)) {
+            if ($lock !== false) {
+                fclose($lock);
+            }
+            return array('status' => 'failure', 'message' => 'cannot acquire envfile lock');
+        }
+
         $current = $this->readRows($envfile);
         $currentValue = array();
         foreach ($current as $row) {
@@ -247,8 +261,13 @@ class EnvController extends ApiControllerBase
         $content = implode("\n", $lines) . "\n";
 
         if (!$this->writeAtomic($envfile, $content)) {
+            flock($lock, LOCK_UN);
+            fclose($lock);
             return array('status' => 'failure', 'message' => 'cannot write ' . $envfile);
         }
+
+        flock($lock, LOCK_UN);
+        fclose($lock);
 
         return array(
             'status' => 'ok',

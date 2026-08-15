@@ -1,0 +1,20 @@
+---
+build_config:
+  include: {}
+pkg_manifest:
+  name: editor
+  origin: opnware/editor
+  version: 0.1.0
+  comment: Shared vendored Monaco editor assets for the OPNsense WebUI
+  www: https://microsoft.github.io/monaco-editor/
+  maintainer: github.nstein@mailbox.org
+  prefix: /usr/local
+  licenselogic: single
+  licenses:
+    - MIT
+  desc: |
+    Shared vendored Monaco editor + TextMate stack served from
+    /usr/local/opnsense/www/js/vendor. Owned by this package so os-caddy
+    and os-homer can both depend on it without pkg file-ownership
+    conflicts. Source of truth for the vendored tree:
+    pkgs/os-caddy/assets/vendor (the single checked-in copy).

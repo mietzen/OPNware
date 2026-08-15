@@ -39,12 +39,9 @@ chmod 0755 "${DIST_ROOT}/dist/pkg/usr/local"
 cp -R "${SCRIPT_DIR}/src/." "${DIST_ROOT}/dist/pkg/usr/local/"
 
 # Shared vendored editor assets -> /opnsense/www/js/vendor (served as /ui/js/vendor).
-# Single repo-level copy lives in the sibling os-caddy plugin; consumers copy
-# the same tree. See docs/design/shared-editor-vendor.md.
-if [ -d "${SCRIPT_DIR}/../os-caddy/assets/vendor" ]; then
-    mkdir -p "${DIST_ROOT}/dist/pkg/usr/local/opnsense/www/js/vendor"
-    cp -R "${SCRIPT_DIR}/../os-caddy/assets/vendor/." "${DIST_ROOT}/dist/pkg/usr/local/opnsense/www/js/vendor/"
-fi
+# The vendored Monaco/TextMate tree ships in the shared `editor` package
+# (both plugins depend on it) — not copied into plugin payloads, so pkg
+# never sees duplicate file ownership. See docs/design/shared-editor-vendor.md.
 
 # The rc.d script is staged usr/local-prefixed in the plugin tree (everything
 # else in src is /usr/local-relative); relocate it to the payload's

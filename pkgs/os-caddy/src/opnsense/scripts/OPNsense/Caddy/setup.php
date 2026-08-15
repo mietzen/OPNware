@@ -14,6 +14,7 @@
 use OPNsense\Core\Config;
 
 require_once 'config.inc';
+require_once 'envfile.php';
 
 $config = Config::getInstance()->object();
 
@@ -22,40 +23,28 @@ if (isset($config->OPNsense->caddy->general->LogLevel)) {
     $level = (string)$config->OPNsense->caddy->general->LogLevel;
 }
 
-$envfile = '/usr/local/etc/caddy/env';
-if (isset($config->OPNsense->caddy->general->EnvFile)) {
-    $envfile = (string)$config->OPNsense->caddy->general->EnvFile;
-}
-
+$envfile = envfile_path();
 if ($envfile === '') {
     echo 'OK';
     exit(0);
 }
 
-$dir = dirname($envfile);
-if (!is_dir($dir) && !mkdir($dir, 0755, true)) {
-    echo "ERROR: cannot create $dir";
+$lock = envfile_acquire();
+if ($lock === false) {
+    echo 'ERROR: cannot acquire envfile lock';
     exit(1);
 }
 
-$lines = array();
-if (is_file($envfile)) {
-    $lines = file($envfile, FILE_IGNORE_NEW_LINES);
-}
+$rows = envfile_read_rows($envfile);
+envfile_set_row($rows, 'CADDY_LOG_LEVEL', $level);
+$error = envfile_write_atomic($envfile, $rows);
 
-$found = false;
-foreach ($lines as $i => $line) {
-    if (preg_match('/^CADDY_LOG_LEVEL=/', $line)) {
-        $lines[$i] = "CADDY_LOG_LEVEL=$level";
-        $found = true;
-    }
-}
-if (!$found) {
-    $lines[] = "CADDY_LOG_LEVEL=$level";
-}
+envfile_release($lock);
 
-file_put_contents($envfile, implode("\n", $lines) . "\n");
-chmod($envfile, 0600);
+if ($error !== null) {
+    echo "ERROR: $error";
+    exit(1);
+}
 
 echo 'OK';
 exit(0);

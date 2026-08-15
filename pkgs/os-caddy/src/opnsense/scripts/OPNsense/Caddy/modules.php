@@ -24,9 +24,46 @@ const CADDY_BIN = '/usr/local/bin/caddy';
 const XCADDY_BIN = '/usr/local/bin/xcaddy';
 const STATE_DIR = '/var/db/os-caddy';
 const RUN_DIR = '/var/run/os-caddy';
-const TEMP_BIN = '/tmp/opnware-caddy.new';
+const WORK_DIR = STATE_DIR . '/work';            // 0700 — rebuild staging
+const TEMP_BIN = WORK_DIR . '/caddy.new';
+const LOCK_FILE = RUN_DIR . '/modules.lock';
 const RESULT_FILE = STATE_DIR . '/modules_result.json';
 const FINGERPRINT_FILE = STATE_DIR . '/build.fingerprint';
+
+/**
+ * The canonical declared-set hash: sha256 of the sorted, newline-joined set.
+ * Persisted with the build fingerprint so ensure() can require exact-set
+ * equality (replacing module A with B must trigger a rebuild even when both
+ * are present in the binary).
+ */
+function moduleset_hash($modules)
+{
+    $sorted = $modules;
+    sort($sorted, SORT_STRING);
+    return hash('sha256', implode("\n", $sorted));
+}
+
+/**
+ * Take the exclusive rebuild lock. Serializes concurrent rebuild/ensure runs
+ * on the same binary; returns the handle or false.
+ */
+function rebuild_acquire()
+{
+    foreach (array(STATE_DIR, RUN_DIR) as $dir) {
+        if (!is_dir($dir) && !mkdir($dir, 0755, true)) {
+            return false;
+        }
+        chmod($dir, 0755);
+    }
+    $lock = fopen(LOCK_FILE, 'c');
+    if ($lock === false || !flock($lock, LOCK_EX)) {
+        if ($lock !== false) {
+            fclose($lock);
+        }
+        return false;
+    }
+    return $lock;
+}
 
 /**
  * Write the failure result and exit non-zero. Never leaves a partial binary.
@@ -153,12 +190,15 @@ function rebuild($modules)
 {
     $version = installed_version();
 
-    foreach (array(STATE_DIR, RUN_DIR, STATE_DIR . '/gocache') as $dir) {
-        if (!is_dir($dir) && !mkdir($dir, 0755, true)) {
-            fail("cannot create $dir");
-        }
-        chmod($dir, 0755);
+    $lock = rebuild_acquire();
+    if ($lock === false) {
+        fail('cannot acquire rebuild lock');
     }
+
+    if (!is_dir(WORK_DIR) && !mkdir(WORK_DIR, 0700, true)) {
+        fail('cannot create work directory');
+    }
+    chmod(WORK_DIR, 0700);
 
     if (file_exists(TEMP_BIN)) {
         unlink(TEMP_BIN);
@@ -178,6 +218,8 @@ function rebuild($modules)
         if (file_exists(TEMP_BIN)) {
             unlink(TEMP_BIN);
         }
+        flock($lock, LOCK_UN);
+        fclose($lock);
         fail('xcaddy build failed', implode("\n", $out));
     }
 
@@ -187,15 +229,22 @@ function rebuild($modules)
     // atomic swap (same filesystem); the old binary stays until this succeeds
     if (!rename(TEMP_BIN, CADDY_BIN)) {
         unlink(TEMP_BIN);
+        flock($lock, LOCK_UN);
+        fclose($lock);
         fail('cannot swap new binary into place');
     }
     chmod(CADDY_BIN, 0755);
 
     $fingerprint = hash_file('sha256', CADDY_BIN);
     if ($fingerprint === false) {
+        flock($lock, LOCK_UN);
+        fclose($lock);
         fail('cannot fingerprint installed binary');
     }
-    file_put_contents(FINGERPRINT_FILE, $fingerprint . "\n");
+    file_put_contents(FINGERPRINT_FILE, $fingerprint . ' ' . moduleset_hash($modules) . "\n");
+
+    flock($lock, LOCK_UN);
+    fclose($lock);
 
     $result = array(
         'ok' => true,
@@ -210,13 +259,17 @@ function rebuild($modules)
 
 /**
  * Self-healing check: rebuild only when the stored fingerprint no longer
- * matches the installed binary or a declared module is missing.
+ * matches the installed binary or the installed module set differs from the
+ * declared set (exact equality — a replaced module must trigger a rebuild).
  */
 function ensure($modules)
 {
     $stored = '';
+    $stored_set = '';
     if (is_file(FINGERPRINT_FILE)) {
-        $stored = trim(file_get_contents(FINGERPRINT_FILE));
+        $parts = explode(' ', trim(file_get_contents(FINGERPRINT_FILE)), 2);
+        $stored = $parts[0];
+        $stored_set = isset($parts[1]) ? $parts[1] : '';
     }
 
     $current = '';
@@ -225,13 +278,18 @@ function ensure($modules)
     }
 
     $up_to_date = $stored !== '' && $stored === $current;
-    if ($up_to_date && !empty($modules)) {
-        $packages = list_module_packages(CADDY_BIN);
-        foreach ($modules as $module) {
-            if (!in_array($module, $packages, true)) {
-                $up_to_date = false;
-                break;
+    if ($up_to_date) {
+        $set_hash = moduleset_hash($modules);
+        if ($set_hash === $stored_set) {
+            $packages = list_module_packages(CADDY_BIN);
+            foreach ($modules as $module) {
+                if (!in_array($module, $packages, true)) {
+                    $up_to_date = false;
+                    break;
+                }
             }
+        } else {
+            $up_to_date = false;
         }
     }
 

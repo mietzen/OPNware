@@ -8,16 +8,13 @@ CONFIG="${SCRIPT_DIR}/config.yml"
 REPO_ROOT=$( cd "${SCRIPT_DIR}/../.." && pwd )
 DIST_ROOT="${GITHUB_WORKSPACE:-${REPO_ROOT}}"
 
-echo "Building os-caddy - ARCH: ${ARCH} - ABI: ${ABI}"
+echo "Building editor - ARCH: ${ARCH} - ABI: ${ABI}"
 
-mkdir -p "${DIST_ROOT}/dist/pkg/usr/local"
-chmod 0755 "${DIST_ROOT}/dist/pkg/usr/local"
-cp -R "${SCRIPT_DIR}/src/." "${DIST_ROOT}/dist/pkg/usr/local/"
+mkdir -p "${DIST_ROOT}/dist/pkg/usr/local/opnsense/www/js"
+chmod 0755 "${DIST_ROOT}/dist/pkg/usr/local/opnsense/www/js"
 
-# The vendored Monaco/TextMate tree ships in the shared `editor` package
-# (both plugins depend on it) — it is NOT copied into plugin payloads, so
-# pkg never sees duplicate file ownership. See docs/design/shared-editor-vendor.md.
-
+# Source of truth: the vendored tree lives in the os-caddy plugin source.
+cp -R "${REPO_ROOT}/pkgs/os-caddy/assets/vendor/." "${DIST_ROOT}/dist/pkg/usr/local/opnsense/www/js/vendor/"
 find "${DIST_ROOT}/dist/pkg/usr/local" -type d -exec chmod 0755 {} +
 find "${DIST_ROOT}/dist/pkg/usr/local" -type f -exec chmod 0644 {} +
 

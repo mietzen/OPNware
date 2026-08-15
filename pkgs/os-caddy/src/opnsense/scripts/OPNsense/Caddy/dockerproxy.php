@@ -21,6 +21,7 @@
 use OPNsense\Core\Config;
 
 require_once 'config.inc';
+require_once 'envfile.php';
 
 /**
  * Plugin-owned env var names. Rows with these names are rewritten or removed
@@ -49,10 +50,7 @@ $dockerproxy = $config->OPNsense->caddy->dockerproxy;
 
 // The envfile is the plugin-managed one (general.EnvFile), same file setup.php
 // and the editor grid operate on.
-$envfile = '/usr/local/etc/caddy/env';
-if (isset($config->OPNsense->caddy->general->EnvFile)) {
-    $envfile = (string)$config->OPNsense->caddy->general->EnvFile;
-}
+$envfile = envfile_path();
 
 if ($envfile === '') {
     echo 'OK';
@@ -89,45 +87,27 @@ if ($enabled === '1') {
     }
 }
 
-$dir = dirname($envfile);
-if (!is_dir($dir) && !mkdir($dir, 0755, true)) {
-    echo "ERROR: cannot create $dir";
+$lock = envfile_acquire();
+if ($lock === false) {
+    echo 'ERROR: cannot acquire envfile lock';
     exit(1);
 }
 
-$lines = array();
-if (is_file($envfile)) {
-    $lines = file($envfile, FILE_IGNORE_NEW_LINES);
-}
+$lines = envfile_read_rows($envfile);
 
 // Keep every non-owned row, drop owned rows that are not set in the config.
-$keep = array();
-foreach ($lines as $line) {
-    if (preg_match('/^([A-Za-z_][A-Za-z0-9_]*)=/', $line, $m)) {
-        if (in_array($m[1], $owned, true)) {
-            continue;
-        }
-    }
-    $keep[] = $line;
-}
+envfile_unset_rows($lines, $owned);
 
 foreach ($rows as $name => $value) {
-    $keep[] = $name . '=' . $value;
+    envfile_set_row($lines, $name, $value);
 }
 
-$content = implode("\n", $keep) . "\n";
+$error = envfile_write_atomic($envfile, $lines);
 
-// Atomic write: temp file in the same directory, 0600, then rename over the
-// target. The target is never truncated in place.
-$tmp = $dir . '/.env-' . uniqid() . '.tmp';
-if (file_put_contents($tmp, $content) === false) {
-    echo "ERROR: cannot write $tmp";
-    exit(1);
-}
-chmod($tmp, 0600);
-if (!rename($tmp, $envfile)) {
-    @unlink($tmp);
-    echo "ERROR: cannot replace $envfile";
+envfile_release($lock);
+
+if ($error !== null) {
+    echo "ERROR: $error";
     exit(1);
 }
 

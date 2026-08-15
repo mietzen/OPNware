@@ -28,3 +28,6 @@ pkg_manifest:
     caddy:
       origin: opnware/caddy
       version: ">=2.11.4, <3.0.0"
+    editor:
+      origin: opnware/editor
+      version: ">=0.1.0"

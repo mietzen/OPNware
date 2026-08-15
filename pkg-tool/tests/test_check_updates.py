@@ -137,6 +137,26 @@ pkg_manifest:
     assert matrix == {"pkg": [], "include": []}
 
 
+def test_static_asset_specs_are_skipped_not_errors(tmp_path):
+    static_spec = """\
+build_config:
+  include: {}
+pkg_manifest:
+  name: editor
+  origin: opnware/editor
+  version: 0.1.0
+  comment: static assets
+  www: https://example.com
+  maintainer: test@example.com
+  prefix: /usr/local
+"""
+    make_repo(tmp_path, {"editor": static_spec})
+
+    matrix = check_updates(str(tmp_path / 'pkgs'))
+
+    assert matrix == {"pkg": [], "include": []}
+
+
 def test_sourceforge_adapter_detects_newer_version(tmp_path, monkeypatch):
     sf_spec = GH_SPEC.replace(
         "src_repo: 'https://github.com/0xERR0R/blocky'",

@@ -38,24 +38,25 @@ packages; `package.json`/license files are kept alongside for provenance.
 > `vscode-textmate` + `vscode-oniguruma` stack (the stack VS Code itself uses
 > today). Same API, current engine, no dead deps.
 
-## How a plugin's build.sh ships it into the payload
+## How the vendor reaches the WebUI — the shared `editor` package
 
 OPNsense serves `/opnsense/www/js/...` as the `/ui/js/...` URL prefix, so the
-vendor tree must land under `/usr/local/opnsense/www/js/vendor/`. os-caddy
-copies it verbatim in `pkgs/os-caddy/build.sh`:
+vendor tree must land under `/usr/local/opnsense/www/js/vendor/`. The files
+are owned by the **`editor` package** (`pkgs/editor/`), a plain payload
+package whose build.sh copies the checked-in `pkgs/os-caddy/assets/vendor/`
+tree into the payload:
 
 ```bash
-# Shared vendored editor assets -> /opnsense/www/js/vendor (served as /ui/js/vendor).
-# Shared repo-level asset; other plugins copy the same tree. See docs/design/shared-editor-vendor.md.
-if [ -d "${SCRIPT_DIR}/assets/vendor" ]; then
-    mkdir -p "${DIST_ROOT}/dist/pkg/usr/local/opnsense/www/js/vendor"
-    cp -R "${SCRIPT_DIR}/assets/vendor/." "${DIST_ROOT}/dist/pkg/usr/local/opnsense/www/js/vendor/"
-fi
+# pkgs/editor/build.sh
+cp -R "${REPO_ROOT}/pkgs/os-caddy/assets/vendor/." \
+      "${DIST_ROOT}/dist/pkg/usr/local/opnsense/www/js/vendor/"
 ```
 
-A consumer plugin either copies the same `pkgs/os-caddy/assets/vendor/` tree
-in its own build.sh, or (in a future refactor) installs `os-caddy` as a
-dependency and reads `/usr/local/opnsense/www/js/vendor/` from disk.
+Both plugins declare it as a pkg dependency (`deps: editor: opnware/editor`),
+so `pkg` installs it first and no plugin payload ever owns the vendor files.
+This is deliberate: shipping the same files in two plugin payloads would make
+`pkg` refuse co-installation (duplicate file ownership). Never copy the
+vendor into a plugin payload — change the `editor` package instead.
 
 ## How a volt page loads Monaco and registers a language
 

@@ -828,7 +828,7 @@ def check_updates(pkgs_dir='pkgs'):
             elif 'sf.net' in src_repo:
                 remote = _sf_latest_version(src_repo)
             else:
-                raise ValueError(f"{config_file}: no version source for {src_repo}")
+                continue  # static asset packages (e.g. the shared editor) have no remote version source
             if str(remote) != local:
                 matrix['pkg'].append(pkg_name)
                 matrix['include'].append({'pkg': pkg_name, 'abi_arch': 'ALL', 'version': remote})

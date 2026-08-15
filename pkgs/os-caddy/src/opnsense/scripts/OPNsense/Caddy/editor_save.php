@@ -75,6 +75,35 @@ function editor_under_base($path, $base)
 }
 
 /**
+ * Whether a write to $target (under $base) is safe: the parent directory must
+ * resolve to a real location under $base and must not be a symlink. This is
+ * checked immediately before every write so a swapped/symlinked conf.d can
+ * never redirect a rename() outside the tree.
+ */
+function editor_write_target_ok($target, $base)
+{
+    $dir = dirname($target);
+    if (is_link($dir)) {
+        return false;
+    }
+    $real = realpath($dir);
+    if ($real === false) {
+        if (!mkdir($dir, 0755, true)) {
+            return false;
+        }
+        $real = realpath($dir);
+        if ($real === false) {
+            return false;
+        }
+    }
+    $real_base = realpath($base);
+    if ($real_base === false) {
+        return false;
+    }
+    return $real === $real_base || strpos($real, $real_base . '/') === 0;
+}
+
+/**
  * Relative paths of the flat tree files present under $base (Caddyfile plus
  * conf.d/*.caddy, files only, no subdirectories).
  */
@@ -199,7 +228,9 @@ function editor_reload()
 function editor_restore_snapshot($snapshot)
 {
     foreach (editor_tree_files($snapshot) as $rel) {
-        editor_copy_file($snapshot . '/' . $rel, BASE . '/' . $rel);
+        if (editor_write_target_ok(BASE . '/' . $rel, BASE)) {
+            editor_copy_file($snapshot . '/' . $rel, BASE . '/' . $rel);
+        }
     }
     foreach (editor_tree_files(BASE) as $rel) {
         if (!is_file($snapshot . '/' . $rel)) {
@@ -312,15 +343,16 @@ function editor_save_cycle()
     }
 
     // 4. Atomic apply: write each file as <name>.tmp then rename() over the
-    //    target. Never truncate in place.
+    //    target. Never truncate in place. The parent dir is re-checked under
+    //    base immediately before each write (symlinked conf.d is refused).
     foreach ($staged as $rel) {
         $target = BASE . '/' . $rel;
-        $tmpfile = $target . '.tmp';
-        if (!is_dir(dirname($target)) && !mkdir(dirname($target), 0755, true)) {
+        if (!editor_write_target_ok($target, BASE)) {
             editor_restore_snapshot($snapshot);
             editor_rmtree($tmp);
             return editor_complete($out, 'failure', "cannot write $rel", $ts, true);
         }
+        $tmpfile = $target . '.tmp';
         if (!copy(STAGING_DIR . '/' . $rel, $tmpfile)) {
             @unlink($tmpfile);
             editor_restore_snapshot($snapshot);
