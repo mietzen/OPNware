@@ -1,0 +1,8 @@
+<menu>
+    <Services>
+        <Caddy cssClass="fa fa-server fa-fw">
+            <General VisibleName="General Settings" order="10" url="/ui/caddy/general"/>
+            <Log VisibleName="Log File" order="50" url="/ui/diagnostics/log/core/caddy"/>
+        </Caddy>
+    </Services>
+</menu>

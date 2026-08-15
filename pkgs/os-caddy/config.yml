@@ -1,0 +1,26 @@
+---
+build_config:
+  include: {}
+plugin:
+  opnsense_version: "26.7"
+  tier: 3
+  conflicts:
+    - os-caddy
+pkg_manifest:
+  name: caddy
+  origin: opnware/os-caddy
+  version: 0.1.0
+  comment: Caddy web server plugin
+  www: https://caddyserver.com/
+  maintainer: github.nstein@mailbox.org
+  prefix: /usr/local
+  licenselogic: single
+  licenses:
+    - BSD2CLAUSE
+  desc: |
+    OPNware os-caddy: WebUI-managed Caddy web server with a user-owned
+    Caddyfile editor, module management and docker-proxy support.
+  deps:
+    caddy:
+      origin: opnware/caddy
+      version: ">=2.11.4, <3.0.0"

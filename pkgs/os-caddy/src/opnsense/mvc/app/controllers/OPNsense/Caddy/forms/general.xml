@@ -1,0 +1,38 @@
+<form>
+    <tab id="general-settings" description="General Settings">
+        <field>
+            <id>caddy.general.enabled</id>
+            <label>Enable Caddy</label>
+            <type>checkbox</type>
+            <help>Enable or disable the Caddy web server.</help>
+        </field>
+        <field>
+            <id>caddy.general.RunUser</id>
+            <label>Run user</label>
+            <type>text</type>
+            <hint>root</hint>
+            <help>User the caddy process runs as. The redistributed caddy package recommends www:www for unprivileged operation (needs privileged port binding for 80/443, e.g. security/portacl-rc).</help>
+        </field>
+        <field>
+            <id>caddy.general.RunGroup</id>
+            <label>Run group</label>
+            <type>text</type>
+            <hint>wheel</hint>
+            <help>Group the caddy process runs as.</help>
+        </field>
+        <field>
+            <id>caddy.general.LogLevel</id>
+            <label>Log level</label>
+            <type>dropdown</type>
+            <help>Minimum log level for the caddy process. Delivered to the process as the CADDY_LOG_LEVEL env var (via the envfile); the seeded Caddyfile references it in its global log block. Once the Caddyfile is user-owned, the referenced value wins.</help>
+        </field>
+        <field>
+            <id>caddy.general.EnvFile</id>
+            <label>Environment file</label>
+            <type>text</type>
+            <hint>/usr/local/etc/caddy/env</hint>
+            <help>Secrets and tuning env vars delivered to the caddy process via --envfile. Managed as a masked grid on the editor page.</help>
+        </field>
+    </tab>
+    <activetab>general-settings</activetab>
+</form>

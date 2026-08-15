@@ -1,0 +1,20 @@
+#!/bin/bash
+set -e
+
+ARCH="${1}"
+ABI="${2}"
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+CONFIG="${SCRIPT_DIR}/config.yml"
+REPO_ROOT=$( cd "${SCRIPT_DIR}/../.." && pwd )
+DIST_ROOT="${GITHUB_WORKSPACE:-${REPO_ROOT}}"
+
+echo "Building os-caddy - ARCH: ${ARCH} - ABI: ${ABI}"
+
+mkdir -p "${DIST_ROOT}/dist/pkg/usr/local"
+chmod 0755 "${DIST_ROOT}/dist/pkg/usr/local"
+cp -R "${SCRIPT_DIR}/src/." "${DIST_ROOT}/dist/pkg/usr/local/"
+find "${DIST_ROOT}/dist/pkg/usr/local" -type d -exec chmod 0755 {} +
+find "${DIST_ROOT}/dist/pkg/usr/local" -type f -exec chmod 0644 {} +
+
+cd "${DIST_ROOT}/dist"
+pkg-tool pack "${CONFIG}" --abi "${ABI}" --arch "${ARCH}"

@@ -1,0 +1,6 @@
+OPNware os-caddy: WebUI-managed Caddy web server for OPNsense.
+
+Process-level settings (enabled, run user/group, log level, envfile path),
+a user-owned Caddyfile editor, xcaddy-pinned module management with a
+self-healing lifecycle, and docker-proxy connection options. Logs appear
+in the core Diagnostics viewer.

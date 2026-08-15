@@ -1,0 +1,36 @@
+<model>
+    <mount>//OPNsense/caddy</mount>
+    <description>Caddy Web Server</description>
+    <version>1.0.0</version>
+    <items>
+        <general>
+            <enabled type="BooleanField">
+                <Default>0</Default>
+                <Required>Y</Required>
+            </enabled>
+            <RunUser type="TextField">
+                <Default>root</Default>
+                <Required>Y</Required>
+            </RunUser>
+            <RunGroup type="TextField">
+                <Default>wheel</Default>
+                <Required>Y</Required>
+            </RunGroup>
+            <LogLevel type="OptionField">
+                <BlankDesc>INFO (default)</BlankDesc>
+                <OptionValues>
+                    <DEBUG>DEBUG</DEBUG>
+                    <INFO>INFO</INFO>
+                    <WARN>WARN</WARN>
+                    <ERROR>ERROR</ERROR>
+                    <PANIC>PANIC</PANIC>
+                    <FATAL>FATAL</FATAL>
+                </OptionValues>
+            </LogLevel>
+            <EnvFile type="TextField">
+                <Default>/usr/local/etc/caddy/env</Default>
+                <Required>Y</Required>
+            </EnvFile>
+        </general>
+    </items>
+</model>
