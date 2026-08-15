@@ -96,7 +96,7 @@ class EnvController extends ApiControllerBase
      *
      * @return array
      */
-    public function getEnvAction()
+    public function getAction()
     {
         $envfile = $this->envfilePath();
         $rows = array();
@@ -131,7 +131,7 @@ class EnvController extends ApiControllerBase
      *
      * @return array
      */
-    public function revealEnvAction()
+    public function revealAction()
     {
         $name = $this->request->get('name');
         if (!is_string($name) || !preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/', $name)) {
@@ -165,7 +165,7 @@ class EnvController extends ApiControllerBase
      *
      * @return array
      */
-    public function saveEnvAction()
+    public function saveAction()
     {
         $rows = $this->request->get('rows');
         if (!is_array($rows)) {

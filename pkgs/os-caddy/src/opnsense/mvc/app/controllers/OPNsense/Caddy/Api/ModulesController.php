@@ -28,7 +28,7 @@ class ModulesController extends ApiMutableModelControllerBase
      * @return array
      * @throws \ReflectionException
      */
-    public function getModulesAction()
+    public function getAction()
     {
         return $this->getAction();
     }
@@ -38,7 +38,7 @@ class ModulesController extends ApiMutableModelControllerBase
      * @return array
      * @throws \ReflectionException
      */
-    public function setModulesAction()
+    public function setAction()
     {
         return $this->setAction();
     }

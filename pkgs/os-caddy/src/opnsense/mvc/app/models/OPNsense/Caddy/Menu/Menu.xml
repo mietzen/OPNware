@@ -3,7 +3,6 @@
         <Caddy cssClass="fa fa-server fa-fw">
             <General VisibleName="General Settings" order="10" url="/ui/caddy/general"/>
             <Editor VisibleName="Editor" order="20" url="/ui/caddy/editor"/>
-            <DockerProxy VisibleName="Docker Proxy" order="30" url="/ui/caddy/docker_proxy"/>
             <Log VisibleName="Log File" order="50" url="/ui/diagnostics/log/core/caddy"/>
         </Caddy>
     </Services>
