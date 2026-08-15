@@ -58,26 +58,24 @@
     });
 </script>
 
-<div id="caddy-status" class="content-box __mb" style="padding-bottom: 1.5em;">
-    <div class="content-box-main">
-        <h2>{{ lang._('Status') }}</h2>
-        <table class="table table-striped table-condensed">
-            <tbody>
-                <tr><td class="text-muted">{{ lang._('Service') }}</td><td id="status-running"></td></tr>
-                <tr><td class="text-muted">{{ lang._('Version') }}</td><td id="status-version"></td></tr>
-                <tr><td class="text-muted">{{ lang._('Config path') }}</td><td id="status-config"></td></tr>
-                <tr><td class="text-muted">{{ lang._('Modules') }}</td><td id="status-modules"></td></tr>
-                <tr><td class="text-muted">{{ lang._('Config checksum') }}</td><td id="status-checksum"></td></tr>
-                <tr><td class="text-muted">{{ lang._('Config validation') }}</td><td id="status-validate"></td></tr>
-            </tbody>
-        </table>
-    </div>
+<div id="caddy-status" class="content-box opnware-editor-pane __mb">
+    <h2>{{ lang._('Status') }}</h2>
+    <table class="table table-striped table-condensed">
+        <tbody>
+            <tr><td class="text-muted" style="width: 220px;">{{ lang._('Service') }}</td><td id="status-running"></td></tr>
+            <tr><td class="text-muted">{{ lang._('Version') }}</td><td id="status-version"></td></tr>
+            <tr><td class="text-muted">{{ lang._('Config path') }}</td><td id="status-config"></td></tr>
+            <tr><td class="text-muted">{{ lang._('Modules') }}</td><td id="status-modules"></td></tr>
+            <tr><td class="text-muted">{{ lang._('Config checksum') }}</td><td id="status-checksum"></td></tr>
+            <tr><td class="text-muted">{{ lang._('Config validation') }}</td><td id="status-validate"></td></tr>
+        </tbody>
+    </table>
 </div>
 
-<ul id="generalTabsHeader" class="nav nav-tabs" role="tablist">
+<ul id="generalTabsHeader" class="nav nav-tabs opnware-editor-tabs" role="tablist">
     {{ partial("layout_partials/base_tabs_header", ['formData': generalForm]) }}
 </ul>
 
-<div id="generalTabsContent" class="content-box tab-content" style="padding-bottom: 1.5em;">
+<div id="generalTabsContent" class="content-box tab-content opnware-editor-pane">
     {{ partial("layout_partials/base_tabs_content", ['formData': generalForm]) }}
 </div>

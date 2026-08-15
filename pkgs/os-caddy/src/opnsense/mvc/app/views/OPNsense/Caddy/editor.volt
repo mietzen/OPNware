@@ -16,18 +16,24 @@
 
 <style>
     .opnware-editor-tabs { margin-bottom: 15px; }
-    .editor-tree-root, .editor-tree-directory, .editor-tree-file-row { padding: 5px 0; }
-    .editor-tree-children { margin: 3px 0 0 14px; border-left: 1px solid #d8dee4; padding-left: 10px; }
-    .editor-tree-toggle { width: 22px; padding: 0; text-decoration: none; }
-    .editor-tree-label { font-weight: 600; }
-    .editor-tree-file { display: inline-block; min-width: 105px; padding: 4px 6px; }
-    .editor-tree-file-row .btn { vertical-align: middle; }
-    .opnware-editor-shell { margin: 0; }
     .opnware-editor-pane { padding: 15px; }
     .opnware-editor-actions { padding: 0 15px 15px; }
+    .opnware-file-tree, .opnware-file-tree ul { list-style: none; margin: 0; padding: 0; }
+    .opnware-file-tree ul { margin-left: 18px; padding-left: 10px; border-left: 1px solid #c9cfd6; }
+    .opnware-file-tree li { padding: 3px 0; }
+    .opnware-file-tree .tree-dir { display: flex; align-items: center; gap: 4px; }
+    .opnware-file-tree .tree-toggle {
+        width: 18px; padding: 0; border: 0; background: none; color: #58606b;
+        font-size: 11px; cursor: pointer; text-align: center;
+    }
+    .opnware-file-tree .tree-label { font-weight: 600; }
+    .opnware-file-tree .tree-file { display: flex; align-items: center; gap: 6px; }
+    .opnware-file-tree .tree-file a { color: #2d6cdf; text-decoration: none; }
+    .opnware-file-tree .tree-file a:hover { text-decoration: underline; }
+    .opnware-file-tree .tree-file .btn { padding: 1px 6px; font-size: 11px; }
     @media (max-width: 767px) {
-        .editor-tree-file { min-width: 85px; }
-        .editor-tree-file-row .btn { margin-top: 4px; }
+        .opnware-file-tree ul { margin-left: 10px; padding-left: 6px; }
+        .opnware-file-tree .tree-file { flex-wrap: wrap; }
     }
 </style>
 
@@ -166,8 +172,8 @@
                 }
                 const $list = $("#editor-files");
                 $list.empty();
-                const $root = $('<li class="editor-tree-root">').append(
-                    $('<a href="#" class="editor-tree-file">').text('Caddyfile').click(function(e) {
+                const $root = $('<li class="tree-file">').append(
+                    $('<a href="#">').text('Caddyfile').click(function(e) {
                         e.preventDefault();
                         loadFile('Caddyfile');
                     })
@@ -178,26 +184,26 @@
         }
 
         function renderTreeNode(node) {
-            const $item = $('<li class="editor-tree-directory">');
-            const $toggle = $('<button type="button" class="btn btn-link btn-xs editor-tree-toggle" aria-expanded="true">')
-                .text('▾');
-            const $label = $('<span class="editor-tree-label">').text(node.name);
-            const $children = $('<ul class="nav nav-pills nav-stacked editor-tree-children">');
+            const $item = $('<li>');
+            const $dir = $('<div class="tree-dir">');
+            const $toggle = $('<button type="button" class="tree-toggle" aria-expanded="true">').text('▾');
+            const $label = $('<span class="tree-label">').text(node.name);
+            $dir.append($toggle).append($label);
+            const $children = $('<ul>');
             (node.children || []).forEach(function(child) {
                 if (child.type === 'directory') {
-                    const $child = renderTreeNode(child);
-                    $children.append($child);
+                    $children.append(renderTreeNode(child));
                 } else {
-                    const $file = $('<li class="editor-tree-file-row">');
-                    const $link = $('<a href="#" class="editor-tree-file">').text(child.name).click(function(e) {
+                    const $file = $('<li class="tree-file">');
+                    const $link = $('<a href="#">').text(child.name).click(function(e) {
                         e.preventDefault();
                         loadFile(child.path);
                     });
-                    const $copy = $('<button type="button" class="btn btn-xs btn-default __ml">').text('{{ lang._("Copy") }}')
+                    const $copy = $('<button type="button" class="btn btn-default btn-xs">').text('{{ lang._("Copy") }}')
                         .click(function(e) { e.stopPropagation(); copyOrMoveFile(child.path, false); });
-                    const $move = $('<button type="button" class="btn btn-xs btn-default __ml">').text('{{ lang._("Move") }}')
+                    const $move = $('<button type="button" class="btn btn-default btn-xs">').text('{{ lang._("Move") }}')
                         .click(function(e) { e.stopPropagation(); copyOrMoveFile(child.path, true); });
-                    const $del = $('<button type="button" class="btn btn-xs btn-danger __ml">').text('{{ lang._("Delete") }}')
+                    const $del = $('<button type="button" class="btn btn-danger btn-xs">').text('{{ lang._("Delete") }}')
                         .click(function(e) { e.stopPropagation(); deleteFile(child.path); });
                     $file.append($link).append($copy).append($move).append($del);
                     $children.append($file);
@@ -208,7 +214,7 @@
                 $toggle.attr('aria-expanded', !expanded).text(expanded ? '▸' : '▾');
                 $children.toggle(!expanded);
             });
-            $item.append($toggle).append($label).append($children);
+            $item.append($dir).append($children);
             return $item;
         }
 
@@ -575,7 +581,7 @@
     <div class="col-md-3">
         <div class="content-box opnware-editor-pane __mb">
             <h2>{{ lang._('Files') }}</h2>
-            <ul id="editor-files" class="nav nav-pills nav-stacked"></ul>
+            <ul id="editor-files" class="opnware-file-tree"></ul>
             <div class="form-group __mt">
                 <input id="new-file-name" type="text" class="form-control input-sm" placeholder="site.caddy">
             </div>
