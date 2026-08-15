@@ -66,7 +66,7 @@
             }
             window.opnwareHomerMonaco.editor.setTheme(preferredEditorTheme());
             $('#editor-theme').val(preferredEditorTheme());
-            if ($('#editor-theme').data('bs.select')) {
+            if ($('#editor-theme').data('selectpicker')) {
                 $('#editor-theme').selectpicker('refresh');
             }
         }
@@ -150,7 +150,7 @@
 
 <div class="content-box opnware-homer-config-pane" style="padding: 15px;">
     <div class="row">
-        <div class="col-md-8"><h2>{{ lang._('Homer config.yml') }}</h2></div>
+        <div class="col-md-8"><h2 style="margin-top: 0;">{{ lang._('Homer config.yml') }}</h2></div>
         <div class="col-md-4 text-right">
             <label class="text-muted" for="editor-theme">{{ lang._('Theme') }}</label>
             <select id="editor-theme" class="selectpicker" data-width="110px">

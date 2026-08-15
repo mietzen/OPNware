@@ -6,6 +6,7 @@
  #}
 <style>
     .content-box.opnware-editor-pane { padding: 15px; }
+    .content-box.opnware-editor-pane h2 { margin-top: 0; }
     .opnware-editor-tabs { margin-bottom: 0; }
     .opnware-tab-pane { padding: 0 15px 15px; }
 </style>

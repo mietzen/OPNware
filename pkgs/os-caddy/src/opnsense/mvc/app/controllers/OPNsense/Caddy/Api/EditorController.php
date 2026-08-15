@@ -10,20 +10,20 @@ require_once '/usr/local/opnsense/scripts/OPNsense/Caddy/editor_tree.php';
 /**
  * Editor API for the user-owned Caddy file tree.
  *
- * The tree is recursive under conf.d. Generated .opnware state and symlinks
- * are invisible; mutations remain confined to managed .caddy files and dirs.
+ * The tree is flat: Caddyfile plus conf.d/*.caddy (the import glob is
+ * non-recursive). Mutations remain confined to managed .caddy files.
  */
 class EditorController extends ApiControllerBase
 {
     const BASE = '/usr/local/etc/caddy';
     const STAGING_DIR = '/var/db/os-caddy/editor_staging';
     const STATUS_FILE = '/var/db/os-caddy/editor_status.json';
+    const STAGING_MARKER = STAGING_DIR . '/.complete';
 
     /**
      * Seed the user-owned Caddyfile on first access: create it with the
-     * import line plus the log-level env reference, or append the import
-     * line once when it is missing from an existing file. After that the
-     * plugin never touches the file again.
+     * conf.d import, or migrate a legacy generated-import Caddyfile to the
+     * flat glob. After that the plugin never touches the file again.
      *
      * @return array|null failure array or null on success
      */
@@ -36,7 +36,7 @@ class EditorController extends ApiControllerBase
     /**
      * Map a client-supplied path to a safe relative tree path. Accepts the
      * absolute tree paths returned by listAction() as well as their relative
-     * forms. Only managed recursive .caddy paths are accepted.
+     * forms. Only managed flat .caddy paths are accepted.
      *
      * @param mixed $path
      * @return string|null
@@ -73,15 +73,18 @@ class EditorController extends ApiControllerBase
         return strpos($real, $base . '/') === 0;
     }
 
+    /**
+     * Stage the whole current tree so the save cycle can validate it as one
+     * set. The .complete marker tells the save script the staging area is a
+     * full copy of the tree (so deletions apply); single-file saves drop the
+     * marker so only the staged file is written.
+     *
+     * @return string|null error message or null on success
+     */
     private function prepareStaging()
     {
         if (!is_dir(self::STAGING_DIR) && !mkdir(self::STAGING_DIR, 0755, true)) {
             return 'cannot create editor staging';
-        }
-        foreach (editor_tree_walk_dirs() as $rel) {
-            if (!is_dir(self::STAGING_DIR . '/' . $rel) && !mkdir(self::STAGING_DIR . '/' . $rel, 0755, true)) {
-                return 'cannot stage directory ' . $rel;
-            }
         }
         foreach (editor_tree_walk_files() as $rel) {
             $target = self::STAGING_DIR . '/' . $rel;
@@ -92,11 +95,8 @@ class EditorController extends ApiControllerBase
                 return 'cannot stage ' . $rel;
             }
         }
-        if (!is_dir(self::STAGING_DIR . '/.opnware')) {
-            mkdir(self::STAGING_DIR . '/.opnware', 0700, true);
-        }
-        file_put_contents(self::STAGING_DIR . '/.opnware/complete', '1');
-        return editor_tree_write_imports(self::STAGING_DIR);
+        file_put_contents(self::STAGING_MARKER, '1');
+        return null;
     }
 
     /**
@@ -115,7 +115,7 @@ class EditorController extends ApiControllerBase
     }
 
     /**
-     * The recursive file tree. Generated .opnware state is never exposed.
+     * The flat file tree: Caddyfile plus conf.d/*.caddy.
      * @return array
      */
     public function listAction()
@@ -258,7 +258,6 @@ class EditorController extends ApiControllerBase
         if (file_put_contents($staged, '') === false) {
             return array('status' => 'failure', 'message' => 'cannot create file');
         }
-        editor_tree_write_imports(self::STAGING_DIR);
         return $this->runStagedSave();
     }
 
@@ -300,7 +299,6 @@ class EditorController extends ApiControllerBase
         if ($move ? !rename($sourcePath, $targetPath) : !copy($sourcePath, $targetPath)) {
             return array('status' => 'failure', 'message' => $move ? 'cannot move file' : 'cannot copy file');
         }
-        editor_tree_write_imports(self::STAGING_DIR);
         return $this->runStagedSave();
     }
 
@@ -329,7 +327,6 @@ class EditorController extends ApiControllerBase
         if (!unlink($staged)) {
             return array('status' => 'failure', 'message' => 'cannot delete file');
         }
-        editor_tree_write_imports(self::STAGING_DIR);
         return $this->runStagedSave();
     }
 

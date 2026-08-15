@@ -35,7 +35,7 @@ const STAGING_DIR = STATE_DIR . '/editor_staging';
 const ROLLBACK_DIR = STATE_DIR . '/rollback';
 const LOCK_FILE = RUN_DIR . '/editor.lock';
 const STATUS_FILE = STATE_DIR . '/editor_status.json';
-const COMPLETE_STAGING_MARKER = STAGING_DIR . '/.opnware/complete';
+const COMPLETE_STAGING_MARKER = STAGING_DIR . '/.complete';
 
 /**
  * Run a command, capturing combined output.
@@ -302,12 +302,6 @@ function editor_save_cycle()
         }
     }
 
-    $generated = editor_tree_write_imports($tmp);
-    if ($generated !== null) {
-        editor_rmtree($tmp);
-        return editor_complete($out, 'failure', $generated, $ts);
-    }
-
     // 2. Validate the staged tree before touching anything. Imports resolve
     //    relative to the Caddyfile location, so the temp copy keeps the
     //    relative layout.
@@ -346,7 +340,6 @@ function editor_save_cycle()
             $target = BASE . '/' . $rel;
             if (!editor_write_target_ok($target, BASE) || !unlink($target)) {
                 editor_restore_snapshot($snapshot);
-                editor_tree_write_imports(BASE);
                 editor_rmtree($tmp);
                 return editor_complete($out, 'failure', "cannot delete $rel", $ts, true);
             }
@@ -373,20 +366,11 @@ function editor_save_cycle()
             return editor_complete($out, 'failure', "cannot write $rel", $ts, true);
         }
     }
-    $generated = editor_tree_write_imports(BASE);
-    if ($generated !== null) {
-        editor_restore_snapshot($snapshot);
-        editor_tree_write_imports(BASE);
-        editor_rmtree($tmp);
-        return editor_complete($out, 'failure', $generated, $ts, true);
-    }
-
     // 5. Graceful reload, skipped silently when the service is stopped.
     $reload = editor_reload();
     if ($reload !== true && $reload !== 'skipped') {
         // 6. Reload failure: restore the snapshot, reload the previous config.
         editor_restore_snapshot($snapshot);
-        editor_tree_write_imports(BASE);
         editor_reload();
         editor_rmtree($tmp);
         return editor_complete(

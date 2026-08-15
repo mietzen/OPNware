@@ -7,6 +7,7 @@
  #}
 <style>
     .content-box.opnware-editor-pane { padding: 15px; }
+    .content-box.opnware-editor-pane h2 { margin-top: 0; }
     .opnware-editor-actions { padding: 0 15px 15px; }
     .opnware-editor-tabs { margin-bottom: 0; }
     .form-inline .bootstrap-select { max-width: 420px; }
@@ -50,7 +51,7 @@
             // bootstrap-select auto-initializes on window load; if the catalog
             // fetch wins the race, initialize here instead of refreshing a
             // plugin that isn't mounted yet.
-            if ($select.data('bs.select')) {
+            if ($select.data('selectpicker')) {
                 $select.selectpicker('refresh');
             } else {
                 $select.selectpicker();
@@ -125,7 +126,7 @@
                 return;
             }
             $("#module-catalog").val('');
-            if ($("#module-catalog").data('bs.select')) {
+            if ($("#module-catalog").data('selectpicker')) {
                 $("#module-catalog").selectpicker('refresh');
             }
             modules.push(value);

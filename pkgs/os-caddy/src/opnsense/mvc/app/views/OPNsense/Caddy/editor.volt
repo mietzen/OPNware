@@ -1,11 +1,12 @@
 {#
  # OPNware os-caddy — Caddyfile Editor
  #
- # The user-owned Caddy config at /usr/local/etc/caddy is a flat tree:
- # Caddyfile plus conf.d/*.caddy (the import glob is non-recursive). ACME
- # storage, autosave, certs and keys are invisible. Saving validates the
- # staged tree with `caddy validate`, applies it atomically and reloads
- # Caddy gracefully; a reload failure rolls back to the previous config.
+ # The user-owned Caddy config at /usr/local/etc/caddy is flat: Caddyfile
+ # plus conf.d/*.caddy (the seed Caddyfile is `import conf.d/*.caddy`, a
+ # non-recursive glob). ACME storage, autosave, certs and keys are invisible.
+ # Saving validates the staged tree with `caddy validate`, applies it
+ # atomically and reloads Caddy gracefully; a reload failure rolls back to
+ # the previous config.
  #
  # The editor is Monaco (vendored, no CDN) with Caddyfile syntax highlighting
  # from the vendored TextMate grammar (caddyserver/vscode-caddyfile). The
@@ -14,7 +15,10 @@
  # the /api/caddy/editor/save endpoint is untouched.
  #
  # The file tree is jstree (vendored, no CDN): right-click context menu
- # (new file in folder, rename, copy, move, delete) and drag-and-drop moves.
+ # (new file, rename, copy, move, delete) and drag-and-drop moves. jstree
+ # must load BEFORE monaco's vs/loader.js — the AMD loader's global define
+ # would otherwise swallow jstree into AMD mode and $.fn.jstree never gets
+ # set.
  #}
 
 <link rel="stylesheet" href="/ui/js/vendor/jstree/themes/default/style.min.css">
@@ -22,6 +26,7 @@
 <style>
     .opnware-editor-tabs { margin-bottom: 0; }
     .opnware-tab-pane { padding: 0 15px 15px; }
+    .opnware-tab-pane h2 { margin-top: 0; }
     .content-box.opnware-editor-pane { padding: 15px; }
     .opnware-editor-actions { padding: 0 15px 15px; }
     .opnware-editor-split { display: flex; align-items: stretch; }
@@ -51,8 +56,8 @@
     }
 </style>
 
-<script src="/ui/js/vendor/monaco/vs/loader.js"></script>
 <script src="/ui/js/vendor/jstree/jstree.min.js"></script>
+<script src="/ui/js/vendor/monaco/vs/loader.js"></script>
 <script>
     // Monaco's AMD loader (vs/loader.js) resolves module ids through these
     // paths. Everything is vendored under /opnsense/www/js/vendor/ (served as
@@ -119,7 +124,7 @@
             }
             window.opnwareMonaco.editor.setTheme(preferredEditorTheme());
             $('#editor-theme').val(preferredEditorTheme());
-            if ($('#editor-theme').data('bs.select')) {
+            if ($('#editor-theme').data('selectpicker')) {
                 $('#editor-theme').selectpicker('refresh');
             }
         }
@@ -204,16 +209,14 @@
                 $('#editor-tree').jstree({
                     core: {
                         data: nodes,
-                        check_callback: checkMove,
                         themes: { name: 'default' }
                     },
                     types: {
                         'directory': { icon: 'fa fa-folder-open-o' },
                         'file': { icon: 'fa fa-file-text-o' }
                     },
-                    dnd: { check_while_dragging: true },
                     contextmenu: { items: contextMenuItems },
-                    plugins: ['dnd', 'contextmenu', 'types', 'wholerow']
+                    plugins: ['contextmenu', 'types', 'wholerow']
                 });
             });
         }
@@ -232,19 +235,6 @@
         }
 
         // Only files may be dragged, and only into directories.
-        function checkMove(operation, node, parent, position, more) {
-            if (operation === 'move_node') {
-                if (node.type !== 'file' || node.id === 'Caddyfile') {
-                    return false;
-                }
-                if (parent === '#' || parent.type !== 'directory') {
-                    return false;
-                }
-                return true;
-            }
-            return true;
-        }
-
         function contextMenuItems(node) {
             const items = {};
             if (node.type === 'directory') {
@@ -287,27 +277,6 @@
             }
         });
 
-        $('#editor-tree').on('move_node.jstree', function(e, moved) {
-            const node = moved.node;
-            const newParent = moved.parent; // '#' or a node id (relative path)
-            if (!node || node.id === 'Caddyfile') {
-                $('#editor-tree').jstree('refresh');
-                return;
-            }
-            const name = node.text;
-            const target = newParent === '#' ? name : newParent + '/' + name;
-            if (target === node.id) {
-                $('#editor-tree').jstree('refresh');
-                return;
-            }
-            $.post('/api/caddy/editor/move', {path: node.id, target: target}, function(data) {
-                if (data.status !== 'ok') {
-                    showError(data.message);
-                }
-                $('#editor-tree').jstree('refresh');
-            });
-        });
-
         function addFileIn(dirPath) {
             const name = window.prompt(
                 "{{ lang._('New file name in') }} " + (dirPath || 'conf.d') + "/",
@@ -347,7 +316,7 @@
 
         function copyOrMoveFile(path, move) {
             const name = window.prompt(
-                move ? "{{ lang._('Move to relative path, e.g. conf.d/archive/site.caddy') }}" : "{{ lang._('Copy to relative path, e.g. conf.d/archive/site.caddy') }}",
+                move ? "{{ lang._('Move to conf.d/<new name>, e.g. conf.d/renamed.caddy') }}" : "{{ lang._('Copy to conf.d/<new name>, e.g. conf.d/renamed.caddy') }}",
                 ''
             );
             if (!name) {
@@ -716,7 +685,7 @@
                 <input id="new-file-name" type="text" class="form-control input-sm" placeholder="site.caddy">
             </div>
             <button id="add-editor" type="button" class="btn btn-primary btn-sm">{{ lang._('Add to conf.d') }}</button>
-            <span class="help-block">{{ lang._('Right-click a file for rename, copy, move and delete; right-click a folder to create a file inside it. Files can also be dragged into folders. The Caddyfile itself cannot be renamed or deleted.') }}</span>
+            <span class="help-block">{{ lang._('The tree is flat: Caddyfile plus conf.d/*.caddy. Right-click a file for rename, copy, move and delete, or drag it onto the conf.d folder. The Caddyfile itself cannot be renamed or deleted.') }}</span>
         </div>
         <div class="opnware-editor-main">
             <div class="row">

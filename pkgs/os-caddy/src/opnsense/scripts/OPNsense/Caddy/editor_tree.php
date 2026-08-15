@@ -1,11 +1,18 @@
 <?php
 
-/* Shared recursive Caddy editor tree policy. */
+/* Shared flat Caddy editor tree policy.
+ *
+ * The user-owned tree is exactly:
+ *   /usr/local/etc/caddy/Caddyfile
+ *   /usr/local/etc/caddy/conf.d/*.caddy
+ *
+ * The Caddyfile contains the single line `import conf.d/*.caddy`. Caddy's
+ * import glob is non-recursive, so the tree is flat by construction — no
+ * subdirectories, no generated import index.
+ */
 
 const EDITOR_TREE_BASE = '/usr/local/etc/caddy';
 const EDITOR_TREE_ROOT = EDITOR_TREE_BASE . '/conf.d';
-const EDITOR_TREE_INTERNAL = EDITOR_TREE_BASE . '/.opnware';
-const EDITOR_TREE_IMPORTS = EDITOR_TREE_INTERNAL . '/imports.caddy';
 
 function editor_tree_name_safe($name)
 {
@@ -16,26 +23,26 @@ function editor_tree_name_safe($name)
         && strpos($name, "\0") === false;
 }
 
-function editor_tree_rel_safe($rel, $allow_directory = false)
+/**
+ * Safe relative path: "Caddyfile" or a single-component *.caddy file directly
+ * inside "conf.d". Nested paths ("conf.d/sub/file.caddy") are rejected — the
+ * import glob is non-recursive, so anything deeper would never be loaded.
+ */
+function editor_tree_rel_safe($rel)
 {
-    if (!is_string($rel) || $rel === '' || $rel[0] === '/' || strpos($rel, "\0") !== false) {
+    if (!is_string($rel) || $rel === '' || strpos($rel, "\0") !== false) {
         return false;
     }
-    $parts = explode('/', $rel);
-    if (count($parts) < 2 || $parts[0] !== 'conf.d') {
+    if ($rel === 'Caddyfile') {
+        return true;
+    }
+    if (strpos($rel, 'conf.d/') !== 0 || strpos($rel, '/', 7) !== false) {
         return false;
     }
-    array_shift($parts);
-    foreach ($parts as $index => $part) {
-        if (!editor_tree_name_safe($part) || $part[0] === '.') {
-            return false;
-        }
-        if ($index === count($parts) - 1 && !$allow_directory
-                && substr($part, -6) !== '.caddy') {
-            return false;
-        }
-    }
-    return true;
+    $name = substr($rel, 7);
+    return editor_tree_name_safe($name)
+        && $name[0] !== '.'
+        && substr($name, -6) === '.caddy';
 }
 
 function editor_tree_real_under($path, $base = EDITOR_TREE_BASE)
@@ -46,81 +53,71 @@ function editor_tree_real_under($path, $base = EDITOR_TREE_BASE)
         && ($real === $root || strpos($real, $root . '/') === 0);
 }
 
+/**
+ * Relative paths of the flat tree files under $base: Caddyfile plus
+ * conf.d/*.caddy. Files only, no subdirectories.
+ */
 function editor_tree_walk_files($base = EDITOR_TREE_BASE)
 {
     $files = array();
-    if (!is_dir($base)) {
-        return $files;
+    if (is_file($base . '/Caddyfile')) {
+        $files[] = 'Caddyfile';
     }
-    $iterator = new RecursiveIteratorIterator(
-        new RecursiveDirectoryIterator($base, FilesystemIterator::SKIP_DOTS)
-    );
-    foreach ($iterator as $file) {
-        if (!$file->isFile() || $file->isLink()) {
-            continue;
-        }
-        $editor_rel = editor_tree_relative($file->getPathname(), $base);
-        if ($editor_rel === null) {
-            continue;
-        }
-        if ($editor_rel === 'Caddyfile' || editor_tree_rel_safe($editor_rel)) {
-            $files[] = $editor_rel;
+    $confd = $base . '/conf.d';
+    if (is_dir($confd)) {
+        foreach (scandir($confd) ?: array() as $name) {
+            if ($name[0] === '.' || !editor_tree_name_safe($name)) {
+                continue;
+            }
+            $rel = 'conf.d/' . $name;
+            if (substr($name, -6) !== '.caddy' || !is_file($confd . '/' . $name)) {
+                continue;
+            }
+            if (is_link($confd . '/' . $name)) {
+                continue;
+            }
+            $files[] = $rel;
         }
     }
     sort($files, SORT_STRING);
     return $files;
 }
 
-function editor_tree_walk_dirs($base = EDITOR_TREE_BASE)
+/**
+ * Tree node for the UI: the conf.d directory with its flat *.caddy files.
+ */
+function editor_tree_node($base = EDITOR_TREE_BASE)
 {
-    $dirs = array();
-    if (!is_dir($base)) {
-        return $dirs;
-    }
-    $iterator = new RecursiveIteratorIterator(
-        new RecursiveDirectoryIterator($base, FilesystemIterator::SKIP_DOTS),
-        RecursiveIteratorIterator::SELF_FIRST
+    $node = array(
+        'type' => 'directory',
+        'name' => 'conf.d',
+        'path' => 'conf.d',
+        'children' => array(),
     );
-    foreach ($iterator as $dir) {
-        if (!$dir->isDir() || $dir->isLink()) {
-            continue;
-        }
-        $editor_rel = editor_tree_relative($dir->getPathname(), $base);
-        if ($editor_rel === null) {
-            continue;
-        }
-        if ($editor_rel !== 'conf.d' && editor_tree_rel_safe($editor_rel, true)) {
-            $dirs[] = $editor_rel;
-        }
-    }
-    sort($dirs, SORT_STRING);
-    return $dirs;
-}
-
-function editor_tree_node($base = EDITOR_TREE_BASE, $relative = 'conf.d')
-{
-    $node = array('type' => 'directory', 'name' => basename($relative), 'path' => $relative, 'children' => array());
-    $absolute = $base . '/' . $relative;
-    if (!is_dir($absolute)) {
+    $confd = $base . '/conf.d';
+    if (!is_dir($confd)) {
         return $node;
     }
-    foreach (scandir($absolute) ?: array() as $name) {
-        if ($name === '.' || $name === '..' || $name[0] === '.' || !editor_tree_name_safe($name)) {
+    foreach (scandir($confd) ?: array() as $name) {
+        if ($name[0] === '.' || !editor_tree_name_safe($name)) {
             continue;
         }
-        $childRelative = $relative . '/' . $name;
-        $childAbsolute = $base . '/' . $childRelative;
-        if (is_link($childAbsolute)) {
+        $childAbsolute = $confd . '/' . $name;
+        if (is_link($childAbsolute) || !is_file($childAbsolute)) {
             continue;
         }
-        if (is_dir($childAbsolute)) {
-            $node['children'][] = editor_tree_node($base, $childRelative);
-        } elseif (is_file($childAbsolute) && substr($name, -6) === '.caddy') {
-            $node['children'][] = array('type' => 'file', 'name' => $name, 'path' => $childRelative, 'editable' => true);
+        if (substr($name, -6) !== '.caddy') {
+            continue;
         }
+        $node['children'][] = array(
+            'type' => 'file',
+            'name' => $name,
+            'path' => 'conf.d/' . $name,
+            'editable' => true,
+        );
     }
     usort($node['children'], function ($a, $b) {
-        return [$a['type'] === 'file', $a['name']] <=> [$b['type'] === 'file', $b['name']];
+        return strcmp($a['name'], $b['name']);
     });
     return $node;
 }
@@ -136,20 +133,13 @@ function editor_tree_relative($path, $base = EDITOR_TREE_BASE)
     return $rel === '' ? null : $rel;
 }
 
-function editor_tree_import_content($base = EDITOR_TREE_BASE)
-{
-    $lines = array();
-    foreach (editor_tree_walk_files($base) as $rel) {
-        if ($rel === 'Caddyfile') {
-            continue;
-        }
-        // imports.caddy lives one directory below the Caddyfile, so managed
-        // paths are relative to .opnware rather than the config root.
-        $lines[] = 'import ../' . $rel;
-    }
-    return implode("\n", $lines) . (empty($lines) ? '' : "\n");
-}
-
+/**
+ * Seed the user-owned tree on first access: create Caddyfile (with the
+ * conf.d import) and conf.d when missing, and migrate a legacy
+ * .opnware/imports.caddy Caddyfile to the flat glob.
+ *
+ * @return string|null error message or null on success
+ */
 function editor_tree_seed($base = EDITOR_TREE_BASE)
 {
     if (!is_dir($base) && !mkdir($base, 0755, true)) {
@@ -158,41 +148,27 @@ function editor_tree_seed($base = EDITOR_TREE_BASE)
     if (!is_dir($base . '/conf.d') && !mkdir($base . '/conf.d', 0755, true)) {
         return 'cannot create ' . $base . '/conf.d';
     }
-    $internal = $base . '/.opnware';
-    if (!is_dir($internal) && !mkdir($internal, 0700, true)) {
-        return 'cannot create ' . $internal;
-    }
     $caddyfile = $base . '/Caddyfile';
     if (!is_file($caddyfile)) {
-        $seed = "import .opnware/imports.caddy\n";
-        if (file_put_contents($caddyfile, $seed) === false) {
+        if (file_put_contents($caddyfile, "import conf.d/*.caddy\n") === false) {
             return 'cannot create Caddyfile';
         }
     } else {
         $content = file_get_contents($caddyfile);
-        if ($content !== false && strpos($content, 'import .opnware/imports.caddy') === false) {
-            $legacy = preg_replace('/^\s*import conf\.d\/\*\.caddy\s*$/m', 'import .opnware/imports.caddy', $content, -1, $count);
-            $content = $count > 0 ? $legacy : rtrim($content, "\n") . "\n\nimport .opnware/imports.caddy\n";
+        if ($content !== false && strpos($content, 'import conf.d/*.caddy') === false) {
+            // Replace the legacy generated-import seed with the flat glob.
+            $legacy = preg_replace(
+                '/^import \.opnware\/imports\.caddy\s*$/m',
+                'import conf.d/*.caddy',
+                $content,
+                -1,
+                $count
+            );
+            $content = $count > 0 ? $legacy : rtrim($content, "\n") . "\n\nimport conf.d/*.caddy\n";
             if (file_put_contents($caddyfile, $content) === false) {
                 return 'cannot update Caddyfile import';
             }
         }
     }
-    return editor_tree_write_imports($base);
-}
-
-function editor_tree_write_imports($base = EDITOR_TREE_BASE)
-{
-    $internal = $base . '/.opnware';
-    $imports = $internal . '/imports.caddy';
-    if (!is_dir($internal) && !mkdir($internal, 0700, true)) {
-        return 'cannot create generated tree directory';
-    }
-    $tmp = $imports . '.tmp';
-    if (file_put_contents($tmp, editor_tree_import_content($base)) === false || !rename($tmp, $imports)) {
-        @unlink($tmp);
-        return 'cannot write generated imports';
-    }
-    chmod($imports, 0600);
     return null;
 }

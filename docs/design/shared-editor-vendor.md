@@ -61,12 +61,10 @@ vendor into a plugin payload — change the `editor` package instead.
 
 ## Caddy editor tree
 
-The editor manages a recursive tree below `conf.d/`. User files are ordinary
-non-hidden `*.caddy` files; `.opnware/` is reserved for generated state and
-never appears in the tree. The plugin maintains `.opnware/imports.caddy`, an
-explicit lexical list of every managed file, because the Caddyfile import
-glob is not used as a recursive filesystem walker. `Caddyfile` imports that
-generated index and remains user-owned.
+The editor manages a flat tree: `Caddyfile` plus `conf.d/*.caddy`. The seed
+`Caddyfile` is the single line `import conf.d/*.caddy` — a native, non-recursive
+Caddy glob, so the tree is flat by construction and no generated import index
+exists. The `Caddyfile` remains user-owned.
 
 ## How a volt page loads Monaco and registers a language
 
