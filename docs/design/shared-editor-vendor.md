@@ -137,21 +137,20 @@ Key points for a consumer:
 
 The `editor` package has **no automated update source** — `check-updates`
 skips it by design (the payload is a checked-in vendor tree, not a remote
-artifact). Refreshing is a manual, guarded process:
+artifact). Refreshing is a manual, guarded process — one command:
 
 ```sh
-cd /var/folders/9z/cd6qb82n4d3g1d91x5245blc0000gn/T
-npm pack monaco-editor@latest          # -> monaco-editor-<v>.tgz
-tar -xzf monaco-editor-<v>.tgz
-rm -rf <repo>/pkgs/editor/assets/vendor/monaco/vs
-cp -R package/min/vs <repo>/pkgs/editor/assets/vendor/monaco/vs/
-cp package/package.json <repo>/pkgs/editor/assets/vendor/monaco/package.json
-# bump pkgs/editor/config.yml pkg_manifest.version to the new monaco version
+./scripts/refresh-editor.sh
 ```
+
+It npm-packs the latest monaco-editor and the TextMate stack
+(vscode-textmate, vscode-oniguruma), replaces the checked-in tree, and
+bumps `pkgs/editor/config.yml` `pkg_manifest.version` to the new monaco
+release. The hand-rolled bridge (`textmate/monaco-editor-textmate.js`) is
+never touched. Review the resulting diff and commit — that review is the
+safety gate that auto-updates would remove.
 
 The build-time guard (`editor/build.sh` compares the vendored monaco version
 against `pkg_manifest.version`) fails the build on mismatch, so a vendor
 refresh can never ship under a stale version number. The TextMate stack
-(`vscode-textmate`, `vscode-oniguruma`, the `monaco-editor-textmate.js`
-bridge) is refreshed the same way (npm pack + copy) and does not drive the
-package version.
+refresh does not drive the package version.
