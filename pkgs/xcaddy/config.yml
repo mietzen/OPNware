@@ -1,0 +1,9 @@
+---
+build_config:
+  include: {}
+redistribute:
+  name: xcaddy
+  version:
+    FreeBSD-15-amd64: "0.4.5_14"
+  repo: http://pkg.freebsd.org
+  path: quarterly/All

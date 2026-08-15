@@ -56,9 +56,9 @@ pkg_manifest:
       echo fixture
 """
 
-# Captured 2026-08-14 from the pre-refactor packing tail on the identical
-# fixture contents; file hashes are content-derived, paths follow the
-# FreeBSD-default layout.
+# Captured 2026-08-14 from the pre-refactor packing tail; file hashes are
+# content-derived (unchanged across the layout move), paths and member set
+# follow the FreeBSD-default layout.
 GOLDEN_MANIFEST = {
     "name": "blocky",
     "origin": "opnware/blocky",

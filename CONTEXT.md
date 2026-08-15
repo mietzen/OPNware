@@ -5,7 +5,7 @@ A personal FreeBSD package repository for OPNsense. The pipeline: package specs 
 ## Glossary
 
 - **Package (pkg)** — a FreeBSD package in the opnware repo. Built from source, cross-compiled, or redistributed from upstream.
-- **Package spec** — a package's `config.yml`: build config, manifest, service, redistribution.
+- **Package spec** — a package's `config.yml`: build config, manifest, redistribution. Plain packages ship no service/rc.d machinery (retired, ticket #205); payloads stage on FreeBSD default paths.
 - **Payload** — the staging root (a FreeBSD tree under `dist/pkg/`) that a build script fills before packing.
 - **Packing module** — pkg-tool's `pack` interface: payload + package spec → `.pkg` + packagesite info.
 - **Packagesite** — the repo index per ABI/arch: `packagesite.yaml` (accumulated), `packagesite.tzst`/`.pkg`, `meta.conf`.

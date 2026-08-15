@@ -29,25 +29,26 @@ echo "::endgroup::"
 cd "${DIST_ROOT}"
 
 # Create Directories (FreeBSD default paths)
-mkdir -p "${DIST_ROOT}/dist/pkg/usr/local/bin"
-mkdir -p "${DIST_ROOT}/dist/pkg/usr/local/share/doc/${PKG_NAME}"
-chmod 0755 "${DIST_ROOT}/dist/pkg/usr/local/bin" "${DIST_ROOT}/dist/pkg/usr/local/share/doc/${PKG_NAME}"
+BIN_DIR="${DIST_ROOT}/dist/pkg/usr/local/bin"
+DOC_DIR="${DIST_ROOT}/dist/pkg/usr/local/share/doc/${PKG_NAME}"
+mkdir -p "${BIN_DIR}" "${DOC_DIR}"
+chmod 0755 "${BIN_DIR}" "${DOC_DIR}"
 
 # Copy Binary
-cp "${DIST_ROOT}/src/${PKG_NAME}" "${DIST_ROOT}/dist/pkg/usr/local/bin/${PKG_NAME}"
-chmod 0755 "${DIST_ROOT}/dist/pkg/usr/local/bin/${PKG_NAME}"
+cp "${DIST_ROOT}/src/${PKG_NAME}" "${BIN_DIR}/${PKG_NAME}"
+chmod 0755 "${BIN_DIR}/${PKG_NAME}"
 
 # Copy License
-cp "${DIST_ROOT}/src/LICENSE" "${DIST_ROOT}/dist/pkg/usr/local/share/doc/${PKG_NAME}/LICENSE"
-chmod 0644 "${DIST_ROOT}/dist/pkg/usr/local/share/doc/${PKG_NAME}/LICENSE"
+cp "${DIST_ROOT}/src/LICENSE" "${DOC_DIR}/LICENSE"
+chmod 0644 "${DOC_DIR}/LICENSE"
 
 # Provide a link to the Source Code
-cat <<EOF > "${DIST_ROOT}/dist/pkg/usr/local/share/doc/${PKG_NAME}/SOURCE"
+cat <<EOF > "${DOC_DIR}/SOURCE"
 This software is licensed under the MIT license.
 You may obtain a copy of the source code at:
 $SRC_REPO/archive/refs/tags/v$VERSION.tar.gz
 EOF
-chmod 0644 "${DIST_ROOT}/dist/pkg/usr/local/share/doc/${PKG_NAME}/SOURCE"
+chmod 0644 "${DOC_DIR}/SOURCE"
 
 # Create BSD distribution pkg
 cd "${DIST_ROOT}/dist"
