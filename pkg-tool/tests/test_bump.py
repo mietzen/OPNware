@@ -110,12 +110,24 @@ def test_bump_fails_loudly_when_version_line_missing(repo):
         bump("blocky", version="0.35.0")
 
 
-def test_bump_content_version_changes_only_content_line(repo):
+def test_bump_content_rev_bumps_plugin_version(repo):
     bump("homer", version="26.5.0")
 
     content = (repo / "pkgs" / "homer" / "config.yml").read_text()
-    assert content == CONTENT_SPEC.replace("  version: 26.4.2", "  version: 26.5.0")
-    assert "\n  version: 0.1.0\n" in content  # plugin version untouched
+    assert "\n  version: 26.5.0\n" in content          # content bumped
+    assert "\n  version: 0.1.0_1\n" in content         # plugin rev-bumped
+    assert content == CONTENT_SPEC.replace(
+        "  version: 26.4.2", "  version: 26.5.0"
+    ).replace("  version: 0.1.0", "  version: 0.1.0_1")
+
+
+def test_bump_content_increments_revision_each_time(repo):
+    bump("homer", version="26.5.0")
+    bump("homer", version="26.6.0")
+
+    content = (repo / "pkgs" / "homer" / "config.yml").read_text()
+    assert "\n  version: 26.6.0\n" in content
+    assert "\n  version: 0.1.0_2\n" in content
 
 
 def test_bump_redistribute_ignores_leaf_outside_section(repo):

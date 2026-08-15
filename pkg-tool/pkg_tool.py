@@ -734,6 +734,14 @@ def bump(pkg, version=None, abi_arch=None):
     spec = _load_spec(config_path)
     if spec.get('content'):
         content = _replace_scalar_in_section_line(content, 'content', 'version', version)
+        # A content change rev-bumps the package version (FreeBSD _REVISION)
+        # so an updated bundle is visible as a new package revision without
+        # changing the plugin's own version base.
+        manifest_version = str(spec['pkg_manifest']['version'])
+        m = re.match(r'^(.*?)(?:_(\d+))?$', manifest_version)
+        base, revision = m.group(1), int(m.group(2) or 0) + 1
+        content = _replace_scalar_in_section(
+            content, 'pkg_manifest', 'version', f'{base}_{revision}')
     elif spec.get('redistribute'):
         if abi_arch is None:
             raise ValueError(f"{config_path}: redistribute specs need --abi-arch")
@@ -836,7 +844,7 @@ def check_updates(pkgs_dir='pkgs'):
             # Bundled content (e.g. the Homer dashboard inside os-homer)
             # follows the upstream repo releases — checked even though the
             # spec is a plugin. The 'content' abi_arch routes bump to the
-            # content.version line, leaving the plugin version untouched.
+            # content.version line and rev-bumps the plugin package version.
             remote = _gh_latest_version(config['content']['repo'], os.environ.get('GITHUB_TOKEN'))
             local = str(config['content']['version'])
             if str(remote) != local:
