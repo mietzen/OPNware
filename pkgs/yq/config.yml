@@ -10,7 +10,7 @@ pkg_manifest:
   comment: yq is a portable command-line YAML, JSON, XML, CSV, TOML and properties processor
   www: https://mikefarah.gitbook.io/yq
   maintainer: github.nstein@mailbox.org
-  prefix: /opt/opnware/pkgs/yq
+  prefix: /usr/local
   licenselogic: single
   licenses:
     - MIT

@@ -23,7 +23,7 @@ pkg_manifest:
   comment: Test fixture package
   www: https://example.com
   maintainer: test@example.com
-  prefix: /opt/opnware/pkgs/blocky
+  prefix: /usr/local
 """
 
 GH_SPEC_CURRENT = GH_SPEC.replace("version: 0.34.0", "version: 0.35.0")

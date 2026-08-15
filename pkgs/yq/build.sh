@@ -28,29 +28,26 @@ GOOS=freebsd GOARCH="${ARCH}" go build
 echo "::endgroup::"
 cd "${DIST_ROOT}"
 
-# Create Directories
-mkdir -p "${DIST_ROOT}/dist/pkg/opt/opnware/pkgs/${PKG_NAME}"
-mkdir -p "${DIST_ROOT}/dist/pkg/opt/opnware/bin"
-chmod 0755 "${DIST_ROOT}/dist/pkg/opt/opnware/pkgs/${PKG_NAME}" "${DIST_ROOT}/dist/pkg/opt/opnware/bin"
+# Create Directories (FreeBSD default paths)
+mkdir -p "${DIST_ROOT}/dist/pkg/usr/local/bin"
+mkdir -p "${DIST_ROOT}/dist/pkg/usr/local/share/doc/${PKG_NAME}"
+chmod 0755 "${DIST_ROOT}/dist/pkg/usr/local/bin" "${DIST_ROOT}/dist/pkg/usr/local/share/doc/${PKG_NAME}"
 
 # Copy Binary
-cp "${DIST_ROOT}/src/${PKG_NAME}" "${DIST_ROOT}/dist/pkg/opt/opnware/pkgs/${PKG_NAME}/${PKG_NAME}"
-chmod 0755 "${DIST_ROOT}/dist/pkg/opt/opnware/pkgs/${PKG_NAME}/${PKG_NAME}"
-cd "${DIST_ROOT}/dist/pkg/opt/opnware/bin/"
-ln -s "../pkgs/${PKG_NAME}/${PKG_NAME}" "${PKG_NAME}"
-cd "${DIST_ROOT}"
+cp "${DIST_ROOT}/src/${PKG_NAME}" "${DIST_ROOT}/dist/pkg/usr/local/bin/${PKG_NAME}"
+chmod 0755 "${DIST_ROOT}/dist/pkg/usr/local/bin/${PKG_NAME}"
 
 # Copy License
-cp "${DIST_ROOT}/src/LICENSE" "${DIST_ROOT}/dist/pkg/opt/opnware/pkgs/${PKG_NAME}/LICENSE"
-chmod 0644 "${DIST_ROOT}/dist/pkg/opt/opnware/pkgs/${PKG_NAME}/LICENSE"
+cp "${DIST_ROOT}/src/LICENSE" "${DIST_ROOT}/dist/pkg/usr/local/share/doc/${PKG_NAME}/LICENSE"
+chmod 0644 "${DIST_ROOT}/dist/pkg/usr/local/share/doc/${PKG_NAME}/LICENSE"
 
 # Provide a link to the Source Code
-cat <<EOF > "${DIST_ROOT}/dist/pkg/opt/opnware/pkgs/${PKG_NAME}/SOURCE"
+cat <<EOF > "${DIST_ROOT}/dist/pkg/usr/local/share/doc/${PKG_NAME}/SOURCE"
 This software is licensed under the MIT license.
 You may obtain a copy of the source code at:
 $SRC_REPO/archive/refs/tags/v$VERSION.tar.gz
 EOF
-chmod 0644 "${DIST_ROOT}/dist/pkg/opt/opnware/pkgs/${PKG_NAME}/SOURCE"
+chmod 0644 "${DIST_ROOT}/dist/pkg/usr/local/share/doc/${PKG_NAME}/SOURCE"
 
 # Create BSD distribution pkg
 cd "${DIST_ROOT}/dist"

@@ -15,7 +15,6 @@ from pathlib import Path
 import requests
 import yaml
 import zstandard as zstd
-from jinja2 import Environment, FileSystemLoader
 from requests.compat import quote_plus, urljoin, urlparse
 
 logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s', stream=sys.stderr)
@@ -110,6 +109,8 @@ def _validate_spec(spec, source):
         raise ValueError(f"{source}: neither pkg_manifest nor redistribute present")
     if pkg_manifest is not None and redistribute is not None:
         raise ValueError(f"{source}: both pkg_manifest and redistribute present")
+    if spec.get('pkg_service'):
+        raise ValueError(f"{source}: pkg_service is retired — plain packages ship no service/rc.d machinery (ticket #205)")
     build_config = spec.get('build_config')
     if not isinstance(build_config, dict):
         raise TypeError(f"{source}: build_config is not a mapping")
@@ -424,8 +425,7 @@ def pack(config_path, abi, arch, payload_dir='pkg', output_dir='.'):
     Pack a staged payload into a FreeBSD package.
 
     The payload is a FreeBSD staging root (the tree a build script fills,
-    e.g. opt/opnware/pkgs/<name>/...). This performs the whole packing
-    sequence: service file + rc.d link (if the spec declares a service),
+    e.g. usr/local/...). This performs the whole packing sequence:
     manifests, the zstd-compressed package, the packagesite info, and
     cleanup of its own staging.
 
@@ -442,17 +442,6 @@ def pack(config_path, abi, arch, payload_dir='pkg', output_dir='.'):
     name = pkg_config['pkg_manifest']['name'].lower()
     version = str(pkg_config['pkg_manifest']['version'])
 
-    if pkg_config.get('pkg_service'):
-        service_dir = os.path.join(payload_dir, 'opt/opnware/services', name)
-        os.makedirs(service_dir, exist_ok=True)
-        _create_service(config_path, service_dir)
-        rc_dir = os.path.join(payload_dir, 'etc/rc.d')
-        os.makedirs(rc_dir, exist_ok=True)
-        rc_link = os.path.join(rc_dir, name)
-        if os.path.lexists(rc_link):
-            os.unlink(rc_link)
-        os.symlink(f"../../opt/opnware/services/{name}/{name}", rc_link)
-
     _create_manifest(config_path, abi, arch, payload_dir, output_dir)
     pkg_file = os.path.join(output_dir, _pkg_filename(name, version))
     _create_pkg(pkg_file, output_dir, payload_dir)
@@ -461,30 +450,6 @@ def pack(config_path, abi, arch, payload_dir='pkg', output_dir='.'):
     os.remove(os.path.join(output_dir, '+MANIFEST'))
     os.remove(os.path.join(output_dir, '+COMPACT_MANIFEST'))
     shutil.rmtree(payload_dir)
-
-def _create_service(config_path, output_dir='.'):
-    """
-    Create service file.
-
-    Args:
-        config_path (str): Path to the config.yml file.
-        output_dir (str): Directory to output the service file. Defaults to the current directory.
-    """
-    with open(config_path, "r") as f:
-        pkg_config = yaml.safe_load(f)
-
-    if pkg_config['pkg_service']:
-        if pkg_config['pkg_service']['template']:
-            env = Environment(
-                loader=FileSystemLoader(os.path.join(os.path.dirname(config_path), '..', '..', 'service_templates')))
-            template = env.get_template(pkg_config['pkg_service']['template'] + ".jinja")
-            service = template.render(pkg_config['pkg_service']['vars'] | {'NAME': pkg_config['pkg_manifest']['name'].lower()})
-        else:
-            service = pkg_config['pkg_service']['service']
-        file_name = os.path.join(output_dir, f"{pkg_config['pkg_manifest']['name'].lower()}")
-        with open(file_name, 'w') as file:
-            file.write(service)
-        os.chmod(file_name, 0o775)
 
 def redistribute_pkg(config_path, abi, arch, output_dir='.'):
     """

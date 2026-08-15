@@ -1,4 +1,0 @@
-:9099 {
-    root * conf.d/homer
-    file_server
-}

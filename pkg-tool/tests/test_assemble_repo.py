@@ -13,7 +13,7 @@ import pytest
 import zstandard as zstd
 
 from pkg_tool import assemble_repo, pack
-from test_pack import SPEC_WITH_SERVICE, make_fixture
+from test_pack import SPEC, make_fixture
 
 REPO_CONFIG = """\
 pkg-repo:
@@ -105,7 +105,7 @@ def test_assemble_repo_rejects_undeclared_abi(tmp_path):
 
 
 def test_assemble_repo_reads_abi_from_pkg_when_no_sibling_json(tmp_path):
-    config, payload, dist = make_fixture(tmp_path, SPEC_WITH_SERVICE)
+    config, payload, dist = make_fixture(tmp_path, SPEC)
     pack(config, abi="15", arch="amd64", payload_dir=payload, output_dir=dist)
 
     artifacts = tmp_path / "artifacts"

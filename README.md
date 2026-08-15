@@ -6,16 +6,15 @@ This is my personal OPNsense `pkg` repository.\
 It contains packages that I use or have used:
 
 - [caddy](https://caddyserver.com/) (redistributed)
-- [homer](https://homer-demo.netlify.app/) (source pkg)
 - [htop](https://htop.dev/) (redistributed)
 - [yq](https://mikefarah.gitbook.io/yq) (cross-compiled)
 - [zsh](https://git.code.sf.net/p/zsh/code) (redistributed)
 
 Most of the packages are cross-compiled Go binaries or redistributed FreeBSD pkgs.
-Some are built from source in a FreeBSD VM. 
+Some are built from source in a FreeBSD VM.
 
-- Binary `pkgs` are installed under `/opt/opnware/pkgs/` and are linked to `/opt/opnware/bin`
-- Service `pkgs` are installed under `/opt/opnware/pkgs/`, service files can be found in `/opt/opnware/services/` and are linked to `/etc/rc.d`
+All packages install on FreeBSD default paths: binaries in `/usr/local/bin`,
+`LICENSE`/`SOURCE` under `/usr/local/share/doc/<name>/`.
 
 ## Why
 
@@ -51,8 +50,8 @@ The App will need these permissions:
 ### How to add `pkgs`:
 
 1. Copy an existing package folder (e.g. [`pkgs/yq`](https://github.com/mietzen/OPNware/tree/main/pkgs/yq)) and rename it.
-2. Fill in `config.yml` — the package spec glossary lives in [`CONTEXT.md`](CONTEXT.md). For a service package add `pkg_service` and look at the [jinja service_template](https://github.com/mietzen/OPNware/blob/main/service_templates/default.jinja).
-3. Adjust `build.sh` so it produces your payload, then finishes with `pkg-tool pack`.
+2. Fill in `config.yml` — the package spec glossary lives in [`CONTEXT.md`](CONTEXT.md).
+3. Adjust `build.sh` so it produces your payload (staged on FreeBSD default paths), then finishes with `pkg-tool pack`.
 4. Build locally (next section). The rest — build matrix, update checks, repo assembly — is driven by pkg-tool and GitHub Actions automatically.
 
 For examples see the [build scripts (`build.sh`)](https://github.com/mietzen/OPNware/blob/main/pkgs/yq/build.sh) and [configs (`config.yml`)](https://github.com/mietzen/OPNware/blob/main/pkgs/yq/config.yml) in the [`pkg` folders](https://github.com/mietzen/OPNware/tree/main/pkgs) and the [main `config.yml`](https://github.com/mietzen/OPNware/blob/main/config.yml).

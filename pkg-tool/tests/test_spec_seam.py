@@ -19,7 +19,7 @@ pkg_manifest:
   comment: Test fixture package
   www: https://example.com
   maintainer: test@example.com
-  prefix: /opt/opnware/pkgs/blocky
+  prefix: /usr/local
 """
 
 REDISTRIBUTE_SPEC = """\
@@ -106,6 +106,12 @@ class TestValidation:
     def test_mapping_name_rejected(self, tmp_path):
         write(tmp_path, "pkg", "pkg_manifest:\n  name:\n    a: 1\n  origin: o\n  version: 1.0\nbuild_config:\n  include: {}\n")
         with pytest.raises(TypeError, match=r"pkg_manifest\.name"):
+            _load_spec(str(tmp_path / "pkgs" / "pkg" / "config.yml"))
+
+    def test_pkg_service_rejected(self, tmp_path):
+        with_service = BUILD_SPEC + "\npkg_service:\n  template: default\n  vars:\n    COMMAND: /usr/local/bin/blocky\n"
+        write(tmp_path, "pkg", with_service)
+        with pytest.raises(ValueError, match="pkg_service"):
             _load_spec(str(tmp_path / "pkgs" / "pkg" / "config.yml"))
 
     def test_empty_repo_config_raises_type_error_not_attribute_error(self, tmp_path):

@@ -17,7 +17,7 @@ pkg_manifest:
   comment: Test fixture package
   www: https://example.com
   maintainer: test@example.com
-  prefix: /opt/opnware/pkgs/blocky
+  prefix: /usr/local
 """
 
 REDISTRIBUTE_SPEC = """\
