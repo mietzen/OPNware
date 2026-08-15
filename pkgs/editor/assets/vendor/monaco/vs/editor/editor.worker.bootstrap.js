@@ -8,4 +8,4 @@
 // origin, which the CSP allows. The volt patches
 // MonacoEnvironment.getWorker to return `new Worker(this file)`.
 importScripts('/ui/js/vendor/monaco/vs/loader.js');
-require(['vs/editor/editor.worker']);
+require(['vs/editor/editor.worker'], function() {});
