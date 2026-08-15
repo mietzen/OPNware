@@ -9,7 +9,7 @@ pkg_manifest:
   # Version tracks the vendored monaco-editor release (the primary component
   # of the shared editor tree). Bump it whenever pkgs/editor/assets/vendor
   # is refreshed — the build fails on mismatch (see build.sh).
-  version: 0.56.0
+  version: 0.57.0
   comment: Shared vendored Monaco editor assets for the OPNsense WebUI
   www: https://microsoft.github.io/monaco-editor/
   maintainer: github.nstein@mailbox.org

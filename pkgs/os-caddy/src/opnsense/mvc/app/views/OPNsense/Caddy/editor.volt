@@ -78,14 +78,15 @@
     // OPNsense's CSP blocks blob: web workers but allows same-origin
     // workers. Monaco's default MonacoEnvironment.getWorker() creates blob:
     // workers which the CSP refuses, and its main-thread fallback freezes
-    // the UI on model changes. Serve the worker from the vendored,
-    // same-origin editor.worker.js instead — no CSP violation, no freeze.
-    // The assignment must happen inside the require() callback:
-    // editor.main.js sets its own MonacoEnvironment on load.
+    // the UI on model changes. Serve a same-origin bootstrap worker
+    // (editor.worker.bootstrap.js loads the AMD loader + editor.worker.js)
+    // instead — no CSP violation, no freeze. The assignment must happen
+    // inside the require() callback: editor.main.js sets its own
+    // MonacoEnvironment on load.
     self.__opnwareDisableMonacoWorkers = function() {
         if (self.MonacoEnvironment && typeof self.MonacoEnvironment.getWorker === 'function') {
             self.MonacoEnvironment.getWorker = function() {
-                return new Worker('/ui/js/vendor/monaco/vs/editor/editor.worker.js', { type: 'module' });
+                return new Worker('/ui/js/vendor/monaco/vs/editor/editor.worker.bootstrap.js');
             };
         }
     };
