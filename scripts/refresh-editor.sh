@@ -4,10 +4,11 @@ set -euo pipefail
 # OPNware — one-command refresh of the shared vendored editor.
 #
 # The monaco-editor package (pkgs/monaco-editor) ships a checked-in vendor tree
-# (monaco-editor + the TextMate stack), so it has NO automated update
-# source: the daily check-updates flow skips it by design. This script is
-# the manual refresh, kept to one command. The human reviews the resulting
-# git diff and commits — that review IS the safety gate.
+# (monaco-editor + the TextMate stack). The daily check-updates flow detects a
+# new npm release and routes it here (update.yml, abi_arch 'vendor'); this
+# script re-vendors AND bumps, then opens a PR that is NOT auto-merged — the
+# human reviews the resulting diff, that review IS the safety gate. Can also
+# be run by hand as the manual refresh.
 #
 # What it does:
 #   1. npm-pack the latest monaco-editor, replace vendor/monaco/vs

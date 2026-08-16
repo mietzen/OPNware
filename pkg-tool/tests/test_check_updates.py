@@ -69,7 +69,7 @@ vendor:
 pkg_manifest:
   name: monaco-editor
   origin: opnware/monaco-editor
-  version: 0.56.0
+  version: 0.56.0_1
   comment: vendored asset
   www: https://example.com
   maintainer: test@example.com
