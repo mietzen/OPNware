@@ -18,14 +18,7 @@ pkg_manifest:
   licenses:
     - MIT
   desc: |
-    OPNware os-caddy-advanced: WebUI-managed Caddy web server with
-    process-level settings, a user-owned Caddyfile editor and
-    xcaddy-pinned module management.
-
-    The plugin code is original work of this repository, licensed MIT
-    (see LICENSE in the package). Caddy itself is a separate dependency
-    (Apache-2.0, from its own package). Conflicts with the official
-    os-caddy plugin so pkg can never mix the two up.
+    OPNware os-caddy-advanced: WebUI-managed Caddy web server with process-level settings, a user-owned Caddyfile editor and xcaddy-pinned module management. The plugin code is original work of this repository (MIT, see LICENSE in the package); Caddy itself is a separate dependency (Apache-2.0, from its own package). Conflicts with the official os-caddy plugin so pkg can never mix the two up.
   deps:
     caddy:
       origin: opnware/caddy
