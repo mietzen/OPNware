@@ -69,7 +69,14 @@ class ConfigController extends ApiControllerBase
                 'parser' => 'none',
                 'parser_warning' => false,
             );
-            file_put_contents(self::STATUS_FILE, json_encode($noop));
+            // Mirror the save script's status side effect so a status read
+            // cannot contradict the just-shown result; ensure the state dir
+            // exists like config_out() does.
+            $statusDir = dirname(self::STATUS_FILE);
+            if (!is_dir($statusDir)) {
+                @mkdir($statusDir, 0755, true);
+            }
+            @file_put_contents(self::STATUS_FILE, json_encode($noop));
             return $noop;
         }
 
