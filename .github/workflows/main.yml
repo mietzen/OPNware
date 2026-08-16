@@ -26,7 +26,7 @@ jobs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v7
+        uses: actions/checkout@v7.0.1
         with:
           fetch-depth: 0
 
@@ -54,7 +54,7 @@ jobs:
     needs: discover-packages
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v7
+        uses: actions/checkout@v7.0.1
         with:
           path: repo
 
@@ -62,14 +62,14 @@ jobs:
         run: pip install "file://${GITHUB_WORKSPACE}/repo/pkg-tool"
 
       - name: Setup GO
-        uses: actions/setup-go@v7
+        uses: actions/setup-go@v7.0.0
         if: ${{ matrix.go }}
         with:
           go-version: ${{ matrix.go }}
           cache: false
 
       - name: Setup NodeJS
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@v7.0.0
         if: ${{ matrix.node }}
         with:
           node-version: ${{ matrix.node }}
@@ -79,7 +79,7 @@ jobs:
         run: ./build.sh ${{ matrix.arch }} ${{ matrix.abi }}
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v7.0.1
         with:
           name: ${{ github.run_id }}_${{ matrix.pkg_name }}_${{ matrix.arch }}_${{ matrix.abi }}
           path: dist/*
@@ -98,12 +98,12 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v7
+        uses: actions/checkout@v7.0.1
         with:
           path: repo
 
       - name: Download build artifacts
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@v8.0.1
         with:
           path: artifacts
 
@@ -119,12 +119,12 @@ jobs:
             --output-dir ./pages
 
       - name: Upload Pages Artifact
-        uses: actions/upload-pages-artifact@v5
+        uses: actions/upload-pages-artifact@v5.0.0
         with:
           path: ./pages
 
       - name: Deploy to GitHub Pages
-        uses: actions/deploy-pages@v5
+        uses: actions/deploy-pages@v5.0.0
         id: deployment
 
   assemble-repo-check:
@@ -133,12 +133,12 @@ jobs:
     needs: build-packages
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v7
+        uses: actions/checkout@v7.0.1
         with:
           path: repo
 
       - name: Download build artifacts
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@v8.0.1
         with:
           path: artifacts
 
@@ -177,8 +177,8 @@ jobs:
     # run instead (pytest suite in pkg-tool/tests/).
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-python@v7
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-python@v7.0.0
         with:
           python-version: '3.12'
       - run: pip install -e "./pkg-tool[dev]"
