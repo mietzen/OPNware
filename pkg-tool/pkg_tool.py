@@ -911,7 +911,7 @@ def check_updates(pkgs_dir='pkgs'):
             # the refresh script (which re-vendors AND bumps — a bare bump
             # would fail the build guard) and skips auto-merge.
             remote = _npm_latest_version(config['vendor']['npm'])
-            local = str(config.get('pkg_manifest', {}).get('version'))
+            local = re.sub(r"_[0-9]+$", "", str(config.get('pkg_manifest', {}).get('version')))
             if str(remote) != local:
                 matrix['pkg'].append(pkg_name)
                 matrix['include'].append({'pkg': pkg_name, 'abi_arch': 'vendor', 'version': remote})
