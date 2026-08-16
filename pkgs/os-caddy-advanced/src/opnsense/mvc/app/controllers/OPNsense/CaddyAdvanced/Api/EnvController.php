@@ -138,7 +138,7 @@ class EnvController extends ApiControllerBase
             return array('status' => 'failure', 'message' => gettext('invalid variable name'));
         }
         if ($name === self::PLUGIN_ROW) {
-            return array('status' => 'failure', 'message' => self::PLUGIN_ROW . gettext(' is plugin-managed'));
+            return array('status' => 'failure', 'message' => sprintf(gettext('%s is plugin-managed'), self::PLUGIN_ROW));
         }
         $value = null;
         foreach ($this->readRows($this->envfilePath()) as $row) {
@@ -188,7 +188,7 @@ class EnvController extends ApiControllerBase
             if ($name === self::PLUGIN_ROW) {
                 $errors[] = array(
                     'index' => $index,
-                    'error' => self::PLUGIN_ROW . gettext(' is managed by the plugin'),
+                    'error' => sprintf(gettext('%s is managed by the plugin'), self::PLUGIN_ROW),
                 );
                 continue;
             }
