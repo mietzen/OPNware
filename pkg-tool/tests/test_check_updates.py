@@ -129,6 +129,29 @@ def test_gh_adapter_no_update_emits_nothing(tmp_path, monkeypatch):
 
     assert matrix == {"pkg": [], "include": []}
 
+
+def test_gh_adapter_strips_revision_suffix_before_compare(tmp_path, monkeypatch):
+    # A FreeBSD revision suffix (_N) marks package-only changes and is not a
+    # version difference — a GitHub release equal to the base version must not
+    # emit an update (latent twin of the vendor-branch fix, ticket #242).
+    make_repo(tmp_path, {"blocky": GH_SPEC.replace("version: 0.34.0", "version: 0.34.0_1")})
+    monkeypatch.setattr(requests, "get", lambda url, **kwargs: FakeResponse(json_data={"tag_name": "v0.34.0"}))
+
+    matrix = check_updates(str(tmp_path / 'pkgs'))
+
+    assert matrix == {"pkg": [], "include": []}
+
+
+def test_gh_adapter_revision_suffix_still_emits_for_newer_remote(tmp_path, monkeypatch):
+    # Same revision-suffixed local version, but the remote genuinely moved:
+    # the update must still be emitted.
+    make_repo(tmp_path, {"blocky": GH_SPEC.replace("version: 0.34.0", "version: 0.34.0_1")})
+    monkeypatch.setattr(requests, "get", lambda url, **kwargs: FakeResponse(json_data={"tag_name": "v0.36.0"}))
+
+    matrix = check_updates(str(tmp_path / 'pkgs'))
+
+    assert matrix["include"] == [{"pkg": "blocky", "abi_arch": "ALL", "version": "0.36.0"}]
+
 def test_bsd_packagesite_adapter_detects_newer_version(tmp_path, monkeypatch):
     make_repo(tmp_path, {"btop": REDISTRIBUTE_SPEC})
 

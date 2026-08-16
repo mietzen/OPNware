@@ -949,7 +949,11 @@ def check_updates(pkgs_dir='pkgs'):
                 remote = _sf_latest_version(src_repo)
             else:
                 continue  # static asset packages (e.g. the shared editor) have no remote version source
-            if str(remote) != local:
+            # A FreeBSD revision suffix (_N) marks package-only changes and is
+            # not a version difference — strip it before comparing, mirroring
+            # the guard in pkgs/*/build.sh and the vendor branch above.
+            local_base = re.sub(r'_[0-9]+$', '', local)
+            if str(remote) != local_base:
                 matrix['pkg'].append(pkg_name)
                 matrix['include'].append({'pkg': pkg_name, 'abi_arch': 'ALL', 'version': remote})
     return matrix
