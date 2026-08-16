@@ -466,12 +466,16 @@ def _generate_index_tree(base_dir):
             fh.write('</table>')
             fh.write(INDEX_FOOTER)
 
-def _plugin_hooks(payload_dir):
+def _plugin_hooks(payload_dir, pkg_name):
     """Derive the pkg lifecycle scripts from what the plugin payload ships.
 
     Mirrors the opnsense/plugins framework Templates: actions.d -> configd
     restart, MVC models -> run_migrations, service templates -> template
-    reload, plugins.inc.d -> rc.configure_plugins.
+    reload, plugins.inc.d -> rc.configure_plugins. Additionally self-registers
+    the plugin (system.firmware.plugins) on install and unregisters it on
+    deinstall, so Firmware -> Plugins shows the plugin as configured instead of
+    'misconfigured' when installed directly with pkg (the firmware UI normally
+    runs register.php itself).
     """
     base = os.path.join(payload_dir, 'usr/local/opnsense')
     post, deinstall = [], []
@@ -492,6 +496,10 @@ def _plugin_hooks(payload_dir):
                     '/usr/local/etc/rc.configure_plugins post-install; fi')
         deinstall.append('if [ -f /usr/local/etc/rc.configure_plugins ]; then echo "Reloading plugin configuration"; '
                          '/usr/local/etc/rc.configure_plugins post-deinstall; fi')
+    register = '/usr/local/opnsense/scripts/firmware/register.php'
+    if os.path.isdir(os.path.join(payload_dir, 'usr/local/opnsense/version')):
+        post.append(f'if [ -f {register} ]; then {register} install {pkg_name}; fi')
+        deinstall.append(f'if [ -f {register} ]; then {register} remove {pkg_name}; fi')
     scripts = {}
     if post:
         scripts['post-install'] = '\n'.join(post) + '\n'
@@ -521,7 +529,50 @@ def _plugin_package(payload_dir, plugin, manifest, arch, version):
     os.makedirs(ver_dir, exist_ok=True)
     with open(os.path.join(ver_dir, name), 'w') as f:
         json.dump(annotation, f, indent=2)
-    return pkg_name, annotation, _plugin_hooks(payload_dir)
+    return pkg_name, annotation, _plugin_hooks(payload_dir, pkg_name)
+
+
+def _stage_licenses(payload_dir, pkg_name, version, licenses):
+    """Copy license texts into the payload's /usr/local/share/licenses dir.
+
+    Firmware -> Packages reads licenses from
+    /usr/local/share/licenses/<pkg>-<version>/<LICENSE_ID> (license.sh), so
+    every package must ship its license files there or the UI reports "the
+    package does not have an associated license file".
+
+    Sources are the staged doc LICENSE files. For a single-license package the
+    bare /usr/local/share/doc/<dir>/LICENSE is used; multi-license packages
+    stage explicit per-license files (LICENSE.<ID>) next to it so pkg-tool
+    can map each declared ID to its text.
+    """
+    if not licenses:
+        return
+    doc_root = os.path.join(payload_dir, 'usr/local/share/doc')
+    if not os.path.isdir(doc_root):
+        return
+    explicit = {}
+    generic = []
+    for root, _, files in os.walk(doc_root):
+        for f in files:
+            if f == 'LICENSE':
+                generic.append(os.path.join(root, f))
+            elif f.startswith('LICENSE.'):
+                explicit[f[len('LICENSE.'):]] = os.path.join(root, f)
+
+    lic_dir = os.path.join(payload_dir, 'usr/local/share/licenses', f'{pkg_name}-{version}')
+    os.makedirs(lic_dir, exist_ok=True)
+    for lic_id in licenses:
+        source = explicit.get(lic_id)
+        if source is None and len(licenses) == 1 and len(generic) == 1:
+            # Single-license package: the bare staged LICENSE is the text.
+            source = generic[0]
+        if source and os.path.isfile(source):
+            target = os.path.join(lic_dir, lic_id)
+            shutil.copyfile(source, target)
+            os.chmod(target, 0o644)
+        else:
+            print(f"warning: no staged license text found for {pkg_name} license {lic_id}; "
+                  f"Firmware -> Packages will report a missing license file")
 
 
 def pack(config_path, abi, arch, payload_dir='pkg', output_dir='.'):
@@ -554,11 +605,11 @@ def pack(config_path, abi, arch, payload_dir='pkg', output_dir='.'):
         manifest['name'] = name
         manifest['origin'] = f"opnware/{name}"
         manifest['scripts'] = scripts
-        manifest['conflicts'] = [str(c) for c in pkg_config['plugin'].get('conflicts', [])]
         manifest['annotations'] = annotation
     else:
         name = manifest['name'].lower()
 
+    _stage_licenses(payload_dir, name, version, manifest.get('licenses', []))
     _create_manifest(config_path, abi, arch, payload_dir, output_dir, spec=pkg_config)
     pkg_file = os.path.join(output_dir, _pkg_filename(name, version))
     _create_pkg(pkg_file, output_dir, payload_dir)

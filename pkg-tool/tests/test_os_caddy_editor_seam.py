@@ -9,8 +9,8 @@ breaks validation when CADDY_LOG_LEVEL is empty (both found on hardware).
 
 from pathlib import Path
 
-EDITOR_TREE = Path("pkgs/os-caddy/src/opnsense/scripts/OPNsense/Caddy/editor_tree.php")
-EDITOR_SAVE = Path("pkgs/os-caddy/src/opnsense/scripts/OPNsense/Caddy/editor_save.php")
+EDITOR_TREE = Path("pkgs/os-caddy-advanced/src/opnsense/scripts/OPNsense/CaddyAdvanced/editor_tree.php")
+EDITOR_SAVE = Path("pkgs/os-caddy-advanced/src/opnsense/scripts/OPNsense/CaddyAdvanced/editor_save.php")
 
 
 def test_seed_uses_flat_confd_glob():

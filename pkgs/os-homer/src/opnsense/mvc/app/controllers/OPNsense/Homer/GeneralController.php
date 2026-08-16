@@ -10,7 +10,12 @@ class GeneralController extends IndexController
     public function indexAction()
     {
         $this->view->pick('OPNsense/Homer/general');
-        $this->view->generalForm = $this->getForm("general");
+
+        // The Server name field's hint shows the box's real hostname (a
+        // sensible value the user can copy) instead of a static example.
+        $form = $this->getForm("general");
+        $this->applyServerNameHint($form);
+        $this->view->generalForm = $form;
 
         $model = new Homer();
         $port = (string)$model->general->Port;
@@ -28,6 +33,37 @@ class GeneralController extends IndexController
             $this->formatHost($this->resolveHost($interface, $lanIp, $requestHost)),
             $port
         );
+    }
+
+    /**
+     * Override the Server name field hint with the real system hostname
+     * (config.xml → system.hostname), falling back to the static example
+     * when unset.
+     */
+    private function applyServerNameHint(&$form)
+    {
+        $config = Config::getInstance()->object();
+        $hostname = isset($config->system->hostname) ? (string)$config->system->hostname : '';
+        $hint = $hostname !== '' ? $hostname : 'homer.lan';
+
+        // Plain foreach (no `??`): a null-coalescing expression creates a
+        // temporary that reference iteration would mutate without touching
+        // the form array.
+        if (!isset($form['tabs']) || !is_array($form['tabs'])) {
+            return;
+        }
+        foreach ($form['tabs'] as &$tab) {
+            foreach ($tab['sections'] as &$section) {
+                foreach ($section['children'] as &$field) {
+                    if (($field['id'] ?? '') === 'homer.general.ServerName') {
+                        $field['hint'] = $hint;
+                    }
+                }
+                unset($field);
+            }
+            unset($section);
+        }
+        unset($tab);
     }
 
     /**

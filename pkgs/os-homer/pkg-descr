@@ -1,5 +1,5 @@
 OPNware os-homer: serves the Homer dashboard via its own isolated caddy
-instance (the plain caddy package only, not os-caddy).
+instance (the plain caddy package only, not os-caddy-advanced).
 
 Settings — port (default 9443), listen interface (all / LAN IP / localhost)
 and a TLS toggle — regenerate the plugin-owned Caddyfile and restart the

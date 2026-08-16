@@ -1,0 +1,12 @@
+<acl>
+    <page-caddyadvanced>
+        <name>Services: Caddy Advanced</name>
+        <description>Allow access to Caddy Advanced</description>
+        <patterns>
+            <pattern>ui/caddyadvanced/*</pattern>
+            <pattern>ui/diagnostics/log/core/caddyadvanced</pattern>
+            <pattern>api/caddyadvanced/*</pattern>
+            <pattern>api/diagnostics/log/core/caddyadvanced/*</pattern>
+        </patterns>
+    </page-caddyadvanced>
+</acl>

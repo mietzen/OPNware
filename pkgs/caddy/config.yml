@@ -1,9 +1,25 @@
 ---
 build_config:
-  include: {}
-redistribute:
+  include:
+    go: '1.25'
+  src_repo: 'https://github.com/caddyserver/caddy'
+pkg_manifest:
   name: caddy
-  version:
-    FreeBSD-15-amd64: "2.11.4_1"
-  repo: http://pkg.freebsd.org
-  path: quarterly/All
+  origin: opnware/caddy
+  version: 2.11.4
+  comment: Fast, highly configurable HTTP/1-2-3 web server with automatic TLS
+  www: https://caddyserver.com/
+  maintainer: github.nstein@mailbox.org
+  prefix: /usr/local
+  licenselogic: single
+  licenses:
+    - APACHE20
+  desc: |
+    Pure binary build of the Caddy web server, cross-compiled from source for
+    FreeBSD. Ships only the /usr/local/bin/caddy binary plus license/source
+    docs — no rc script, no configuration, no syslog fragments (the
+    os-caddy-advanced plugin owns those).
+
+    Version is pinned to 2.11.4 and stamped into the binary via
+    CustomVersion so `caddy version` reports the pinned release (the plugin's
+    module management parses it to pin xcaddy rebuilds).

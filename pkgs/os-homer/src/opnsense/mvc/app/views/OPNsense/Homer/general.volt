@@ -50,7 +50,9 @@
                         function () {
                             dfObj.resolve();
                         },
-                        false,
+                        // disable_dialog: validation errors surface as the
+                        // inline field note only, no BootstrapDialog popup.
+                        true,
                         function () {
                             dfObj.reject();
                         }

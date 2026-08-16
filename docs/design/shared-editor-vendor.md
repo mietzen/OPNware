@@ -1,4 +1,4 @@
-# Shared vendored editor asset: Monaco + TextMate (os-caddy and os-homer)
+# Shared vendored editor asset: Monaco + TextMate (os-caddy-advanced and os-homer)
 
 The OPNsense web UI pages in this repo render a real code editor by shipping a
 **shared, vendored** copy of the Monaco editor plus the TextMate grammar
@@ -7,7 +7,7 @@ highlighting. Nothing is loaded from a CDN — every byte is installed with the
 plugin package and served from the WebUI origin.
 
 This document is the reference for how a plugin consumes the asset. Both the
-os-caddy Caddyfile editor and the os-homer YAML config editor follow it.
+os-caddy-advanced Caddyfile editor and the os-homer YAML config editor follow it.
 
 ## What is vendored and where
 

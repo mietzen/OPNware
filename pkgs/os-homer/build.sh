@@ -64,10 +64,14 @@ cp "${DIST_ROOT}/src/LICENSE" "${DIST_ROOT}/dist/pkg/usr/local/share/doc/homer/L
 chmod 0644 "${DIST_ROOT}/dist/pkg/usr/local/share/doc/homer/LICENSE"
 
 # Our own MIT license for the plugin code (distinct from Homer's Apache-2.0).
+# Per-license-ID files so pkg-tool can stage them into the package licenses
+# dir (Firmware -> Packages reads them from there).
 mkdir -p "${DIST_ROOT}/dist/pkg/usr/local/share/doc/os-homer"
 chmod 0755 "${DIST_ROOT}/dist/pkg/usr/local/share/doc/os-homer"
-cp "${SCRIPT_DIR}/LICENSE" "${DIST_ROOT}/dist/pkg/usr/local/share/doc/os-homer/LICENSE"
-chmod 0644 "${DIST_ROOT}/dist/pkg/usr/local/share/doc/os-homer/LICENSE"
+cp "${SCRIPT_DIR}/LICENSE" "${DIST_ROOT}/dist/pkg/usr/local/share/doc/os-homer/LICENSE.MIT"
+chmod 0644 "${DIST_ROOT}/dist/pkg/usr/local/share/doc/os-homer/LICENSE.MIT"
+cp "${DIST_ROOT}/src/LICENSE" "${DIST_ROOT}/dist/pkg/usr/local/share/doc/os-homer/LICENSE.APACHE20"
+chmod 0644 "${DIST_ROOT}/dist/pkg/usr/local/share/doc/os-homer/LICENSE.APACHE20"
 
 # Provide Source Code Link
 cat <<EOF > "${DIST_ROOT}/dist/pkg/usr/local/share/doc/homer/SOURCE"

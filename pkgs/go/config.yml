@@ -1,9 +1,0 @@
----
-build_config:
-  include: {}
-redistribute:
-  name: go
-  version:
-    FreeBSD-15-amd64: "1.25_20,2"
-  repo: http://pkg.freebsd.org
-  path: quarterly/All

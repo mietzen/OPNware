@@ -32,7 +32,7 @@ pkg_manifest:
     /usr/local/share/doc/homer/LICENSE).
   deps:
     caddy:
-      origin: www/caddy
+      origin: opnware/caddy
       version: ">=2.11.4, <3.0.0"
     editor:
       origin: opnware/editor

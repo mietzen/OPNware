@@ -1,0 +1,69 @@
+<model>
+    <mount>//OPNsense/caddyadvanced</mount>
+    <description>Caddy Advanced Web Server</description>
+    <version>1.0.0</version>
+    <items>
+        <general>
+            <enabled type="BooleanField">
+                <Default>0</Default>
+                <Required>Y</Required>
+            </enabled>
+            <RunUser type="TextField">
+                <Default>root</Default>
+                <Required>Y</Required>
+            </RunUser>
+            <RunGroup type="TextField">
+                <Default>wheel</Default>
+                <Required>Y</Required>
+            </RunGroup>
+            <LogLevel type="OptionField">
+                <BlankDesc>INFO (default)</BlankDesc>
+                <OptionValues>
+                    <DEBUG>DEBUG</DEBUG>
+                    <INFO>INFO</INFO>
+                    <WARN>WARN</WARN>
+                    <ERROR>ERROR</ERROR>
+                    <PANIC>PANIC</PANIC>
+                    <FATAL>FATAL</FATAL>
+                </OptionValues>
+            </LogLevel>
+            <EnvFile type="TextField">
+                <Default>/usr/local/etc/caddy/env</Default>
+                <Required>Y</Required>
+            </EnvFile>
+            <Modules type="TextField">
+                <AsList>Y</AsList>
+            </Modules>
+        </general>
+        <dockerproxy>
+            <enabled type="BooleanField">
+                <Default>1</Default>
+                <Required>Y</Required>
+            </enabled>
+            <mode type="OptionField">
+                <BlankDesc>Default</BlankDesc>
+                <OptionValues>
+                    <swarms>swarms</swarms>
+                    <services>services</services>
+                    <both>both</both>
+                </OptionValues>
+            </mode>
+            <docker_sockets type="TextField">
+                <Default>tcp://docker-proxy-host:2375</Default>
+                <Required>Y</Required>
+            </docker_sockets>
+            <docker_certs_path type="TextField"/>
+            <ingress_networks type="TextField"/>
+            <caddyfile_path type="TextField">
+                <Default>/usr/local/etc/caddy/Caddyfile</Default>
+            </caddyfile_path>
+            <envfile type="TextField">
+                <Default>/usr/local/etc/caddy/env</Default>
+            </envfile>
+            <docker_host type="TextField"/>
+            <docker_tls_verify type="BooleanField">
+                <Default>0</Default>
+            </docker_tls_verify>
+        </dockerproxy>
+    </items>
+</model>

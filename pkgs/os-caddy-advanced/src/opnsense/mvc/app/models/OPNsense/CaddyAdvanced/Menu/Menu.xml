@@ -1,0 +1,10 @@
+<menu>
+    <Services>
+        <CaddyAdvanced VisibleName="Caddy Advanced" cssClass="fa fa-server fa-fw">
+            <General VisibleName="General Settings" order="10" url="/ui/caddyadvanced/general"/>
+            <Editor VisibleName="Editor" order="20" url="/ui/caddyadvanced/editor"/>
+            <Modules VisibleName="Modules" order="30" url="/ui/caddyadvanced/modules"/>
+            <Log VisibleName="Log File" order="50" url="/ui/diagnostics/log/core/caddyadvanced"/>
+        </CaddyAdvanced>
+    </Services>
+</menu>

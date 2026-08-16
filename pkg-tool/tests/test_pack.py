@@ -75,12 +75,13 @@ GOLDEN_MANIFEST = {
     "scripts": {"pre-install": "echo fixture\n"},
     "abi": "FreeBSD:15:amd64",
     "arch": "freebsd:15:x86:64",
-    "flatsize": 1134,
+    "flatsize": 1166,
     "files": {
         "/usr/local/bin/blocky": "785b0751fc2c53dc14a4ce3d800e69ef9ce1009eb327ccf458afe09c242c26c9",
         "/usr/local/etc/blocky/config.yml": "009c4672fda30d3313d1e114efe92407bd27fdbf08ca7f85b781afacad87e96a",
         "/usr/local/share/doc/blocky/LICENSE": "7073bc5face2ef6d92e47bb715d9a9427eba1bbef26ac59babdbea901e00fe54",
         "/usr/local/share/doc/blocky/SOURCE": "9d1c2135092d4bcdccd6bab6ee476d566551a85d39d93a01ec8451db6924debb",
+        "/usr/local/share/licenses/blocky-0.34.0/APACHE20": "7073bc5face2ef6d92e47bb715d9a9427eba1bbef26ac59babdbea901e00fe54",
     },
 }
 
@@ -91,6 +92,7 @@ EXPECTED_MEMBERS = [
     "/usr/local/etc/blocky/config.yml",
     "/usr/local/share/doc/blocky/LICENSE",
     "/usr/local/share/doc/blocky/SOURCE",
+    "/usr/local/share/licenses/blocky-0.34.0/APACHE20",
 ]
 
 
@@ -235,7 +237,10 @@ def test_pack_plugin_os_prefix_annotation_hooks_conflicts(tmp_path):
     manifest = manifests["+MANIFEST"]
     assert manifest["name"] == "os-caddy"
     assert manifest["origin"] == "opnware/os-caddy"
-    assert manifest["conflicts"] == ["os-caddy"]
+    # The conflict is carried as the product_conflicts annotation only — the
+    # pkg manifest conflicts field must stay absent, otherwise pkg fails the
+    # install when the conflict target is not in the local package database.
+    assert "conflicts" not in manifest
     assert manifest["annotations"]["product_abi"] == "26.7"
     assert manifest["annotations"]["product_arch"] == "amd64"
     assert manifest["annotations"]["product_id"] == "os-caddy"
@@ -249,11 +254,13 @@ def test_pack_plugin_os_prefix_annotation_hooks_conflicts(tmp_path):
     assert "run_migrations.php OPNsense/Caddy" in post
     assert "configctl template reload OPNsense/Caddy" in post
     assert "rc.configure_plugins post-install" in post
+    assert "register.php install os-caddy" in post
     assert "rc.configure_plugins post-deinstall" in manifest["scripts"]["post-deinstall"]
+    assert "register.php remove os-caddy" in manifest["scripts"]["post-deinstall"]
 
     compact = manifests["+COMPACT_MANIFEST"]
     assert compact["name"] == "os-caddy"
-    assert compact["conflicts"] == ["os-caddy"]
+    assert "conflicts" not in compact
     assert "files" not in compact
     assert "scripts" not in compact
 

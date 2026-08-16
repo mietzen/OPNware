@@ -19,7 +19,7 @@ pkg_manifest:
     - MIT
   desc: |
     Shared vendored Monaco editor + TextMate stack served from
-    /usr/local/opnsense/www/js/vendor. Owned by this package so os-caddy
+    /usr/local/opnsense/www/js/vendor. Owned by this package so os-caddy-advanced
     and os-homer can both depend on it without pkg file-ownership
     conflicts. Source of truth for the vendored tree:
     pkgs/editor/assets/vendor (the single checked-in copy).

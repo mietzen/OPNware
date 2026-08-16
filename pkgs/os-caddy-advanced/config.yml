@@ -1,0 +1,41 @@
+---
+build_config:
+  include: {}
+plugin:
+  opnsense_version: "26.7"
+  tier: 3
+  conflicts:
+    - os-caddy
+pkg_manifest:
+  name: caddy-advanced
+  origin: opnware/os-caddy-advanced
+  version: 0.7.2
+  comment: Caddy web server plugin
+  www: https://caddyserver.com/
+  maintainer: github.nstein@mailbox.org
+  prefix: /usr/local
+  licenselogic: single
+  licenses:
+    - MIT
+  desc: |
+    OPNware os-caddy-advanced: WebUI-managed Caddy web server with
+    process-level settings, a user-owned Caddyfile editor and
+    xcaddy-pinned module management.
+
+    The plugin code is original work of this repository, licensed MIT
+    (see LICENSE in the package). Caddy itself is a separate dependency
+    (Apache-2.0, from its own package). Conflicts with the official
+    os-caddy plugin so pkg can never mix the two up.
+  deps:
+    caddy:
+      origin: opnware/caddy
+      version: ">=2.11.4, <3.0.0"
+    editor:
+      origin: opnware/editor
+      version: ">=0.56.0"
+    xcaddy:
+      origin: opnware/xcaddy
+      version: ">=0.4.6"
+    go126:
+      origin: lang/go126
+      version: ">=1.26.5"

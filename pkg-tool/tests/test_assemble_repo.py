@@ -161,7 +161,10 @@ def test_assemble_repo_indexes_plugin_package(tmp_path):
     line = json.loads(content["packagesite.yaml"].decode().strip())
     assert line["name"] == "os-caddy"
     assert line["origin"] == "opnware/os-caddy"
-    assert line["conflicts"] == ["os-caddy"]
+    # The conflict is annotation-only (see test_pack.py); the packagesite
+    # entry carries it as product_conflicts, not a manifest conflicts field.
+    assert "conflicts" not in line
+    assert line["annotations"]["product_conflicts"] == "os-caddy"
 
 
 def test_assemble_repo_is_idempotent_on_rerun(tmp_path):

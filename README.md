@@ -7,7 +7,6 @@ It contains packages that I use or have used:
 
 - [caddy](https://caddyserver.com/) (redistributed)
 - [editor](pkgs/editor) (vendored Monaco + TextMate assets)
-- [go](https://go.dev/) (redistributed)
 - [go126](https://go.dev/) (redistributed)
 - [htop](https://htop.dev/) (redistributed)
 - [xcaddy](https://github.com/caddyserver/xcaddy) (redistributed)
@@ -23,7 +22,7 @@ All packages install on FreeBSD default paths: binaries in `/usr/local/bin`,
 The repo also builds two OPNsense MVC plugins via pkg-tool's plugin-package
 support:
 
-- [os-caddy](pkgs/os-caddy) — WebUI-managed Caddy: process settings, a
+- [os-caddy-advanced](pkgs/os-caddy-advanced) — WebUI-managed Caddy: process settings, a
   user-owned Caddyfile editor (validated save cycle, Monaco), an envfile
   grid with masked secrets, xcaddy-pinned module management and
   docker-proxy options
@@ -127,5 +126,5 @@ You can browse and download packages directly at:
 ## Package Licenses
 
 - Redistributed and source-built packages retain their **original upstream licenses** — see each project's repository or documentation.
-- The **plugins** (os-caddy, os-homer) are original code of this repository, licensed **MIT** (their LICENSE ships inside the package). os-homer additionally bundles the Homer dashboard, which keeps its upstream **Apache-2.0** license (its LICENSE ships at `/usr/local/share/doc/homer/LICENSE`).
+- The **plugins** (os-caddy-advanced, os-homer) are original code of this repository, licensed **MIT** (their LICENSE ships inside the package). os-homer additionally bundles the Homer dashboard, which keeps its upstream **Apache-2.0** license (its LICENSE ships at `/usr/local/share/doc/homer/LICENSE`).
 - The **editor** package vendors monaco-editor and the TextMate stack — all **MIT** components (provenance `package.json` files ship alongside the vendored tree).
