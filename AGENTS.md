@@ -18,6 +18,33 @@ Single-context: one `CONTEXT.md` + `docs/adr/` at the repo root. See `docs/agent
 
 Final reviews of implemented issues use the `oracle` sub-agent.
 
+## Development workflow (branch/PR per issue — mandatory)
+
+Every issue is developed on its own branch, tested, merged via PR, and only
+then deployed and e2e-tested on the test VM. Never commit directly to `main`;
+never deploy from a local build.
+
+1. **Branch**: `git switch -c <topic>/<issue-slug>` off `main` (one branch per
+   issue; `main` stays green).
+2. **Implement + test**: build the package locally to validate the payload
+   (`./build.sh amd64 15` + `pkg-tool assemble-repo`), run `pytest
+   pkg-tool/tests/`.
+3. **Test on the test VM**: install the built package on the `opnsense-test`
+   VM (reachable via `ssh opnsense-test`; see "Testing & debugging on the VM")
+   and exercise the change end-to-end before merging.
+4. **PR**: open a PR (gh CLI) from the branch to `main`; CI runs the build
+   matrix + assembly check on the PR. Iterate until green.
+5. **Merge**: merge the PR to `main` only after CI is green.
+6. **Deploy**: pushing to `main` triggers the CI deploy to GitHub Pages — this
+   is the ONLY deploy path. No local-build deploys.
+7. **E2E on the test VM**: after the deploy job completes, point the VM's
+   `/usr/local/etc/pkg/repos/opnware.conf` at the published repo
+   (`https://mietzen.github.io/OPNware/${ABI}/latest`), `pkg update`, install
+   the updated package, and verify the issue's acceptance criteria on the VM
+   (WebUI via the 8443 tunnel + playwright, configd/rc service checks via ssh).
+8. **Cleanup**: delete the merged branch; restore the VM repo config if it was
+   pointed elsewhere during testing.
+
 ## OPNsense development reference
 
 The OPNsense development manual is the authoritative reference for plugin
