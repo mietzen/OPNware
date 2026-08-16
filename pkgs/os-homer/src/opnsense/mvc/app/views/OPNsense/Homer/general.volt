@@ -49,6 +49,11 @@
                         formId,
                         function () {
                             dfObj.resolve();
+                            // The URL depends only on the just-saved settings;
+                            // refresh it now, no page reload needed. (The core
+                            // SimpleActionButton has no onActionDone callback —
+                            // this is the one reliable post-save hook.)
+                            updateEffectiveUrl();
                         },
                         // disable_dialog: validation errors surface as the
                         // inline field note only, no BootstrapDialog popup.
@@ -58,9 +63,6 @@
                         }
                     );
                     return dfObj.promise();
-                },
-                onActionDone: function () {
-                    updateEffectiveUrl();
                 }
             });
         });
