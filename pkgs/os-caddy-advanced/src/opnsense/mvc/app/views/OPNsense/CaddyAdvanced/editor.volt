@@ -583,7 +583,7 @@
                 // Per-row reveal toggle for secret rows
                 const $tdReveal = $('<td>');
                 if (row.secret && !row.readonly) {
-                    const $toggle = $('<button type="button" class="btn btn-xs btn-default" title="Show / hide value">')
+                    const $toggle = $('<button type="button" class="btn btn-xs btn-default" title="{{ lang._('Show / hide value') }}">')
                         .html(row.revealed ? '<i class="fa fa-eye-slash"></i>' : '<i class="fa fa-eye"></i>')
                         .click(function() {
                             if (row.revealed) {

@@ -89,7 +89,7 @@ class EditorController extends ApiControllerBase
     {
         if (!is_dir(self::STAGING_DIR)) {
             if (!mkdir(self::STAGING_DIR, 0755, true)) {
-                return 'cannot create editor staging';
+                return gettext('cannot create editor staging');
             }
         } else {
             $this->clearStaging();
@@ -97,10 +97,10 @@ class EditorController extends ApiControllerBase
         foreach (editor_tree_walk_files() as $rel) {
             $target = self::STAGING_DIR . '/' . $rel;
             if (!is_dir(dirname($target)) && !mkdir(dirname($target), 0755, true)) {
-                return 'cannot stage directory ' . dirname($target);
+                return gettext('cannot stage directory ') . dirname($target);
             }
             if (!copy(self::BASE . '/' . $rel, $target)) {
-                return 'cannot stage ' . $rel;
+                return gettext('cannot stage ') . $rel;
             }
         }
         file_put_contents(self::STAGING_MARKER, '1');
@@ -206,18 +206,18 @@ class EditorController extends ApiControllerBase
 
         $rel = $this->treeRelPath($this->request->get('path'));
         if ($rel === null) {
-            return array('status' => 'failure', 'message' => 'invalid path');
+            return array('status' => 'failure', 'message' => gettext('invalid path'));
         }
         $file = self::BASE . '/' . $rel;
         if (!$this->underBase($file)) {
-            return array('status' => 'failure', 'message' => 'invalid path');
+            return array('status' => 'failure', 'message' => gettext('invalid path'));
         }
         if (!is_file($file)) {
-            return array('status' => 'failure', 'message' => 'file does not exist');
+            return array('status' => 'failure', 'message' => gettext('file does not exist'));
         }
         $content = file_get_contents($file);
         if ($content === false) {
-            return array('status' => 'failure', 'message' => 'cannot read file');
+            return array('status' => 'failure', 'message' => gettext('cannot read file'));
         }
         return array(
             'status' => 'ok',
@@ -241,11 +241,11 @@ class EditorController extends ApiControllerBase
 
         $rel = $this->treeRelPath($this->request->get('path'));
         if ($rel === null) {
-            return array('status' => 'failure', 'message' => 'invalid path');
+            return array('status' => 'failure', 'message' => gettext('invalid path'));
         }
         $content = $this->request->get('content');
         if (!is_string($content)) {
-            return array('status' => 'failure', 'message' => 'missing content');
+            return array('status' => 'failure', 'message' => gettext('missing content'));
         }
 
         // No-op save: the file already holds exactly this content. Skip the
@@ -258,7 +258,7 @@ class EditorController extends ApiControllerBase
             $noop = array(
                 'status' => 'ok',
                 'result' => 'ok',
-                'message' => 'no changes to save',
+                'message' => gettext('no changes to save'),
                 'rollback' => false,
                 'last_save' => time(),
             );
@@ -278,15 +278,15 @@ class EditorController extends ApiControllerBase
         $staged = self::STAGING_DIR . '/' . $rel;
         $stagedDir = dirname($staged);
         if (!is_dir($stagedDir) && !mkdir($stagedDir, 0755, true)) {
-            return array('status' => 'failure', 'message' => 'cannot create ' . $stagedDir);
+            return array('status' => 'failure', 'message' => gettext('cannot create ') . $stagedDir);
         }
         $tmp = $staged . '.tmp';
         if (file_put_contents($tmp, $content) === false) {
-            return array('status' => 'failure', 'message' => 'cannot stage content');
+            return array('status' => 'failure', 'message' => gettext('cannot stage content'));
         }
         if (!rename($tmp, $staged)) {
             @unlink($tmp);
-            return array('status' => 'failure', 'message' => 'cannot stage content');
+            return array('status' => 'failure', 'message' => gettext('cannot stage content'));
         }
 
         $backend = new Backend();
@@ -320,7 +320,7 @@ class EditorController extends ApiControllerBase
         if (!editor_tree_rel_safe($target)) {
             return array(
                 'status' => 'failure',
-                'message' => 'invalid file name (must be a relative *.caddy path inside conf.d)',
+                'message' => gettext('invalid file name (must be a relative *.caddy path inside conf.d)'),
             );
         }
         $error = $this->prepareStaging();
@@ -329,16 +329,16 @@ class EditorController extends ApiControllerBase
         }
         $staged = self::STAGING_DIR . '/' . $target;
         if (file_exists($staged)) {
-            return array('status' => 'failure', 'message' => 'file already exists');
+            return array('status' => 'failure', 'message' => gettext('file already exists'));
         }
         if (is_link(self::STAGING_DIR . '/conf.d')) {
-            return array('status' => 'failure', 'message' => 'conf.d must not be a symlink');
+            return array('status' => 'failure', 'message' => gettext('conf.d must not be a symlink'));
         }
         if (!is_dir(dirname($staged)) && !mkdir(dirname($staged), 0755, true)) {
-            return array('status' => 'failure', 'message' => 'cannot create directory');
+            return array('status' => 'failure', 'message' => gettext('cannot create directory'));
         }
         if (file_put_contents($staged, '') === false) {
-            return array('status' => 'failure', 'message' => 'cannot create file');
+            return array('status' => 'failure', 'message' => gettext('cannot create file'));
         }
         return $this->runStagedSave();
     }
@@ -360,7 +360,7 @@ class EditorController extends ApiControllerBase
         $source = $this->treeRelPath($this->request->get('path'));
         $target = $this->treeRelPath($this->request->get('target') ?: $this->request->get('name'));
         if ($source === null || $source === 'Caddyfile' || $target === null || $target === 'Caddyfile') {
-            return array('status' => 'failure', 'message' => 'only conf.d/*.caddy files can be copied or moved');
+            return array('status' => 'failure', 'message' => gettext('only conf.d/*.caddy files can be copied or moved'));
         }
 
         $error = $this->prepareStaging();
@@ -370,16 +370,16 @@ class EditorController extends ApiControllerBase
         $sourcePath = self::STAGING_DIR . '/' . $source;
         $targetPath = self::STAGING_DIR . '/' . $target;
         if (!is_file($sourcePath) || is_link(self::STAGING_DIR . '/conf.d')) {
-            return array('status' => 'failure', 'message' => 'invalid or symlinked file tree');
+            return array('status' => 'failure', 'message' => gettext('invalid or symlinked file tree'));
         }
         if (file_exists($targetPath)) {
-            return array('status' => 'failure', 'message' => 'target file already exists');
+            return array('status' => 'failure', 'message' => gettext('target file already exists'));
         }
         if (!is_dir(dirname($targetPath)) && !mkdir(dirname($targetPath), 0755, true)) {
-            return array('status' => 'failure', 'message' => 'cannot create target directory');
+            return array('status' => 'failure', 'message' => gettext('cannot create target directory'));
         }
         if ($move ? !rename($sourcePath, $targetPath) : !copy($sourcePath, $targetPath)) {
-            return array('status' => 'failure', 'message' => $move ? 'cannot move file' : 'cannot copy file');
+            return array('status' => 'failure', 'message' => $move ? gettext('cannot move file') : gettext('cannot copy file'));
         }
         return $this->runStagedSave();
     }
@@ -393,10 +393,10 @@ class EditorController extends ApiControllerBase
     {
         $rel = $this->treeRelPath($this->request->get('path'));
         if ($rel === null) {
-            return array('status' => 'failure', 'message' => 'invalid path');
+            return array('status' => 'failure', 'message' => gettext('invalid path'));
         }
         if ($rel === 'Caddyfile') {
-            return array('status' => 'failure', 'message' => 'Caddyfile cannot be deleted');
+            return array('status' => 'failure', 'message' => gettext('Caddyfile cannot be deleted'));
         }
         $error = $this->prepareStaging();
         if ($error !== null) {
@@ -404,10 +404,10 @@ class EditorController extends ApiControllerBase
         }
         $staged = self::STAGING_DIR . '/' . $rel;
         if (!is_file($staged)) {
-            return array('status' => 'failure', 'message' => 'file does not exist');
+            return array('status' => 'failure', 'message' => gettext('file does not exist'));
         }
         if (!unlink($staged)) {
-            return array('status' => 'failure', 'message' => 'cannot delete file');
+            return array('status' => 'failure', 'message' => gettext('cannot delete file'));
         }
         return $this->runStagedSave();
     }
@@ -429,7 +429,7 @@ class EditorController extends ApiControllerBase
             $data = array(
                 'last_save' => 0,
                 'result' => 'none',
-                'message' => 'no save yet',
+                'message' => gettext('no save yet'),
             );
         }
         $data['status'] = 'ok';
