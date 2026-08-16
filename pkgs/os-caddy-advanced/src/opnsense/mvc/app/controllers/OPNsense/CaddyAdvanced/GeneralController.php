@@ -3,6 +3,7 @@
 namespace OPNsense\CaddyAdvanced;
 
 use OPNsense\Base\IndexController;
+use OPNsense\Core\Backend;
 
 class GeneralController extends IndexController
 {
@@ -24,16 +25,42 @@ class GeneralController extends IndexController
 
     /**
      * Whether the caddy-docker-proxy module is present in the installed binary.
+     *
+     * The module list comes from the same status-details source the status
+     * box on this page consumes; the result is cached for a short TTL so a
+     * page render never shells out to caddy.
      * @return bool
      */
     private function dockerProxyModuleInstalled()
     {
-        exec('/usr/local/bin/caddy list-modules --skip-standard 2>/dev/null', $out, $code);
-        foreach ($out as $line) {
-            if (strpos($line, 'docker_proxy') !== false) {
-                return true;
+        $cacheFile = '/var/db/os-caddy-advanced/modules_cache.json';
+        $ttl = 300;
+
+        $cached = null;
+        if (is_file($cacheFile)) {
+            $cached = json_decode(file_get_contents($cacheFile), true);
+        }
+        if (is_array($cached) && isset($cached['fetched_at']) && (time() - $cached['fetched_at']) < $ttl) {
+            return !empty($cached['docker_proxy']);
+        }
+
+        $data = json_decode((new Backend())->configdRun('caddyadvanced status-details'), true);
+        $dockerProxy = false;
+        if (is_array($data) && isset($data['modules']) && is_array($data['modules'])) {
+            foreach ($data['modules'] as $module) {
+                if (strpos($module, 'docker_proxy') !== false) {
+                    $dockerProxy = true;
+                    break;
+                }
             }
         }
-        return false;
+        if (!is_dir('/var/db/os-caddy-advanced')) {
+            @mkdir('/var/db/os-caddy-advanced', 0755, true);
+        }
+        @file_put_contents($cacheFile, json_encode(array(
+            'docker_proxy' => $dockerProxy,
+            'fetched_at' => time(),
+        )));
+        return $dockerProxy;
     }
 }
