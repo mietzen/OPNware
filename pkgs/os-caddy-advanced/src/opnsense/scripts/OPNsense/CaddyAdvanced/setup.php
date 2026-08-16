@@ -20,8 +20,8 @@ require_once 'envfile.php';
 $config = Config::getInstance()->object();
 
 $level = '';
-if (isset($config->OPNsense->caddy->general->LogLevel)) {
-    $level = (string)$config->OPNsense->caddy->general->LogLevel;
+if (isset($config->OPNsense->caddyadvanced->general->LogLevel)) {
+    $level = (string)$config->OPNsense->caddyadvanced->general->LogLevel;
 }
 
 $envfile = envfile_path();

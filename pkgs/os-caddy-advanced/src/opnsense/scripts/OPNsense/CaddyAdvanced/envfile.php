@@ -18,9 +18,9 @@ function envfile_path()
     $path = '/usr/local/etc/caddy/env';
     try {
         $cfg = \OPNsense\Core\Config::getInstance()->object();
-        if (isset($cfg->OPNsense->caddy->general->EnvFile)
-                && (string)$cfg->OPNsense->caddy->general->EnvFile !== '') {
-            $path = (string)$cfg->OPNsense->caddy->general->EnvFile;
+        if (isset($cfg->OPNsense->caddyadvanced->general->EnvFile)
+                && (string)$cfg->OPNsense->caddyadvanced->general->EnvFile !== '') {
+            $path = (string)$cfg->OPNsense->caddyadvanced->general->EnvFile;
         }
     } catch (\Throwable $e) {
         // config unavailable in this context — keep the default

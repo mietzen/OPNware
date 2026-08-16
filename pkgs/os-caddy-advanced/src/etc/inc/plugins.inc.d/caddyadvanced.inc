@@ -7,25 +7,19 @@
 
 function caddyadvanced_services()
 {
-    global $config;
-
-    $services = array();
-
-    if (
-        isset($config['OPNsense']['caddyadvanced']['general']['enabled']) &&
-        $config['OPNsense']['caddyadvanced']['general']['enabled'] == 1
-    ) {
-        $services[] = array(
-            'description' => gettext('Caddy'),
-            'configd' => array(
-                'restart' => array('caddyadvanced restart'),
-                'start' => array('caddyadvanced start'),
-                'stop' => array('caddyadvanced stop'),
-            ),
-            'name' => 'caddyadvanced',
-            'pidfile' => '/var/run/caddy/caddy.pid'
-        );
-    }
+    // Registered unconditionally so the service can be started from the UI
+    // even before it is enabled in the settings (start button on the status
+    // page); pluginctl needs the entry to report a run state at all.
+    $services[] = array(
+        'description' => gettext('Caddy'),
+        'configd' => array(
+            'restart' => array('caddyadvanced restart'),
+            'start' => array('caddyadvanced start'),
+            'stop' => array('caddyadvanced stop'),
+        ),
+        'name' => 'caddyadvanced',
+        'pidfile' => '/var/run/caddy/caddy.pid'
+    );
 
     return $services;
 }

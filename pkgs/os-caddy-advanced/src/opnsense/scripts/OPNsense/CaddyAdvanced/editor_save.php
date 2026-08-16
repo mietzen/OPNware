@@ -167,8 +167,8 @@ function editor_envfile()
 {
     $envfile = '/usr/local/etc/caddy/env';
     $config = Config::getInstance()->object();
-    if (isset($config->OPNsense->caddy->general->EnvFile)) {
-        $envfile = (string)$config->OPNsense->caddy->general->EnvFile;
+    if (isset($config->OPNsense->caddyadvanced->general->EnvFile)) {
+        $envfile = (string)$config->OPNsense->caddyadvanced->general->EnvFile;
     }
     return $envfile;
 }

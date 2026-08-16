@@ -42,12 +42,12 @@ $owned = array(
 $config = Config::getInstance()->object();
 
 // No dockerproxy section configured — nothing to sync.
-if (!isset($config->OPNsense->caddy->dockerproxy)) {
+if (!isset($config->OPNsense->caddyadvanced->dockerproxy)) {
     echo 'OK';
     exit(0);
 }
 
-$dockerproxy = $config->OPNsense->caddy->dockerproxy;
+$dockerproxy = $config->OPNsense->caddyadvanced->dockerproxy;
 
 // The envfile is the plugin-managed one (general.EnvFile), same file setup.php
 // and the editor grid operate on.
