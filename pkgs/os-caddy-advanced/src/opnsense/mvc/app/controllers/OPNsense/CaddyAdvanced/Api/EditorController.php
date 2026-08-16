@@ -255,13 +255,17 @@ class EditorController extends ApiControllerBase
         // fail validation (e.g. "ambiguous site definition").
         $liveFile = self::BASE . '/' . $rel;
         if (is_file($liveFile) && file_get_contents($liveFile) === $content) {
-            return array(
+            $noop = array(
                 'status' => 'ok',
                 'result' => 'ok',
                 'message' => 'no changes to save',
                 'rollback' => false,
                 'last_save' => time(),
             );
+            // Mirror the save script's status side effect so the status
+            // panel cannot contradict the just-shown success banner.
+            file_put_contents(self::STATUS_FILE, json_encode($noop));
+            return $noop;
         }
 
         // Stage the content; the configd editor-save action applies it.
