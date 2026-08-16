@@ -4,12 +4,12 @@ build_config:
 vendor:
   npm: monaco-editor
 pkg_manifest:
-  name: editor
-  origin: opnware/editor
+  name: monaco-editor
+  origin: opnware/monaco-editor
   # Version tracks the vendored monaco-editor release (the primary component
-  # of the shared editor tree). Bump it whenever pkgs/editor/assets/vendor
+  # of the shared editor tree). Bump it whenever pkgs/monaco-editor/assets/vendor
   # is refreshed — the build fails on mismatch (see build.sh).
-  version: 0.56.0_1
+  version: 0.56.0_2
   comment: Shared vendored Monaco editor assets for the OPNsense WebUI
   www: https://microsoft.github.io/monaco-editor/
   maintainer: github.nstein@mailbox.org
@@ -22,7 +22,7 @@ pkg_manifest:
     /usr/local/opnsense/www/js/vendor. Owned by this package so os-caddy-advanced
     and os-homer can both depend on it without pkg file-ownership
     conflicts. Source of truth for the vendored tree:
-    pkgs/editor/assets/vendor (the single checked-in copy).
+    pkgs/monaco-editor/assets/vendor (the single checked-in copy).
 
     Not a redistribution and not a source build: the payload is the
     vendored tree bundled in this repo (monaco-editor + vscode-textmate +

@@ -11,8 +11,8 @@ os-caddy-advanced Caddyfile editor and the os-homer YAML config editor follow it
 
 ## What is vendored and where
 
-Source of truth: **`pkgs/editor/assets/vendor/`** (the single checked-in copy
-of the asset in this repo — the `editor` package owns it).
+Source of truth: **`pkgs/monaco-editor/assets/vendor/`** (the single checked-in
+copy of the asset in this repo — the `monaco-editor` package owns it).
 
 ```
 assets/vendor/
@@ -39,25 +39,26 @@ packages; `package.json`/license files are kept alongside for provenance.
 > `vscode-textmate` + `vscode-oniguruma` stack (the stack VS Code itself uses
 > today). Same API, current engine, no dead deps.
 
-## How the vendor reaches the WebUI — the shared `editor` package
+## How the vendor reaches the WebUI — the shared `monaco-editor` package
 
 OPNsense serves `/opnsense/www/js/...` as the `/ui/js/...` URL prefix, so the
 vendor tree must land under `/usr/local/opnsense/www/js/vendor/`. The files
-are owned by the **`editor` package** (`pkgs/editor/`), a plain payload
-package whose build.sh copies the checked-in `pkgs/editor/assets/vendor/`
-tree into the payload:
+are owned by the **`monaco-editor` package** (`pkgs/monaco-editor/`), a plain
+payload package whose build.sh copies the checked-in
+`pkgs/monaco-editor/assets/vendor/` tree into the payload:
 
 ```bash
-# pkgs/editor/build.sh
+# pkgs/monaco-editor/build.sh
 cp -R "${SCRIPT_DIR}/assets/vendor/." \
       "${DIST_ROOT}/dist/pkg/usr/local/opnsense/www/js/vendor/"
 ```
 
-Both plugins declare it as a pkg dependency (`deps: editor: opnware/editor`),
-so `pkg` installs it first and no plugin payload ever owns the vendor files.
-This is deliberate: shipping the same files in two plugin payloads would make
-`pkg` refuse co-installation (duplicate file ownership). Never copy the
-vendor into a plugin payload — change the `editor` package instead.
+Both plugins declare it as a pkg dependency
+(`deps: monaco-editor: opnware/monaco-editor`), so `pkg` installs it first
+and no plugin payload ever owns the vendor files. This is deliberate: shipping the
+same files in two plugin payloads would make `pkg` refuse co-installation
+(duplicate file ownership). Never copy the vendor into a plugin payload —
+change the `monaco-editor` package instead.
 
 > **Vendored patch — CSP-safe Monaco workers.** OPNsense's CSP
 > (`script-src 'self' 'unsafe-inline' 'unsafe-eval'`, no `worker-src blob:`)
@@ -156,19 +157,20 @@ Key points for a consumer:
   (`vs-dark` etc.) color the grammar output via their generic comment/string/
   keyword/number rules.
 
-## Refreshing the vendor (the editor package's update mechanism)
+## Refreshing the vendor (the monaco-editor package's update mechanism)
 
-The `editor` package's `vendor:` spec section (`vendor.npm: monaco-editor`)
-makes the daily update flow check the npm registry. When a newer
-monaco-editor release exists, `check-updates` emits a `vendor` entry and the
-workflow runs `./scripts/refresh-editor.sh` — which npm-packs the latest
-monaco-editor + TextMate stack, replaces the checked-in tree, and bumps
-`pkg_manifest.version` — then opens a PR. **The PR is NOT auto-merged**: the
-vendored diff is meant to be reviewed (a new Monaco can silently break the
-hand-rolled textmate bridge or the wasm loader — CI can't catch that), so the
-human merges it. The build-time guard (`editor/build.sh` compares the vendored
-monaco version against `pkg_manifest.version`) fails the build on mismatch, so
-the refresh PR's build only passes when the version and the files agree.
+The `monaco-editor` package's `vendor:` spec section
+(`vendor.npm: monaco-editor`) makes the daily update flow check the npm
+registry. When a newer monaco-editor release exists, `check-updates` emits a
+`vendor` entry and the workflow runs `./scripts/refresh-editor.sh` — which
+npm-packs the latest monaco-editor + TextMate stack, replaces the checked-in
+tree, and bumps `pkg_manifest.version` — then opens a PR. **The PR is NOT
+auto-merged**: the vendored diff is meant to be reviewed (a new Monaco can
+silently break the hand-rolled textmate bridge or the wasm loader — CI can't
+catch that), so the human merges it. The build-time guard
+(`monaco-editor/build.sh` compares the vendored monaco version against
+`pkg_manifest.version`) fails the build on mismatch, so the refresh PR's build
+only passes when the version and the files agree.
 
 The script can also be run by hand:
 

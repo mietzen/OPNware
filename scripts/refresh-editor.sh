@@ -3,7 +3,7 @@ set -euo pipefail
 
 # OPNware — one-command refresh of the shared vendored editor.
 #
-# The editor package (pkgs/editor) ships a checked-in vendor tree
+# The monaco-editor package (pkgs/monaco-editor) ships a checked-in vendor tree
 # (monaco-editor + the TextMate stack), so it has NO automated update
 # source: the daily check-updates flow skips it by design. This script is
 # the manual refresh, kept to one command. The human reviews the resulting
@@ -13,15 +13,15 @@ set -euo pipefail
 #   1. npm-pack the latest monaco-editor, replace vendor/monaco/vs
 #   2. npm-pack the TextMate stack (vscode-textmate, vscode-oniguruma)
 #   3. bump pkg_manifest.version to the new monaco release
-#   The build guard in pkgs/editor/build.sh then enforces that the declared
+#   The build guard in pkgs/monaco-editor/build.sh then enforces that the declared
 #   version always matches the vendored monaco release.
 #
 # The hand-rolled bridge (textmate/monaco-editor-textmate.js) is never
 # replaced — it is not an npm artifact.
 
 REPO_ROOT=$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." && pwd )
-VENDOR_DIR="${REPO_ROOT}/pkgs/editor/assets/vendor"
-CONFIG="${REPO_ROOT}/pkgs/editor/config.yml"
+VENDOR_DIR="${REPO_ROOT}/pkgs/monaco-editor/assets/vendor"
+CONFIG="${REPO_ROOT}/pkgs/monaco-editor/config.yml"
 WORK=$(mktemp -d)
 trap 'rm -rf "${WORK}"' EXIT
 
@@ -63,10 +63,10 @@ cp package/LICENSE.txt "${VENDOR_DIR}/textmate/vscode-oniguruma/LICENSE.txt"
 
 # --- 3. bump the package version to the vendored monaco release ---
 cd "${REPO_ROOT}"
-pkg-tool bump editor --version "${NEW_MONACO}"
+pkg-tool bump monaco-editor --version "${NEW_MONACO}"
 
 echo
-echo "editor vendor refreshed: monaco ${CUR_MONACO} -> ${NEW_MONACO}"
+echo "monaco-editor vendor refreshed: monaco ${CUR_MONACO} -> ${NEW_MONACO}"
 echo "TextMate stack updated in step 2; the hand-rolled bridge is untouched."
 echo "Review the diff, then commit:"
-echo "  git add pkgs/editor && git commit -m 'editor: vendor monaco-editor ${NEW_MONACO}' && git push"
+echo "  git add pkgs/monaco-editor && git commit -m 'monaco-editor: vendor monaco-editor ${NEW_MONACO}' && git push"
