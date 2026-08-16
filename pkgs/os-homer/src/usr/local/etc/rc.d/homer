@@ -34,8 +34,8 @@ load_rc_config "${name}"
 : ${homer_logdir:="/var/log/homer"}
 : ${homer_logfile:="${homer_logdir}/homer.log"}
 : ${homer_pidfile:="/var/run/os-homer/homer.pid"}
-: ${homer_user:="www"}
-: ${homer_group:="www"}
+: ${homer_user:="root"}
+: ${homer_group:="wheel"}
 
 # Isolated instance: own XDG roots under ${homer_directory}, no envfile.
 # The admin API is disabled via the Caddyfile global 'admin off' (generated

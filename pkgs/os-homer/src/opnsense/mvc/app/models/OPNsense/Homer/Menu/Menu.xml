@@ -1,6 +1,6 @@
 <menu>
     <Services>
-        <Homer cssClass="fa fa-tachometer-alt fa-fw">
+        <Homer VisibleName="Homer" cssClass="fa fa-tachometer-alt fa-fw">
             <General VisibleName="General Settings" order="10" url="/ui/homer/general"/>
             <Config VisibleName="Config" order="20" url="/ui/homer/config"/>
             <Log VisibleName="Log File" order="50" url="/ui/diagnostics/log/core/homer"/>

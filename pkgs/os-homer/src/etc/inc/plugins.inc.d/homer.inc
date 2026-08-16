@@ -7,25 +7,19 @@
 
 function homer_services()
 {
-    global $config;
-
-    $services = array();
-
-    if (
-        isset($config['OPNsense']['homer']['general']['enabled']) &&
-        $config['OPNsense']['homer']['general']['enabled'] == 1
-    ) {
-        $services[] = array(
-            'description' => gettext('Homer'),
-            'configd' => array(
-                'restart' => array('homer restart'),
-                'start' => array('homer start'),
-                'stop' => array('homer stop'),
-            ),
-            'name' => 'homer',
-            'pidfile' => '/var/run/os-homer/homer.pid'
-        );
-    }
+    // Registered unconditionally so the service can be started from the UI
+    // even before it is enabled in the settings (start button on the status
+    // page); pluginctl needs the entry to report a run state at all.
+    $services[] = array(
+        'description' => gettext('Homer'),
+        'configd' => array(
+            'restart' => array('homer restart'),
+            'start' => array('homer start'),
+            'stop' => array('homer stop'),
+        ),
+        'name' => 'homer',
+        'pidfile' => '/var/run/os-homer/homer.pid'
+    );
 
     return $services;
 }
