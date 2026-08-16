@@ -34,15 +34,21 @@ never deploy from a local build.
    and exercise the change end-to-end before merging.
 4. **PR**: open a PR (gh CLI) from the branch to `main`; CI runs the build
    matrix + assembly check on the PR. Iterate until green.
-5. **Merge**: merge the PR to `main` only after CI is green.
-6. **Deploy**: pushing to `main` triggers the CI deploy to GitHub Pages — this
+5. **AI review**: before merging, run the `/code-review` skill on the branch
+   (two parallel sub-agents — Standards vs the issue spec, see "Review
+   convention"). Address blocking findings with follow-up commits on the
+   branch; re-run CI until green. Final review of implemented issues uses the
+   `oracle` sub-agent.
+6. **Merge**: merge the PR to `main` only after CI is green AND the AI review
+   passed.
+7. **Deploy**: pushing to `main` triggers the CI deploy to GitHub Pages — this
    is the ONLY deploy path. No local-build deploys.
-7. **E2E on the test VM**: after the deploy job completes, point the VM's
+8. **E2E on the test VM**: after the deploy job completes, point the VM's
    `/usr/local/etc/pkg/repos/opnware.conf` at the published repo
    (`https://mietzen.github.io/OPNware/${ABI}/latest`), `pkg update`, install
    the updated package, and verify the issue's acceptance criteria on the VM
    (WebUI via the 8443 tunnel + playwright, configd/rc service checks via ssh).
-8. **Cleanup**: delete the merged branch; restore the VM repo config if it was
+9. **Cleanup**: delete the merged branch; restore the VM repo config if it was
    pointed elsewhere during testing.
 
 ## OPNsense development reference
