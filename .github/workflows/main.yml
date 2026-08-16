@@ -155,7 +155,7 @@ jobs:
             --owner ${GITHUB_REPOSITORY_OWNER} \
             --repo ${GITHUB_REPOSITORY#*/} \
             --output-dir ./pages-check
-          ls ./pages-check/FreeBSD:*/*/latest/packagesite.tzst
+          ls ./pages-check/FreeBSD:*/latest/packagesite.tzst
 
   Check-Build:
     if: ${{ always() }}
