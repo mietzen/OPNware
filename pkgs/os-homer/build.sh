@@ -39,7 +39,7 @@ chmod 0755 "${DIST_ROOT}/dist/pkg/usr/local"
 cp -R "${SCRIPT_DIR}/src/." "${DIST_ROOT}/dist/pkg/usr/local/"
 
 # Shared vendored editor assets -> /opnsense/www/js/vendor (served as /ui/js/vendor).
-# The vendored Monaco/TextMate tree ships in the shared `editor` package
+# The Monaco/TextMate tree ships in the shared monaco-editor package
 # (both plugins depend on it) — not copied into plugin payloads, so pkg
 # never sees duplicate file ownership. See docs/design/shared-editor-vendor.md.
 

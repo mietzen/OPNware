@@ -906,16 +906,17 @@ def check_updates(pkgs_dir='pkgs'):
         pkg_name = config_file.parent.name
         config = _load_spec(config_file)
         if config.get('vendor'):
-            # Vendored npm assets (e.g. the shared editor) are checked against
+            # npm-built assets (e.g. the shared editor) are checked against
             # the npm registry. The 'vendor' abi_arch routes the workflow to
-            # the refresh script (which re-vendors AND bumps — a bare bump
-            # would fail the build guard) and skips auto-merge.
+            # scripts/refresh-editor.sh (a plain version bump — the package's
+            # build.sh fetches the pinned release from npm) and skips
+            # auto-merge (the refresh PR is reviewed manually).
             remote = _npm_latest_version(config['vendor']['npm'])
             local = str(config.get('pkg_manifest', {}).get('version'))
             # A FreeBSD revision suffix (_N) marks package-only changes and is
             # not a version difference — strip it before comparing, mirroring
-            # the guard in pkgs/*/build.sh, so a vendored npm release equal to
-            # the base version does not emit a nightly update.
+            # the build.sh derivation, so a vendored npm release equal to the
+            # base version does not emit a nightly update.
             local_base = re.sub(r'_[0-9]+$', '', local)
             if str(remote) != local_base:
                 matrix['pkg'].append(pkg_name)
