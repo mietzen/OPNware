@@ -55,7 +55,7 @@
        separator span before every menu label; the vendored default theme
        sizes both at 2.4em. Hide them so items are compact and the labels
        are flush against the left edge. */
-    .vakata-context li > a > i { display: none; }
+    .vakata-context li > a > i,
     .vakata-context li > a .vakata-contextmenu-sep { display: none; }
     .vakata-context li > a:hover,
     .vakata-context li > a.vakata-context-hover {
