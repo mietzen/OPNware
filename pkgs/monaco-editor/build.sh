@@ -9,18 +9,19 @@ REPO_ROOT=$( cd "${SCRIPT_DIR}/../.." && pwd )
 DIST_ROOT="${GITHUB_WORKSPACE:-${REPO_ROOT}}"
 WORK="${DIST_ROOT}/dist/pkg/usr/local/opnsense/www/js/vendor"
 
-# The TextMate stack is refreshed alongside monaco-editor. Its versions are
-# pinned here (they move rarely); monaco-editor's version comes from
-# config.yml so the daily update flow can drive refresh PRs for it.
+# The TextMate stack is pinned here (it moves rarely); monaco-editor's
+# version comes from config.yml so the daily update flow can drive refresh
+# PRs for it.
 TEXTMATE_VERSION="9.3.2"
 ONIGURUMA_VERSION="2.0.1"
 
 echo "Building monaco-editor - ARCH: ${ARCH} - ABI: ${ABI}"
 
 PKG_VERSION=$(pkg-tool dump "${CONFIG}" pkg_manifest.version)
-# The package version is the source of truth for the monaco-editor release to
-# fetch: the version guard below already requires the base version to equal
-# the configured pin, so fetching at PKG_BASE keeps build and spec in lockstep.
+# pkg_manifest.version is the source of truth for the monaco-editor release
+# to fetch; the base version (with any FreeBSD _N revision suffix stripped)
+# is the npm version. Keeping the version in config.yml lets check-updates
+# emit refresh PRs for a new release.
 MONACO_VERSION=$(printf '%s' "${PKG_VERSION}" | sed -E 's/_[0-9]+$//')
 
 mkdir -p "${WORK}"
@@ -45,6 +46,7 @@ tar -xzf "${TMP}/vscode-textmate-${TEXTMATE_VERSION}.tgz" -C "${TMP}/textmate"
 mkdir -p "${WORK}/textmate/vscode-textmate"
 cp "${TMP}/textmate/package/release/main.js" "${WORK}/textmate/vscode-textmate/main.js"
 cp "${TMP}/textmate/package/package.json" "${WORK}/textmate/vscode-textmate/package.json"
+cp "${TMP}/textmate/package/LICENSE.md" "${WORK}/textmate/vscode-textmate/LICENSE.md"
 
 npm pack "vscode-oniguruma@${ONIGURUMA_VERSION}" --silent --pack-destination "${TMP}" >/dev/null
 mkdir -p "${TMP}/oniguruma"
@@ -52,6 +54,7 @@ tar -xzf "${TMP}/vscode-oniguruma-${ONIGURUMA_VERSION}.tgz" -C "${TMP}/oniguruma
 mkdir -p "${WORK}/textmate/vscode-oniguruma/release"
 cp "${TMP}/oniguruma/package/release/main.js" "${WORK}/textmate/vscode-oniguruma/release/main.js"
 cp "${TMP}/oniguruma/package/release/onig.wasm" "${WORK}/textmate/vscode-oniguruma/release/onig.wasm"
+cp "${TMP}/oniguruma/package/LICENSE.txt" "${WORK}/textmate/vscode-oniguruma/LICENSE.txt"
 
 # 3. Hand-written OPNware artifacts (checked in, not fetched).
 cp "${SCRIPT_DIR}/src/editor.worker.bootstrap.js" "${WORK}/monaco/vs/editor/editor.worker.bootstrap.js"
