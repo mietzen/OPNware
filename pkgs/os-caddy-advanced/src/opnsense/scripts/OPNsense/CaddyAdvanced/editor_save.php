@@ -323,9 +323,10 @@ function editor_save_cycle()
     }
     editor_run_cmd($cmd, $lines, $code);
     // Caddy logs its own progress as {"level":"info",...} JSON on stderr,
-    // merged into the capture by 2>&1. Drop those lines so a failure message
-    // is the plain Error: text, not a JSON-prefixed wall.
-    $validate = trim(implode("\n", preg_grep('/^\s*\{.*"level"\s*:/', $lines, PREG_GREP_INVERT)));
+    // merged into the capture by 2>&1. Drop just those info lines so a
+    // failure message is the plain Error: text, not a JSON-prefixed wall —
+    // error-level JSON is kept (it may carry the actual failure).
+    $validate = trim(implode("\n", preg_grep('/^\s*\{.*"level"\s*:\s*"info"/', $lines, PREG_GREP_INVERT)));
     if ($code !== 0) {
         editor_rmtree($tmp);
         return editor_complete($out, 'failure', 'validation failed: ' . $validate, $ts);
