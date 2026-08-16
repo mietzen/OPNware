@@ -15,7 +15,6 @@ EDITOR_CONTROLLER = Path(
     "pkgs/os-caddy-advanced/src/opnsense/mvc/app/controllers/OPNsense/CaddyAdvanced/Api/EditorController.php"
 )
 
-
 def test_seed_uses_flat_confd_glob():
     src = EDITOR_TREE.read_text()
     assert '"import conf.d/*.caddy\\n"' in src
@@ -60,3 +59,13 @@ def test_single_file_save_clears_stale_staging_before_staging():
     assert save_block.index("$this->clearStaging();") < save_block.index(
         "$staged = self::STAGING_DIR . '/' . $rel;"
     )
+
+
+def test_failed_save_cycle_cleans_staging():
+    # The controller-side clear neutralizes the WebUI path; a direct configd
+    # editor-save against leftover staging must also be safe — so the save
+    # script itself must clean staging on every failure, not just success.
+    src = EDITOR_SAVE.read_text()
+    complete_block = src[src.index("function editor_complete"):]
+    assert "if ($result !== 'ok') {" in complete_block
+    assert "editor_rmtree(STAGING_DIR);" in complete_block
