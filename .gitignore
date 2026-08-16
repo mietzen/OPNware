@@ -6,5 +6,5 @@ __pycache__
 *.pyc
 .omo
 screenshots/
-dist/
-src/
+/dist/
+/src/
