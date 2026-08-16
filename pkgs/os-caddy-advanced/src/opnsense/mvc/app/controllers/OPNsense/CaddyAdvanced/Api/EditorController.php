@@ -248,6 +248,26 @@ class EditorController extends ApiControllerBase
             return array('status' => 'failure', 'message' => 'missing content');
         }
 
+        // No-op save: the file already holds exactly this content. Skip the
+        // whole validate/snapshot/apply/reload cycle — a re-validation would
+        // just re-report the same result, and when the file was renamed via
+        // the tree a stale-path save would stage a phantom duplicate and
+        // fail validation (e.g. "ambiguous site definition").
+        $liveFile = self::BASE . '/' . $rel;
+        if (is_file($liveFile) && file_get_contents($liveFile) === $content) {
+            $noop = array(
+                'status' => 'ok',
+                'result' => 'ok',
+                'message' => 'no changes to save',
+                'rollback' => false,
+                'last_save' => time(),
+            );
+            // Mirror the save script's status side effect so the status
+            // panel cannot contradict the just-shown success banner.
+            file_put_contents(self::STATUS_FILE, json_encode($noop));
+            return $noop;
+        }
+
         // Stage the content; the configd editor-save action applies it.
         $staged = self::STAGING_DIR . '/' . $rel;
         $stagedDir = dirname($staged);

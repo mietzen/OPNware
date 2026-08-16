@@ -364,6 +364,13 @@
                     showError(data.message);
                     return;
                 }
+                // The open editor still points at the old name; re-point it at
+                // the renamed file so a Save cannot stage a phantom duplicate
+                // under the old path (which would fail validation).
+                if (currentFile === path) {
+                    currentFile = target;
+                    $("#editor-name").text(name.trim());
+                }
                 loadTree();
             });
         }
