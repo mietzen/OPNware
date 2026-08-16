@@ -94,7 +94,8 @@ class ConfigController extends ApiControllerBase
         }
 
         // The configd action runs the save script against the staged file;
-        // all save results are audited in configd.log.
+        // real saves are audited in configd.log (no-op saves above return
+        // before reaching configd).
         $backend = new Backend();
         $result = $backend->configdRun('homer config-save');
         $data = json_decode($result, true);
