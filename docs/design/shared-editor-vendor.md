@@ -54,8 +54,8 @@ cp -R "${SCRIPT_DIR}/assets/vendor/." \
 ```
 
 Both plugins declare it as a pkg dependency
-(`deps: editor: opnware/monaco-editor`), so `pkg` installs it first and no
-plugin payload ever owns the vendor files. This is deliberate: shipping the
+(`deps: monaco-editor: opnware/monaco-editor`), so `pkg` installs it first
+and no plugin payload ever owns the vendor files. This is deliberate: shipping the
 same files in two plugin payloads would make `pkg` refuse co-installation
 (duplicate file ownership). Never copy the vendor into a plugin payload —
 change the `monaco-editor` package instead.
