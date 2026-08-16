@@ -8,7 +8,7 @@ CONFIG="${SCRIPT_DIR}/config.yml"
 REPO_ROOT=$( cd "${SCRIPT_DIR}/../.." && pwd )
 DIST_ROOT="${GITHUB_WORKSPACE:-${REPO_ROOT}}"
 
-echo "Building editor - ARCH: ${ARCH} - ABI: ${ABI}"
+echo "Building monaco-editor - ARCH: ${ARCH} - ABI: ${ABI}"
 
 VENDOR_DIR="${SCRIPT_DIR}/assets/vendor"
 PKG_VERSION=$(pkg-tool dump "${CONFIG}" pkg_manifest.version)
