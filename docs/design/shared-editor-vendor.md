@@ -89,9 +89,13 @@ change the `monaco-editor` package instead.
 > evaluation, before any page-level `MonacoEnvironment` override could take
 > effect. The patch is applied by `src/patch-csp-worker.py` **at build time**
 > (never copied from a checked-in tree), so a version bump can't silently lose
-> it — the codemod fails the build if the pristine patterns are absent. Keep
-> the version contract: base version must equal the monaco release, a `_N`
-> revision suffix may be used for package-only changes.
+> it — the codemod fails the build if the pristine patterns are absent. The
+> codemod output was verified **byte-identical** to the previously hand-patched
+> tree (monaco 0.56.0); when bumping monaco, re-verify the two patched sites
+> (worker deps in `editor.main.js`, `_createWorker` in the hashed chunk) still
+> cover every blob-worker creation path. Keep the version contract: base
+> version must equal the monaco release, a `_N` revision suffix may be used
+> for package-only changes.
 
 ## Caddy editor tree
 

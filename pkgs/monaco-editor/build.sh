@@ -55,6 +55,7 @@ mkdir -p "${WORK}/textmate/vscode-oniguruma/release"
 cp "${TMP}/oniguruma/package/release/main.js" "${WORK}/textmate/vscode-oniguruma/release/main.js"
 cp "${TMP}/oniguruma/package/release/onig.wasm" "${WORK}/textmate/vscode-oniguruma/release/onig.wasm"
 cp "${TMP}/oniguruma/package/LICENSE.txt" "${WORK}/textmate/vscode-oniguruma/LICENSE.txt"
+cp "${TMP}/oniguruma/package/package.json" "${WORK}/textmate/vscode-oniguruma/package.json"
 
 # 3. Hand-written OPNware artifacts (checked in, not fetched).
 cp "${SCRIPT_DIR}/src/editor.worker.bootstrap.js" "${WORK}/monaco/vs/editor/editor.worker.bootstrap.js"
