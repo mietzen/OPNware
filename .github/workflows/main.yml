@@ -182,5 +182,5 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: '3.12'
-      - run: pip install -e ./pkg-tool
+      - run: pip install -e "./pkg-tool[dev]"
       - run: pytest pkg-tool/tests/ -q
