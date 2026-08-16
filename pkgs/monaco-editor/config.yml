@@ -6,11 +6,12 @@ vendor:
 pkg_manifest:
   name: monaco-editor
   origin: opnware/monaco-editor
-  # Version tracks the vendored monaco-editor release (the primary component
-  # of the shared editor tree). Bump it whenever pkgs/monaco-editor/assets/vendor
-  # is refreshed — the build fails on mismatch (see build.sh).
+  # Version tracks the monaco-editor release fetched at build time (the
+  # primary component of the shared editor tree). Bump it for a new release —
+  # the daily update flow emits a refresh PR (plain version bump), and
+  # build.sh fetches + patches + packs at that version.
   version: 0.56.0_2
-  comment: Shared vendored Monaco editor assets for the OPNsense WebUI
+  comment: Shared Monaco editor assets for the OPNsense WebUI
   www: https://microsoft.github.io/monaco-editor/
   maintainer: github.nstein@mailbox.org
   prefix: /usr/local
@@ -18,14 +19,14 @@ pkg_manifest:
   licenses:
     - MIT
   desc: |
-    Shared vendored Monaco editor + TextMate stack served from
+    Shared Monaco editor + TextMate stack served from
     /usr/local/opnsense/www/js/vendor. Owned by this package so os-caddy-advanced
-    and os-homer can both depend on it without pkg file-ownership
-    conflicts. Source of truth for the vendored tree:
-    pkgs/monaco-editor/assets/vendor (the single checked-in copy).
+    and os-homer can both depend on it without pkg file-ownership conflicts.
 
-    Not a redistribution and not a source build: the payload is the
-    vendored tree bundled in this repo (monaco-editor + vscode-textmate +
-    vscode-oniguruma + the hand-rolled bridge), refreshed by hand with
-    npm pack. check-updates therefore has no remote source for it; the
-    version above tracks the vendored monaco-editor release.
+    Built in CI, not checked in: build.sh npm-packs monaco-editor (at the
+    pinned version), vscode-textmate and vscode-oniguruma, applies the
+    CSP-safe same-origin worker patch (src/patch-csp-worker.py), and ships the
+    hand-written bridge, worker bootstrap and Caddyfile grammar from src/.
+    check-updates tracks the npm registry via the vendor adapter; a new
+    monaco release becomes a small refresh PR instead of a huge vendored-tree
+    diff.

@@ -83,9 +83,12 @@ jobs:
       - name: Upgrade Pkg
         run: |
           if [ "${{ matrix.abi_arch }}" = "vendor" ]; then
-            # Vendored npm assets (the shared editor): re-vendor AND bump via
-            # the refresh script — a bare bump would fail the build guard.
-            ./scripts/refresh-editor.sh
+            # Vendored npm assets (the shared editor): a bare version bump is
+            # the entire update — the CI build npm-packs the new release,
+            # applies the CSP worker patch and packs the payload. The PR is
+            # never auto-merged: the human reviews the diff, and the patch
+            # codemod fails the build if the pristine patterns changed.
+            ./scripts/refresh-editor.sh "${{ matrix.version }}"
           else
             pkg-tool bump ${{ matrix.pkg }} --version ${{ matrix.version }} --abi-arch ${{ matrix.abi_arch }}
           fi

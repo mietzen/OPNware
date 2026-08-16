@@ -11,25 +11,38 @@ os-caddy-advanced Caddyfile editor and the os-homer YAML config editor follow it
 
 ## What is vendored and where
 
-Source of truth: **`pkgs/monaco-editor/assets/vendor/`** (the single checked-in
-copy of the asset in this repo — the `monaco-editor` package owns it).
+Source of truth: **`pkgs/monaco-editor/`** — the package owns the asset, but
+the payload is **built in CI, not checked in**. `build.sh` npm-packs
+monaco-editor (at the pinned version) plus the TextMate stack, applies the
+CSP worker patch, and stages everything into the payload. The only checked-in
+files are the hand-written ones in `pkgs/monaco-editor/src/`:
 
 ```
-assets/vendor/
+pkgs/monaco-editor/
+├── config.yml                         # pins monaco-editor version (pkg_manifest.version)
+├── build.sh                           # npm-pack → patch → stage → pkg-tool pack
+└── src/                               # hand-written artifacts (checked in, tiny)
+    ├── patch-csp-worker.py            # codemod: applies the CSP worker patch to the pristine tree
+    ├── editor.worker.bootstrap.js     # same-origin classic worker (CSP-safe)
+    ├── monaco-editor-textmate.js      # hand-rolled bridge: TM grammar as a Monaco token provider
+    └── caddyfile.tmLanguage.json      # TextMate grammar, caddyserver/vscode-caddyfile (source.Caddyfile)
+```
+
+The build-time payload layout under `/usr/local/opnsense/www/js/vendor/`:
+
+```
+vendor/
 ├── monaco/
-│   ├── package.json                       # monaco-editor provenance (drives the version)
-│   └── vs/                                # monaco-editor standalone min build (the `min/vs` tree)
-│       ├── loader.js                      # Monaco AMD loader (defines global require/define)
-│       └── editor/editor.main.js (+ css, worker)
-├── caddyfile.tmLanguage.json              # TextMate grammar, caddyserver/vscode-caddyfile (source.Caddyfile)
+│   ├── package.json                   # monaco-editor provenance (fetched)
+│   └── vs/                            # monaco-editor standalone min build (fetched, then patched)
+│       ├── loader.js                  # Monaco AMD loader (defines global require/define)
+│       └── editor/editor.main.js (+ css, worker)   # patched for CSP
+├── caddyfile.tmLanguage.json          # from src/ (checked in)
 └── textmate/
-    ├── vscode-textmate/                   # TextMate grammar engine (npm vscode-textmate)
-    ├── vscode-oniguruma/release/          # oniguruma→wasm bindings + onig.wasm (npm vscode-oniguruma)
-    └── monaco-editor-textmate.js          # hand-rolled bridge: TM grammar as a Monaco token provider
+    ├── vscode-textmate/               # npm vscode-textmate (fetched)
+    ├── vscode-oniguruma/release/      # oniguruma→wasm bindings + onig.wasm (fetched)
+    └── monaco-editor-textmate.js      # from src/ (checked in)
 ```
-
-The `textmate/` files are the unpacked `release`/`dist` outputs of the npm
-packages; `package.json`/license files are kept alongside for provenance.
 
 > **Why a hand-rolled bridge instead of the npm `monaco-editor-textmate`
 > package?** The npm package (4.x) pins the abandoned
@@ -44,13 +57,17 @@ packages; `package.json`/license files are kept alongside for provenance.
 OPNsense serves `/opnsense/www/js/...` as the `/ui/js/...` URL prefix, so the
 vendor tree must land under `/usr/local/opnsense/www/js/vendor/`. The files
 are owned by the **`monaco-editor` package** (`pkgs/monaco-editor/`), a plain
-payload package whose build.sh copies the checked-in
-`pkgs/monaco-editor/assets/vendor/` tree into the payload:
+payload package whose build.sh fetches the npm releases, applies the patch
+and stages the payload:
 
 ```bash
-# pkgs/monaco-editor/build.sh
-cp -R "${SCRIPT_DIR}/assets/vendor/." \
-      "${DIST_ROOT}/dist/pkg/usr/local/opnsense/www/js/vendor/"
+# pkgs/monaco-editor/build.sh (abridged)
+npm pack "monaco-editor@${MONACO_VERSION}" ...   # MONACO_VERSION from pkg_manifest.version
+npm pack "vscode-textmate@9.3.2" ...
+npm pack "vscode-oniguruma@2.0.1" ...
+cp src/editor.worker.bootstrap.js src/monaco-editor-textmate.js src/caddyfile.tmLanguage.json ...
+python3 src/patch-csp-worker.py "${WORK}"        # applies the CSP patch to the pristine tree
+pkg-tool pack ...
 ```
 
 Both plugins declare it as a pkg dependency
@@ -64,16 +81,17 @@ change the `monaco-editor` package instead.
 > (`script-src 'self' 'unsafe-inline' 'unsafe-eval'`, no `worker-src blob:`)
 > blocks Monaco's default blob: web workers, and Monaco's main-thread
 > fallback freezes the editor UI on model changes. `editor.main.js` is
-> therefore patched in the vendor tree so `MonacoEnvironment.getWorker`
-> returns a classic same-origin worker loading
-> `editor/editor.worker.bootstrap.js`, which `importScripts` the vendored AMD
-> loader and boots `vs/editor/editor.worker` (module id re-based via
-> `require.config({ baseUrl })`). The patch must live in `editor.main.js`
-> itself: Monaco instantiates its workers during module evaluation, before
-> any page-level `MonacoEnvironment` override could take effect. When
-> refreshing the vendor, re-apply this patch (and keep the version contract:
-> base version must equal the monaco release, a `_N` revision suffix may be
-> used for package-only changes).
+> therefore patched so `MonacoEnvironment.getWorker` returns a classic
+> same-origin worker loading `editor/editor.worker.bootstrap.js`, which
+> `importScripts` the vendored AMD loader and boots `vs/editor/editor.worker`
+> (module id re-based via `require.config({ baseUrl })`). The patch must live
+> in `editor.main.js` itself: Monaco instantiates its workers during module
+> evaluation, before any page-level `MonacoEnvironment` override could take
+> effect. The patch is applied by `src/patch-csp-worker.py` **at build time**
+> (never copied from a checked-in tree), so a version bump can't silently lose
+> it — the codemod fails the build if the pristine patterns are absent. Keep
+> the version contract: base version must equal the monaco release, a `_N`
+> revision suffix may be used for package-only changes.
 
 ## Caddy editor tree
 
@@ -162,22 +180,23 @@ Key points for a consumer:
 The `monaco-editor` package's `vendor:` spec section
 (`vendor.npm: monaco-editor`) makes the daily update flow check the npm
 registry. When a newer monaco-editor release exists, `check-updates` emits a
-`vendor` entry and the workflow runs `./scripts/refresh-editor.sh` — which
-npm-packs the latest monaco-editor + TextMate stack, replaces the checked-in
-tree, and bumps `pkg_manifest.version` — then opens a PR. **The PR is NOT
-auto-merged**: the vendored diff is meant to be reviewed (a new Monaco can
-silently break the hand-rolled textmate bridge or the wasm loader — CI can't
-catch that), so the human merges it. The build-time guard
-(`monaco-editor/build.sh` compares the vendored monaco version against
-`pkg_manifest.version`) fails the build on mismatch, so the refresh PR's build
-only passes when the version and the files agree.
+`vendor` entry and the workflow runs `./scripts/refresh-editor.sh <version>`
+— which bumps `pkg_manifest.version` (a **plain version bump; the build
+fetches the release**) — then opens a PR. **The PR is NOT auto-merged**: a
+new Monaco release is meant to be reviewed (a new Monaco can silently break
+the hand-rolled textmate bridge or the wasm loader — CI can't catch that), so
+the human merges it. The build-time codemod
+(`src/patch-csp-worker.py`) fails the build if the pristine patch patterns
+change, so the refresh PR's build only passes when the patch still applies.
 
 The script can also be run by hand:
 
 ```sh
-./scripts/refresh-editor.sh
+./scripts/refresh-editor.sh          # bump to the latest npm release
+./scripts/refresh-editor.sh 0.57.0   # bump to a specific release
 ```
 
-The TextMate stack (vscode-textmate, vscode-oniguruma) is refreshed alongside
-monaco but does not drive the package version; the hand-rolled bridge
-(`textmate/monaco-editor-textmate.js`) is never touched.
+The TextMate stack (vscode-textmate, vscode-oniguruma) is pinned in
+`build.sh` (refreshed alongside monaco but does not drive the package
+version); the hand-rolled bridge (`src/monaco-editor-textmate.js`) is never
+touched by a refresh.
