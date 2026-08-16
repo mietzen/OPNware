@@ -252,3 +252,12 @@ def test_sourceforge_adapter_detects_newer_version(tmp_path, monkeypatch):
     matrix = check_updates(str(tmp_path / 'pkgs'))
 
     assert matrix["include"] == [{"pkg": "zsh", "abi_arch": "ALL", "version": "5.9.1"}]
+
+def test_vendor_adapter_strips_revision_suffix(tmp_path, monkeypatch):
+    vendor_spec_with_rev = VENDOR_SPEC.replace("version: 0.56.0", "version: 0.56.0_1")
+    make_repo(tmp_path, {"editor": vendor_spec_with_rev})
+    monkeypatch.setattr(requests, "get", lambda url, **kw: FakeResponse(json_data={"version": "0.56.0"}))
+
+    matrix = check_updates(str(tmp_path / 'pkgs'))
+
+    assert matrix == {"pkg": [], "include": []}
