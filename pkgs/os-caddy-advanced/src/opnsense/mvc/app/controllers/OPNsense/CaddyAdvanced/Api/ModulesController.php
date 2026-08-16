@@ -84,7 +84,7 @@ class ModulesController extends ApiMutableModelControllerBase
                 $cached['stale'] = true;
                 return $cached;
             }
-            return array('status' => 'failure', 'message' => 'catalog fetch failed: ' . $error);
+            return array('status' => 'failure', 'message' => gettext('catalog fetch failed: ') . $error);
         }
 
         $data = json_decode($body, true);
@@ -93,7 +93,7 @@ class ModulesController extends ApiMutableModelControllerBase
                 $cached['stale'] = true;
                 return $cached;
             }
-            return array('status' => 'failure', 'message' => 'unexpected catalog response');
+            return array('status' => 'failure', 'message' => gettext('unexpected catalog response'));
         }
 
         $packages = array();

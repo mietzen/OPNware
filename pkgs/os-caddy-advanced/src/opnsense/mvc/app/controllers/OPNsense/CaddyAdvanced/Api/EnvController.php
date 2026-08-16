@@ -135,10 +135,10 @@ class EnvController extends ApiControllerBase
     {
         $name = $this->request->get('name');
         if (!is_string($name) || !preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/', $name)) {
-            return array('status' => 'failure', 'message' => 'invalid variable name');
+            return array('status' => 'failure', 'message' => gettext('invalid variable name'));
         }
         if ($name === self::PLUGIN_ROW) {
-            return array('status' => 'failure', 'message' => self::PLUGIN_ROW . ' is plugin-managed');
+            return array('status' => 'failure', 'message' => self::PLUGIN_ROW . gettext(' is plugin-managed'));
         }
         $value = null;
         foreach ($this->readRows($this->envfilePath()) as $row) {
@@ -147,7 +147,7 @@ class EnvController extends ApiControllerBase
             }
         }
         if ($value === null) {
-            return array('status' => 'failure', 'message' => 'variable not found');
+            return array('status' => 'failure', 'message' => gettext('variable not found'));
         }
         return array('status' => 'ok', 'name' => $name, 'value' => $value);
     }
@@ -169,38 +169,38 @@ class EnvController extends ApiControllerBase
     {
         $rows = $this->request->get('rows');
         if (!is_array($rows)) {
-            return array('status' => 'failure', 'message' => 'missing rows');
+            return array('status' => 'failure', 'message' => gettext('missing rows'));
         }
 
         $errors = array();
         $clean = array();
         foreach ($rows as $index => $row) {
             if (!is_array($row)) {
-                $errors[] = array('index' => $index, 'error' => 'invalid row');
+                $errors[] = array('index' => $index, 'error' => gettext('invalid row'));
                 continue;
             }
             $name = array_key_exists('name', $row) ? (string)$row['name'] : '';
             $value = array_key_exists('value', $row) ? (string)$row['value'] : '';
             if ($name === '') {
-                $errors[] = array('index' => $index, 'error' => 'empty variable name');
+                $errors[] = array('index' => $index, 'error' => gettext('empty variable name'));
                 continue;
             }
             if ($name === self::PLUGIN_ROW) {
                 $errors[] = array(
                     'index' => $index,
-                    'error' => self::PLUGIN_ROW . ' is managed by the plugin',
+                    'error' => self::PLUGIN_ROW . gettext(' is managed by the plugin'),
                 );
                 continue;
             }
             if (!preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/', $name)) {
                 $errors[] = array(
                     'index' => $index,
-                    'error' => 'invalid variable name (must start with a letter or underscore and contain only letters, digits and underscores)',
+                    'error' => gettext('invalid variable name (must start with a letter or underscore and contain only letters, digits and underscores)'),
                 );
                 continue;
             }
             if (preg_match('/[\r\n]/', $value)) {
-                $errors[] = array('index' => $index, 'error' => 'value must not contain newlines');
+                $errors[] = array('index' => $index, 'error' => gettext('value must not contain newlines'));
                 continue;
             }
             $clean[] = array('name' => $name, 'value' => $value);
@@ -209,7 +209,7 @@ class EnvController extends ApiControllerBase
         if (!empty($errors)) {
             return array(
                 'status' => 'failure',
-                'message' => 'environment rows are invalid',
+                'message' => gettext('environment rows are invalid'),
                 'errors' => $errors,
             );
         }
@@ -226,7 +226,7 @@ class EnvController extends ApiControllerBase
             if ($lock !== false) {
                 fclose($lock);
             }
-            return array('status' => 'failure', 'message' => 'cannot acquire envfile lock');
+            return array('status' => 'failure', 'message' => gettext('cannot acquire envfile lock'));
         }
 
         $current = $this->readRows($envfile);
@@ -263,7 +263,7 @@ class EnvController extends ApiControllerBase
         if (!$this->writeAtomic($envfile, $content)) {
             flock($lock, LOCK_UN);
             fclose($lock);
-            return array('status' => 'failure', 'message' => 'cannot write ' . $envfile);
+            return array('status' => 'failure', 'message' => gettext('cannot write ') . $envfile);
         }
 
         flock($lock, LOCK_UN);
@@ -271,7 +271,7 @@ class EnvController extends ApiControllerBase
 
         return array(
             'status' => 'ok',
-            'message' => 'environment saved',
+            'message' => gettext('environment saved'),
             'rows' => count($lines),
         );
     }

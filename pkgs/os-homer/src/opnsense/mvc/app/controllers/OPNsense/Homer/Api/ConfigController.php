@@ -40,7 +40,7 @@ class ConfigController extends ApiControllerBase
         }
         $content = file_get_contents(self::CONFIG_FILE);
         if ($content === false) {
-            return array('status' => 'failure', 'message' => 'cannot read ' . self::CONFIG_FILE);
+            return array('status' => 'failure', 'message' => gettext('cannot read ') . self::CONFIG_FILE);
         }
         return array('status' => 'ok', 'exists' => true, 'content' => $content);
     }
@@ -56,7 +56,7 @@ class ConfigController extends ApiControllerBase
     {
         $content = $this->request->get('content');
         if (!is_string($content)) {
-            return array('status' => 'failure', 'message' => 'missing content');
+            return array('status' => 'failure', 'message' => gettext('missing content'));
         }
 
         // No-op save: the live file already holds exactly this content. Skip
@@ -65,7 +65,7 @@ class ConfigController extends ApiControllerBase
         if (is_file(self::CONFIG_FILE) && file_get_contents(self::CONFIG_FILE) === $content) {
             $noop = array(
                 'status' => 'ok',
-                'message' => 'no changes to save',
+                'message' => gettext('no changes to save'),
                 'parser' => 'none',
                 'parser_warning' => false,
             );
@@ -81,16 +81,16 @@ class ConfigController extends ApiControllerBase
         }
 
         if (!is_dir(self::STAGING_DIR) && !mkdir(self::STAGING_DIR, 0755, true)) {
-            return array('status' => 'failure', 'message' => 'cannot create ' . self::STAGING_DIR);
+            return array('status' => 'failure', 'message' => gettext('cannot create ') . self::STAGING_DIR);
         }
 
         $tmp = self::STAGING_FILE . '.tmp';
         if (file_put_contents($tmp, $content) === false) {
-            return array('status' => 'failure', 'message' => 'cannot stage content');
+            return array('status' => 'failure', 'message' => gettext('cannot stage content'));
         }
         if (!rename($tmp, self::STAGING_FILE)) {
             @unlink($tmp);
-            return array('status' => 'failure', 'message' => 'cannot stage content');
+            return array('status' => 'failure', 'message' => gettext('cannot stage content'));
         }
 
         // The configd action runs the save script against the staged file;
