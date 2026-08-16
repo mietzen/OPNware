@@ -6,7 +6,7 @@ This is my personal OPNsense `pkg` repository.\
 It contains packages that I use or have used:
 
 - [caddy](https://caddyserver.com/) (redistributed)
-- [editor](pkgs/editor) (vendored Monaco + TextMate assets)
+- [monaco-editor](pkgs/monaco-editor) (vendored Monaco + TextMate assets)
 - [go126](https://go.dev/) (redistributed)
 - [htop](https://htop.dev/) (redistributed)
 - [xcaddy](https://github.com/caddyserver/xcaddy) (redistributed)
@@ -29,8 +29,8 @@ support:
 - [os-homer](pkgs/os-homer) — Homer served via its own isolated caddy
   instance, settings-generated config, Monaco YAML editor
 
-Both plugins depend on the shared [editor](pkgs/editor) package for the
-vendored Monaco editor assets.
+Both plugins depend on the shared [monaco-editor](pkgs/monaco-editor) package for
+the vendored Monaco editor assets.
 
 ## Why
 
@@ -127,4 +127,4 @@ You can browse and download packages directly at:
 
 - Redistributed and source-built packages retain their **original upstream licenses** — see each project's repository or documentation.
 - The **plugins** (os-caddy-advanced, os-homer) are original code of this repository, licensed **MIT** (their LICENSE ships inside the package). os-homer additionally bundles the Homer dashboard, which keeps its upstream **Apache-2.0** license (its LICENSE ships at `/usr/local/share/doc/homer/LICENSE`).
-- The **editor** package vendors monaco-editor and the TextMate stack — all **MIT** components (provenance `package.json` files ship alongside the vendored tree).
+- The **monaco-editor** package vendors monaco-editor and the TextMate stack — all **MIT** components (provenance `package.json` files ship alongside the vendored tree).

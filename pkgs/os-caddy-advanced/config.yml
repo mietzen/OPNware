@@ -31,7 +31,7 @@ pkg_manifest:
       origin: opnware/caddy
       version: ">=2.11.4, <3.0.0"
     editor:
-      origin: opnware/editor
+      origin: opnware/monaco-editor
       version: ">=0.56.0"
     xcaddy:
       origin: opnware/xcaddy
