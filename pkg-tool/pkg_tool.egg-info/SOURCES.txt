@@ -10,5 +10,7 @@ pkg_tool.egg-info/top_level.txt
 tests/test_assemble_repo.py
 tests/test_bump.py
 tests/test_check_updates.py
+tests/test_os_caddy_editor_seam.py
 tests/test_pack.py
 tests/test_spec_seam.py
+tests/test_toolchain.py
