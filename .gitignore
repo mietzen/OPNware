@@ -6,3 +6,7 @@ __pycache__
 *.pyc
 .omo
 screenshots/
+
+# pkg-tool build artifacts
+pkg-tool/build/
+pkg-tool/*.egg-info/
