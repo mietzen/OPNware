@@ -269,6 +269,12 @@ class EditorController extends ApiControllerBase
         }
 
         // Stage the content; the configd editor-save action applies it.
+        // Start from a clean staging area: a previous tree operation that
+        // FAILED validation leaves the .complete marker plus a stale full-tree
+        // copy behind (editor_save.php only cleans staging on success). If a
+        // single-file save ran against that, the stale copy would be applied
+        // as the intended tree, reverting newer edits (ticket #244).
+        $this->clearStaging();
         $staged = self::STAGING_DIR . '/' . $rel;
         $stagedDir = dirname($staged);
         if (!is_dir($stagedDir) && !mkdir($stagedDir, 0755, true)) {
