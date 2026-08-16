@@ -4,18 +4,22 @@
 /*
  * OPNware os-homer — validated atomic save for /usr/local/www/homer/config.yml.
  *
- * Invoked by the config API controller (Api/ConfigController::saveAction) with
- * the staged content file as its only argument. The content is YAML-parsed and
- * validated BEFORE anything is written; invalid YAML is rejected and the file
- * is left untouched. On success the file is applied atomically (temp + rename
- * in the target directory, mode 0644), creating /usr/local/www/homer when it
- * is missing. No service reload happens: Homer re-reads config.yml in the
- * browser on every page load.
+ * Invoked via the configd `homer config-save` action (script_output) after the
+ * config API controller stages the submitted content to the fixed staging
+ * path. Direct CLI runs may pass the staged path as argv[1]. The content is
+ * YAML-parsed and validated BEFORE anything is written; invalid YAML is
+ * rejected and the file is left untouched. On success the file is applied
+ * atomically (temp + rename in the target directory, mode 0644), creating
+ * /usr/local/www/homer when it is missing. No service reload happens: Homer
+ * re-reads config.yml in the browser on every page load.
  *
  * The result is echoed as JSON on stdout, e.g.
  *   {"status":"ok","message":"saved","parser":"php-yaml",
  *    "parser_warning":false}
- * and the exit code is 0 on success, 1 on failure.
+ * and the exit code is 0 on success, 1 on failure. The same JSON is
+ * persisted to the status file first, so the API controller can fall back
+ * to it when configd swallows the script output on a non-zero exit
+ * ("Execute error").
  *
  * YAML parser selection (documented, ticket #215):
  *   1. Symfony\Component\Yaml\Yaml when available (preferred — OPNsense core
@@ -33,6 +37,8 @@
 require_once 'config.inc';
 
 const CONFIG_FILE = '/usr/local/www/homer/config.yml';
+const STAGING_FILE = '/var/db/os-homer/config_staging/config.yml';
+const STATUS_FILE = '/var/db/os-homer/config_status.json';
 
 /**
  * Emit the JSON result and exit.
@@ -48,6 +54,14 @@ function config_out($status, $message, $parser, $parser_warning = false, $parser
     if ($parser_message !== null) {
         $result['parser_message'] = $parser_message;
     }
+    // Persist the outcome first: configd reports "Execute error" on non-zero
+    // exits and drops the script output, so the controller falls back to
+    // this file for the real message.
+    $statusDir = dirname(STATUS_FILE);
+    if (!is_dir($statusDir)) {
+        @mkdir($statusDir, 0755, true);
+    }
+    @file_put_contents(STATUS_FILE, json_encode($result));
     echo json_encode($result);
     exit($status === 'ok' ? 0 : 1);
 }
@@ -179,11 +193,13 @@ function config_structural_check($content)
     return '';
 }
 
-// Read the staged content file.
-if ($argc < 2) {
-    config_out('failure', 'missing staged content argument', 'none');
+// Read the staged content file. The configd action and the controller both
+// use the fixed staging path; argv[1] is honored for direct CLI runs.
+if ($argc >= 2) {
+    $staged = $argv[1];
+} else {
+    $staged = STAGING_FILE;
 }
-$staged = $argv[1];
 $content = @file_get_contents($staged);
 if ($content === false) {
     config_out('failure', 'cannot read staged content', 'none');
