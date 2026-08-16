@@ -3,6 +3,7 @@
 namespace OPNsense\Homer\Api;
 
 use OPNsense\Base\ApiControllerBase;
+use OPNsense\Core\Backend;
 
 /**
  * Config API for the Homer dashboard's config.yml.
@@ -11,18 +12,21 @@ use OPNsense\Base\ApiControllerBase;
  * (empty content plus an `exists` flag when the file is missing, so the
  * editor can show a create-on-first-save notice).
  *
- * saveAction stages the submitted content and hands it to the configd-style
- * save script /usr/local/opnsense/scripts/OPNsense/Homer/config_save.php,
- * which YAML-parses and validates the content BEFORE writing anything, then
- * applies it atomically (temp + rename, mode 0644) and never writes invalid
- * YAML. No service reload happens — Homer re-reads config.yml in the browser.
+ * saveAction stages the submitted content and hands it to the configd
+ * `homer config-save` action (script /usr/local/opnsense/scripts/OPNsense/
+ * Homer/config_save.php), which YAML-parses and validates the content BEFORE
+ * writing anything, then applies it atomically (temp + rename, mode 0644)
+ * and never writes invalid YAML. The script persists its JSON result to the
+ * status file first, so the controller can fall back to it when configd
+ * reports "Execute error" on a non-zero exit. No service reload happens —
+ * Homer re-reads config.yml in the browser.
  */
 class ConfigController extends ApiControllerBase
 {
     const CONFIG_FILE = '/usr/local/www/homer/config.yml';
     const STAGING_DIR = '/var/db/os-homer/config_staging';
     const STAGING_FILE = self::STAGING_DIR . '/config.yml';
-    const SAVE_SCRIPT = '/usr/local/opnsense/scripts/OPNsense/Homer/config_save.php';
+    const STATUS_FILE = '/var/db/os-homer/config_status.json';
 
     /**
      * Content of the Homer config file. A missing file is reported with
@@ -42,9 +46,10 @@ class ConfigController extends ApiControllerBase
     }
 
     /**
-     * Stage the submitted content and run the validated atomic save. The
-     * result of the save script (status, message, parser used, possible
-     * best-effort-validation warning) is passed through to the WebUI.
+     * Stage the submitted content and run the validated atomic save through
+     * the configd `homer config-save` action. The result of the save script
+     * (status, message, parser used, possible best-effort-validation warning)
+     * is passed through to the WebUI.
      * @return array
      */
     public function saveAction()
@@ -52,6 +57,27 @@ class ConfigController extends ApiControllerBase
         $content = $this->request->get('content');
         if (!is_string($content)) {
             return array('status' => 'failure', 'message' => 'missing content');
+        }
+
+        // No-op save: the live file already holds exactly this content. Skip
+        // the whole validate/apply cycle — a re-validation would just
+        // re-report the same result (mirrors caddy-advanced's editor save).
+        if (is_file(self::CONFIG_FILE) && file_get_contents(self::CONFIG_FILE) === $content) {
+            $noop = array(
+                'status' => 'ok',
+                'message' => 'no changes to save',
+                'parser' => 'none',
+                'parser_warning' => false,
+            );
+            // Mirror the save script's status side effect so a status read
+            // cannot contradict the just-shown result; ensure the state dir
+            // exists like config_out() does.
+            $statusDir = dirname(self::STATUS_FILE);
+            if (!is_dir($statusDir)) {
+                @mkdir($statusDir, 0755, true);
+            }
+            @file_put_contents(self::STATUS_FILE, json_encode($noop));
+            return $noop;
         }
 
         if (!is_dir(self::STAGING_DIR) && !mkdir(self::STAGING_DIR, 0755, true)) {
@@ -67,20 +93,22 @@ class ConfigController extends ApiControllerBase
             return array('status' => 'failure', 'message' => 'cannot stage content');
         }
 
-        // Both paths are internal constants; the staged file path is the only
-        // argument, so no user input reaches the command line. The script is
-        // invoked through the php interpreter explicitly.
-        $cmd = escapeshellarg('/usr/local/bin/php')
-            . ' ' . escapeshellarg(self::SAVE_SCRIPT)
-            . ' ' . escapeshellarg(self::STAGING_FILE);
-        exec($cmd . ' 2>&1', $output, $code);
-        $data = json_decode(implode("\n", $output), true);
+        // The configd action runs the save script against the staged file;
+        // real saves are audited in configd.log (no-op saves above return
+        // before reaching configd).
+        $backend = new Backend();
+        $result = $backend->configdRun('homer config-save');
+        $data = json_decode($result, true);
         if (!is_array($data)) {
-            $message = trim(implode("\n", $output));
-            return array(
-                'status' => 'failure',
-                'message' => $message !== '' ? $message : 'save script failed (exit ' . $code . ')',
-            );
+            // configd reports 'Execute error' on non-zero exits and swallows
+            // the script output — fall back to the status file for the real
+            // error message the save script wrote.
+            if (is_file(self::STATUS_FILE)) {
+                $data = json_decode(file_get_contents(self::STATUS_FILE), true);
+            }
+            if (!is_array($data)) {
+                return array('status' => 'failure', 'message' => trim($result));
+            }
         }
         return $data;
     }
