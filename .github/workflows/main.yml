@@ -170,3 +170,17 @@ jobs:
           else
             exit 1
           fi
+
+  pkg-tool-tests:
+    # pkg-tool is the build toolchain; its changes have no package payload,
+    # so they never trigger build-packages — gate them with their own test
+    # run instead (pytest suite in pkg-tool/tests/).
+    if: ${{ always() }}
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - run: pip install -e ./pkg-tool
+      - run: pytest pkg-tool/tests/ -q
