@@ -261,6 +261,14 @@ function editor_complete($out, $result, $message, $ts, $rollback = false)
     $out['rollback'] = $rollback;
     $out['last_save'] = $ts;
     file_put_contents(STATUS_FILE, json_encode($out));
+    // A failed cycle must not leave the staging area behind: a stale
+    // .complete marker plus a stale full-tree copy would make the next
+    // single-file save (or a direct configd editor-save) apply the stale
+    // snapshot as the intended tree (ticket #244). Success cleans staging
+    // explicitly; every failure funnels through here.
+    if ($result !== 'ok') {
+        editor_rmtree(STAGING_DIR);
+    }
     return $out;
 }
 
