@@ -51,12 +51,12 @@ As mentioned above, this is my **personal** repo, at the moment I don't have muc
 
 You are welcome to [**fork**](https://github.com/mietzen/OPNware/fork) it and build your own `pkg` repo with additional `pkgs`.
 
-The included GitHub workflows are generic and should work once you configure the following repository secrets:
+The included GitHub workflows are generic and should work once you configure the following:
 
-- `APP_ID`
-- `APP_PRIVATE_KEY`
+- Repository variable `APP_CLIENT_ID` — the GitHub App Client ID
+- Repository secret `APP_PRIVATE_KEY` — the GitHub App private key
 
-For the `actions/create-github-app-token@v2` action. See the [usage guide](https://github.com/actions/create-github-app-token?tab=readme-ov-file#usage) on how to create a GitHub App.
+For the `actions/create-github-app-token@v3` action. See the [usage guide](https://github.com/actions/create-github-app-token?tab=readme-ov-file#usage) on how to create a GitHub App.
 
 The App will need these permissions:
 
