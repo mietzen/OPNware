@@ -28,7 +28,7 @@ never deploy from a local build.
    issue; `main` stays green).
 2. **Implement + test**: build the package locally to validate the payload
    (`./build.sh amd64 15` + `pkg-tool assemble-repo`), run `pytest
-   pkg-tool/tests/`.
+   pkg-tool/tests/` (install deps first: `pip install -e "pkg-tool[dev]"`).
 3. **Test on the test VM**: install the built package on the `opnsense-test`
    VM (reachable via `ssh opnsense-test`; see "Testing & debugging on the VM")
    and exercise the change end-to-end before merging.
@@ -50,6 +50,28 @@ never deploy from a local build.
    (WebUI via the 8443 tunnel + playwright, configd/rc service checks via ssh).
 9. **Cleanup**: delete the merged branch; restore the VM repo config if it was
    pointed elsewhere during testing.
+
+## Dependency update flow (automated)
+
+Dependency bumps are driven by GitHub Actions + dependabot; bot PRs follow the
+same branch/PR/review/merge rule as human work.
+
+- **`pkg-tool check-updates`** (workflow `.github/workflows/update.yml`,
+  nightly ~04:15 + on `workflow_dispatch`): scans every package spec and opens
+  a PR bumping the `content:`/`version`/`vendor:` spec to the latest upstream.
+  Version bumps for ordinary packages are auto-merged (`--auto`, gated on CI).
+  `vendor:` bumps (monaco-editor, via `scripts/refresh-editor.sh`) are opened
+  but NOT auto-merged — a human/agent must review the fetched-tree change
+  manually. The `editor`/`monaco-editor` vendor layout and the CSP worker
+  patch are documented in `docs/design/shared-editor-vendor.md`.
+- **Dependabot** (`.github/dependabot.yml`, monthly, grouped): bumps
+  `github-actions` action versions and `pkg-tool` pip deps. Its PRs are
+  auto-merged by `.github/workflows/dependabot-automation.yml` (label-gated,
+  CI-gated). The grouped-PR and cooldown policy lives in dependabot.yml; all
+  actions are pinned to exact version tags throughout the workflows.
+- When triaging a bot PR: the same standards apply — CI must be green and the
+  change should be reviewed before it lands (auto-merge already enforces the
+  CI gate; vendor/structural changes need explicit review).
 
 ## OPNsense development reference
 
