@@ -67,7 +67,8 @@ same branch/PR/review/merge rule as human work.
 - **Dependabot** (`.github/dependabot.yml`, monthly, grouped): bumps
   `github-actions` action versions and `pkg-tool` pip deps. Its PRs are
   auto-merged by `.github/workflows/dependabot-automation.yml` (label-gated,
-  CI-gated). Pinned-action and grouped-PR policy lives in dependabot.yml.
+  CI-gated). The grouped-PR and cooldown policy lives in dependabot.yml; all
+  actions are pinned to exact version tags throughout the workflows.
 - When triaging a bot PR: the same standards apply — CI must be green and the
   change should be reviewed before it lands (auto-merge already enforces the
   CI gate; vendor/structural changes need explicit review).
