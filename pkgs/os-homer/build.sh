@@ -81,11 +81,10 @@ ${SRC_REPO}/archive/refs/tags/v${HOMER_VERSION}.tar.gz
 EOF
 chmod 0644 "${DIST_ROOT}/dist/pkg/usr/local/share/doc/homer/SOURCE"
 
-# Normalize permissions (the rc.d script and the config save script must stay executable).
+# Normalize permissions (the rc.d script must stay executable).
 find "${DIST_ROOT}/dist/pkg/usr/local" -type d -exec chmod 0755 {} +
 find "${DIST_ROOT}/dist/pkg/usr/local" -type f -exec chmod 0644 {} +
 chmod 0755 "${DIST_ROOT}/dist/pkg/usr/local/etc/rc.d/homer"
-chmod 0755 "${DIST_ROOT}/dist/pkg/usr/local/opnsense/scripts/OPNsense/Homer/config_save.php"
 
 # Create BSD distribution pkg
 cd "${DIST_ROOT}/dist"
