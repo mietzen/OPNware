@@ -91,6 +91,24 @@ def test_missing_pattern_raises_systemexit(tmp_path):
     assert "codicon @font-face with data:font/ttf not found" in result.stderr
 
 
+def test_font_dropped_entirely_fails_build(tmp_path):
+    # If a version bump removes the codicon font (no data:font/ttf AND no
+    # rewritten url marker), the codemod must FAIL — not skip as "already
+    # patched". Otherwise the safety gate documented in
+    # docs/design/shared-editor-vendor.md silently passes.
+    vendor = tmp_path / "vendor"
+    css_dir = vendor / "monaco/vs/editor"
+    css_dir.mkdir(parents=True)
+    (css_dir / "editor.main.css").write_text(
+        "@font-face{font-family:codicon;font-display:block;"
+        "src:url(/somewhere/else.ttf)}"
+    )
+
+    result = run_codemod(vendor)
+    assert result.returncode != 0
+    assert "no data:font/ttf and no rewritten url()" in result.stderr
+
+
 def test_build_sh_wires_codemod_after_csp_worker_patch():
     src = BUILD_SH.read_text()
     csp = 'python3 "${SCRIPT_DIR}/src/patch-csp-worker.py" "${WORK}"'

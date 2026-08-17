@@ -75,9 +75,18 @@ def patch(vendor_dir: Path) -> None:
         raise SystemExit(f"extract-codicon-font: {CSS_PATH} not found in {vendor_dir}")
 
     css = css_path.read_text()
-    if "data:font/ttf" not in css:
-        print(f"extract-codicon-font: {CSS_PATH} already patched (no data:font/ttf), skipping")
+    # Idempotent skip only when the rewritten marker is present. A pristine
+    # tree with no data:font/ttf (e.g. a version bump that dropped the font)
+    # must FAIL, not skip — that is the documented build-time safety gate.
+    if f"url({TTF_REL})" in css:
+        print(f"extract-codicon-font: {CSS_PATH} already patched, skipping")
         return
+    if "data:font/ttf" not in css:
+        raise SystemExit(
+            "extract-codicon-font: no data:font/ttf and no rewritten url() in "
+            f"{CSS_PATH} — the monaco build may have dropped the codicon font or "
+            "changed its shape"
+        )
 
     ttf = extract_font(css)
 
