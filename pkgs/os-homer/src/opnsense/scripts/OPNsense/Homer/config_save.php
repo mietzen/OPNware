@@ -26,7 +26,9 @@
  *      ships it). Full YAML 1.2 semantics plus a precise parse error.
  *   2. The php yaml extension (yaml_parse, libyaml) when available. Full
  *      YAML 1.1 parse; !php/object nodes are disabled for safety.
- *   3. Otherwise a documented best-effort structural check (tab-indentation
+ *   3. OPNsense's Python with PyYAML (yaml.safe_load) when available. Full
+ *      YAML semantics; a non-zero return is an authoritative fail.
+ *   4. Otherwise a documented best-effort structural check (tab-indentation
  *      ban plus balanced flow indicators). The result then carries
  *      parser_warning=true so the WebUI can surface the caveat.
  *
@@ -109,7 +111,36 @@ function config_validate($content)
         );
     }
 
-    // 3. Best-effort structural check.
+    // 3. OPNsense's Python with PyYAML (authoritative full parse when
+    //    available). A messy lazy string compare for the import error is fine:
+    //    a missing PyYAML module falls through to the structural check.
+    if (file_exists('/usr/local/bin/python3')) {
+        $tmp = tempnam(sys_get_temp_dir(), 'homer-yaml');
+        if ($tmp !== false) {
+            @file_put_contents($tmp, $content);
+            $cmd = "/usr/local/bin/python3 -c 'import yaml,sys; yaml.safe_load(open(sys.argv[1])); print(\"Valid YAML\")' " . escapeshellarg($tmp) . ' 2>&1';
+            $out = array();
+            $code = 0;
+            exec($cmd, $out, $code);
+            $stderr = trim(implode("\n", $out));
+            @unlink($tmp);
+            if ($code === 0) {
+                return array('parser' => 'python-yaml', 'warning' => false, 'message' => '');
+            }
+            // A negative from a present PyYAML is an authoritative parse error;
+            // only a missing module falls through to the structural check.
+            if (strpos($stderr, 'No module named') === false && $stderr !== '') {
+                return array(
+                    'parser' => 'python-yaml',
+                    'warning' => false,
+                    'message' => 'YAML parse error: ' . $stderr,
+                );
+            }
+            // else: PyYAML not available — fall through to structural check.
+        }
+    }
+
+    // 4. Best-effort structural check.
     $err = config_structural_check($content);
     if ($err !== '') {
         return array(

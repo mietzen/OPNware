@@ -482,9 +482,15 @@
                     : (data.result === "failure" ? "{{ lang._('FAILED') }}" : "-")
                 );
                 $status.find("#status-message").text(data.message || "-");
-                $status.find("#status-rollback").text(
-                    data.rollback === true ? "{{ lang._('yes') }}" : "{{ lang._('no') }}"
-                );
+                // The rollback segment is only meaningful when a rollback
+                // actually happened; hiding it when not avoids a redundant
+                // "· no" right before a "no changes to save" message.
+                if (data.rollback === true) {
+                    $status.find("#status-rollback").text("{{ lang._('yes') }}");
+                    $status.find("#status-rollback-seg").show();
+                } else {
+                    $status.find("#status-rollback-seg").hide();
+                }
             });
         }
 
@@ -761,7 +767,7 @@
                 <span id="editor-status" class="text-muted __ml">
                     {{ lang._('Last save') }}: <span id="status-last-save">-</span>
                     · <span id="status-result">-</span>
-                    · <span id="status-rollback">-</span>
+                    <span id="status-rollback-seg">· <span id="status-rollback">-</span></span>
                     · <span id="status-message">-</span>
                 </span>
             </div>
