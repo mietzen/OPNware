@@ -17,6 +17,7 @@ ONIGURUMA_VERSION="2.0.1"
 
 echo "Building monaco-editor - ARCH: ${ARCH} - ABI: ${ABI}"
 
+PKG_NAME=$(pkg-tool dump "${CONFIG}" pkg_manifest.name)
 PKG_VERSION=$(pkg-tool dump "${CONFIG}" pkg_manifest.version)
 # pkg_manifest.version is the source of truth for the monaco-editor release
 # to fetch; the base version (with any FreeBSD _N revision suffix stripped)
@@ -67,11 +68,13 @@ cp "${SCRIPT_DIR}/src/caddyfile.tmLanguage.json" "${WORK}/caddyfile.tmLanguage.j
 #    codemod fails the build if the expected pristine patterns are absent.
 python3 "${SCRIPT_DIR}/src/patch-csp-worker.py" "${WORK}"
 
-# 5. License files (monaco is MIT; the textmate stack ships its own).
-mkdir -p "${DIST_ROOT}/dist/pkg/usr/local/share/licenses/monaco-editor-${PKG_VERSION}"
-cp "${TMP}/monaco/package/LICENSE" \
-    "${DIST_ROOT}/dist/pkg/usr/local/share/licenses/monaco-editor-${PKG_VERSION}/LICENSE"
-find "${DIST_ROOT}/dist/pkg/usr/local/share/licenses" -type f -exec chmod 0644 {} +
+# 5. License (monaco is MIT; the textmate stack ships its own). Staged as a
+#    generic doc LICENSE so pkg-tool's _stage_licenses copies it to
+#    /usr/local/share/licenses/monaco-editor-<ver>/MIT (Firmware -> Packages).
+DOC_DIR="${DIST_ROOT}/dist/pkg/usr/local/share/doc/${PKG_NAME}"
+mkdir -p "${DOC_DIR}"
+cp "${TMP}/monaco/package/LICENSE" "${DOC_DIR}/LICENSE"
+chmod 0644 "${DOC_DIR}/LICENSE"
 
 find "${DIST_ROOT}/dist/pkg/usr/local" -type d -exec chmod 0755 {} +
 find "${DIST_ROOT}/dist/pkg/usr/local" -type f -exec chmod 0644 {} +

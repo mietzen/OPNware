@@ -5,11 +5,11 @@
 This is my personal OPNsense `pkg` repository.\
 It contains packages that I use or have used:
 
-- [caddy](https://caddyserver.com/) (redistributed)
+- [caddy](https://caddyserver.com/) (cross-compiled)
 - [monaco-editor](pkgs/monaco-editor) (vendored Monaco + TextMate assets)
 - [go126](https://go.dev/) (redistributed)
 - [htop](https://htop.dev/) (redistributed)
-- [xcaddy](https://github.com/caddyserver/xcaddy) (redistributed)
+- [xcaddy](https://github.com/caddyserver/xcaddy) (cross-compiled)
 - [yq](https://mikefarah.gitbook.io/yq) (cross-compiled)
 - [zsh](https://git.code.sf.net/p/zsh/code) (redistributed)
 
