@@ -258,20 +258,3 @@ pkg_manifest:
     matrix = check_updates(str(tmp_path / 'pkgs'))
 
     assert matrix == {"pkg": [], "include": []}
-
-
-def test_sourceforge_adapter_detects_newer_version(tmp_path, monkeypatch):
-    sf_spec = GH_SPEC.replace(
-        "src_repo: 'https://github.com/0xERR0R/blocky'",
-        "src_repo: 'https://git.code.sf.net/p/zsh/code'",
-    )
-    make_repo(tmp_path, {"zsh": sf_spec})
-
-    def fake_get(url, **kwargs):
-        assert "sourceforge.net" in url
-        return FakeResponse(json_data={"release": {"filename": "/projects/zsh/files/5.9.1/zsh-5.9.1.tar.gz"}})
-
-    monkeypatch.setattr(requests, "get", fake_get)
-    matrix = check_updates(str(tmp_path / 'pkgs'))
-
-    assert matrix["include"] == [{"pkg": "zsh", "abi_arch": "ALL", "version": "5.9.1"}]

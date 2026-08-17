@@ -18,15 +18,17 @@ mkdir -p "${DIST_ROOT}/dist"
 chmod 0755 "${DIST_ROOT}/dist"
 
 echo "::group::Git checkout repository"
-git clone --branch "v${VERSION}" "${SRC_REPO}" "${DIST_ROOT}/src"
+rm -rf "${DIST_ROOT}/src-${PKG_NAME}"
+git clone --branch "v${VERSION}" --depth 1 "${SRC_REPO}" "${DIST_ROOT}/src-${PKG_NAME}"
 echo "::endgroup::"
 
 echo "::group::Build Binary"
-cd "${DIST_ROOT}/src"
+mkdir -p "${DIST_ROOT}/dist/pkg/usr/local/bin"
+cd "${DIST_ROOT}/src-${PKG_NAME}"
 go mod tidy
-GOOS=freebsd GOARCH="${ARCH}" go build
+GOOS=freebsd GOARCH="${ARCH}" CGO_ENABLED=0 go build \
+    -o "${DIST_ROOT}/dist/pkg/usr/local/bin/yq" .
 echo "::endgroup::"
-cd "${DIST_ROOT}"
 
 # Create Directories (FreeBSD default paths)
 BIN_DIR="${DIST_ROOT}/dist/pkg/usr/local/bin"
@@ -34,12 +36,11 @@ DOC_DIR="${DIST_ROOT}/dist/pkg/usr/local/share/doc/${PKG_NAME}"
 mkdir -p "${BIN_DIR}" "${DOC_DIR}"
 chmod 0755 "${BIN_DIR}" "${DOC_DIR}"
 
-# Copy Binary
-cp "${DIST_ROOT}/src/${PKG_NAME}" "${BIN_DIR}/${PKG_NAME}"
-chmod 0755 "${BIN_DIR}/${PKG_NAME}"
+# Binary
+chmod 0755 "${DIST_ROOT}/dist/pkg/usr/local/bin/yq"
 
 # Copy License
-cp "${DIST_ROOT}/src/LICENSE" "${DOC_DIR}/LICENSE"
+cp "${DIST_ROOT}/src-${PKG_NAME}/LICENSE" "${DOC_DIR}/LICENSE"
 chmod 0644 "${DOC_DIR}/LICENSE"
 
 # Provide a link to the Source Code

@@ -8,6 +8,7 @@ __pycache__
 screenshots/
 /dist/
 /src/
+/pages/
 # pip install "file://./pkg-tool" leaves build/ and egg-info in the source
 # tree; the nightly update flow would otherwise sweep them into its PR.
 pkg-tool/build/

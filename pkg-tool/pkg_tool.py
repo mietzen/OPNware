@@ -169,7 +169,7 @@ def _validate_spec(spec, source):
         src_repo = build_config.get('src_repo')
         if src_repo and not isinstance(src_repo, str):
             raise TypeError(f"{source}: build_config.src_repo must be a string")
-        if src_repo and 'github.com' not in src_repo and 'sf.net' not in src_repo:
+        if src_repo and 'github.com' not in src_repo:
             raise ValueError(f"{source}: build_config.src_repo: unsupported source {src_repo!r}")
     if redistribute is not None:
         if not isinstance(redistribute, dict):
@@ -870,19 +870,6 @@ def _gh_latest_version(src_repo, token=None):
         raise ValueError(f"no release found for {src_repo}")
     return remote_version
 
-def _sf_latest_version(src_repo):
-    match = re.search(r'https://git.code.sf.net/p/([^/]+/code)', src_repo)
-    if not match:
-        raise ValueError(f"could not parse Sourceforge repository from {src_repo}")
-    sf_repo = match.group(1).split('/')[0]
-    response = requests.get(f"https://sourceforge.net/projects/{sf_repo}/best_release.json")
-    if response.status_code != 200:
-        raise ValueError(f"failed to get release info from SourceForge: HTTP {response.status_code}")
-    parts = response.json().get('release', {}).get('filename', '').split('/')
-    if len(parts) < 3:
-        raise ValueError(f"unexpected SourceForge release filename: {parts!r}")
-    return parts[-2]
-
 def _npm_latest_version(package):
     """The latest version of an npm package (e.g. monaco-editor)."""
     response = requests.get(f"https://registry.npmjs.org/{quote_plus(package)}/latest")
@@ -898,8 +885,8 @@ def check_updates(pkgs_dir='pkgs'):
     Check all package specs for newer versions.
 
     Returns the update matrix: {'pkg': [...], 'include': [{pkg, abi_arch, version}, ...]}.
-    Sources are adapters: FreeBSD packagesite (redistribute specs), GitHub releases
-    and SourceForge (build specs with a src_repo).
+    Sources are adapters: FreeBSD packagesite (redistribute specs) and GitHub
+    releases (build specs with a src_repo).
     """
     matrix = {'pkg': [], 'include': []}
     for config_file in sorted(Path(pkgs_dir).glob('*/config.yml')):
@@ -946,8 +933,6 @@ def check_updates(pkgs_dir='pkgs'):
             local = str(config.get('pkg_manifest', {}).get('version'))
             if 'github.com' in src_repo:
                 remote = _gh_latest_version(src_repo, os.environ.get('GITHUB_TOKEN'))
-            elif 'sf.net' in src_repo:
-                remote = _sf_latest_version(src_repo)
             else:
                 continue  # static asset packages (e.g. the shared editor) have no remote version source
             # A FreeBSD revision suffix (_N) marks package-only changes and is
