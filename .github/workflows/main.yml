@@ -172,9 +172,10 @@ jobs:
           fi
 
   pkg-tool-tests:
-    # pkg-tool is the build toolchain; its changes have no package payload,
-    # so they never trigger build-packages — gate them with their own test
-    # run instead (pytest suite in pkg-tool/tests/).
+    # pkg-tool is the build toolchain; it is in the workflow trigger paths
+    # (pkg-tool/**), so a pkg-tool-only change does run this workflow. This
+    # job runs the dedicated pytest suite for it, independent of the per-pkg
+    # build-packages matrix (which still runs because pkg-tool is in paths).
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7.0.1
