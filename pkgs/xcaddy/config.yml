@@ -6,7 +6,7 @@ build_config:
 pkg_manifest:
   name: xcaddy
   origin: opnware/xcaddy
-  version: 0.4.5
+  version: 0.4.7
   comment: Command line tool to make custom builds of the Caddy Web Server
   www: https://github.com/caddyserver/xcaddy
   maintainer: github.nstein@mailbox.org
