@@ -125,9 +125,15 @@
 
         // --- Monaco + TextMate grammar wiring -------------------------------
 
-        require(['vs/editor/editor.main'], function(monaco) {
+        require(['vs/editor/editor.main', 'monaco-editor-textmate'], function(monaco, bridge) {
             window.opnwareMonaco = monaco;
             monaco.languages.register({ id: 'caddyfile' });
+
+            // The extended themes must exist before the editor is created
+            // (the create options carry the theme name). The bridge module has
+            // no deps, so loading it here is safe; defineEditorThemes is
+            // idempotent, so the grammar require below may reuse it freely.
+            bridge.defineEditorThemes(monaco);
 
             editor = monaco.editor.create(document.getElementById('editor-container'), {
                 value: document.getElementById('editor-content').value,
@@ -150,8 +156,8 @@
                 document.getElementById('editor-content').value = editor.getValue();
             });
 
-            require(['vscode-textmate', 'vscode-oniguruma', 'monaco-editor-textmate'],
-                function(tm, onig, bridge) {
+            require(['vscode-textmate', 'vscode-oniguruma'],
+                function(tm, onig) {
                     wireCaddyfileGrammar(monaco, tm, onig, bridge);
                 }
             );
@@ -159,11 +165,19 @@
 
         function preferredEditorTheme() {
             const saved = window.localStorage.getItem('opnware-editor-theme');
-            if (saved === 'vs' || saved === 'vs-dark') {
+            // Map legacy stored values to the extended theme names so existing
+            // users keep their choice.
+            if (saved === 'vs') {
+                return 'opnware-vs';
+            }
+            if (saved === 'vs-dark') {
+                return 'opnware-vs-dark';
+            }
+            if (saved === 'opnware-vs' || saved === 'opnware-vs-dark') {
                 return saved;
             }
             return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
-                ? 'vs-dark' : 'vs';
+                ? 'opnware-vs-dark' : 'opnware-vs';
         }
 
         function syncEditorTheme() {
@@ -732,8 +746,8 @@
                 <div class="col-md-4 text-right __mt">
                     <label class="text-muted" for="editor-theme">{{ lang._('Theme') }}</label>
                     <select id="editor-theme" class="selectpicker" data-width="110px">
-                        <option value="vs">{{ lang._('Light') }}</option>
-                        <option value="vs-dark">{{ lang._('Dark') }}</option>
+                        <option value="opnware-vs">{{ lang._('Light') }}</option>
+                        <option value="opnware-vs-dark">{{ lang._('Dark') }}</option>
                     </select>
                 </div>
             </div>

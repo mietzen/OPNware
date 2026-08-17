@@ -23,6 +23,7 @@ pkgs/monaco-editor/
 ├── build.sh                           # npm-pack → patch → stage → pkg-tool pack
 └── src/                               # hand-written artifacts (checked in, tiny)
     ├── patch-csp-worker.py            # codemod: applies the CSP worker patch to the pristine tree
+    ├── extract-codicon-font.py        # codemod: extracts the base64 codicon font → same-origin .ttf
     ├── editor.worker.bootstrap.js     # same-origin classic worker (CSP-safe)
     ├── monaco-editor-textmate.js      # hand-rolled bridge: TM grammar as a Monaco token provider
     └── caddyfile.tmLanguage.json      # TextMate grammar, caddyserver/vscode-caddyfile (source.Caddyfile)
@@ -67,6 +68,7 @@ npm pack "vscode-textmate@9.3.2" ...
 npm pack "vscode-oniguruma@2.0.1" ...
 cp src/editor.worker.bootstrap.js src/monaco-editor-textmate.js src/caddyfile.tmLanguage.json ...
 python3 src/patch-csp-worker.py "${WORK}"        # applies the CSP patch to the pristine tree
+python3 src/extract-codicon-font.py "${WORK}"     # extracts the codicon font (CSP: data: blocked)
 pkg-tool pack ...
 ```
 
@@ -175,9 +177,40 @@ Key points for a consumer:
   here; `source.yaml` for os-homer).
 - The grammar JSON and the wasm are fetched with absolute `/ui/...` URLs from
   the WebUI origin — never relative paths, never a CDN.
-- Token scopes are emitted space-joined, so Monaco's built-in themes
-  (`vs-dark` etc.) color the grammar output via their generic comment/string/
-  keyword/number rules.
+- **Token scope contract (the bridge fixes):** a Monaco `TokensProvider`
+  returns one **dotted** scope string per token. Monaco's theme trie splits a
+  scope only on `.` and walks existing trie nodes, so emitting the TextMate
+  *scope stack* space-joined (`scopes.join(' ')`) never matches the trie and
+  every token fell back to the default `mtk1` color. The bridge's pure
+  `resolveTokenScope(scopes)` walks the stack most-specific→least-specific,
+  trying each scope's progressively shorter dotted prefixes, and steps down to
+  the first prefix the theme trie actually colors
+  (`comment.line.Caddyfile` → `comment`, `entity.name.function.Caddyfile` →
+  `entity.name.function`). If nothing matches, it falls back to the
+  most-specific full scope string.
+- **Extended themes for entity/support rules:** all four built-in Monaco
+  themes (`vs`, `vs-dark`, `hc-*`) define NO `entity.*` or `support.*` rules,
+  so Caddyfile directives (`entity.name.function.Caddyfile`) and global
+  options (`support.function`/`support.constant.Caddyfile`) would render
+  `mtk1` even with a correct dotted scope. The bridge's `defineEditorThemes`
+  registers `opnware-vs`/`opnware-vs-dark` (extending `vs`/`vs-dark`) that add
+  color rules for those scopes. It MUST be called before `monaco.editor.create`
+  (the theme name is in the create options), and the theme data needs an
+  explicit `colors` object — the standalone theme service reads
+  `themeData.colors["editor.foreground"]` directly, and a missing `colors`
+  crashes `editor.create`. The volt maps the stored/legacy `vs`/`vs-dark`
+  choice onto `opnware-vs`/`opnware-vs-dark`.
+
+> **Why extract the codicon font at build time?** OPNsense's CSP 
+> (`default-src 'self'`, no `font-src`) blocks Monaco's default `data:font/ttf`
+> codicon font (used for the folding chevrons and other UI icons), so folding
+> controls render as a literal `EAB4` glyph. The CSS is loaded via
+> `<link rel="stylesheet">`, so a **relative** `url()` resolves same-origin
+> against the CSS location and is CSP-allowed. `src/extract-codicon-font.py`
+> decodes the inlined base64 into a same-origin `.ttf` at Monaco's canonical
+> location and rewrites `@font-face src:` to reference it, at build time. Like
+> the worker patch, it fails the build if the pristine pattern is absent (a
+> version bump safety gate).
 
 ## Refreshing the vendor (the monaco-editor package's update mechanism)
 
@@ -189,9 +222,10 @@ registry. When a newer monaco-editor release exists, `check-updates` emits a
 fetches the release**) — then opens a PR. **The PR is NOT auto-merged**: a
 new Monaco release is meant to be reviewed (a new Monaco can silently break
 the hand-rolled textmate bridge or the wasm loader — CI can't catch that), so
-the human merges it. The build-time codemod
-(`src/patch-csp-worker.py`) fails the build if the pristine patch patterns
-change, so the refresh PR's build only passes when the patch still applies.
+the human merges it. The build-time codemods
+(`src/patch-csp-worker.py`, `src/extract-codicon-font.py`) fail the build if
+the pristine patch patterns change, so the refresh PR's build only passes when
+the patches still apply.
 
 The script can also be run by hand:
 
