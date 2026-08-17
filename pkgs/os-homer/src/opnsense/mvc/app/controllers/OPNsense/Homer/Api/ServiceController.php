@@ -27,7 +27,7 @@ class ServiceController extends ApiMutableServiceControllerBase
         $backend = new Backend();
         $response = $backend->configdRun('homer status');
 
-        if (strpos($response, 'is running') > 0) {
+        if (strpos($response, 'is running') !== false) {
             $status = 'running';
         } else {
             $status = 'stopped';
