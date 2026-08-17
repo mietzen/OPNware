@@ -133,7 +133,7 @@ function config_validate($content)
                 return array(
                     'parser' => 'python-yaml',
                     'warning' => false,
-                    'message' => 'YAML parse error: ' . $stderr,
+                    'message' => 'Error: invalid YAML',
                 );
             }
             // else: PyYAML not available — fall through to structural check.
