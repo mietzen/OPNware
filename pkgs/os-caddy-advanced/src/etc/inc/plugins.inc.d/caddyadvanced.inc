@@ -42,3 +42,26 @@ function caddyadvanced_syslog()
 {
     return ['caddyadvanced' => ['facility' => ['caddyadvanced']]];
 }
+
+/*
+ * Regenerate the plugin templates (rc.conf.d/caddy) and re-sync the envfile
+ * on config apply paths that do not go through the WebUI reconfigure action —
+ * config restore/import (bootup after the default reboot, local on
+ * rc.reload_all) would otherwise leave the generated files stale. Mirrors
+ * what ServiceController::reconfigureAction() does.
+ */
+function caddyadvanced_configure()
+{
+    return [
+        'bootup' => ['caddyadvanced_configure_do'],
+        'local' => ['caddyadvanced_configure_do'],
+    ];
+}
+
+function caddyadvanced_configure_do($verbose = false)
+{
+    $backend = new \OPNsense\Core\Backend();
+    $backend->configdRun('template reload OPNsense/CaddyAdvanced');
+    $backend->configdRun('caddyadvanced setup');
+    $backend->configdRun('caddyadvanced dockerproxy-sync');
+}

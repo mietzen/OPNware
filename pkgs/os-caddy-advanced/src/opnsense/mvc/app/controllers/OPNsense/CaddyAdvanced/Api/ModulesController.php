@@ -125,25 +125,25 @@ class ModulesController extends ApiMutableModelControllerBase
 
     /**
      * Rebuild the caddy binary from the declared module set, pinned to the
-     * installed caddy version (configd action "modules modules-rebuild").
+     * installed caddy version (configd action "caddyadvanced-modules modules-rebuild").
      * @return array
      */
     public function rebuildAction()
     {
         $backend = new Backend();
-        return $this->resultOr($backend->configdRun('modules modules-rebuild'));
+        return $this->resultOr($backend->configdRun('caddyadvanced-modules modules-rebuild'));
     }
 
     /**
      * Self-healing check: rebuild only when the stored build fingerprint no
      * longer matches the installed binary or a declared module is missing
-     * (configd action "modules modules-ensure").
+     * (configd action "caddyadvanced-modules modules-ensure").
      * @return array
      */
     public function ensureAction()
     {
         $backend = new Backend();
-        return $this->resultOr($backend->configdRun('modules modules-ensure'));
+        return $this->resultOr($backend->configdRun('caddyadvanced-modules modules-ensure'));
     }
 
     /**

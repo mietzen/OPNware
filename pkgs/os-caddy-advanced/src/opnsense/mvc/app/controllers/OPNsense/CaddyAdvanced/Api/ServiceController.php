@@ -22,7 +22,7 @@ class ServiceController extends ApiMutableServiceControllerBase
         $backend = new Backend();
         $response = $backend->configdRun('caddyadvanced status');
 
-        if (strpos($response, 'is running') > 0) {
+        if (strpos($response, 'is running') !== false) {
             $status = 'running';
         } else {
             $status = 'stopped';
@@ -55,6 +55,13 @@ class ServiceController extends ApiMutableServiceControllerBase
         $dockerproxy = $backend->configdRun('caddyadvanced dockerproxy-sync');
         if ($dockerproxy !== 'OK') {
             return ['status' => 'failure', 'message' => $dockerproxy];
+        }
+
+        // The rc script refuses to start without a Caddyfile (required_files);
+        // surface that on Apply instead of reporting ok while the service stays
+        // down on a fresh install.
+        if ($this->serviceEnabled() && !is_file('/usr/local/etc/caddy/Caddyfile')) {
+            return ['status' => 'failure', 'message' => gettext('Caddyfile not found — create one in the editor before applying.')];
         }
 
         // Start/reload/stop the service based on the enabled setting and the
