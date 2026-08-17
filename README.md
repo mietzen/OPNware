@@ -53,7 +53,7 @@ You are welcome to [**fork**](https://github.com/mietzen/OPNware/fork) it and bu
 
 The included GitHub workflows are generic and should work once you configure the following:
 
-- Repository variable `APP_CLIENT_ID` — the GitHub App Client ID
+- Repository secret `APP_ID` — the GitHub App Client ID
 - Repository secret `APP_PRIVATE_KEY` — the GitHub App private key
 
 For the `actions/create-github-app-token@v3` action. See the [usage guide](https://github.com/actions/create-github-app-token?tab=readme-ov-file#usage) on how to create a GitHub App.
