@@ -4,7 +4,7 @@ pkgs/ as validated specs whose pinned versions match the live FreeBSD
 quarterly packagesite / upstream release.
 
 The pinned versions are the independent source of truth: verified against
-pkg.freebsd.org quarterly on 2026-08-15 (go126-1.26.5) and the xcaddy
+pkg.freebsd.org quarterly on 2026-08-15 (go126-1.26.6) and the xcaddy
 upstream release (0.4.5, cross-compiled via build_config.src_repo).
 """
 
@@ -14,7 +14,7 @@ from pkg_tool import _load_spec, build_matrix
 
 # name -> (pkg_manifest.name, pinned version)
 REDISTRIBUTED = {
-    "go126": ("go126", "1.26.5"),
+    "go126": ("go126", "1.26.6"),
 }
 
 # name -> (pkg_manifest.name, pinned version, src_repo)
