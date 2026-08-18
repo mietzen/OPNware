@@ -1,8 +1,8 @@
-<Menu>
+<menu>
     <Services>
         <Podman VisibleName="Podman" cssClass="fa fa-cubes fa-fw">
             <Dashboard VisibleName="Dashboard" url="/ui/podman/dashboard" order="10"/>
             <GeneralSettings VisibleName="Settings" url="/ui/podman/general" order="20"/>
         </Podman>
     </Services>
-</Menu>
+</menu>

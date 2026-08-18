@@ -36,7 +36,7 @@ class ImagesController extends ApiControllerBase
     public function listAction()
     {
         $backend = new Backend();
-        $response = $backend->configdRun('podman images.list');
+        $response = $backend->configdRun('podman images_list');
         $result = json_decode($response, true);
         if ($result === null) {
             $statusFile = '/var/db/podman/manage_status.json';

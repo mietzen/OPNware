@@ -1,0 +1,118 @@
+#!/bin/sh
+
+# PROVIDE: podman_service
+# REQUIRE: DAEMON NETWORKING
+# KEYWORD: shutdown
+
+. /etc/rc.subr
+
+name="podman_service"
+rcvar="podman_service_enable"
+
+load_rc_config "${name}"
+
+: ${podman_service_enable:="NO"}
+: ${podman_service_tcp_enable:="NO"}
+: ${podman_service_listen_address:="127.0.0.1"}
+: ${podman_service_listen_port:="2376"}
+: ${podman_service_tls_enable:="NO"}
+: ${podman_service_tls_cert:=""}
+: ${podman_service_tls_key:=""}
+: ${podman_service_tls_ca:=""}
+: ${podman_service_socket_enable:="YES"}
+
+pidfile="/var/run/podman/podman_service.pid"
+logfile="/var/log/podman/system-service.log"
+podman_bin="/usr/local/bin/podman"
+
+# Construct endpoints and flags
+endpoints=""
+tls_flags=""
+
+if [ "${podman_service_socket_enable}" = "YES" ]; then
+    endpoints="unix:///var/run/podman/podman.sock"
+fi
+
+if [ "${podman_service_tls_enable}" = "YES" ]; then
+    if [ -f "${podman_service_tls_cert}" ] && [ -f "${podman_service_tls_key}" ]; then
+        tls_flags="--tls-cert=${podman_service_tls_cert} --tls-key=${podman_service_tls_key}"
+        if [ -f "${podman_service_tls_ca}" ]; then
+            tls_flags="${tls_flags} --tls-client-ca=${podman_service_tls_ca}"
+        fi
+    fi
+    tcp_endpoint="tcp://${podman_service_listen_address}:${podman_service_listen_port}"
+    if [ -n "${endpoints}" ]; then
+        endpoints="${endpoints} ${tcp_endpoint}"
+    else
+        endpoints="${tcp_endpoint}"
+    fi
+elif [ "${podman_service_tcp_enable}" = "YES" ]; then
+    tcp_endpoint="tcp://${podman_service_listen_address}:${podman_service_listen_port}"
+    if [ -n "${endpoints}" ]; then
+        endpoints="${endpoints} ${tcp_endpoint}"
+    else
+        endpoints="${tcp_endpoint}"
+    fi
+fi
+
+if [ -z "${endpoints}" ]; then
+    endpoints="unix:///var/run/podman/podman.sock"
+fi
+
+podman_service_prestart()
+{
+    /usr/local/bin/php /usr/local/opnsense/scripts/OPNsense/Podman/setup.php
+    mkdir -p /var/run/podman /var/log/podman /var/db/containers
+    chmod 0750 /var/run/podman
+}
+
+podman_service_start()
+{
+    podman_service_prestart
+    echo -n "Starting ${name}... "
+    /usr/sbin/daemon -p "${pidfile}" -o "${logfile}" "${podman_bin}" system service --time=0 ${tls_flags} ${endpoints}
+    sleep 1
+    if [ -f "${pidfile}" ] && /bin/kill -0 "$(/bin/cat "${pidfile}")" 2>/dev/null; then
+        echo "done."
+        return 0
+    fi
+    echo "failed (see ${logfile})."
+    return 1
+}
+
+podman_service_stop()
+{
+    if [ -f "${pidfile}" ]; then
+        pid=$(cat "${pidfile}" 2>/dev/null)
+        if [ -n "${pid}" ] && kill -0 "${pid}" 2>/dev/null; then
+            echo -n "Stopping ${name}... "
+            kill -TERM "${pid}"
+            sleep 1
+            if kill -0 "${pid}" 2>/dev/null; then
+                kill -KILL "${pid}" 2>/dev/null
+            fi
+            echo "done."
+        fi
+        rm -f "${pidfile}" /var/run/podman/podman.sock
+    fi
+}
+
+podman_service_status()
+{
+    if [ -f "${pidfile}" ]; then
+        pid=$(cat "${pidfile}" 2>/dev/null)
+        if [ -n "${pid}" ] && kill -0 "${pid}" 2>/dev/null; then
+            echo "${name} is running as pid ${pid}."
+            return 0
+        fi
+    fi
+    echo "${name} is not running."
+    return 1
+}
+
+start_cmd="podman_service_start"
+stop_cmd="podman_service_stop"
+status_cmd="podman_service_status"
+extra_commands="status"
+
+run_rc_command "$1"
