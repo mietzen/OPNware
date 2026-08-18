@@ -1,7 +1,7 @@
 #!/usr/local/bin/python3
 """
 OPNware os-podman: backend management CLI runner.
-Dispatches container, image, volume, and network commands and formats JSON output.
+Dispatches container, image, volume, network, and system operations and formats JSON output.
 """
 
 import sys
@@ -15,7 +15,7 @@ PODMAN_BIN = "/usr/local/bin/podman"
 
 def write_status(data):
     try:
-        os.makedirs("/var/db/podman", mode=0o750, exist_ok=True)
+        os.makedirs("/var/db/podman", mode=0o755, exist_ok=True)
         with open(STATUS_FILE, "w") as f:
             json.dump(data, f)
     except Exception:
@@ -52,7 +52,7 @@ def run_podman(args):
                         res = {"status": "ok", "items": parsed}
                     else:
                         res = {"status": "ok", "items": [parsed]}
-                except Exception as e:
+                except Exception:
                     res = {"status": "ok", "items": [], "raw": out}
         else:
             res = {"status": "ok", "output": out}
@@ -80,6 +80,7 @@ def main():
 
     action = sys.argv[1]
 
+    # Containers
     if action == "containers.list":
         run_podman(["ps", "-a", "--format", "json"])
     elif action == "containers.start" and len(sys.argv) >= 3:
@@ -90,14 +91,42 @@ def main():
         run_podman(["kill", sys.argv[2]])
     elif action == "containers.restart" and len(sys.argv) >= 3:
         run_podman(["restart", sys.argv[2]])
+    elif action == "containers.delete" and len(sys.argv) >= 3:
+        run_podman(["rm", "-f", sys.argv[2]])
+    elif action == "containers.logs" and len(sys.argv) >= 3:
+        run_podman(["logs", "--tail", "200", sys.argv[2]])
+    elif action == "containers.inspect" and len(sys.argv) >= 3:
+        run_podman(["inspect", sys.argv[2], "--format", "json"])
+
+    # Images
     elif action == "images.list":
         run_podman(["images", "--format", "json"])
+    elif action == "images.delete" and len(sys.argv) >= 3:
+        run_podman(["rmi", "-f", sys.argv[2]])
+
+    # Volumes
     elif action == "volumes.list":
         run_podman(["volume", "ls", "--format", "json"])
+    elif action == "volumes.delete" and len(sys.argv) >= 3:
+        run_podman(["volume", "rm", "-f", sys.argv[2]])
+
+    # Networks
     elif action == "networks.list":
         run_podman(["network", "ls", "--format", "json"])
+    elif action == "networks.delete" and len(sys.argv) >= 3:
+        run_podman(["network", "rm", sys.argv[2]])
+
+    # System
+    elif action == "system.df":
+        run_podman(["system", "df", "--format", "json"])
+    elif action == "system.prune":
+        run_podman(["system", "prune", "-f"])
+    elif action == "system.info":
+        run_podman(["info", "--format", "json"])
+
     else:
         res = {"status": "error", "message": f"Unknown action: {action}"}
+        write_status(res)
         print(json.dumps(res))
         sys.exit(0)
 

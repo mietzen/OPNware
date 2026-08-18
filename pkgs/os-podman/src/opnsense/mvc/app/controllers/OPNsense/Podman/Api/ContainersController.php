@@ -92,4 +92,27 @@ class ContainersController extends ApiControllerBase
     {
         return $this->handleContainerAction('restart', $id);
     }
+
+    public function deleteAction($id = null)
+    {
+        return $this->handleContainerAction('delete', $id);
+    }
+
+    public function logsAction($id = null)
+    {
+        $containerId = $id ?: $this->request->get('id');
+        if (empty($containerId)) {
+            return ["status" => "error", "message" => "Container ID is required"];
+        }
+        return $this->executeAction('containers_logs', $containerId);
+    }
+
+    public function inspectAction($id = null)
+    {
+        $containerId = $id ?: $this->request->get('id');
+        if (empty($containerId)) {
+            return ["status" => "error", "message" => "Container ID is required"];
+        }
+        return $this->executeAction('containers_inspect', $containerId);
+    }
 }

@@ -40,7 +40,7 @@ def test_os_podman_spec_and_files_valid():
     manifest = spec.get("pkg_manifest", {})
     assert manifest.get("name") == "podman"
     assert manifest.get("origin") == "opnware/os-podman"
-    assert manifest.get("version") == "0.1.2"
+    assert manifest.get("version") == "0.1.3"
 
     deps = manifest.get("deps", {})
     for name in REDISTRIBUTE_PKGS:
@@ -66,13 +66,20 @@ def test_os_podman_spec_and_files_valid():
     assert "ui/diagnostics/log/core/podman" in acl_content
 
     assert (src / "opnsense" / "mvc" / "app" / "controllers" / "OPNsense" / "Podman" / "forms" / "general.xml").exists()
-    assert (src / "opnsense" / "mvc" / "app" / "views" / "OPNsense" / "Podman" / "general.volt").exists()
+
+    general_volt = (src / "opnsense" / "mvc" / "app" / "views" / "OPNsense" / "Podman" / "general.volt").read_text()
+    assert "'frm_general': '/api/podman/general/get'" in general_volt
 
     dashboard_content = (src / "opnsense" / "mvc" / "app" / "views" / "OPNsense" / "Podman" / "dashboard.volt").read_text()
     assert "btn_refresh_containers" not in dashboard_content
+    assert "modal-logs" in dashboard_content
+    assert "btn_system_prune" in dashboard_content
 
     containers_ctrl = (src / "opnsense" / "mvc" / "app" / "controllers" / "OPNsense" / "Podman" / "Api" / "ContainersController.php").read_text()
     assert 'executeAction("containers_{$action}", $containerId)' in containers_ctrl
+    assert 'public function deleteAction' in containers_ctrl
+    assert 'public function logsAction' in containers_ctrl
 
+    assert (src / "opnsense" / "mvc" / "app" / "controllers" / "OPNsense" / "Podman" / "Api" / "SystemController.php").exists()
     assert (src / "opnsense" / "scripts" / "OPNsense" / "Podman" / "setup.php").exists()
     assert (src / "opnsense" / "scripts" / "OPNsense" / "Podman" / "manage.py").exists()

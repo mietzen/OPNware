@@ -33,10 +33,15 @@ use OPNsense\Core\Backend;
 
 class NetworksController extends ApiControllerBase
 {
-    public function listAction()
+    private function executeAction($cmd, $param = null)
     {
         $backend = new Backend();
-        $response = $backend->configdRun('podman networks_list');
+        if ($param !== null) {
+            $response = $backend->configdpRun("podman {$cmd}", [$param]);
+        } else {
+            $response = $backend->configdRun("podman {$cmd}");
+        }
+
         $result = json_decode($response, true);
         if ($result === null) {
             $statusFile = '/var/db/podman/manage_status.json';
@@ -49,5 +54,22 @@ class NetworksController extends ApiControllerBase
             return ["status" => "error", "message" => $response ?: "Empty response from configd"];
         }
         return $result;
+    }
+
+    public function listAction()
+    {
+        return $this->executeAction('networks_list');
+    }
+
+    public function deleteAction($name = null)
+    {
+        if ($this->request->isPost()) {
+            $netName = $name ?: $this->request->getPost('name');
+            if (empty($netName)) {
+                return ["status" => "error", "message" => "Network name is required"];
+            }
+            return $this->executeAction('networks_delete', $netName);
+        }
+        return ["status" => "failed"];
     }
 }

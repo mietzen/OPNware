@@ -33,10 +33,15 @@ use OPNsense\Core\Backend;
 
 class VolumesController extends ApiControllerBase
 {
-    public function listAction()
+    private function executeAction($cmd, $param = null)
     {
         $backend = new Backend();
-        $response = $backend->configdRun('podman volumes_list');
+        if ($param !== null) {
+            $response = $backend->configdpRun("podman {$cmd}", [$param]);
+        } else {
+            $response = $backend->configdRun("podman {$cmd}");
+        }
+
         $result = json_decode($response, true);
         if ($result === null) {
             $statusFile = '/var/db/podman/manage_status.json';
@@ -49,5 +54,22 @@ class VolumesController extends ApiControllerBase
             return ["status" => "error", "message" => $response ?: "Empty response from configd"];
         }
         return $result;
+    }
+
+    public function listAction()
+    {
+        return $this->executeAction('volumes_list');
+    }
+
+    public function deleteAction($name = null)
+    {
+        if ($this->request->isPost()) {
+            $volName = $name ?: $this->request->getPost('name');
+            if (empty($volName)) {
+                return ["status" => "error", "message" => "Volume name is required"];
+            }
+            return $this->executeAction('volumes_delete', $volName);
+        }
+        return ["status" => "failed"];
     }
 }

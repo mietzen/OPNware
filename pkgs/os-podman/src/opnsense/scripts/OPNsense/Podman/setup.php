@@ -33,7 +33,8 @@ use OPNsense\Core\Config;
 
 function log_msg($msg)
 {
-    syslog(LOG_NOTICE, "os-podman setup: " . $msg);
+    syslog(LOG_NOTICE, "os-podman: " . $msg);
+    @file_put_contents('/var/log/podman/system-service.log', date('c') . " [info] " . $msg . "\n", FILE_APPEND);
 }
 
 openlog("podman", LOG_PID, LOG_LOCAL4);
