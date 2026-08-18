@@ -47,19 +47,13 @@
     });
 </script>
 
-<ul class="nav nav-tabs" data-tabs="tabs" id="maintabs" style="margin-bottom: 0;">
-    <li class="active"><a data-toggle="tab" href="#general">{{ lang._('General Settings') }}</a></li>
-</ul>
-
-<div class="content-box tab-content" style="padding-top: 0;">
-    <div id="general" class="tab-pane fade in active">
-        {{ partial("layout_partials/base_form", ['fields': generalForm, 'id': 'frm_general-settings']) }}
-        <div class="col-md-12">
-            <hr/>
-            <button class="btn btn-primary" id="btn_save" type="button">
-                <b>{{ lang._('Apply') }}</b> <i id="btn_save_progress"></i>
-            </button>
-            <br/><br/>
-        </div>
+<div class="content-box">
+    {{ partial("layout_partials/base_form", ['fields': generalForm, 'id': 'frm_general-settings']) }}
+    <div class="col-md-12">
+        <hr/>
+        <button class="btn btn-primary" id="btn_save" type="button">
+            <b>{{ lang._('Apply') }}</b> <i id="btn_save_progress"></i>
+        </button>
+        <br/><br/>
     </div>
 </div>

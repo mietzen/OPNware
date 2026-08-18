@@ -41,18 +41,15 @@
     }
 
     function loadContainers() {
-        $('#containers-loading').show();
         ajaxGet('/api/podman/containers/list', {}, function (data, status) {
-            $('#containers-loading').hide();
             var $tbody = $('#grid-containers tbody');
-            $tbody.empty();
-
             var items = (data && data.items) ? data.items : [];
             if (items.length === 0) {
-                $tbody.append('<tr><td colspan="6" class="text-center"><em>{{ lang._("No containers found") }}</em></td></tr>');
+                $tbody.html('<tr><td colspan="6" class="text-center"><em>{{ lang._("No containers found") }}</em></td></tr>');
                 return;
             }
 
+            var rows = '';
             $.each(items, function (idx, c) {
                 var cid = (c.Id || c.ID || '').substring(0, 12);
                 var names = Array.isArray(c.Names) ? c.Names.join(', ') : (c.Names || '');
@@ -72,7 +69,7 @@
                     actions += '<button class="btn btn-xs btn-default act-kill" data-id="' + cid + '" title="{{ lang._("Force Stop") }}"><i class="fa fa-bolt text-danger"></i></button> ';
                 }
 
-                var row = '<tr>' +
+                rows += '<tr>' +
                     '<td><code>' + cid + '</code></td>' +
                     '<td><strong>' + $('<div>').text(names).html() + '</strong></td>' +
                     '<td>' + $('<div>').text(image).html() + '</td>' +
@@ -80,79 +77,79 @@
                     '<td>' + $('<div>').text(created).html() + '</td>' +
                     '<td>' + actions + '</td>' +
                     '</tr>';
-                $tbody.append(row);
             });
+            $tbody.html(rows);
         });
     }
 
     function loadImages() {
         ajaxGet('/api/podman/images/list', {}, function (data, status) {
             var $tbody = $('#grid-images tbody');
-            $tbody.empty();
             var items = (data && data.items) ? data.items : [];
             if (items.length === 0) {
-                $tbody.append('<tr><td colspan="4" class="text-center"><em>{{ lang._("No images found") }}</em></td></tr>');
+                $tbody.html('<tr><td colspan="4" class="text-center"><em>{{ lang._("No images found") }}</em></td></tr>');
                 return;
             }
+            var rows = '';
             $.each(items, function (idx, img) {
                 var repo = Array.isArray(img.Names) ? img.Names.join(', ') : (img.Repository || img.History || 'none');
                 var iid = (img.Id || img.ID || '').substring(0, 12);
                 var size = img.Size ? (typeof img.Size === 'number' ? (img.Size / (1024*1024)).toFixed(1) + ' MB' : img.Size) : '';
                 var created = img.Created || img.CreatedAt || '';
 
-                var row = '<tr>' +
+                rows += '<tr>' +
                     '<td><strong>' + $('<div>').text(repo).html() + '</strong></td>' +
                     '<td><code>' + iid + '</code></td>' +
                     '<td>' + size + '</td>' +
                     '<td>' + $('<div>').text(created).html() + '</td>' +
                     '</tr>';
-                $tbody.append(row);
             });
+            $tbody.html(rows);
         });
     }
 
     function loadVolumes() {
         ajaxGet('/api/podman/volumes/list', {}, function (data, status) {
             var $tbody = $('#grid-volumes tbody');
-            $tbody.empty();
             var items = (data && data.items) ? data.items : [];
             if (items.length === 0) {
-                $tbody.append('<tr><td colspan="3" class="text-center"><em>{{ lang._("No volumes found") }}</em></td></tr>');
+                $tbody.html('<tr><td colspan="3" class="text-center"><em>{{ lang._("No volumes found") }}</em></td></tr>');
                 return;
             }
+            var rows = '';
             $.each(items, function (idx, v) {
-                var row = '<tr>' +
+                rows += '<tr>' +
                     '<td><strong>' + $('<div>').text(v.Name || '').html() + '</strong></td>' +
                     '<td>' + $('<div>').text(v.Driver || '').html() + '</td>' +
                     '<td><code>' + $('<div>').text(v.Mountpoint || '').html() + '</code></td>' +
                     '</tr>';
-                $tbody.append(row);
             });
+            $tbody.html(rows);
         });
     }
 
     function loadNetworks() {
         ajaxGet('/api/podman/networks/list', {}, function (data, status) {
             var $tbody = $('#grid-networks tbody');
-            $tbody.empty();
             var items = (data && data.items) ? data.items : [];
             if (items.length === 0) {
-                $tbody.append('<tr><td colspan="4" class="text-center"><em>{{ lang._("No networks found") }}</em></td></tr>');
+                $tbody.html('<tr><td colspan="4" class="text-center"><em>{{ lang._("No networks found") }}</em></td></tr>');
                 return;
             }
+            var rows = '';
             $.each(items, function (idx, net) {
                 var subnets = '';
                 if (Array.isArray(net.Subnets)) {
                     subnets = net.Subnets.map(function(s) { return s.Subnet || ''; }).join(', ');
                 }
-                var row = '<tr>' +
+                rows += '<tr>' +
                     '<td><strong>' + $('<div>').text(net.Name || '').html() + '</strong></td>' +
                     '<td><code>' + ((net.ID || net.Id || '').substring(0, 12)) + '</code></td>' +
                     '<td>' + $('<div>').text(net.Driver || 'bridge').html() + '</td>' +
                     '<td>' + $('<div>').text(subnets).html() + '</td>' +
                     '</tr>';
-                $tbody.append(row);
             });
+            $tbody.html(rows);
         });
     }
 
@@ -163,17 +160,12 @@
         loadVolumes();
         loadNetworks();
 
-        // 10s live auto-refresh
-        autoRefreshInterval = setInterval(refreshActiveTab, 10000);
+        // 5-second dynamic auto-refresh for real-time visibility
+        autoRefreshInterval = setInterval(refreshActiveTab, 5000);
 
         $('#maintabs a[data-toggle="tab"]').on('shown.bs.tab', function () {
             refreshActiveTab();
         });
-
-        $('#btn_refresh_containers').click(function () { loadContainers(); });
-        $('#btn_refresh_images').click(function () { loadImages(); });
-        $('#btn_refresh_volumes').click(function () { loadVolumes(); });
-        $('#btn_refresh_networks').click(function () { loadNetworks(); });
 
         $(document).on('click', '.act-start', function () {
             var cid = $(this).data('id');
@@ -208,12 +200,6 @@
     <!-- Containers Tab -->
     <div id="tab-containers" class="tab-pane fade in active">
         <div class="table-responsive">
-            <div style="padding: 10px 0;">
-                <button class="btn btn-default pull-right" id="btn_refresh_containers">
-                    <i class="fa fa-refresh"></i> {{ lang._('Refresh') }}
-                </button>
-                <div class="clearfix"></div>
-            </div>
             <table class="table table-striped table-hover" id="grid-containers">
                 <thead>
                     <tr>
@@ -235,12 +221,6 @@
     <!-- Images Tab -->
     <div id="tab-images" class="tab-pane fade">
         <div class="table-responsive">
-            <div style="padding: 10px 0;">
-                <button class="btn btn-default pull-right" id="btn_refresh_images">
-                    <i class="fa fa-refresh"></i> {{ lang._('Refresh') }}
-                </button>
-                <div class="clearfix"></div>
-            </div>
             <table class="table table-striped table-hover" id="grid-images">
                 <thead>
                     <tr>
@@ -260,12 +240,6 @@
     <!-- Volumes Tab -->
     <div id="tab-volumes" class="tab-pane fade">
         <div class="table-responsive">
-            <div style="padding: 10px 0;">
-                <button class="btn btn-default pull-right" id="btn_refresh_volumes">
-                    <i class="fa fa-refresh"></i> {{ lang._('Refresh') }}
-                </button>
-                <div class="clearfix"></div>
-            </div>
             <table class="table table-striped table-hover" id="grid-volumes">
                 <thead>
                     <tr>
@@ -284,12 +258,6 @@
     <!-- Networks Tab -->
     <div id="tab-networks" class="tab-pane fade">
         <div class="table-responsive">
-            <div style="padding: 10px 0;">
-                <button class="btn btn-default pull-right" id="btn_refresh_networks">
-                    <i class="fa fa-refresh"></i> {{ lang._('Refresh') }}
-                </button>
-                <div class="clearfix"></div>
-            </div>
             <table class="table table-striped table-hover" id="grid-networks">
                 <thead>
                     <tr>

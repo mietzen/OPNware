@@ -38,6 +38,11 @@ class ServiceController extends ApiMutableServiceControllerBase
     protected static $internalServiceEnabled = 'general.enabled';
     protected static $internalServiceName = 'podman';
 
+    protected function reconfigureForceRestart()
+    {
+        return true;
+    }
+
     public function statusAction()
     {
         $backend = new Backend();
@@ -53,28 +58,5 @@ class ServiceController extends ApiMutableServiceControllerBase
                 "caption_running" => gettext("Running"),
             ]
         ];
-    }
-
-    public function reconfigureAction()
-    {
-        if ($this->request->isPost()) {
-            $backend = new Backend();
-            $backend->configdRun('template reload OPNsense/Podman');
-            $backend->configdRun('podman setup');
-
-            $model = $this->getModel();
-            if ((string)$model->general->enabled === '1') {
-                $status = $this->statusAction();
-                if ($status['status'] === 'running') {
-                    $backend->configdRun('podman restart');
-                } else {
-                    $backend->configdRun('podman start');
-                }
-            } else {
-                $backend->configdRun('podman stop');
-            }
-            return ["status" => "ok"];
-        }
-        return ["status" => "failed"];
     }
 }

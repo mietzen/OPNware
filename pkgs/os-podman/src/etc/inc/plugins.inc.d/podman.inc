@@ -38,7 +38,7 @@ function podman_services()
             'stop' => array('podman stop'),
         ),
         'name' => 'podman',
-        'pidfile' => '/var/run/podman/podman.pid'
+        'pidfile' => '/var/run/podman/podman_service.pid'
     );
 
     return $services;
