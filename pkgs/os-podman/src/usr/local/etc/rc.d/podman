@@ -1,0 +1,78 @@
+#!/bin/sh
+
+# PROVIDE: podman
+# REQUIRE: DAEMON NETWORKING
+# KEYWORD: shutdown
+
+. /etc/rc.subr
+
+name="podman"
+rcvar="podman_enable"
+
+load_rc_config "${name}"
+
+: ${podman_enable:="NO"}
+: ${podman_listen_address:="127.0.0.1"}
+: ${podman_listen_port:="2376"}
+: ${podman_tls_enable:="NO"}
+: ${podman_tls_cert:=""}
+: ${podman_tls_key:=""}
+: ${podman_tls_ca:=""}
+: ${podman_socket_enable:="YES"}
+
+pidfile="/var/run/podman/podman.pid"
+command="/usr/sbin/daemon"
+
+podman_bin="/usr/local/bin/podman"
+
+# Construct endpoints
+endpoints=""
+if [ "${podman_socket_enable}" = "YES" ]; then
+    endpoints="unix:///var/run/podman/podman.sock"
+fi
+
+if [ "${podman_tls_enable}" = "YES" ] && [ -n "${podman_listen_port}" ]; then
+    tls_flags=""
+    if [ -f "${podman_tls_cert}" ] && [ -f "${podman_tls_key}" ]; then
+        tls_flags="--tls-cert=${podman_tls_cert} --tls-key=${podman_tls_key}"
+        if [ -f "${podman_tls_ca}" ]; then
+            tls_flags="${tls_flags} --tls-ca=${podman_tls_ca}"
+        fi
+    fi
+    tcp_endpoint="tcp://${podman_listen_address}:${podman_listen_port}"
+    if [ -n "${endpoints}" ]; then
+        endpoints="${endpoints} ${tcp_endpoint}"
+    else
+        endpoints="${tcp_endpoint}"
+    fi
+elif [ -n "${podman_listen_port}" ] && [ "${podman_listen_address}" != "" ]; then
+    tcp_endpoint="tcp://${podman_listen_address}:${podman_listen_port}"
+    if [ -n "${endpoints}" ]; then
+        endpoints="${endpoints} ${tcp_endpoint}"
+    else
+        endpoints="${tcp_endpoint}"
+    fi
+fi
+
+if [ -z "${endpoints}" ]; then
+    endpoints="unix:///var/run/podman/podman.sock"
+fi
+
+command_args="-p ${pidfile} -u root -o /var/log/podman/system-service.log -f ${podman_bin} system service --time=0 ${endpoints}"
+
+start_precmd="podman_prestart"
+stop_postcmd="podman_poststop"
+
+podman_prestart()
+{
+    /usr/local/bin/php /usr/local/opnsense/scripts/OPNsense/Podman/setup.php
+    mkdir -p /var/run/podman /var/log/podman /var/db/containers
+    chmod 0750 /var/run/podman
+}
+
+podman_poststop()
+{
+    rm -f /var/run/podman/podman.sock "${pidfile}"
+}
+
+run_rc_command "$1"

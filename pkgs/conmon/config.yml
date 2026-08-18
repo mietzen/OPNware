@@ -1,0 +1,9 @@
+---
+build_config:
+  include: {}
+redistribute:
+  name: conmon
+  version:
+    FreeBSD-15-amd64: "2.2.1_6"
+  repo: http://pkg.freebsd.org
+  path: quarterly/All
