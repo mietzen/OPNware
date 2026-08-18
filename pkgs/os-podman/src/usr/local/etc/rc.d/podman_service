@@ -63,7 +63,7 @@ podman_service_prestart()
 {
     /usr/local/bin/php /usr/local/opnsense/scripts/OPNsense/Podman/setup.php
     mkdir -p /var/run/podman /var/log/podman /var/db/containers
-    chmod 0750 /var/run/podman
+    chmod 0755 /var/run/podman
 }
 
 podman_service_start()

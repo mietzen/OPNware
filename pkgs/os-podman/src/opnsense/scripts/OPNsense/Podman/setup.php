@@ -47,8 +47,8 @@ $logDir = '/var/log/podman';
 $etcDir = '/var/etc/podman';
 $containersDir = '/var/db/containers';
 
-@mkdir($stateDir, 0750, true);
-@mkdir($runDir, 0750, true);
+@mkdir($stateDir, 0755, true);
+@mkdir($runDir, 0755, true);
 @mkdir($logDir, 0755, true);
 @mkdir($etcDir, 0700, true);
 @mkdir($containersDir, 0755, true);

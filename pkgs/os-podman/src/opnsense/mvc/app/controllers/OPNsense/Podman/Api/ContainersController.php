@@ -63,7 +63,7 @@ class ContainersController extends ApiControllerBase
             if (empty($containerId)) {
                 return ["status" => "error", "message" => "Container ID is required"];
             }
-            return $this->executeAction("containers_{$action}", escapeshellarg($containerId));
+            return $this->executeAction("containers_{$action}", $containerId);
         }
         return ["status" => "failed"];
     }

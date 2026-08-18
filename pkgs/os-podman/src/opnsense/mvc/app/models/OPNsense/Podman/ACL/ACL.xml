@@ -3,7 +3,9 @@
         <name>Services: Podman Container Engine</name>
         <patterns>
             <pattern>ui/podman/*</pattern>
+            <pattern>ui/diagnostics/log/core/podman</pattern>
             <pattern>api/podman/*</pattern>
+            <pattern>api/diagnostics/log/core/podman/*</pattern>
         </patterns>
     </page-services-podman>
 </acl>

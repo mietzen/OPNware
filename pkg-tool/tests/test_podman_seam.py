@@ -40,6 +40,7 @@ def test_os_podman_spec_and_files_valid():
     manifest = spec.get("pkg_manifest", {})
     assert manifest.get("name") == "podman"
     assert manifest.get("origin") == "opnware/os-podman"
+    assert manifest.get("version") == "0.1.2"
 
     deps = manifest.get("deps", {})
     for name in REDISTRIBUTE_PKGS:
@@ -47,17 +48,31 @@ def test_os_podman_spec_and_files_valid():
 
     # Check key files
     src = podman_dir / "src"
-    assert (src / "etc" / "inc" / "plugins.inc.d" / "podman.inc").exists()
+    inc_content = (src / "etc" / "inc" / "plugins.inc.d" / "podman.inc").read_text()
+    assert "/var/run/podman/podman_service.pid" in inc_content
+
     assert (src / "etc" / "syslog-ng.conf.d" / "podman.conf").exists()
     assert (src / "usr" / "local" / "etc" / "rc.d" / "podman_service").exists()
     assert (src / "opnsense" / "service" / "conf" / "actions.d" / "actions_podman.conf").exists()
     assert (src / "opnsense" / "service" / "templates" / "OPNsense" / "Podman" / "+TARGETS").exists()
     assert (src / "opnsense" / "mvc" / "app" / "models" / "OPNsense" / "Podman" / "Podman.xml").exists()
     assert (src / "opnsense" / "mvc" / "app" / "models" / "OPNsense" / "Podman" / "Podman.php").exists()
-    assert (src / "opnsense" / "mvc" / "app" / "models" / "OPNsense" / "Podman" / "Menu" / "Menu.xml").exists()
-    assert (src / "opnsense" / "mvc" / "app" / "models" / "OPNsense" / "Podman" / "ACL" / "ACL.xml").exists()
+
+    menu_content = (src / "opnsense" / "mvc" / "app" / "models" / "OPNsense" / "Podman" / "Menu" / "Menu.xml").read_text()
+    assert "<menu>" in menu_content
+    assert "/ui/diagnostics/log/core/podman" in menu_content
+
+    acl_content = (src / "opnsense" / "mvc" / "app" / "models" / "OPNsense" / "Podman" / "ACL" / "ACL.xml").read_text()
+    assert "ui/diagnostics/log/core/podman" in acl_content
+
     assert (src / "opnsense" / "mvc" / "app" / "controllers" / "OPNsense" / "Podman" / "forms" / "general.xml").exists()
     assert (src / "opnsense" / "mvc" / "app" / "views" / "OPNsense" / "Podman" / "general.volt").exists()
-    assert (src / "opnsense" / "mvc" / "app" / "views" / "OPNsense" / "Podman" / "dashboard.volt").exists()
+
+    dashboard_content = (src / "opnsense" / "mvc" / "app" / "views" / "OPNsense" / "Podman" / "dashboard.volt").read_text()
+    assert "btn_refresh_containers" not in dashboard_content
+
+    containers_ctrl = (src / "opnsense" / "mvc" / "app" / "controllers" / "OPNsense" / "Podman" / "Api" / "ContainersController.php").read_text()
+    assert 'executeAction("containers_{$action}", $containerId)' in containers_ctrl
+
     assert (src / "opnsense" / "scripts" / "OPNsense" / "Podman" / "setup.php").exists()
     assert (src / "opnsense" / "scripts" / "OPNsense" / "Podman" / "manage.py").exists()
