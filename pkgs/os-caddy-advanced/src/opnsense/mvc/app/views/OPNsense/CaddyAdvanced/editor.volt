@@ -105,11 +105,11 @@
     // paths. Everything is vendored under /opnsense/www/js/vendor/ (served as
     // /ui/js/vendor/...); see docs/design/shared-editor-vendor.md.
     //
-    // The vendored editor.main.js is patched to serve workers from the
-    // same-origin bootstrap worker (editor.worker.bootstrap.js): OPNsense's
-    // CSP blocks Monaco's default blob: workers, and the main-thread
-    // fallback froze the UI on model changes. See
-    // docs/design/shared-editor-vendor.md.
+    // The editor page's controller extends OPNsense's default CSP with
+    // worker-src 'self' blob: and font-src 'self' data: (per-controller
+    // content_security_policy merge in ControllerBase), so Monaco's native
+    // blob: workers and inline codicon font work on the unpatched vendored
+    // tree. See docs/design/shared-editor-vendor.md.
     require.config({
         paths: {
             vs: '/ui/js/vendor/monaco/vs',
@@ -277,10 +277,9 @@
                         data: nodes,
                         themes: { name: 'default' },
                         // jstree's core.worker defaults to true and spawns a
-                        // blob: worker for background parsing — OPNsense's
-                        // CSP refuses blob workers, which aborts the tree
-                        // init and cascades into the Monaco load. Parsing is
-                        // cheap for a small config tree, so disable it.
+                        // blob: worker for background parsing. This page's CSP
+                        // extension would allow it, but parsing is cheap for a
+                        // small config tree, so keep it disabled.
                         worker: false
                     },
                     types: {
