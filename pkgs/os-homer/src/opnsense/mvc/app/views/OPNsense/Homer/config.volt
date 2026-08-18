@@ -112,14 +112,7 @@
             }, function(data) {
                 if (data.status === "ok") {
                     showSuccess(data.message || "{{ lang._('Saved') }}");
-                    if (data.parser_warning) {
-                        showWarning(
-                            (data.parser_message || data.message) + " " +
-                            "{{ lang._('No full YAML parser is available; saving was allowed on a best-effort structural check.') }}"
-                        );
-                    } else {
-                        $("#config-notice").hide();
-                    }
+                    $("#config-notice").hide();
                 } else {
                     showError(data.message || JSON.stringify(data));
                 }

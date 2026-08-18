@@ -43,7 +43,7 @@ def test_tree_accepts_flat_paths_only():
 def test_save_engine_handles_complete_tree_deletions():
     src = EDITOR_SAVE.read_text()
     assert "COMPLETE_STAGING_MARKER" in src
-    assert "array_diff(editor_tree_files(BASE), $staged)" in src
+    assert "array_diff(editor_tree_walk_files(BASE), $staged)" in src
 
 
 def test_single_file_save_clears_stale_staging_before_staging():

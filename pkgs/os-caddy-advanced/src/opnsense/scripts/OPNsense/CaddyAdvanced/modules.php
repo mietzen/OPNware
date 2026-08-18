@@ -2,7 +2,7 @@
 <?php
 
 /*
- * OPNware os-caddy — xcaddy-pinned module management with self-healing ensure.
+ * OPNware os-caddy-advanced — xcaddy-pinned module management with self-healing ensure.
  *
  * Modes (first CLI arg):
  *   rebuild — build a new caddy binary from the declared module set, pinned

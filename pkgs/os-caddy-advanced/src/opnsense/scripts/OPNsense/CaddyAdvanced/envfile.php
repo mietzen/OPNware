@@ -1,7 +1,7 @@
 <?php
 
 /*
- * OPNware os-caddy — shared envfile helpers.
+ * OPNware os-caddy-advanced — shared envfile helpers.
  *
  * The envfile (/usr/local/etc/caddy/env, from general.EnvFile) has three
  * writers: setup.php (CADDY_LOG_LEVEL), dockerproxy.php (the CADDY_DOCKER_*

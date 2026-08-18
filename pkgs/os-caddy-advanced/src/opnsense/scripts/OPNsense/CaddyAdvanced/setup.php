@@ -2,7 +2,7 @@
 <?php
 
 /*
- * OPNware os-caddy — sync the plugin-managed env var into the envfile.
+ * OPNware os-caddy-advanced — sync the plugin-managed env var into the envfile.
  *
  * The envfile (/usr/local/etc/caddy/env) is user-owned (managed as a masked
  * grid on the editor page). This script only ensures it exists and keeps the

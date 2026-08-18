@@ -2,7 +2,7 @@
 <?php
 
 /*
- * OPNware os-caddy — sync the docker-proxy connection/TLS env vars into the envfile.
+ * OPNware os-caddy-advanced — sync the docker-proxy connection/TLS env vars into the envfile.
  *
  * The envfile (/usr/local/etc/caddy/env) is user-owned (managed as a masked
  * grid on the editor page). Like setup.php (CADDY_LOG_LEVEL), this script

@@ -11,7 +11,7 @@ plugin:
 pkg_manifest:
   name: homer
   origin: opnware/os-homer
-  version: 0.4.6
+  version: 0.4.7
   comment: Homer dashboard served via its own isolated caddy instance
   www: https://homer-demo.netlify.app/
   maintainer: github.nstein@mailbox.org
