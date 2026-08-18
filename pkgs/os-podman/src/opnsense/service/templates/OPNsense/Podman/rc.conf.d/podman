@@ -1,0 +1,30 @@
+{% if helpers.exists('OPNsense.podman.general.enabled') and OPNsense.podman.general.enabled == '1' %}
+podman_enable="YES"
+{% else %}
+podman_enable="NO"
+{% endif %}
+{% if helpers.exists('OPNsense.podman.general.tcp_enabled') and OPNsense.podman.general.tcp_enabled == '1' %}
+podman_tcp_enable="YES"
+{% else %}
+podman_tcp_enable="NO"
+{% endif %}
+{% if helpers.exists('OPNsense.podman.general.listen_address') and OPNsense.podman.general.listen_address != '' %}
+podman_listen_address="{{ OPNsense.podman.general.listen_address }}"
+{% else %}
+podman_listen_address="127.0.0.1"
+{% endif %}
+{% if helpers.exists('OPNsense.podman.general.listen_port') and OPNsense.podman.general.listen_port != '' %}
+podman_listen_port="{{ OPNsense.podman.general.listen_port }}"
+{% else %}
+podman_listen_port="2376"
+{% endif %}
+{% if helpers.exists('OPNsense.podman.general.tls_enabled') and OPNsense.podman.general.tls_enabled == '1' %}
+podman_tls_enable="YES"
+podman_tls_cert="/var/etc/podman/cert.pem"
+podman_tls_key="/var/etc/podman/key.pem"
+{% if helpers.exists('OPNsense.podman.general.ca') and OPNsense.podman.general.ca != '' %}
+podman_tls_ca="/var/etc/podman/ca.pem"
+{% endif %}
+{% else %}
+podman_tls_enable="NO"
+{% endif %}

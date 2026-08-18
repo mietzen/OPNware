@@ -1,0 +1,9 @@
+---
+build_config:
+  include: {}
+redistribute:
+  name: gpgme
+  version:
+    FreeBSD-15-amd64: "2.1.2"
+  repo: http://pkg.freebsd.org
+  path: quarterly/All

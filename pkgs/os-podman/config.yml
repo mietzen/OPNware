@@ -1,0 +1,38 @@
+---
+build_config:
+  include: {}
+plugin:
+  opnsense_version: "26.7"
+  tier: 3
+pkg_manifest:
+  name: podman
+  origin: opnware/os-podman
+  version: 0.1.0
+  comment: Manage containers, images, volumes, and networks via Podman on FreeBSD Jails
+  www: https://podman.io/
+  maintainer: github.nstein@mailbox.org
+  prefix: /usr/local
+  licenselogic: single
+  licenses:
+    - MIT
+  desc: |
+    OPNware os-podman: provides native container management on OPNsense using Podman and ocijail. Features include ZFS storage provisioning, 64-bit Linux emulation management, optional Docker-compatible TLS REST API socket, CNI bridge integration, and a live WebUI dashboard for containers, images, volumes, and networks.
+  deps:
+    podman:
+      origin: sysutils/podman
+      version: ">=5.8.4_2"
+    conmon:
+      origin: sysutils/conmon
+      version: ">=2.2.1_6"
+    containernetworking-plugins:
+      origin: net/containernetworking-plugins
+      version: ">=0.6_16"
+    containers-common:
+      origin: sysutils/containers-common
+      version: ">=0.64.2_4"
+    gpgme:
+      origin: security/gpgme
+      version: ">=2.1.2"
+    ocijail:
+      origin: sysutils/ocijail
+      version: ">=0.6.0"

@@ -1,0 +1,41 @@
+<model>
+    <mount>//OPNsense/podman</mount>
+    <version>1.0.0</version>
+    <description>OPNware Podman Configuration</description>
+    <items>
+        <general>
+            <enabled type="BooleanField">
+                <default>0</default>
+                <required>Y</required>
+            </enabled>
+            <enable_linux type="BooleanField">
+                <default>1</default>
+                <required>Y</required>
+            </enable_linux>
+            <tcp_enabled type="BooleanField">
+                <default>0</default>
+                <required>N</required>
+            </tcp_enabled>
+            <listen_address type="TextField">
+                <default>127.0.0.1</default>
+                <required>N</required>
+            </listen_address>
+            <listen_port type="IntegerField">
+                <default>2376</default>
+                <minimumValue>1</minimumValue>
+                <maximumValue>65535</maximumValue>
+                <required>N</required>
+            </listen_port>
+            <tls_enabled type="BooleanField">
+                <default>0</default>
+                <required>N</required>
+            </tls_enabled>
+            <certificate type="CertificateField">
+                <required>N</required>
+            </certificate>
+            <ca type="CertificateField">
+                <required>N</required>
+            </ca>
+        </general>
+    </items>
+</model>

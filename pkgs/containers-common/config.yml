@@ -1,0 +1,9 @@
+---
+build_config:
+  include: {}
+redistribute:
+  name: containers-common
+  version:
+    FreeBSD-15-amd64: "0.64.2_4"
+  repo: http://pkg.freebsd.org
+  path: quarterly/All

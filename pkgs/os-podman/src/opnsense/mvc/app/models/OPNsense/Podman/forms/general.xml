@@ -1,0 +1,50 @@
+<form>
+    <field>
+        <id>podman.general.enabled</id>
+        <label>Enable Service</label>
+        <type>checkbox</type>
+        <help>Enable the background Podman system service daemon and socket.</help>
+    </field>
+    <field>
+        <id>podman.general.enable_linux</id>
+        <label>Enable Linux Emulation</label>
+        <type>checkbox</type>
+        <help>Automatically load FreeBSD 64-bit Linux kernel modules (linux64.ko, linprocfs, linsysfs) to allow running Linux container images.</help>
+    </field>
+    <field>
+        <id>podman.general.tcp_enabled</id>
+        <label>Enable TCP Socket</label>
+        <type>checkbox</type>
+        <help>Expose the Docker-compatible REST API over a TCP socket.</help>
+    </field>
+    <field>
+        <id>podman.general.listen_address</id>
+        <label>Listen Address</label>
+        <type>text</type>
+        <help>IP address for the TCP Docker API socket (e.g. 127.0.0.1 or 0.0.0.0).</help>
+    </field>
+    <field>
+        <id>podman.general.listen_port</id>
+        <label>Listen Port</label>
+        <type>text</type>
+        <help>Port number for the TCP Docker API socket (default 2376).</help>
+    </field>
+    <field>
+        <id>podman.general.tls_enabled</id>
+        <label>Enable TLS</label>
+        <type>checkbox</type>
+        <help>Require TLS authentication for the TCP Docker API socket.</help>
+    </field>
+    <field>
+        <id>podman.general.certificate</id>
+        <label>Server Certificate</label>
+        <type>dropdown</type>
+        <help>Select the SSL/TLS server certificate from System: Trust: Certificates.</help>
+    </field>
+    <field>
+        <id>podman.general.ca</id>
+        <label>Client CA Certificate</label>
+        <type>dropdown</type>
+        <help>Select the Certificate Authority for validating client certificates.</help>
+    </field>
+</form>

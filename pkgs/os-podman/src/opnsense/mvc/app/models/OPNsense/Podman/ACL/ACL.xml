@@ -1,0 +1,9 @@
+<acl>
+    <page-services-podman>
+        <name>Services: Podman Container Engine</name>
+        <patterns>
+            <pattern>ui/podman/*</pattern>
+            <pattern>api/podman/*</pattern>
+        </patterns>
+    </page-services-podman>
+</acl>

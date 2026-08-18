@@ -1,0 +1,9 @@
+---
+build_config:
+  include: {}
+redistribute:
+  name: podman
+  version:
+    FreeBSD-15-amd64: "5.8.4_2"
+  repo: http://pkg.freebsd.org
+  path: quarterly/All
