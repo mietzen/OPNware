@@ -28,26 +28,22 @@
 
 namespace OPNsense\Podman\Api;
 
-use OPNsense\Base\ApiControllerBase;
-use OPNsense\Core\Backend;
-
-class NetworksController extends ApiControllerBase
+class NetworksController extends PodmanApiControllerBase
 {
     public function listAction()
     {
-        $backend = new Backend();
-        $response = $backend->configdRun('podman networks_list');
-        $result = json_decode($response, true);
-        if ($result === null) {
-            $statusFile = '/var/db/podman/manage_status.json';
-            if (file_exists($statusFile)) {
-                $fileData = json_decode(file_get_contents($statusFile), true);
-                if ($fileData !== null) {
-                    return $fileData;
-                }
+        return $this->executeAction('networks_list');
+    }
+
+    public function deleteAction($name = null)
+    {
+        if ($this->request->isPost()) {
+            $netName = $name ?: $this->request->getPost('name');
+            if (empty($netName)) {
+                return ["status" => "error", "message" => "Network name is required"];
             }
-            return ["status" => "error", "message" => $response ?: "Empty response from configd"];
+            return $this->executeAction('networks_delete', $netName);
         }
-        return $result;
+        return ["status" => "failed"];
     }
 }

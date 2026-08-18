@@ -28,34 +28,8 @@
 
 namespace OPNsense\Podman\Api;
 
-use OPNsense\Base\ApiControllerBase;
-use OPNsense\Core\Backend;
-
-class ContainersController extends ApiControllerBase
+class ContainersController extends PodmanApiControllerBase
 {
-    private function executeAction($cmd, $param = null)
-    {
-        $backend = new Backend();
-        if ($param !== null) {
-            $response = $backend->configdpRun("podman {$cmd}", [$param]);
-        } else {
-            $response = $backend->configdRun("podman {$cmd}");
-        }
-
-        $result = json_decode($response, true);
-        if ($result === null) {
-            $statusFile = '/var/db/podman/manage_status.json';
-            if (file_exists($statusFile)) {
-                $fileData = json_decode(file_get_contents($statusFile), true);
-                if ($fileData !== null) {
-                    return $fileData;
-                }
-            }
-            return ["status" => "error", "message" => $response ?: "Empty response from configd"];
-        }
-        return $result;
-    }
-
     private function handleContainerAction($action, $id)
     {
         if ($this->request->isPost()) {
@@ -91,5 +65,28 @@ class ContainersController extends ApiControllerBase
     public function restartAction($id = null)
     {
         return $this->handleContainerAction('restart', $id);
+    }
+
+    public function deleteAction($id = null)
+    {
+        return $this->handleContainerAction('delete', $id);
+    }
+
+    public function logsAction($id = null)
+    {
+        $containerId = $id ?: $this->request->get('id');
+        if (empty($containerId)) {
+            return ["status" => "error", "message" => "Container ID is required"];
+        }
+        return $this->executeAction('containers_logs', $containerId);
+    }
+
+    public function inspectAction($id = null)
+    {
+        $containerId = $id ?: $this->request->get('id');
+        if (empty($containerId)) {
+            return ["status" => "error", "message" => "Container ID is required"];
+        }
+        return $this->executeAction('containers_inspect', $containerId);
     }
 }

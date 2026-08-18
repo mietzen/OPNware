@@ -28,22 +28,31 @@
 
 namespace OPNsense\Podman\Api;
 
-class ImagesController extends PodmanApiControllerBase
-{
-    public function listAction()
-    {
-        return $this->executeAction('images_list');
-    }
+use OPNsense\Base\ApiControllerBase;
+use OPNsense\Core\Backend;
 
-    public function deleteAction($id = null)
+abstract class PodmanApiControllerBase extends ApiControllerBase
+{
+    protected function executeAction($cmd, $param = null)
     {
-        if ($this->request->isPost()) {
-            $imageId = $id ?: $this->request->getPost('id');
-            if (empty($imageId)) {
-                return ["status" => "error", "message" => "Image ID is required"];
-            }
-            return $this->executeAction('images_delete', $imageId);
+        $backend = new Backend();
+        if ($param !== null) {
+            $response = $backend->configdpRun("podman {$cmd}", [$param]);
+        } else {
+            $response = $backend->configdRun("podman {$cmd}");
         }
-        return ["status" => "failed"];
+
+        $result = json_decode($response, true);
+        if ($result === null) {
+            $statusFile = '/var/db/podman/manage_status.json';
+            if (file_exists($statusFile)) {
+                $fileData = json_decode(file_get_contents($statusFile), true);
+                if ($fileData !== null) {
+                    return $fileData;
+                }
+            }
+            return ["status" => "error", "message" => $response ?: "Empty response from configd"];
+        }
+        return $result;
     }
 }

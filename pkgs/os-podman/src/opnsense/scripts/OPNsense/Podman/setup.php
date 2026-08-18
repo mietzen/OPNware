@@ -33,7 +33,8 @@ use OPNsense\Core\Config;
 
 function log_msg($msg)
 {
-    syslog(LOG_NOTICE, "os-podman setup: " . $msg);
+    syslog(LOG_NOTICE, "os-podman: " . $msg);
+    @file_put_contents('/var/log/podman/system-service.log', date('c') . " [info] " . $msg . "\n", FILE_APPEND);
 }
 
 openlog("podman", LOG_PID, LOG_LOCAL4);
@@ -78,12 +79,14 @@ if (!file_exists('/usr/local/etc/containers')) {
 
 $storageConfContent = "[storage]\ndriver = \"{$storageDriver}\"\nrunroot = \"/var/run/containers/storage\"\ngraphroot = \"/var/db/containers/storage\"\n";
 file_put_contents($storageConfPath, $storageConfContent);
+log_msg("Configured storage driver: {$storageDriver} (/var/db/containers/storage)");
 
 // Ensure registries.conf has default search registries
 $registriesConfPath = '/usr/local/etc/containers/registries.conf';
 if (!file_exists($registriesConfPath) || filesize($registriesConfPath) < 10) {
     $registriesContent = "unqualified-search-registries = [\"docker.io\", \"quay.io\"]\n";
     file_put_contents($registriesConfPath, $registriesContent);
+    log_msg("Configured default search registries in {$registriesConfPath}");
 }
 
 // 2. Linux 64-bit Emulation Kernel Modules
@@ -93,6 +96,7 @@ if ($podmanCfg !== null && isset($podmanCfg->general->enable_linux)) {
 }
 
 if ($enableLinux) {
+    log_msg("Initializing 64-bit Linux kernel emulation modules and mounts");
     exec('/sbin/kldload -n linux linux64 linprocfs linsysfs 2>/dev/null');
 
     @mkdir('/compat/linux/proc', 0755, true);
@@ -126,6 +130,7 @@ if ($podmanCfg !== null && !empty((string)$podmanCfg->general->certificate)) {
         file_put_contents("{$etcDir}/key.pem", $keyPem);
         chmod("{$etcDir}/cert.pem", 0644);
         chmod("{$etcDir}/key.pem", 0600);
+        log_msg("Exported TLS certificate and private key to {$etcDir}");
     }
 }
 
@@ -144,6 +149,7 @@ if ($podmanCfg !== null && !empty((string)$podmanCfg->general->ca)) {
         $caPem = base64_decode((string)$caObj->crt);
         file_put_contents("{$etcDir}/ca.pem", $caPem);
         chmod("{$etcDir}/ca.pem", 0644);
+        log_msg("Exported CA certificate to {$etcDir}/ca.pem");
     }
 }
 

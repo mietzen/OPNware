@@ -70,12 +70,15 @@ podman_service_start()
 {
     podman_service_prestart
     echo -n "Starting ${name}... "
-    /usr/sbin/daemon -p "${pidfile}" -o "${logfile}" "${podman_bin}" system service --time=0 ${tls_flags} ${endpoints}
+    echo "$(date '+%Y-%m-%dT%H:%M:%S%z') [info] Starting Podman system service daemon..." >> "${logfile}"
+    /usr/sbin/daemon -f -p "${pidfile}" -o "${logfile}" "${podman_bin}" --log-level=info system service --time=0 ${tls_flags} ${endpoints} </dev/null >/dev/null 2>&1
     sleep 1
     if [ -f "${pidfile}" ] && /bin/kill -0 "$(/bin/cat "${pidfile}")" 2>/dev/null; then
+        echo "$(date '+%Y-%m-%dT%H:%M:%S%z') [info] Podman system service daemon started (pid $(/bin/cat "${pidfile}"))." >> "${logfile}"
         echo "done."
         return 0
     fi
+    echo "$(date '+%Y-%m-%dT%H:%M:%S%z') [error] Podman system service daemon failed to start." >> "${logfile}"
     echo "failed (see ${logfile})."
     return 1
 }
@@ -86,11 +89,13 @@ podman_service_stop()
         pid=$(cat "${pidfile}" 2>/dev/null)
         if [ -n "${pid}" ] && kill -0 "${pid}" 2>/dev/null; then
             echo -n "Stopping ${name}... "
+            echo "$(date '+%Y-%m-%dT%H:%M:%S%z') [info] Stopping Podman system service daemon (pid ${pid})..." >> "${logfile}"
             kill -TERM "${pid}"
             sleep 1
             if kill -0 "${pid}" 2>/dev/null; then
                 kill -KILL "${pid}" 2>/dev/null
             fi
+            echo "$(date '+%Y-%m-%dT%H:%M:%S%z') [info] Podman system service daemon stopped." >> "${logfile}"
             echo "done."
         fi
         rm -f "${pidfile}" /var/run/podman/podman.sock

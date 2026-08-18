@@ -28,22 +28,23 @@
 
 namespace OPNsense\Podman\Api;
 
-class ImagesController extends PodmanApiControllerBase
+class SystemController extends PodmanApiControllerBase
 {
-    public function listAction()
+    public function dfAction()
     {
-        return $this->executeAction('images_list');
+        return $this->executeAction('system_df');
     }
 
-    public function deleteAction($id = null)
+    public function pruneAction()
     {
         if ($this->request->isPost()) {
-            $imageId = $id ?: $this->request->getPost('id');
-            if (empty($imageId)) {
-                return ["status" => "error", "message" => "Image ID is required"];
-            }
-            return $this->executeAction('images_delete', $imageId);
+            return $this->executeAction('system_prune');
         }
         return ["status" => "failed"];
+    }
+
+    public function infoAction()
+    {
+        return $this->executeAction('system_info');
     }
 }

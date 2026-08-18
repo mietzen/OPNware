@@ -26,7 +26,7 @@
 
 <script>
     $(document).ready(function () {
-        var data_get_map = {'frm_general-settings': '/api/podman/general/get'};
+        var data_get_map = {'frm_general': '/api/podman/general/get'};
         mapDataToFormUI(data_get_map).done(function (data) {
             formatTokenizersUI();
             $('.selectpicker').each(function () {
@@ -38,10 +38,17 @@
         });
 
         $('#btn_save').click(function () {
+            $('#btn_save_progress').addClass('fa fa-spinner fa-pulse');
+            $('#btn_save').prop('disabled', true);
             saveFormToEndpoint('/api/podman/general/set', 'frm_general-settings', function () {
                 ajaxCall('/api/podman/service/reconfigure', {}, function (data, status) {
+                    $('#btn_save_progress').removeClass('fa fa-spinner fa-pulse');
+                    $('#btn_save').prop('disabled', false);
                     updateServiceControlUI('podman');
                 });
+            }, false, function () {
+                $('#btn_save_progress').removeClass('fa fa-spinner fa-pulse');
+                $('#btn_save').prop('disabled', false);
             });
         });
     });
