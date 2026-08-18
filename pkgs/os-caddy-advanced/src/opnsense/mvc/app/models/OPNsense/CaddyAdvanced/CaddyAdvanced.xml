@@ -31,9 +31,7 @@
                 <Default>/usr/local/etc/caddy/env</Default>
                 <Required>Y</Required>
             </EnvFile>
-            <Modules type="TextField">
-                <AsList>Y</AsList>
-            </Modules>
+            <Modules type="TextField"/>
         </general>
         <dockerproxy>
             <enabled type="BooleanField">

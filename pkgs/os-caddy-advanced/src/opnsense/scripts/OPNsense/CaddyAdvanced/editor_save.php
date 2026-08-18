@@ -2,7 +2,7 @@
 <?php
 
 /*
- * OPNware os-caddy — save cycle for the user-owned Caddy file tree.
+ * OPNware os-caddy-advanced — save cycle for the user-owned Caddy file tree.
  *
  * One configd action, serialized via flock on /var/run/os-caddy-advanced/editor.lock.
  * It reads the file set staged by the editor API (from
@@ -48,36 +48,6 @@ function editor_run_cmd($cmd, &$out, &$code)
 }
 
 /**
- * Safe relative path check: only "Caddyfile" or a single-component *.caddy
- * file directly inside "conf.d" is allowed. Rejects traversal (".."),
- * absolute paths and any nesting (the import glob is non-recursive).
- */
-function editor_safe_rel($rel)
-{
-    if ($rel === 'Caddyfile') {
-        return true;
-    }
-    return (bool)preg_match('#^conf\.d/[A-Za-z0-9._-]+\.caddy$#', $rel);
-}
-
-/**
- * Whether $path resolves to a real location strictly under $base. Used to
- * refuse symlink escapes when reading tree files.
- */
-function editor_under_base($path, $base)
-{
-    $real = realpath($path);
-    if ($real === false) {
-        return false;
-    }
-    $real_base = realpath($base);
-    if ($real_base === false) {
-        return false;
-    }
-    return strpos($real, $real_base . '/') === 0;
-}
-
-/**
  * Whether a write to $target (under $base) is safe: the parent directory must
  * resolve to a real location under $base and must not be a symlink. This is
  * checked immediately before every write so a swapped/symlinked conf.d can
@@ -107,20 +77,11 @@ function editor_write_target_ok($target, $base)
 }
 
 /**
- * Relative paths of the flat tree files present under $base (Caddyfile plus
- * conf.d/*.caddy, files only, no subdirectories).
- */
-function editor_tree_files($base)
-{
-    return editor_tree_walk_files($base);
-}
-
-/**
  * Relative paths of the currently staged files (written by the editor API).
  */
 function editor_staged_files()
 {
-    return editor_tree_files(STAGING_DIR);
+    return editor_tree_walk_files(STAGING_DIR);
 }
 
 /**
@@ -216,12 +177,12 @@ function editor_reload()
  */
 function editor_restore_snapshot($snapshot)
 {
-    foreach (editor_tree_files($snapshot) as $rel) {
+    foreach (editor_tree_walk_files($snapshot) as $rel) {
         if (editor_write_target_ok(BASE . '/' . $rel, BASE)) {
             editor_copy_file($snapshot . '/' . $rel, BASE . '/' . $rel);
         }
     }
-    foreach (editor_tree_files(BASE) as $rel) {
+    foreach (editor_tree_walk_files(BASE) as $rel) {
         if (!is_file($snapshot . '/' . $rel)) {
             @unlink(BASE . '/' . $rel);
         }
@@ -306,7 +267,7 @@ function editor_save_cycle()
     }
 
     if (!$complete) {
-        foreach (editor_tree_files(BASE) as $rel) {
+        foreach (editor_tree_walk_files(BASE) as $rel) {
             if (!editor_copy_file(BASE . '/' . $rel, $tmp . '/' . $rel)) {
                 editor_rmtree($tmp);
                 return editor_complete($out, 'failure', "cannot stage $rel", $ts);
@@ -346,7 +307,7 @@ function editor_save_cycle()
         editor_rmtree($tmp);
         return editor_complete($out, 'failure', "cannot create snapshot $snapshot", $ts);
     }
-    foreach (editor_tree_files(BASE) as $rel) {
+    foreach (editor_tree_walk_files(BASE) as $rel) {
         if (!editor_copy_file(BASE . '/' . $rel, $snapshot . '/' . $rel)) {
             editor_rmtree($tmp);
             return editor_complete($out, 'failure', "cannot snapshot $rel", $ts);
@@ -357,7 +318,7 @@ function editor_save_cycle()
     //    target. Never truncate in place. The parent dir is re-checked under
     //    base immediately before each write (symlinked conf.d is refused).
     if ($complete) {
-        foreach (array_diff(editor_tree_files(BASE), $staged) as $rel) {
+        foreach (array_diff(editor_tree_walk_files(BASE), $staged) as $rel) {
             $target = BASE . '/' . $rel;
             if (!editor_write_target_ok($target, BASE) || !unlink($target)) {
                 editor_restore_snapshot($snapshot);

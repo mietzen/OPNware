@@ -1,5 +1,5 @@
 {#
- # OPNware os-caddy — Module Management
+ # OPNware os-caddy-advanced — Module Management
  #
  # Declared modules are rebuilt into the caddy binary via xcaddy, pinned to
  # the installed caddy version. The rebuild is atomic (temp -> verify -> swap);

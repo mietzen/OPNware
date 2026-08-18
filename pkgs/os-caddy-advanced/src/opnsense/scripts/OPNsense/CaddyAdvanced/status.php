@@ -2,7 +2,7 @@
 <?php
 
 /*
- * OPNware os-caddy — status details for the WebUI readout.
+ * OPNware os-caddy-advanced — status details for the WebUI readout.
  *
  * Emits JSON with the running state, caddy version, non-standard modules,
  * the config path and its checksum, and the validation outcome of the

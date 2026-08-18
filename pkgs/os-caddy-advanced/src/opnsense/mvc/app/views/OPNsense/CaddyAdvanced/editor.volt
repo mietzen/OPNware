@@ -1,5 +1,5 @@
 {#
- # OPNware os-caddy — Caddyfile Editor
+ # OPNware os-caddy-advanced — Caddyfile Editor
  #
  # The user-owned Caddy config at /usr/local/etc/caddy is flat: Caddyfile
  # plus conf.d/*.caddy (the seed Caddyfile is `import conf.d/*.caddy`, a

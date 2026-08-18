@@ -10,6 +10,7 @@ function homer_services()
     // Registered unconditionally so the service can be started from the UI
     // even before it is enabled in the settings (start button on the status
     // page); pluginctl needs the entry to report a run state at all.
+    $services = array();
     $services[] = array(
         'description' => gettext('Homer'),
         'configd' => array(

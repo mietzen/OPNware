@@ -62,15 +62,7 @@ class EditorController extends ApiControllerBase
      */
     private function underBase($path)
     {
-        $real = realpath($path);
-        if ($real === false) {
-            return false;
-        }
-        $base = realpath(self::BASE);
-        if ($base === false) {
-            return false;
-        }
-        return strpos($real, $base . '/') === 0;
+        return editor_tree_real_under($path, self::BASE);
     }
 
     /**

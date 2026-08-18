@@ -67,7 +67,6 @@ class ConfigController extends ApiControllerBase
                 'status' => 'ok',
                 'message' => gettext('no changes to save'),
                 'parser' => 'none',
-                'parser_warning' => false,
             );
             // Mirror the save script's status side effect so a status read
             // cannot contradict the just-shown result; ensure the state dir
