@@ -36,7 +36,7 @@ class VolumesController extends ApiControllerBase
     public function listAction()
     {
         $backend = new Backend();
-        $response = $backend->configdRun('podman volumes.list');
+        $response = $backend->configdRun('podman volumes_list');
         $result = json_decode($response, true);
         if ($result === null) {
             $statusFile = '/var/db/podman/manage_status.json';

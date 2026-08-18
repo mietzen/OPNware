@@ -79,6 +79,13 @@ if (!file_exists('/usr/local/etc/containers')) {
 $storageConfContent = "[storage]\ndriver = \"{$storageDriver}\"\nrunroot = \"/var/run/containers/storage\"\ngraphroot = \"/var/db/containers/storage\"\n";
 file_put_contents($storageConfPath, $storageConfContent);
 
+// Ensure registries.conf has default search registries
+$registriesConfPath = '/usr/local/etc/containers/registries.conf';
+if (!file_exists($registriesConfPath) || filesize($registriesConfPath) < 10) {
+    $registriesContent = "unqualified-search-registries = [\"docker.io\", \"quay.io\"]\n";
+    file_put_contents($registriesConfPath, $registriesContent);
+}
+
 // 2. Linux 64-bit Emulation Kernel Modules
 $enableLinux = true;
 if ($podmanCfg !== null && isset($podmanCfg->general->enable_linux)) {

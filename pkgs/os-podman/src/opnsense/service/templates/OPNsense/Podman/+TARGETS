@@ -1,1 +1,1 @@
-rc.conf.d/podman:/etc/rc.conf.d/podman
+rc.conf.d/podman_service:/etc/rc.conf.d/podman_service
