@@ -9,11 +9,8 @@ REPO_ROOT=$( cd "${SCRIPT_DIR}/../.." && pwd )
 DIST_ROOT="${GITHUB_WORKSPACE:-${REPO_ROOT}}"
 WORK="${DIST_ROOT}/dist/pkg/usr/local/opnsense/www/js/vendor"
 
-# The TextMate stack is pinned here (it moves rarely); monaco-editor's
-# version comes from config.yml so the daily update flow can drive refresh
-# PRs for it.
-TEXTMATE_VERSION="9.3.2"
-ONIGURUMA_VERSION="2.0.1"
+# monaco-editor's version comes from config.yml; bumps are manual (build.sh
+# fetches the pinned release at build time).
 
 echo "Building monaco-editor - ARCH: ${ARCH} - ABI: ${ABI}"
 
@@ -21,8 +18,7 @@ PKG_NAME=$(pkg-tool dump "${CONFIG}" pkg_manifest.name)
 PKG_VERSION=$(pkg-tool dump "${CONFIG}" pkg_manifest.version)
 # pkg_manifest.version is the source of truth for the monaco-editor release
 # to fetch; the base version (with any FreeBSD _N revision suffix stripped)
-# is the npm version. Keeping the version in config.yml lets check-updates
-# emit refresh PRs for a new release.
+# is the npm version.
 MONACO_VERSION=$(printf '%s' "${PKG_VERSION}" | sed -E 's/_[0-9]+$//')
 
 mkdir -p "${WORK}"
@@ -40,42 +36,13 @@ mkdir -p "${WORK}/monaco"
 cp -R "${TMP}/monaco/package/min/vs" "${WORK}/monaco/vs"
 cp "${TMP}/monaco/package/package.json" "${WORK}/monaco/package.json"
 
-# 2. TextMate stack (vscode-textmate + vscode-oniguruma).
-npm pack "vscode-textmate@${TEXTMATE_VERSION}" --silent --pack-destination "${TMP}" >/dev/null
-mkdir -p "${TMP}/textmate"
-tar -xzf "${TMP}/vscode-textmate-${TEXTMATE_VERSION}.tgz" -C "${TMP}/textmate"
-mkdir -p "${WORK}/textmate/vscode-textmate"
-cp "${TMP}/textmate/package/release/main.js" "${WORK}/textmate/vscode-textmate/main.js"
-cp "${TMP}/textmate/package/package.json" "${WORK}/textmate/vscode-textmate/package.json"
-cp "${TMP}/textmate/package/LICENSE.md" "${WORK}/textmate/vscode-textmate/LICENSE.md"
+# 2. Hand-written Caddyfile Monarch grammar (checked in, not fetched). The
+#    editor pages load it through Monaco's AMD loader as the 'caddyfile'
+#    module (/ui/js/vendor/caddyfile.js).
+cp "${SCRIPT_DIR}/src/caddyfile.js" "${WORK}/caddyfile.js"
 
-npm pack "vscode-oniguruma@${ONIGURUMA_VERSION}" --silent --pack-destination "${TMP}" >/dev/null
-mkdir -p "${TMP}/oniguruma"
-tar -xzf "${TMP}/vscode-oniguruma-${ONIGURUMA_VERSION}.tgz" -C "${TMP}/oniguruma"
-mkdir -p "${WORK}/textmate/vscode-oniguruma/release"
-cp "${TMP}/oniguruma/package/release/main.js" "${WORK}/textmate/vscode-oniguruma/release/main.js"
-cp "${TMP}/oniguruma/package/release/onig.wasm" "${WORK}/textmate/vscode-oniguruma/release/onig.wasm"
-cp "${TMP}/oniguruma/package/LICENSE.txt" "${WORK}/textmate/vscode-oniguruma/LICENSE.txt"
-cp "${TMP}/oniguruma/package/package.json" "${WORK}/textmate/vscode-oniguruma/package.json"
-
-# 3. Hand-written OPNware artifacts (checked in, not fetched).
-cp "${SCRIPT_DIR}/src/editor.worker.bootstrap.js" "${WORK}/monaco/vs/editor/editor.worker.bootstrap.js"
-cp "${SCRIPT_DIR}/src/monaco-editor-textmate.js" "${WORK}/textmate/monaco-editor-textmate.js"
-cp "${SCRIPT_DIR}/src/caddyfile.tmLanguage.json" "${WORK}/caddyfile.tmLanguage.json"
-
-# 4. Apply the CSP worker patch to the pristine monaco tree. The patch is
-#    MADE here (never copied), so a version bump can't silently lose it: the
-#    codemod fails the build if the expected pristine patterns are absent.
-python3 "${SCRIPT_DIR}/src/patch-csp-worker.py" "${WORK}"
-
-# 4b. Extract the base64-inlined codicon font into a same-origin .ttf and
-#     rewrite the @font-face src: to reference it (ticket #272). OPNsense CSP
-#     has no font-src, so data: font URLs fall back to default-src 'self' and
-#     are blocked; a relative url() resolves same-origin against the CSS file.
-python3 "${SCRIPT_DIR}/src/extract-codicon-font.py" "${WORK}"
-
-# 5. License (monaco is MIT; the textmate stack ships its own). Staged as a
-#    generic doc LICENSE so pkg-tool's _stage_licenses copies it to
+# 3. License (monaco is MIT). Staged as a generic doc LICENSE so pkg-tool's
+#    _stage_licenses copies it to
 #    /usr/local/share/licenses/monaco-editor-<ver>/MIT (Firmware -> Packages).
 DOC_DIR="${DIST_ROOT}/dist/pkg/usr/local/share/doc/${PKG_NAME}"
 mkdir -p "${DOC_DIR}"

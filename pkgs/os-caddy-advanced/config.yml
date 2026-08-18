@@ -25,10 +25,10 @@ pkg_manifest:
       version: ">=2.11.4, <3.0.0"
     monaco-editor:
       origin: opnware/monaco-editor
-      version: ">=0.56.0"
+      version: ">=0.56.0_4"
     xcaddy:
       origin: opnware/xcaddy
-      version: ">=0.4.5"
+      version: ">=0.4.7"
     go126:
       origin: lang/go126
       version: ">=1.26.5"

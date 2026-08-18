@@ -10,7 +10,7 @@
  #
  # The editor is Monaco (vendored, no CDN) with YAML syntax highlighting from
  # Monaco's built-in basic language (vs/basic-languages/monaco.contribution
- # registers it) — no TextMate grammar is needed for YAML. The vendor tree is
+ # registers it) — no custom grammar is needed for YAML. The vendor tree is
  # shipped by build.sh; see docs/design/shared-editor-vendor.md.
  #}
 
@@ -20,11 +20,9 @@
     // paths. Everything is vendored under /opnsense/www/js/vendor/ (served as
     // /ui/js/vendor/...); see docs/design/shared-editor-vendor.md.
     //
-    // The vendored editor.main.js is patched to serve workers from the
-    // same-origin bootstrap worker (editor.worker.bootstrap.js): OPNsense's
-    // CSP blocks Monaco's default blob: workers, and the main-thread
-    // fallback froze the UI on model changes. See
-    // docs/design/shared-editor-vendor.md.
+    // CSP extension for this page: worker-src 'self' blob: + font-src
+    // 'self' data: (per-controller content_security_policy merge in
+    // ControllerBase). See docs/design/shared-editor-vendor.md.
     require.config({
         paths: {
             vs: '/ui/js/vendor/monaco/vs'
@@ -37,7 +35,7 @@
         // --- Monaco + built-in YAML language ---------------------------------
 
         // vs/basic-languages/monaco.contribution registers the built-in
-        // 'yaml' language (lazily loaded chunk); no TextMate grammar needed.
+        // 'yaml' language (lazily loaded chunk); no custom grammar needed.
         require(['vs/editor/editor.main', 'vs/basic-languages/monaco.contribution'], function(monaco) {
             window.opnwareHomerMonaco = monaco;
             editor = monaco.editor.create(document.getElementById('editor-container'), {

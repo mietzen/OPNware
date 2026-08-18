@@ -1,10 +1,11 @@
-# Shared vendored editor asset: Monaco + TextMate (os-caddy-advanced and os-homer)
+# Shared vendored editor asset: Monaco + Caddyfile Monarch grammar (os-caddy-advanced and os-homer)
 
 The OPNsense web UI pages in this repo render a real code editor by shipping a
-**shared, vendored** copy of the Monaco editor plus the TextMate grammar
-support that gives the Caddyfile (and, for os-homer, YAML) its syntax
-highlighting. Nothing is loaded from a CDN — every byte is installed with the
-plugin package and served from the WebUI origin.
+**shared, vendored** copy of the Monaco editor. Caddyfile syntax highlighting
+comes from a hand-written **Monarch** grammar built into the shared package;
+os-homer's YAML editor uses Monaco's built-in YAML basic language. Nothing is
+loaded from a CDN — every byte is installed with the plugin package and served
+from the WebUI origin.
 
 This document is the reference for how a plugin consumes the asset. Both the
 os-caddy-advanced Caddyfile editor and the os-homer YAML config editor follow it.
@@ -13,20 +14,16 @@ os-caddy-advanced Caddyfile editor and the os-homer YAML config editor follow it
 
 Source of truth: **`pkgs/monaco-editor/`** — the package owns the asset, but
 the payload is **built in CI, not checked in**. `build.sh` npm-packs
-monaco-editor (at the pinned version) plus the TextMate stack, applies the
-CSP worker patch, and stages everything into the payload. The only checked-in
-files are the hand-written ones in `pkgs/monaco-editor/src/`:
+monaco-editor (at the pinned version) and stages the (unpatched) tree into the
+payload. The only checked-in files are the hand-written ones in
+`pkgs/monaco-editor/src/`:
 
 ```
 pkgs/monaco-editor/
 ├── config.yml                         # pins monaco-editor version (pkg_manifest.version)
-├── build.sh                           # npm-pack → patch → stage → pkg-tool pack
+├── build.sh                           # npm-pack → stage → pkg-tool pack
 └── src/                               # hand-written artifacts (checked in, tiny)
-    ├── patch-csp-worker.py            # codemod: applies the CSP worker patch to the pristine tree
-    ├── extract-codicon-font.py        # codemod: extracts the base64 codicon font → same-origin .ttf
-    ├── editor.worker.bootstrap.js     # same-origin classic worker (CSP-safe)
-    ├── monaco-editor-textmate.js      # hand-rolled bridge: TM grammar as a Monaco token provider
-    └── caddyfile.tmLanguage.json      # TextMate grammar, caddyserver/vscode-caddyfile (source.Caddyfile)
+    └── caddyfile.js                   # Caddyfile Monarch grammar (registers 'caddyfile' + the five 'opnware-*' heredoc tokenizers)
 ```
 
 The build-time payload layout under `/usr/local/opnsense/www/js/vendor/`:
@@ -35,40 +32,50 @@ The build-time payload layout under `/usr/local/opnsense/www/js/vendor/`:
 vendor/
 ├── monaco/
 │   ├── package.json                   # monaco-editor provenance (fetched)
-│   └── vs/                            # monaco-editor standalone min build (fetched, then patched)
+│   └── vs/                            # monaco-editor standalone min build (fetched, unpatched)
 │       ├── loader.js                  # Monaco AMD loader (defines global require/define)
-│       └── editor/editor.main.js (+ css, worker)   # patched for CSP
-├── caddyfile.tmLanguage.json          # from src/ (checked in)
-└── textmate/
-    ├── vscode-textmate/               # npm vscode-textmate (fetched)
-    ├── vscode-oniguruma/release/      # oniguruma→wasm bindings + onig.wasm (fetched)
-    └── monaco-editor-textmate.js      # from src/ (checked in)
+│       └── editor/editor.main.js (+ css, worker)
+└── caddyfile.js                       # from src/ (checked in)
 ```
 
-> **Why a hand-rolled bridge instead of the npm `monaco-editor-textmate`
-> package?** The npm package (4.x) pins the abandoned
-> `monaco-textmate`/`onigasm` chain and cannot run in a plain browser page.
-> `monaco-editor-textmate.js` implements the same
-> `wireTmGrammars(monaco, registry, languages)` contract on top of the modern
-> `vscode-textmate` + `vscode-oniguruma` stack (the stack VS Code itself uses
-> today). Same API, current engine, no dead deps.
+> **Why Monarch instead of TextMate?** The previous setup shipped the TextMate
+> stack (vscode-textmate + vscode-oniguruma + the oniguruma wasm) plus a
+> hand-rolled bridge (`monaco-editor-textmate.js`) that wired a TextMate
+> grammar into Monaco as a token provider. Two pain points drove the change:
+> the bridge had to map each token's scope *stack* to a single dotted scope
+> string (Monaco's theme trie splits only on `.`, so a space-joined stack never
+> matched and every token fell back to `mtk1`), and the stock vs/vs-dark themes
+> contain no `entity.*`/`support.*` rules, so the bridge also had to register
+> extended themes (`opnware-vs`/`opnware-vs-dark`). Monarch is built into
+> Monaco: synchronous, no wasm, no extra runtime, and the grammar can simply
+> emit tokens that already exist in the stock themes.
+>
+> Trade-off: Monarch has no backreferences, so a `<&lt;&lt;TAG` heredoc with an
+> unknown tag cannot match its terminator to the opening tag — it terminates on
+> the first line that is a single bare word. The five well-known heredoc tags
+> (CSS, HTML, JS|JAVASCRIPT, JSON, XML) embed a dedicated Monarch tokenizer
+> via `nextEmbedded` and are terminated correctly. Because Monarch's embedded
+> language path resolves `TokenizationRegistry.get(id)` **synchronously** while
+> the editor only ever resolves the model's own language, the built-in
+> css/html/javascript/xml tokenizers — registered as lazy factories in the
+> standalone build — can't be embedded: `get('css')` returns `null` and the
+> body degrades to plain text. So `caddyfile.js` registers its own
+> `opnware-css`, `opnware-html`, `opnware-js`, `opnware-json` and
+> `opnware-xml` tokenizers directly via `setMonarchTokensProvider` (the same
+> pattern that already worked for JSON), and every `&lt;&lt;TAG` heredoc embeds
+> its `opnware-*` id. All emitted tokens exist in the stock themes.
 
 ## How the vendor reaches the WebUI — the shared `monaco-editor` package
 
 OPNsense serves `/opnsense/www/js/...` as the `/ui/js/...` URL prefix, so the
 vendor tree must land under `/usr/local/opnsense/www/js/vendor/`. The files
 are owned by the **`monaco-editor` package** (`pkgs/monaco-editor/`), a plain
-payload package whose build.sh fetches the npm releases, applies the patch
-and stages the payload:
+payload package whose build.sh fetches the npm release and stages the payload:
 
 ```bash
 # pkgs/monaco-editor/build.sh (abridged)
 npm pack "monaco-editor@${MONACO_VERSION}" ...   # MONACO_VERSION from pkg_manifest.version
-npm pack "vscode-textmate@9.3.2" ...
-npm pack "vscode-oniguruma@2.0.1" ...
-cp src/editor.worker.bootstrap.js src/monaco-editor-textmate.js src/caddyfile.tmLanguage.json ...
-python3 src/patch-csp-worker.py "${WORK}"        # applies the CSP patch to the pristine tree
-python3 src/extract-codicon-font.py "${WORK}"     # extracts the codicon font (CSP: data: blocked)
+cp src/caddyfile.js "${WORK}/caddyfile.js"       # the Monarch grammar module
 pkg-tool pack ...
 ```
 
@@ -79,25 +86,18 @@ same files in two plugin payloads would make `pkg` refuse co-installation
 (duplicate file ownership). Never copy the vendor into a plugin payload —
 change the `monaco-editor` package instead.
 
-> **Vendored patch — CSP-safe Monaco workers.** OPNsense's CSP
+> **How the editor works under the OPNsense CSP.** OPNsense's CSP
 > (`script-src 'self' 'unsafe-inline' 'unsafe-eval'`, no `worker-src blob:`)
-> blocks Monaco's default blob: web workers, and Monaco's main-thread
-> fallback freezes the editor UI on model changes. `editor.main.js` is
-> therefore patched so `MonacoEnvironment.getWorker` returns a classic
-> same-origin worker loading `editor/editor.worker.bootstrap.js`, which
-> `importScripts` the vendored AMD loader and boots `vs/editor/editor.worker`
-> (module id re-based via `require.config({ baseUrl })`). The patch must live
-> in `editor.main.js` itself: Monaco instantiates its workers during module
-> evaluation, before any page-level `MonacoEnvironment` override could take
-> effect. The patch is applied by `src/patch-csp-worker.py` **at build time**
-> (never copied from a checked-in tree), so a version bump can't silently lose
-> it — the codemod fails the build if the pristine patterns are absent. The
-> codemod output was verified **byte-identical** to the previously hand-patched
-> tree (monaco 0.56.0); when bumping monaco, re-verify the two patched sites
-> (worker deps in `editor.main.js`, `_createWorker` in the hashed chunk) still
-> cover every blob-worker creation path. Keep the version contract: base
-> version must equal the monaco release, a `_N` revision suffix may be used
-> for package-only changes.
+> blocks Monaco's default blob: web workers and its inline `data:font/ttf`
+> codicon font. The editor pages therefore ship the vendored tree unpatched
+> and extend the CSP **per-controller** (the `content_security_policy` merge
+> in `ControllerBase`: `worker-src 'self' blob:` and `font-src 'self' data:`),
+> so Monaco's native blob: workers and inline codicon font work as-is. This
+> replaced the earlier build-time codemods that edited the pristine tree; a
+> version bump can no longer silently lose a patch, at the cost of requiring
+> the page controller to carry the CSP extension. Keep the version contract:
+> base version must equal the monaco release, a `_N` revision suffix may be
+> used for package-only changes.
 
 ## Caddy editor tree
 
@@ -116,24 +116,19 @@ exists. The `Caddyfile` remains user-owned.
     require.config({
         paths: {
             vs: '/ui/js/vendor/monaco/vs',
-            'vscode-textmate': '/ui/js/vendor/textmate/vscode-textmate/main',
-            'vscode-oniguruma': '/ui/js/vendor/textmate/vscode-oniguruma/release/main',
-            'monaco-editor-textmate': '/ui/js/vendor/textmate/monaco-editor-textmate'
+            caddyfile: '/ui/js/vendor/caddyfile'
         }
     });
 </script>
 ```
 
-2. Create the editor, then wire the grammar. The grammar file is fetched from
-   the WebUI origin (`/ui/js/vendor/caddyfile.tmLanguage.json`), and the
-   oniguruma wasm is fetched as `ArrayBuffer` and passed to
-   `onig.loadWASM({ data })` — both URLs are constructible from the same
-   `/ui/js/vendor/...` base, so they always work once the payload is installed.
+2. Require the grammar module alongside `editor.main` — a loaded dependency of
+   the `require`, so the `caddyfile` and the five `opnware-*` heredoc embed
+   languages are registered before the editor is created with
+   `language: 'caddyfile'`:
 
 ```js
-require(['vs/editor/editor.main'], function (monaco) {
-    monaco.languages.register({ id: 'caddyfile' });
-
+require(['vs/editor/editor.main', 'caddyfile'], function (monaco) {
     const editor = monaco.editor.create(document.getElementById('editor-container'), {
         value: '',
         language: 'caddyfile',
@@ -144,97 +139,56 @@ require(['vs/editor/editor.main'], function (monaco) {
         tabSize: 2,
         wordWrap: 'on'
     });
-
-    require(['vscode-textmate', 'vscode-oniguruma', 'monaco-editor-textmate'],
-        function (tm, onig, bridge) {
-            fetch('/ui/js/vendor/textmate/vscode-oniguruma/release/onig.wasm')
-                .then(r => r.arrayBuffer())
-                .then(data => onig.loadWASM({ data }))
-                .then(() => fetch('/ui/js/vendor/caddyfile.tmLanguage.json').then(r => r.json()))
-                .then(grammarJson => {
-                    const registry = new tm.Registry({
-                        onigLib: Promise.resolve({
-                            createOnigScanner: onig.createOnigScanner,
-                            createOnigString: onig.createOnigString
-                        }),
-                        // vscode-textmate's loadGrammar returns the raw IRawGrammar object
-                        // directly (NOT a { format, content } wrapper).
-                        loadGrammar: scopeName =>
-                            Promise.resolve(scopeName === 'source.Caddyfile' ? grammarJson : null)
-                    });
-                    return bridge.wireTmGrammars(
-                        monaco, registry, new Map([['caddyfile', 'source.Caddyfile']])
-                    );
-                });
-        });
 });
 ```
 
 Key points for a consumer:
 
-- `loadGrammar` in the `vscode-textmate` `Registry` must resolve to the raw
-  grammar object (`IRawGrammar`), keyed by its `scopeName` (`source.Caddyfile`
-  here; `source.yaml` for os-homer).
-- The grammar JSON and the wasm are fetched with absolute `/ui/...` URLs from
-  the WebUI origin — never relative paths, never a CDN.
-- **Token scope contract (the bridge fixes):** a Monaco `TokensProvider`
-  returns one **dotted** scope string per token. Monaco's theme trie splits a
-  scope only on `.` and walks existing trie nodes, so emitting the TextMate
-  *scope stack* space-joined (`scopes.join(' ')`) never matches the trie and
-  every token fell back to the default `mtk1` color. The bridge's pure
-  `resolveTokenScope(scopes)` walks the stack most-specific→least-specific,
-  trying each scope's progressively shorter dotted prefixes, and steps down to
-  the first prefix the theme trie actually colors
-  (`comment.line.Caddyfile` → `comment`, `entity.name.function.Caddyfile` →
-  `entity.name.function`). If nothing matches, it falls back to the
-  most-specific full scope string.
-- **Extended themes for entity/support rules:** all four built-in Monaco
-  themes (`vs`, `vs-dark`, `hc-*`) define NO `entity.*` or `support.*` rules,
-  so Caddyfile directives (`entity.name.function.Caddyfile`) and global
-  options (`support.function`/`support.constant.Caddyfile`) would render
-  `mtk1` even with a correct dotted scope. The bridge's `defineEditorThemes`
-  registers `opnware-vs`/`opnware-vs-dark` (extending `vs`/`vs-dark`) that add
-  color rules for those scopes. It MUST be called before `monaco.editor.create`
-  (the theme name is in the create options), and the theme data needs an
-  explicit `colors` object — the standalone theme service reads
-  `themeData.colors["editor.foreground"]` directly, and a missing `colors`
-  crashes `editor.create`. The volt maps the stored/legacy `vs`/`vs-dark`
-  choice onto `opnware-vs`/`opnware-vs-dark`.
+- The grammar module is a normal AMD module: `define(['vs/editor/editor.main'],
+  factory)` — the factory receives `monaco` and calls
+  `monaco.languages.register` / `setLanguageConfiguration` /
+  `setMonarchTokensProvider`. No fetch, no wasm, no async wiring; a missing
+  module fails the `require` loudly instead of silently degrading to no
+  highlighting.
+- **Token/theme contract (why no theme extension is needed):** Monarch emits
+  each token as a *single dotted token string* (not a scope stack), and Monaco
+  resolves the color by walking the theme trie longest-first. The grammar only
+  emits tokens that exist in the stock `vs`/`vs-dark` themes — `comment`,
+  `keyword`, `string`, `number`, `type`, `variable`, `constant`,
+  `delimiter.curly` — so the editor pages use the stock theme names. Legacy
+  `opnware-vs`/`opnware-vs-dark` values stored by the old bridge-era UI are
+  mapped back to `vs`/`vs-dark`.
+- The grammar's tokenizer mirrors the upstream caddyserver/vscode-caddyfile
+  TextMate grammar: directives are `keyword`, the domain/address side of a
+  site block is `type`, matchers are `variable`, and content-type / HTTP-status
+  / placeholder rules cover argument positions.
 
-> **Why extract the codicon font at build time?** OPNsense's CSP 
-> (`default-src 'self'`, no `font-src`) blocks Monaco's default `data:font/ttf`
-> codicon font (used for the folding chevrons and other UI icons), so folding
-> controls render as a literal `EAB4` glyph. The CSS is loaded via
-> `<link rel="stylesheet">`, so a **relative** `url()` resolves same-origin
-> against the CSS location and is CSP-allowed. `src/extract-codicon-font.py`
-> decodes the inlined base64 into a same-origin `.ttf` at Monaco's canonical
-> location and rewrites `@font-face src:` to reference it, at build time. Like
-> the worker patch, it fails the build if the pristine pattern is absent (a
-> version bump safety gate).
+> **Why the codicon font renders correctly?** OPNsense's CSP (`default-src
+> 'self'`, no `font-src`) blocks Monaco's default `data:font/ttf` codicon font
+> (used for the folding chevrons and other UI icons), so folding controls
+> would render as a literal `EAB4` glyph. The editor pages extend the CSP
+> per-controller with `font-src 'self' data:`, so the inline font is allowed
+> and the vendored tree ships unpatched (see the CSP note above).
 
-## Refreshing the vendor (the monaco-editor package's update mechanism)
+## Updating the editor (manual, pinned version)
 
-The `monaco-editor` package's `vendor:` spec section
-(`vendor.npm: monaco-editor`) makes the daily update flow check the npm
-registry. When a newer monaco-editor release exists, `check-updates` emits a
-`vendor` entry and the workflow runs `./scripts/refresh-editor.sh <version>`
-— which bumps `pkg_manifest.version` (a **plain version bump; the build
-fetches the release**) — then opens a PR. **The PR is NOT auto-merged**: a
-new Monaco release is meant to be reviewed (a new Monaco can silently break
-the hand-rolled textmate bridge or the wasm loader — CI can't catch that), so
-the human merges it. The build-time codemods
-(`src/patch-csp-worker.py`, `src/extract-codicon-font.py`) fail the build if
-the pristine patch patterns change, so the refresh PR's build only passes when
-the patches still apply.
+The `monaco-editor` version is **pinned** — the daily update flow
+(`pkg-tool check-updates`, `.github/workflows/update.yml`) does NOT propose
+monaco bumps. There is no refresh script and no npm vendor adapter; the package
+spec carries no `vendor:` section. Updating is a deliberate, manual act:
 
-The script can also be run by hand:
+1. Bump `pkg_manifest.version` in `pkgs/monaco-editor/config.yml`. The version
+   contract is preserved: the base version must equal the monaco release, a
+   `_N` suffix marks package-only changes. `build.sh` derives the npm version
+   by stripping the `_N` suffix and fetches the pinned release at build time,
+   so a manual bump still produces a working package.
+2. Build locally (`./build.sh amd64 15`) and inspect the payload — the
+   vendored tree is fetched fresh, so a new release can silently break the
+   hand-written Monarch grammar (`src/caddyfile.js`) or the CSP assumptions
+   the editor pages rely on. CI cannot catch highlighting or CSP regressions.
+3. Install on the test VM and **visually verify both editors** (the
+   os-caddy-advanced Caddyfile editor and the os-homer YAML editor) before
+   merging the bump PR.
 
-```sh
-./scripts/refresh-editor.sh          # bump to the latest npm release
-./scripts/refresh-editor.sh 0.57.0   # bump to a specific release
-```
-
-The TextMate stack (vscode-textmate, vscode-oniguruma) is pinned in
-`build.sh` (refreshed alongside monaco but does not drive the package
-version); the hand-rolled bridge (`src/monaco-editor-textmate.js`) is never
-touched by a refresh.
+The grammar (`src/caddyfile.js`) is never touched by a bump; it is
+monaco-version-independent (Monarch API is stable).

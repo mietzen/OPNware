@@ -61,22 +61,6 @@ pkg_manifest:
 """
 
 
-VENDOR_SPEC = """\
-build_config:
-  include: {}
-vendor:
-  npm: monaco-editor
-pkg_manifest:
-  name: monaco-editor
-  origin: opnware/monaco-editor
-  version: 0.56.0_1
-  comment: vendored asset
-  www: https://example.com
-  maintainer: test@example.com
-  prefix: /usr/local
-"""
-
-
 class FakeResponse:
     def __init__(self, status_code=200, text="", content=b"", json_data=None):
         self.status_code = status_code
@@ -133,7 +117,7 @@ def test_gh_adapter_no_update_emits_nothing(tmp_path, monkeypatch):
 def test_gh_adapter_strips_revision_suffix_before_compare(tmp_path, monkeypatch):
     # A FreeBSD revision suffix (_N) marks package-only changes and is not a
     # version difference — a GitHub release equal to the base version must not
-    # emit an update (latent twin of the vendor-branch fix, ticket #242).
+    # emit an update.
     make_repo(tmp_path, {"blocky": GH_SPEC.replace("version: 0.34.0", "version: 0.34.0_1")})
     monkeypatch.setattr(requests, "get", lambda url, **kwargs: FakeResponse(json_data={"tag_name": "v0.34.0"}))
 
@@ -186,30 +170,6 @@ def test_content_adapter_tracks_plugin_bundled_content(tmp_path, monkeypatch):
 def test_content_adapter_no_update_emits_nothing(tmp_path, monkeypatch):
     make_repo(tmp_path, {"homer": CONTENT_SPEC})
     monkeypatch.setattr(requests, "get", lambda url, **kw: FakeResponse(json_data={"tag_name": "v26.4.2"}))
-
-    matrix = check_updates(str(tmp_path / 'pkgs'))
-
-    assert matrix == {"pkg": [], "include": []}
-
-
-def test_vendor_adapter_emits_update_entry(tmp_path, monkeypatch):
-    # A vendored npm asset (the shared editor) is checked against the npm
-    # registry; a newer release emits a 'vendor' entry the workflow turns
-    # into a refresh PR (no auto-merge).
-    make_repo(tmp_path, {"monaco-editor": VENDOR_SPEC})
-
-    monkeypatch.setattr(requests, "get", lambda url, **kw: FakeResponse(json_data={"version": "0.57.0"}))
-    matrix = check_updates(str(tmp_path / 'pkgs'))
-
-    assert matrix == {
-        "pkg": ["monaco-editor"],
-        "include": [{"pkg": "monaco-editor", "abi_arch": "vendor", "version": "0.57.0"}],
-    }
-
-
-def test_vendor_adapter_no_update_emits_nothing(tmp_path, monkeypatch):
-    make_repo(tmp_path, {"monaco-editor": VENDOR_SPEC})
-    monkeypatch.setattr(requests, "get", lambda url, **kw: FakeResponse(json_data={"version": "0.56.0"}))
 
     matrix = check_updates(str(tmp_path / 'pkgs'))
 

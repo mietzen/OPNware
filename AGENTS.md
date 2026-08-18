@@ -58,12 +58,10 @@ same branch/PR/review/merge rule as human work.
 
 - **`pkg-tool check-updates`** (workflow `.github/workflows/update.yml`,
   nightly ~04:15 + on `workflow_dispatch`): scans every package spec and opens
-  a PR bumping the `content:`/`version`/`vendor:` spec to the latest upstream.
-  Version bumps for ordinary packages are auto-merged (`--auto`, gated on CI).
-  `vendor:` bumps (monaco-editor, via `scripts/refresh-editor.sh`) are opened
-  but NOT auto-merged — a human/agent must review the fetched-tree change
-  manually. The `editor`/`monaco-editor` vendor layout and the CSP worker
-  patch are documented in `docs/design/shared-editor-vendor.md`.
+  a PR bumping the `content:`/`version` spec to the latest upstream. Version
+  bumps for ordinary packages are auto-merged (`--auto`, gated on CI). The
+  `monaco-editor` package is intentionally excluded: its version is pinned and
+  bumped manually (update policy in `docs/design/shared-editor-vendor.md`).
 - **Dependabot** (`.github/dependabot.yml`, monthly, grouped): bumps
   `github-actions` action versions and `pkg-tool` pip deps. Its PRs are
   auto-merged by `.github/workflows/dependabot-automation.yml` (label-gated,
@@ -71,7 +69,7 @@ same branch/PR/review/merge rule as human work.
   actions are pinned to exact version tags throughout the workflows.
 - When triaging a bot PR: the same standards apply — CI must be green and the
   change should be reviewed before it lands (auto-merge already enforces the
-  CI gate; vendor/structural changes need explicit review).
+  CI gate).
 
 ## OPNsense development reference
 
