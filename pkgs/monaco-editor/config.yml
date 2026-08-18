@@ -8,7 +8,7 @@ pkg_manifest:
   # primary component of the shared editor tree). Update policy is manual:
   # bump the version here, build, install on the test VM and visually verify
   # both editors — the nightly update flow no longer proposes monaco bumps.
-  version: 0.56.0_4
+  version: 0.56.0_5
   comment: Shared Monaco editor assets for the OPNsense WebUI
   www: https://microsoft.github.io/monaco-editor/
   maintainer: github.nstein@mailbox.org

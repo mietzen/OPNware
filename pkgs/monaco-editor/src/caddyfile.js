@@ -52,7 +52,7 @@
             lineComment: '#'
         },
         brackets: [
-            { open: '{', close: '}', token: 'delimiter.curly' }
+            ['{', '}']
         ],
         autoClosingPairs: [
             { open: '{', close: '}' },
@@ -66,8 +66,8 @@
             lineComment: '//'
         },
         brackets: [
-            { open: '{', close: '}', token: 'delimiter.curly' },
-            { open: '[', close: ']', token: 'delimiter.square' }
+            ['{', '}'],
+            ['[', ']']
         ],
         autoClosingPairs: [
             { open: '{', close: '}' },
@@ -236,9 +236,9 @@
     var cssConfig = {
         comments: { blockComment: ['/*', '*/'] },
         brackets: [
-            { open: '{', close: '}', token: 'delimiter.curly' },
-            { open: '[', close: ']', token: 'delimiter.square' },
-            { open: '(', close: ')', token: 'delimiter' }
+            ['{', '}'],
+            ['[', ']'],
+            ['(', ')']
         ],
         autoClosingPairs: [
             { open: '{', close: '}' },
@@ -317,7 +317,8 @@
     var htmlConfig = {
         comments: { blockComment: ['<!--', '-->'] },
         brackets: [
-            { open: '<', close: '>', token: 'delimiter' }
+            ['<!--', '-->'],
+            ['<', '>']
         ],
         autoClosingPairs: [
             { open: '<', close: '>' },
@@ -331,7 +332,7 @@
     var htmlGrammar = {
         tokenizer: {
             root: [
-                [/<!--/, { token: 'comment', next: '@comment' }],
+                { include: '@comments' },
                 [/<!DOCTYPE[^>]*>/i, 'keyword'],
                 [/(<)(script)(?=[\s>\/])/i, ['delimiter', { token: 'keyword', next: '@tag' }]],
                 [/(<)(style)(?=[\s>\/])/i, ['delimiter', { token: 'keyword', next: '@tag' }]],
@@ -354,6 +355,9 @@
                 [/[\/>]/, { token: 'delimiter', next: '@pop' }],
                 [/[ \t\r\n]+/, '']
             ],
+            comments: [
+                [/<!--/, { token: 'comment', next: '@comment' }]
+            ],
             comment: [
                 [/-->/, { token: 'comment', next: '@pop' }],
                 [/[^-]+/, 'comment'],
@@ -365,9 +369,9 @@
     var jsConfig = {
         comments: { lineComment: '//', blockComment: ['/*', '*/'] },
         brackets: [
-            { open: '{', close: '}', token: 'delimiter.curly' },
-            { open: '[', close: ']', token: 'delimiter.square' },
-            { open: '(', close: ')', token: 'delimiter' }
+            ['{', '}'],
+            ['[', ']'],
+            ['(', ')']
         ],
         autoClosingPairs: [
             { open: '{', close: '}' },
@@ -452,7 +456,8 @@
     var xmlConfig = {
         comments: { blockComment: ['<!--', '-->'] },
         brackets: [
-            { open: '<', close: '>', token: 'delimiter' }
+            ['<!--', '-->'],
+            ['<', '>']
         ],
         autoClosingPairs: [
             { open: '<', close: '>' },
