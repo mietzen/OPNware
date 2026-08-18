@@ -14,6 +14,10 @@ Five canonical labels: needs-triage, needs-info, ready-for-agent, ready-for-huma
 
 Single-context: one `CONTEXT.md` + `docs/adr/` at the repo root. See `docs/agents/domain.md`.
 
+### OPNsense plugin development
+
+Always consult and apply the `opnsense-plugin-dev` skill (`.agents/skills/opnsense-plugin-dev/SKILL.md`) when creating, modifying, debugging, or reviewing OPNsense plugins (MVC models, Volt views, controllers, configd actions, service lifecycle, syslog-ng fragments, rc scripts, and packaging).
+
 ## Review convention
 
 Final reviews of implemented issues use the `oracle` sub-agent.
