@@ -21,9 +21,17 @@
  *  - Heredocs embed a known language via nextEmbedded for the five
  *    well-known tags (CSS, HTML, JS|JAVASCRIPT, JSON, XML) and fall back to a
  *    generic heredoc state for any other tag.
- *  - JSON is NOT a basic language in this Monaco build (it is a rich
- *    worker-based language), so <<JSON heredocs embed 'opnware-json' — a
- *    small Monarch JSON tokenizer registered below.
+ *  - All five embed targets are dedicated 'opnware-*' ids (opnware-css,
+ *    opnware-html, opnware-js, opnware-json, opnware-xml) whose tokenizers
+ *    are registered below via setMonarchTokensProvider. This is required: the
+ *    built-in css/html/javascript/xml tokenizers in this standalone build are
+ *    registered as LAZY factories (basic languages) or via
+ *    onLanguage->setupMode (the rich css/html modes), and Monarch's embedded
+ *    language path resolves TokenizationRegistry.get(id) SYNCHRONOUSLY while
+ *    the model-tokenization path only ever resolves the model's own language.
+ *    So get('css') returns null and the embed body degrades to plain text;
+ *    direct synchronous registration (as with 'opnware-json') is the only way
+ *    an embedded language resolves.
  *  - Monarch has NO backreferences, so the generic heredoc cannot match its
  *    terminator to the opening tag; it terminates on the first line that is a
  *    single bare word. This is a documented limitation.
@@ -76,7 +84,8 @@
      * themes. */
     var caddyfileGrammar = {
         tokenizer: {
-            root: [
+            // Shared by root and block (they add their own brace rules).
+            body: [
                 { include: '@comments' },
                 { include: '@strings' },
                 { include: '@heredoc' },
@@ -86,26 +95,20 @@
                 { include: '@matchers' },
                 { include: '@placeholders' },
                 { include: '@contentTypes' },
-                // A lone { at line start opens the global options block.
-                [/^[ \t]*\{[ \t]*$/, 'delimiter.curly', '@global'],
                 // First token of a line is a directive.
                 [/^[ \t]*[a-zA-Z_\-+]+/, 'keyword'],
+            ],
+            root: [
+                { include: '@body' },
+                // A lone { at line start opens the global options block.
+                [/^[ \t]*\{[ \t]*$/, 'delimiter.curly', '@global'],
                 // Site block open.
                 [/\{/, 'delimiter.curly', '@block'],
                 // Anything else: plain text.
                 [/[^\s]+/, '']
             ],
             block: [
-                { include: '@comments' },
-                { include: '@strings' },
-                { include: '@heredoc' },
-                { include: '@domains' },
-                { include: '@statusCodes' },
-                { include: '@paths' },
-                { include: '@matchers' },
-                { include: '@placeholders' },
-                { include: '@contentTypes' },
-                [/^[ \t]*[a-zA-Z_\-+]+/, 'keyword'],
+                { include: '@body' },
                 [/\{/, 'delimiter.curly', '@block'],
                 [/\}/, 'delimiter.curly', '@pop'],
                 [/[^\s]+/, '']
@@ -137,15 +140,21 @@
                 [/`/, { token: 'string', next: '@pop' }]
             ],
             heredoc: [
-                [/[ \t]*<<\s*(?:CSS)[ \t]*$/, { token: 'string', next: '@heredocCSS', nextEmbedded: 'css' }],
-                [/[ \t]*<<\s*(?:HTML)[ \t]*$/, { token: 'string', next: '@heredocHTML', nextEmbedded: 'html' }],
-                [/[ \t]*<<\s*(?:JS|JAVASCRIPT)[ \t]*$/, { token: 'string', next: '@heredocJS', nextEmbedded: 'javascript' }],
+                [/[ \t]*<<\s*(?:CSS)[ \t]*$/, { token: 'string', next: '@heredocCSS', nextEmbedded: 'opnware-css' }],
+                [/[ \t]*<<\s*(?:HTML)[ \t]*$/, { token: 'string', next: '@heredocHTML', nextEmbedded: 'opnware-html' }],
+                [/[ \t]*<<\s*(?:JS|JAVASCRIPT)[ \t]*$/, { token: 'string', next: '@heredocJS', nextEmbedded: 'opnware-js' }],
                 [/[ \t]*<<\s*(?:JSON)[ \t]*$/, { token: 'string', next: '@heredocJSON', nextEmbedded: 'opnware-json' }],
-                [/[ \t]*<<\s*(?:XML)[ \t]*$/, { token: 'string', next: '@heredocXML', nextEmbedded: 'xml' }],
+                [/[ \t]*<<\s*(?:XML)[ \t]*$/, { token: 'string', next: '@heredocXML', nextEmbedded: 'opnware-xml' }],
                 // Any other tag: no embed (Monarch has no backreferences); the
                 // terminator is the first line that is a single bare word.
                 [/[ \t]*<<\s*[A-Za-z_][A-Za-z0-9_]*/, { token: 'string', next: '@heredocGeneric' }]
             ],
+            // The five heredoc leave states are deliberately one-rule states:
+            // each must match ONLY its own tag's terminator. Merging them
+            // into one shared state with all five terminators would let a
+            // body line equal to another tag (e.g. "HTML" inside a <<CSS
+            // heredoc) end the embed prematurely. test_heredoc_embed_states_have_leave_rules
+            // pins the one-leave-rule-per-embed-state invariant.
             heredocCSS: [
                 [/^[ \t]*CSS[ \t]*$/, { token: 'string', next: '@pop', nextEmbedded: '@pop' }]
             ],
@@ -215,6 +224,310 @@
         }
     };
 
+    /* The four tokenizers below are dedicated ids for <<CSS/<<HTML/<<JS/<<XML
+     * heredocs. They must be registered HERE, synchronously, because the
+     * built-in css/html/javascript/xml tokenizers are lazy in this build and
+     * Monarch's embedded path only resolves synchronously-registered
+     * languages (see the header comment). Each is a compact hand-written
+     * Monarch grammar mirroring the constructs Monaco's own basic-language
+     * tokenizers cover, and each only emits tokens that exist in the stock
+     * vs/vs-dark themes. */
+
+    var cssConfig = {
+        comments: { blockComment: ['/*', '*/'] },
+        brackets: [
+            { open: '{', close: '}', token: 'delimiter.curly' },
+            { open: '[', close: ']', token: 'delimiter.square' },
+            { open: '(', close: ')', token: 'delimiter' }
+        ],
+        autoClosingPairs: [
+            { open: '{', close: '}' },
+            { open: '[', close: ']' },
+            { open: '(', close: ')' },
+            { open: '"', close: '"', notIn: ['string'] },
+            { open: "'", close: "'", notIn: ['string'] }
+        ]
+    };
+
+    /* Selectors are 'type', at-rules 'keyword', declaration property names
+     * 'variable', values get number/string/constant, punctuation 'delimiter'. */
+    var cssGrammar = {
+        tokenizer: {
+            root: [
+                { include: '@comments' },
+                { include: '@strings' },
+                // at-rules (@media, @import, @keyframes, @font-face, ...)
+                [/@[a-zA-Z][a-zA-Z0-9-]*/, 'keyword'],
+                // class / id / pseudo selectors
+                [/[.#%][a-zA-Z][a-zA-Z0-9_-]*/, 'type'],
+                [/:{1,2}[a-zA-Z-]+/, 'type'],
+                [/\[[^\]]*\]/, 'type'],
+                [/[>+~,]/, 'delimiter'],
+                [/\*/, 'type'],
+                // declaration block open
+                [/\{/, { token: 'delimiter.curly', next: '@rulebody' }],
+                // element / bare-word selector
+                [/[^\s{}]+/, 'type']
+            ],
+            rulebody: [
+                { include: '@comments' },
+                { include: '@strings' },
+                { include: '@values' },
+                // property name
+                [/[a-zA-Z-]+(?=\s*:)/, 'variable'],
+                [/:/, 'delimiter'],
+                // nested declaration block (e.g. @keyframes)
+                [/\{/, { token: 'delimiter.curly', next: '@rulebody' }],
+                [/\}/, { token: 'delimiter.curly', next: '@pop' }],
+                [/;/, 'delimiter'],
+                [/[^\s}]+/, '']
+            ],
+            values: [
+                [/[+-]?(\d*\.)?\d+(?:[a-zA-Z%]+)?/, 'number'],
+                [/#[0-9a-fA-F]{3,8}\b/, 'constant'],
+                [/!important\b/, 'keyword'],
+                [/url(?=\()/, 'constant']
+            ],
+            strings: [
+                [/"/, { token: 'string', next: '@stringDouble' }],
+                [/'/, { token: 'string', next: '@stringSingle' }]
+            ],
+            stringDouble: [
+                [/[^"\\]+/, 'string'],
+                [/\\./, 'constant'],
+                [/"/, { token: 'string', next: '@pop' }]
+            ],
+            stringSingle: [
+                [/[^'\\]+/, 'string'],
+                [/\\./, 'constant'],
+                [/'/, { token: 'string', next: '@pop' }]
+            ],
+            comments: [
+                [/\/\*/, { token: 'comment', next: '@comment' }],
+                [/\/\/.*$/, 'comment']
+            ],
+            comment: [
+                [/\*\//, { token: 'comment', next: '@pop' }],
+                [/[^*]+/, 'comment'],
+                [/./, 'comment']
+            ]
+        }
+    };
+
+    var htmlConfig = {
+        comments: { blockComment: ['<!--', '-->'] },
+        brackets: [
+            { open: '<', close: '>', token: 'delimiter' }
+        ],
+        autoClosingPairs: [
+            { open: '<', close: '>' },
+            { open: '"', close: '"' },
+            { open: "'", close: "'" }
+        ]
+    };
+
+    /* Tags are 'type' (script/style 'keyword'), attribute names 'type',
+     * attribute values 'string', comments 'comment', text plain. */
+    var htmlGrammar = {
+        tokenizer: {
+            root: [
+                [/<!--/, { token: 'comment', next: '@comment' }],
+                [/<!DOCTYPE[^>]*>/i, 'keyword'],
+                [/(<)(script)(?=[\s>\/])/i, ['delimiter', { token: 'keyword', next: '@tag' }]],
+                [/(<)(style)(?=[\s>\/])/i, ['delimiter', { token: 'keyword', next: '@tag' }]],
+                // open/close tag: <name or </name
+                [/(<\/?)([a-zA-Z][a-zA-Z0-9-]*)/, ['delimiter', { token: 'type', next: '@tag' }]],
+                [/</, 'delimiter'],
+                // text
+                [/[^<]+/, '']
+            ],
+            tag: [
+                { include: '@comments' },
+                // attribute name (followed by =)
+                [/[a-zA-Z][a-zA-Z0-9-]*(?=\s*=)/, 'type'],
+                [/=/, 'delimiter'],
+                [/"[^"]*"/, 'string'],
+                [/'[^']*'/, 'string'],
+                // bare attribute
+                [/[a-zA-Z][a-zA-Z0-9-]*/, 'type'],
+                // end of tag
+                [/[\/>]/, { token: 'delimiter', next: '@pop' }],
+                [/[ \t\r\n]+/, '']
+            ],
+            comment: [
+                [/-->/, { token: 'comment', next: '@pop' }],
+                [/[^-]+/, 'comment'],
+                [/./, 'comment']
+            ]
+        }
+    };
+
+    var jsConfig = {
+        comments: { lineComment: '//', blockComment: ['/*', '*/'] },
+        brackets: [
+            { open: '{', close: '}', token: 'delimiter.curly' },
+            { open: '[', close: ']', token: 'delimiter.square' },
+            { open: '(', close: ')', token: 'delimiter' }
+        ],
+        autoClosingPairs: [
+            { open: '{', close: '}' },
+            { open: '[', close: ']' },
+            { open: '(', close: ')' },
+            { open: '"', close: '"', notIn: ['string'] },
+            { open: "'", close: "'", notIn: ['string', 'comment'] },
+            { open: '`', close: '`', notIn: ['string', 'comment'] }
+        ]
+    };
+
+    /* Keywords 'keyword', booleans/null 'constant', strings/numbers/comments
+     * the stock tokens, operators and punctuation 'delimiter', capitalized
+     * names 'type'. Mirrors the constructs of Monaco's TS/JS basic language. */
+    var jsGrammar = {
+        keywords: [
+            'async', 'await', 'break', 'case', 'catch', 'class', 'const',
+            'continue', 'debugger', 'default', 'delete', 'do', 'else',
+            'export', 'extends', 'finally', 'for', 'from', 'function', 'get',
+            'if', 'import', 'in', 'instanceof', 'let', 'new', 'of', 'return',
+            'set', 'static', 'super', 'switch', 'this', 'throw', 'try',
+            'typeof', 'var', 'void', 'while', 'with', 'yield'
+        ],
+        constants: ['true', 'false', 'null', 'undefined', 'NaN', 'Infinity'],
+        tokenizer: {
+            root: [
+                { include: '@whitespace' },
+                // identifiers and keywords (lowercase start, so capitalized
+                // names fall through to the type rule below)
+                [/[a-z_$][\w$]*/, {
+                    cases: {
+                        '@keywords': 'keyword',
+                        '@constants': 'constant',
+                        '@default': ''
+                    }
+                }],
+                [/[A-Z][\w$]*/, 'type'],
+                // numbers
+                [/0[xX][0-9a-fA-F]+n?/, 'number'],
+                [/0[bB][01]+n?/, 'number'],
+                [/0[oO][0-7]+n?/, 'number'],
+                [/\.?[0-9]+(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+)?/, 'number'],
+                // strings
+                [/"/, { token: 'string', next: '@stringDouble' }],
+                [/'/, { token: 'string', next: '@stringSingle' }],
+                [/`/, { token: 'string', next: '@stringBacktick' }],
+                // delimiters and operators
+                [/[()[\]]/, 'delimiter'],
+                [/[{}]/, 'delimiter.curly'],
+                [/[=<>!~?:&|+\-*/^%]+/, 'delimiter'],
+                [/[;,.@]/, 'delimiter'],
+                [/[^\s]+/, '']
+            ],
+            stringDouble: [
+                [/[^"\\]+/, 'string'],
+                [/\\./, 'constant'],
+                [/"/, { token: 'string', next: '@pop' }]
+            ],
+            stringSingle: [
+                [/[^'\\]+/, 'string'],
+                [/\\./, 'constant'],
+                [/'/, { token: 'string', next: '@pop' }]
+            ],
+            stringBacktick: [
+                [/[^`\\]+/, 'string'],
+                [/\\./, 'constant'],
+                [/`/, { token: 'string', next: '@pop' }]
+            ],
+            whitespace: [
+                [/[ \t\r\n]+/, ''],
+                [/\/\*/, { token: 'comment', next: '@comment' }],
+                [/\/\/.*$/, 'comment']
+            ],
+            comment: [
+                [/\*\//, { token: 'comment', next: '@pop' }],
+                [/[^*]+/, 'comment'],
+                [/./, 'comment']
+            ]
+        }
+    };
+
+    var xmlConfig = {
+        comments: { blockComment: ['<!--', '-->'] },
+        brackets: [
+            { open: '<', close: '>', token: 'delimiter' }
+        ],
+        autoClosingPairs: [
+            { open: '<', close: '>' },
+            { open: "'", close: "'" },
+            { open: '"', close: '"' }
+        ]
+    };
+
+    /* Tags are 'type', meta/declaration names 'keyword', attributes 'type',
+     * attribute values / entities / CDATA 'string', comments 'comment'. */
+    var xmlGrammar = {
+        tokenizer: {
+            root: [
+                [/<!--/, { token: 'comment', next: '@comment' }],
+                // processing instructions and declarations: <?name ... ?> / <!name ...>
+                [/(<\?)([a-zA-Z_][a-zA-Z0-9_.:-]*)/, ['delimiter', { token: 'keyword', next: '@pi' }]],
+                [/(<!)([a-zA-Z_][a-zA-Z0-9_.:-]*)/, ['delimiter', { token: 'keyword', next: '@pi' }]],
+                // CDATA sections
+                [/<!\[CDATA\[/, { token: 'string', next: '@cdata' }],
+                // entities
+                [/&[a-zA-Z0-9#]+;/, 'string'],
+                // closing tag
+                [/(<\/)([a-zA-Z_][a-zA-Z0-9_.:-]*)/, ['delimiter', { token: 'type', next: '@closeTag' }]],
+                // opening tag
+                [/(<)([a-zA-Z_][a-zA-Z0-9_.:-]*)/, ['delimiter', { token: 'type', next: '@openTag' }]],
+                [/</, 'delimiter'],
+                // text
+                [/[^<&]+/, '']
+            ],
+            openTag: [
+                { include: '@attrs' },
+                [/\/?>/, { token: 'delimiter', next: '@pop' }],
+                [/[^\s>]+/, '']
+            ],
+            closeTag: [
+                [/>/, { token: 'delimiter', next: '@pop' }],
+                [/[^>]+/, '']
+            ],
+            pi: [
+                [/"/, { token: 'string', next: '@piStringDouble' }],
+                [/'/, { token: 'string', next: '@piStringSingle' }],
+                [/\?>/, { token: 'delimiter', next: '@pop' }],
+                [/>/, { token: 'delimiter', next: '@pop' }],
+                [/[^\s>]+/, 'constant'],
+                [/[ \t\r\n]+/, '']
+            ],
+            attrs: [
+                [/[ \t\r\n]+/, ''],
+                [/[a-zA-Z_][a-zA-Z0-9_.:-]*(?=\s*=)/, 'type'],
+                [/=/, 'delimiter'],
+                [/"[^"]*"/, 'string'],
+                [/'[^']*'/, 'string'],
+                [/[a-zA-Z_][a-zA-Z0-9_.:-]*/, 'type']
+            ],
+            piStringDouble: [
+                [/[^"]+/, 'string'],
+                [/"/, { token: 'string', next: '@pop' }]
+            ],
+            piStringSingle: [
+                [/[^']+/, 'string'],
+                [/'/, { token: 'string', next: '@pop' }]
+            ],
+            cdata: [
+                [/\]\]>/, { token: 'string', next: '@pop' }],
+                [/[^\]]+/, 'string'],
+                [/\]/, 'string']
+            ],
+            comment: [
+                [/-->/, { token: 'comment', next: '@pop' }],
+                [/[^-]+/, 'comment'],
+                [/./, 'comment']
+            ]
+        }
+    };
+
     if (monaco) {
         monaco.languages.register({ id: 'caddyfile' });
         monaco.languages.setLanguageConfiguration('caddyfile', caddyfileConfig);
@@ -223,12 +536,36 @@
         monaco.languages.register({ id: 'opnware-json' });
         monaco.languages.setLanguageConfiguration('opnware-json', jsonConfig);
         monaco.languages.setMonarchTokensProvider('opnware-json', jsonGrammar);
+
+        monaco.languages.register({ id: 'opnware-css' });
+        monaco.languages.setLanguageConfiguration('opnware-css', cssConfig);
+        monaco.languages.setMonarchTokensProvider('opnware-css', cssGrammar);
+
+        monaco.languages.register({ id: 'opnware-html' });
+        monaco.languages.setLanguageConfiguration('opnware-html', htmlConfig);
+        monaco.languages.setMonarchTokensProvider('opnware-html', htmlGrammar);
+
+        monaco.languages.register({ id: 'opnware-js' });
+        monaco.languages.setLanguageConfiguration('opnware-js', jsConfig);
+        monaco.languages.setMonarchTokensProvider('opnware-js', jsGrammar);
+
+        monaco.languages.register({ id: 'opnware-xml' });
+        monaco.languages.setLanguageConfiguration('opnware-xml', xmlConfig);
+        monaco.languages.setMonarchTokensProvider('opnware-xml', xmlGrammar);
     }
 
     return {
         caddyfileGrammar: caddyfileGrammar,
         caddyfileConfig: caddyfileConfig,
         jsonGrammar: jsonGrammar,
-        jsonConfig: jsonConfig
+        jsonConfig: jsonConfig,
+        cssGrammar: cssGrammar,
+        cssConfig: cssConfig,
+        htmlGrammar: htmlGrammar,
+        htmlConfig: htmlConfig,
+        jsGrammar: jsGrammar,
+        jsConfig: jsConfig,
+        xmlGrammar: xmlGrammar,
+        xmlConfig: xmlConfig
     };
 }));

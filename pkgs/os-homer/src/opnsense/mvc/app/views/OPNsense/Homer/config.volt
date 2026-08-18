@@ -20,11 +20,9 @@
     // paths. Everything is vendored under /opnsense/www/js/vendor/ (served as
     // /ui/js/vendor/...); see docs/design/shared-editor-vendor.md.
     //
-    // The editor page's controller extends OPNsense's default CSP with
-    // worker-src 'self' blob: and font-src 'self' data: (per-controller
-    // content_security_policy merge in ControllerBase), so Monaco's native
-    // blob: workers and inline codicon font work on the unpatched vendored
-    // tree. See docs/design/shared-editor-vendor.md.
+    // CSP extension for this page: worker-src 'self' blob: + font-src
+    // 'self' data: (per-controller content_security_policy merge in
+    // ControllerBase). See docs/design/shared-editor-vendor.md.
     require.config({
         paths: {
             vs: '/ui/js/vendor/monaco/vs'

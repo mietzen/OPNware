@@ -23,7 +23,7 @@ pkgs/monaco-editor/
 ├── config.yml                         # pins monaco-editor version (pkg_manifest.version)
 ├── build.sh                           # npm-pack → stage → pkg-tool pack
 └── src/                               # hand-written artifacts (checked in, tiny)
-    └── caddyfile.js                   # Caddyfile Monarch grammar (registers 'caddyfile' + 'opnware-json')
+    └── caddyfile.js                   # Caddyfile Monarch grammar (registers 'caddyfile' + the five 'opnware-*' heredoc tokenizers)
 ```
 
 The build-time payload layout under `/usr/local/opnsense/www/js/vendor/`:
@@ -53,11 +53,17 @@ vendor/
 > Trade-off: Monarch has no backreferences, so a `<&lt;&lt;TAG` heredoc with an
 > unknown tag cannot match its terminator to the opening tag — it terminates on
 > the first line that is a single bare word. The five well-known heredoc tags
-> (CSS, HTML, JS|JAVASCRIPT, JSON, XML) embed their language via `nextEmbedded`
-> and are terminated correctly. JSON is not a basic Monaco language (it needs
-> the worker), so `&lt;&lt;JSON` heredocs embed `opnware-json`, a small Monarch
-> JSON tokenizer registered by the same `caddyfile.js` module. All emitted
-> tokens (`string.key.json`, `keyword.json`, ...) exist in the stock themes.
+> (CSS, HTML, JS|JAVASCRIPT, JSON, XML) embed a dedicated Monarch tokenizer
+> via `nextEmbedded` and are terminated correctly. Because Monarch's embedded
+> language path resolves `TokenizationRegistry.get(id)` **synchronously** while
+> the editor only ever resolves the model's own language, the built-in
+> css/html/javascript/xml tokenizers — registered as lazy factories in the
+> standalone build — can't be embedded: `get('css')` returns `null` and the
+> body degrades to plain text. So `caddyfile.js` registers its own
+> `opnware-css`, `opnware-html`, `opnware-js`, `opnware-json` and
+> `opnware-xml` tokenizers directly via `setMonarchTokensProvider` (the same
+> pattern that already worked for JSON), and every `&lt;&lt;TAG` heredoc embeds
+> its `opnware-*` id. All emitted tokens exist in the stock themes.
 
 ## How the vendor reaches the WebUI — the shared `monaco-editor` package
 
@@ -117,8 +123,9 @@ exists. The `Caddyfile` remains user-owned.
 ```
 
 2. Require the grammar module alongside `editor.main` — a loaded dependency of
-   the `require`, so the `caddyfile` and `opnware-json` languages are
-   registered before the editor is created with `language: 'caddyfile'`:
+   the `require`, so the `caddyfile` and the five `opnware-*` heredoc embed
+   languages are registered before the editor is created with
+   `language: 'caddyfile'`:
 
 ```js
 require(['vs/editor/editor.main', 'caddyfile'], function (monaco) {

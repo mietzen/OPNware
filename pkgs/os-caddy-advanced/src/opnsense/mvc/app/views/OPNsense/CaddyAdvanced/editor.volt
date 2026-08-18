@@ -8,13 +8,13 @@
  # atomically and reloads Caddy gracefully; a reload failure rolls back to
  # the previous config.
  #
-  # The editor is Monaco (vendored, no CDN) with Caddyfile syntax highlighting
-  # from a hand-written Monarch grammar (pkgs/monaco-editor/src/caddyfile.js,
-  # shipped as /ui/js/vendor/caddyfile.js). The grammar only emits tokens that
-  # exist in the stock vs/vs-dark themes, so no theme extension is needed. The
-  # hidden <textarea id="editor-content"> stays in the DOM as the transport for
-  # the existing save cycle: Monaco writes every model change back into it, so
-  # the /api/caddyadvanced/editor/save endpoint is untouched.
+ # The editor is Monaco (vendored, no CDN) with Caddyfile syntax highlighting
+ # from a hand-written Monarch grammar (pkgs/monaco-editor/src/caddyfile.js,
+ # shipped as /ui/js/vendor/caddyfile.js). The grammar only emits tokens that
+ # exist in the stock vs/vs-dark themes, so no theme extension is needed. The
+ # hidden <textarea id="editor-content"> stays in the DOM as the transport for
+ # the existing save cycle: Monaco writes every model change back into it, so
+ # the /api/caddyadvanced/editor/save endpoint is untouched.
  #
  # The file tree is jstree (vendored, no CDN): right-click context menu
  # (new file, rename, copy, move, delete) and drag-and-drop moves. jstree
@@ -107,11 +107,9 @@
     // paths. Everything is vendored under /opnsense/www/js/vendor/ (served as
     // /ui/js/vendor/...); see docs/design/shared-editor-vendor.md.
     //
-    // The editor page's controller extends OPNsense's default CSP with
-    // worker-src 'self' blob: and font-src 'self' data: (per-controller
-    // content_security_policy merge in ControllerBase), so Monaco's native
-    // blob: workers and inline codicon font work on the unpatched vendored
-    // tree. See docs/design/shared-editor-vendor.md.
+    // CSP extension for this page: worker-src 'self' blob: + font-src
+    // 'self' data: (per-controller content_security_policy merge in
+    // ControllerBase). See docs/design/shared-editor-vendor.md.
     require.config({
         paths: {
             vs: '/ui/js/vendor/monaco/vs',

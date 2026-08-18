@@ -13,15 +13,13 @@ use OPNsense\Base\IndexController;
 class ConfigController extends IndexController
 {
     /**
-     * Make this editor page allow Monaco's native blob: workers and its
-     * inline codicon font. OPNsense's default CSP has no worker-src/font-src,
-     * so blob: workers fall back to script-src 'self' (no blob:) and data:
-     * fonts to default-src 'self' (no data:). Merged into the page's CSP
-     * header by ControllerBase. See docs/design/shared-editor-vendor.md.
+     * Editor-page CSP extension: allow Monaco's blob: workers and inline
+     * codicon font on this page. Merged into the page's CSP header by
+     * ControllerBase. See docs/design/shared-editor-vendor.md.
      */
     protected array $content_security_policy = [
-        "worker-src" => "blob:",
-        "font-src" => "data:",
+        "worker-src" => "'self' blob:",
+        "font-src" => "'self' data:",
     ];
 
     public function indexAction()

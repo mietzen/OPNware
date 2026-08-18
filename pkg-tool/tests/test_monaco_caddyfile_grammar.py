@@ -3,9 +3,10 @@
 The grammar (pkgs/monaco-editor/src/caddyfile.js) is a hand-written Monarch
 tokenizer that replaces the TextMate stack — vscode-textmate,
 vscode-oniguruma, the hand-rolled bridge (monaco-editor-textmate.js) and the
-TextMate grammar JSON. It registers two languages ('caddyfile' and the small
-'opnware-json' tokenizer used by <<JSON heredocs) via the public
-monaco.languages API and is shipped as /ui/js/vendor/caddyfile.js.
+TextMate grammar JSON. It registers six languages via the public
+monaco.languages API ('caddyfile', plus the dedicated 'opnware-json' /
+'opnware-css' / 'opnware-html' / 'opnware-js' / 'opnware-xml' tokenizers used
+by the heredoc embeds) and is shipped as /ui/js/vendor/caddyfile.js.
 
 Why the invariants in this file matter (all found on hardware in the TextMate
 era):
@@ -23,10 +24,25 @@ era):
    against the stock-theme token set.
 3. A Monarch embedded language (nextEmbedded) without a leave rule that pops
    it throws "no rule containing nextEmbedded: @pop in tokenizer embedded
-   state" — every heredoc embed state must have one.
+   state" — every heredoc embed state must have one. The heredoc leave
+   states are deliberately one-rule per tag (a merged state with all five
+   terminators would let a body line equal to another tag end the embed
+   early).
 4. nextEmbedded targets must be languages that are actually registered in
-   this Monaco build. css/html/javascript/xml are basic languages; JSON is
-   not, so the grammar registers its own 'opnware-json'.
+   this Monaco build — and synchronously. The built-in
+   css/html/javascript/xml tokenizers are lazy factories in the standalone
+   build and Monarch's embedded path resolves TokenizationRegistry.get(id)
+   synchronously while the model path only resolves the model's own language,
+   so embedding them renders plain text. The grammar therefore registers its
+   own 'opnware-*' tokenizers directly via setMonarchTokensProvider.
+
+The "brittle-looking" pins in this file (the full state-set assertion and
+the "fetch(" exclusion) are deliberate contracts, not accidents: the state
+set is the grammar's public shape and any structural change must be a
+conscious act (update the pin in the same commit); the grammar must stay
+synchronous (no fetch) so the editor pages need no async wiring. Node's
+returncode is checked in load_grammar so a broken grammar fails loudly
+instead of silently producing empty tokens.
 
 The grammar file is UMD; when node is present the structural tests load it
 via the CommonJS branch (factory(null)) and inspect the exported tokenizers.
@@ -43,6 +59,12 @@ import pytest
 GRAMMAR = Path("pkgs/monaco-editor/src/caddyfile.js")
 EDITOR_VOLT = Path(
     "pkgs/os-caddy-advanced/src/opnsense/mvc/app/views/OPNsense/CaddyAdvanced/editor.volt"
+)
+EDITOR_CONTROLLER = Path(
+    "pkgs/os-caddy-advanced/src/opnsense/mvc/app/controllers/OPNsense/CaddyAdvanced/EditorController.php"
+)
+HOMER_CONFIG_CONTROLLER = Path(
+    "pkgs/os-homer/src/opnsense/mvc/app/controllers/OPNsense/Homer/ConfigController.php"
 )
 BUILD_SH = Path("pkgs/monaco-editor/build.sh")
 
@@ -67,9 +89,11 @@ STOCK_THEME_TOKENS = {
     "variable",
 }
 
-# Languages that are registered in Monaco standalone builds (basic languages)
-# plus the small JSON tokenizer the grammar registers itself.
-EMBEDDABLE_LANGUAGES = {"css", "html", "javascript", "xml", "opnware-json"}
+# Languages that the heredoc embeds may target. These are the dedicated
+# tokenizers the grammar registers itself (the built-in css/html/javascript/
+# xml tokenizers are lazy in the standalone build and cannot resolve through
+# Monarch's synchronous embedded path).
+EMBEDDABLE_LANGUAGES = {"opnware-css", "opnware-html", "opnware-js", "opnware-json", "opnware-xml"}
 
 
 def load_grammar():
@@ -116,15 +140,27 @@ def walk_tokenizer(tokenizer):
 
 
 def emitted_tokens(tokenizer):
-    """Every token name the tokenizer emits (string actions and dict tokens)."""
+    """Every token name the tokenizer emits (string actions, dict tokens,
+    'cases' mappings, and group/array actions)."""
     tokens = set()
+
+    def collect(action):
+        if isinstance(action, str):
+            tokens.add(action)
+        elif isinstance(action, dict):
+            if action.get("token"):
+                tokens.add(action["token"])
+            for case_token in (action.get("cases") or {}).values():
+                if isinstance(case_token, str):
+                    tokens.add(case_token)
+        elif isinstance(action, (list, tuple)):
+            for sub in action:
+                collect(sub)
+
     for rules in tokenizer.values():
         for rule in rules:
-            action = rule[1] if isinstance(rule, (list, tuple)) and len(rule) >= 2 else None
-            if isinstance(action, str):
-                tokens.add(action)
-            elif isinstance(action, dict) and action.get("token"):
-                tokens.add(action["token"])
+            if isinstance(rule, (list, tuple)) and len(rule) >= 2:
+                collect(rule[1])
     return tokens
 
 
@@ -136,9 +172,11 @@ def test_grammar_usages_public_monaco_languages_api():
     assert "monaco.languages.register" in src
     assert "monaco.languages.setLanguageConfiguration" in src
     assert "monaco.languages.setMonarchTokensProvider" in src
-    # Registers exactly the two languages (caddyfile + the JSON heredoc tokenizer).
+    # Registers exactly the six languages (caddyfile + the five opnware-*
+    # heredoc embed tokenizers).
     assert "id: 'caddyfile'" in src
-    assert "id: 'opnware-json'" in src
+    for lang_id in ("opnware-json", "opnware-css", "opnware-html", "opnware-js", "opnware-xml"):
+        assert f"id: '{lang_id}'" in src
 
 
 def test_grammar_is_umd():
@@ -203,13 +241,27 @@ def test_old_textmate_artifacts_are_gone():
     assert not Path("pkgs/monaco-editor/src/caddyfile.tmLanguage.json").exists()
 
 
+def test_editor_controllers_declare_csp_extensions():
+    # The deleted build-time codemods used to self-verify the CSP patch
+    # ("fails the build if the pristine patterns change"); the replacement
+    # per-controller CSP extension has no such gate, so this test pins it.
+    # Both editor pages must extend OPNsense's default CSP with blob: workers
+    # and data: fonts (Monaco's native blob workers + inline codicon font).
+    # Keep in sync with docs/design/shared-editor-vendor.md.
+    for controller in (EDITOR_CONTROLLER, HOMER_CONFIG_CONTROLLER):
+        src = controller.read_text()
+        assert "content_security_policy" in src, controller
+        assert '"worker-src" => "\'self\' blob:"' in src, controller
+        assert '"font-src" => "\'self\' data:"' in src, controller
+
+
 # --- Structural tests (node) -----------------------------------------------
 
 
 @pytest.mark.skipif(NODE is None, reason="node not available")
 def test_tokens_are_stock_theme_tokens_only():
     data = load_grammar()
-    for name in ("caddyfileGrammar", "jsonGrammar"):
+    for name in ("caddyfileGrammar", "jsonGrammar", "cssGrammar", "htmlGrammar", "jsGrammar", "xmlGrammar"):
         tokens = emitted_tokens(data[name]["tokenizer"])
         unknown = tokens - STOCK_THEME_TOKENS
         assert not unknown, f"{name} emits tokens not in the stock themes: {sorted(unknown)}"
@@ -239,7 +291,7 @@ def test_next_embedded_languages_are_registered():
 @pytest.mark.skipif(NODE is None, reason="node not available")
 def test_next_targets_are_existing_states():
     data = load_grammar()
-    for name in ("caddyfileGrammar", "jsonGrammar"):
+    for name in ("caddyfileGrammar", "jsonGrammar", "cssGrammar", "htmlGrammar", "jsGrammar", "xmlGrammar"):
         tokenizer = data[name]["tokenizer"]
         states, nexts, _, _, _ = walk_tokenizer(tokenizer)
         # @pop/@push/@pushall are built-in Monarch pseudo-states, not tokenizer states.
@@ -266,3 +318,8 @@ def test_grammar_has_expected_structure():
     # JSON tokenizer is small and standalone.
     json_tokenizer = data["jsonGrammar"]["tokenizer"]
     assert set(json_tokenizer.keys()) == {"root"}
+    # The four heredoc embed tokenizers each have a root state.
+    for name in ("cssGrammar", "htmlGrammar", "jsGrammar", "xmlGrammar"):
+        new_tokenizer = data[name]["tokenizer"]
+        assert "root" in new_tokenizer, f"{name} is missing a root state"
+        assert new_tokenizer["root"], f"{name} root state is empty"
