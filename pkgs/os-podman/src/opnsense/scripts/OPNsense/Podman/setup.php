@@ -98,6 +98,7 @@ if ($podmanCfg !== null && isset($podmanCfg->general->enable_linux)) {
 if ($enableLinux) {
     log_msg("Initializing 64-bit Linux kernel emulation modules and mounts");
     exec('/sbin/kldload -n linux linux64 linprocfs linsysfs 2>/dev/null');
+    exec('/sbin/sysctl kern.elf64.fallback_brand=3 kern.elf32.fallback_brand=3 2>/dev/null');
 
     @mkdir('/compat/linux/proc', 0755, true);
     @mkdir('/compat/linux/sys', 0755, true);

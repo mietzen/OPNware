@@ -3,7 +3,8 @@
 from pathlib import Path
 from pkg_tool import _load_spec
 
-PKGS_DIR = Path(__file__).resolve().parents[2] / "pkgs"
+ROOT_DIR = Path(__file__).resolve().parents[2]
+PKGS_DIR = ROOT_DIR / "pkgs"
 
 REDISTRIBUTE_PKGS = [
     "podman",
@@ -40,7 +41,7 @@ def test_os_podman_spec_and_files_valid():
     manifest = spec.get("pkg_manifest", {})
     assert manifest.get("name") == "podman"
     assert manifest.get("origin") == "opnware/os-podman"
-    assert manifest.get("version") == "0.1.3"
+    assert manifest.get("version") == "0.1.4"
 
     deps = manifest.get("deps", {})
     for name in REDISTRIBUTE_PKGS:
@@ -50,6 +51,8 @@ def test_os_podman_spec_and_files_valid():
     src = podman_dir / "src"
     inc_content = (src / "etc" / "inc" / "plugins.inc.d" / "podman.inc").read_text()
     assert "/var/run/podman/podman_service.pid" in inc_content
+    assert "function podman_firewall" in inc_content
+    assert "cni-rdr/*" in inc_content
 
     assert (src / "etc" / "syslog-ng.conf.d" / "podman.conf").exists()
     assert (src / "usr" / "local" / "etc" / "rc.d" / "podman_service").exists()
@@ -85,5 +88,9 @@ def test_os_podman_spec_and_files_valid():
     assert "public function inspectAction" in containers_ctrl
 
     assert (src / "opnsense" / "mvc" / "app" / "controllers" / "OPNsense" / "Podman" / "Api" / "SystemController.php").exists()
-    assert (src / "opnsense" / "scripts" / "OPNsense" / "Podman" / "setup.php").exists()
+    
+    setup_content = (src / "opnsense" / "scripts" / "OPNsense" / "Podman" / "setup.php").read_text()
+    assert "kern.elf64.fallback_brand=3" in setup_content
+
     assert (src / "opnsense" / "scripts" / "OPNsense" / "Podman" / "manage.py").exists()
+    assert (ROOT_DIR / "docs" / "plugins" / "os-podman.md").exists()
