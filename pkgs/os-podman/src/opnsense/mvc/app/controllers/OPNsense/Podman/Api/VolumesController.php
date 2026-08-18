@@ -28,34 +28,8 @@
 
 namespace OPNsense\Podman\Api;
 
-use OPNsense\Base\ApiControllerBase;
-use OPNsense\Core\Backend;
-
-class VolumesController extends ApiControllerBase
+class VolumesController extends PodmanApiControllerBase
 {
-    private function executeAction($cmd, $param = null)
-    {
-        $backend = new Backend();
-        if ($param !== null) {
-            $response = $backend->configdpRun("podman {$cmd}", [$param]);
-        } else {
-            $response = $backend->configdRun("podman {$cmd}");
-        }
-
-        $result = json_decode($response, true);
-        if ($result === null) {
-            $statusFile = '/var/db/podman/manage_status.json';
-            if (file_exists($statusFile)) {
-                $fileData = json_decode(file_get_contents($statusFile), true);
-                if ($fileData !== null) {
-                    return $fileData;
-                }
-            }
-            return ["status" => "error", "message" => $response ?: "Empty response from configd"];
-        }
-        return $result;
-    }
-
     public function listAction()
     {
         return $this->executeAction('volumes_list');

@@ -55,7 +55,8 @@ def run_podman(args):
                 except Exception:
                     res = {"status": "ok", "items": [], "raw": out}
         else:
-            res = {"status": "ok", "output": out}
+            combined = (out + ("\n" + err if err else "")) if out else err
+            res = {"status": "ok", "output": combined}
 
         write_status(res)
         print(json.dumps(res))
@@ -79,42 +80,43 @@ def main():
         sys.exit(0)
 
     action = sys.argv[1]
+    param = sys.argv[2] if len(sys.argv) >= 3 else None
 
     # Containers
     if action == "containers.list":
         run_podman(["ps", "-a", "--format", "json"])
-    elif action == "containers.start" and len(sys.argv) >= 3:
-        run_podman(["start", sys.argv[2]])
-    elif action == "containers.stop" and len(sys.argv) >= 3:
-        run_podman(["stop", sys.argv[2]])
-    elif action == "containers.kill" and len(sys.argv) >= 3:
-        run_podman(["kill", sys.argv[2]])
-    elif action == "containers.restart" and len(sys.argv) >= 3:
-        run_podman(["restart", sys.argv[2]])
-    elif action == "containers.delete" and len(sys.argv) >= 3:
-        run_podman(["rm", "-f", sys.argv[2]])
-    elif action == "containers.logs" and len(sys.argv) >= 3:
-        run_podman(["logs", "--tail", "200", sys.argv[2]])
-    elif action == "containers.inspect" and len(sys.argv) >= 3:
-        run_podman(["inspect", sys.argv[2], "--format", "json"])
+    elif action == "containers.start" and param:
+        run_podman(["start", param])
+    elif action == "containers.stop" and param:
+        run_podman(["stop", param])
+    elif action == "containers.kill" and param:
+        run_podman(["kill", param])
+    elif action == "containers.restart" and param:
+        run_podman(["restart", param])
+    elif action == "containers.delete" and param:
+        run_podman(["rm", "-f", param])
+    elif action == "containers.logs" and param:
+        run_podman(["logs", "--tail", "200", param])
+    elif action == "containers.inspect" and param:
+        run_podman(["inspect", param, "--format", "json"])
 
     # Images
     elif action == "images.list":
         run_podman(["images", "--format", "json"])
-    elif action == "images.delete" and len(sys.argv) >= 3:
-        run_podman(["rmi", "-f", sys.argv[2]])
+    elif action == "images.delete" and param:
+        run_podman(["rmi", "-f", param])
 
     # Volumes
     elif action == "volumes.list":
         run_podman(["volume", "ls", "--format", "json"])
-    elif action == "volumes.delete" and len(sys.argv) >= 3:
-        run_podman(["volume", "rm", "-f", sys.argv[2]])
+    elif action == "volumes.delete" and param:
+        run_podman(["volume", "rm", "-f", param])
 
     # Networks
     elif action == "networks.list":
         run_podman(["network", "ls", "--format", "json"])
-    elif action == "networks.delete" and len(sys.argv) >= 3:
-        run_podman(["network", "rm", sys.argv[2]])
+    elif action == "networks.delete" and param:
+        run_podman(["network", "rm", param])
 
     # System
     elif action == "system.df":

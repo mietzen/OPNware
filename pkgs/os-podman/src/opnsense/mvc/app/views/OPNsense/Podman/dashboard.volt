@@ -48,6 +48,7 @@
                 var totalContainers = 0;
                 var activeContainers = 0;
                 var totalImages = 0;
+                var activeImages = 0;
                 var totalVolumes = 0;
                 var reclaimableStr = '0B';
 
@@ -57,6 +58,7 @@
                         activeContainers = item.Active || 0;
                     } else if (item.Type === 'Images') {
                         totalImages = item.Total || 0;
+                        activeImages = item.Active || 0;
                         if (item.Reclaimable) {
                             reclaimableStr = item.Reclaimable;
                         }
@@ -66,7 +68,7 @@
                 });
 
                 $('#stat-containers').text(activeContainers + ' / ' + totalContainers + ' Running');
-                $('#stat-images').text(totalImages + ' Total');
+                $('#stat-images').text(activeImages + ' / ' + totalImages + ' Active');
                 $('#stat-volumes').text(totalVolumes + ' Volumes');
                 $('#stat-reclaimable').text(reclaimableStr);
             }
@@ -102,6 +104,7 @@
                     actions += '<button class="btn btn-xs btn-default act-kill" data-id="' + cid + '" title="{{ lang._("Force Stop") }}"><i class="fa fa-bolt text-danger"></i></button> ';
                 }
                 actions += '<button class="btn btn-xs btn-default act-logs" data-id="' + cid + '" data-name="' + $('<div>').text(names).html() + '" title="{{ lang._("View Logs") }}"><i class="fa fa-file-text-o text-primary"></i></button> ';
+                actions += '<button class="btn btn-xs btn-default act-inspect" data-id="' + cid + '" data-name="' + $('<div>').text(names).html() + '" title="{{ lang._("Inspect Container") }}"><i class="fa fa-info-circle text-info"></i></button> ';
                 actions += '<button class="btn btn-xs btn-default act-delete-container" data-id="' + cid + '" data-name="' + $('<div>').text(names).html() + '" title="{{ lang._("Delete Container") }}"><i class="fa fa-trash text-danger"></i></button>';
 
                 rows += '<tr>' +
@@ -207,8 +210,8 @@
 
     function showContainerLogs(cid, name) {
         currentLogContainerId = cid;
-        $('#modal-logs-title').text('Container Logs: ' + (name || cid));
-        $('#modal-logs-body').text('Loading logs...');
+        $('#modal-logs-title').text('{{ lang._("Container Logs") }}: ' + (name || cid));
+        $('#modal-logs-body').text('{{ lang._("Loading logs...") }}');
         $('#modal-logs').modal('show');
         fetchLogsContent();
     }
@@ -222,12 +225,46 @@
             } else if (data && data.message) {
                 text = data.message;
             } else {
-                text = '(No log output)';
+                text = '({{ lang._("No log output") }})';
             }
             $('#modal-logs-body').text(text);
             var pre = document.getElementById('modal-logs-body');
             if (pre) {
                 pre.scrollTop = pre.scrollHeight;
+            }
+        });
+    }
+
+    function showContainerInspect(cid, name) {
+        $('#modal-inspect-title').text('{{ lang._("Container Inspection") }}: ' + (name || cid));
+        $('#modal-inspect-body').text('{{ lang._("Loading inspection data...") }}');
+        $('#modal-inspect').modal('show');
+        ajaxGet('/api/podman/containers/inspect/' + cid, {}, function (data, status) {
+            var text = '';
+            if (data && data.items) {
+                text = JSON.stringify(data.items, null, 2);
+            } else if (data && data.output) {
+                text = data.output;
+            } else {
+                text = JSON.stringify(data, null, 2);
+            }
+            $('#modal-inspect-body').text(text);
+        });
+    }
+
+    function confirmDelete(title, message, endpoint) {
+        BootstrapDialog.confirm({
+            title: title,
+            message: message,
+            type: BootstrapDialog.TYPE_DANGER,
+            btnOKClass: 'btn-danger',
+            btnOKLabel: '{{ lang._("Delete") }}',
+            callback: function (result) {
+                if (result) {
+                    ajaxCall(endpoint, {}, function () {
+                        refreshActiveTab();
+                    });
+                }
             }
         });
     }
@@ -268,94 +305,60 @@
             ajaxCall('/api/podman/containers/kill/' + cid, {}, function () { loadContainers(); loadSystemDf(); });
         });
 
-        // Logs
+        // Logs & Inspect
         $(document).on('click', '.act-logs', function () {
             var cid = $(this).data('id');
             var name = $(this).data('name');
             showContainerLogs(cid, name);
         });
 
+        $(document).on('click', '.act-inspect', function () {
+            var cid = $(this).data('id');
+            var name = $(this).data('name');
+            showContainerInspect(cid, name);
+        });
+
         $('#btn_refresh_modal_logs').click(function () {
             fetchLogsContent();
         });
 
-        // Deletion with confirmation dialogs
+        // Deletion
         $(document).on('click', '.act-delete-container', function () {
             var cid = $(this).data('id');
             var name = $(this).data('name');
-            BootstrapDialog.confirm({
-                title: '{{ lang._("Delete Container") }}',
-                message: '{{ lang._("Are you sure you want to delete container") }} ' + (name ? name + ' (' + cid + ')' : cid) + '?',
-                type: BootstrapDialog.TYPE_DANGER,
-                btnOKClass: 'btn-danger',
-                btnOKLabel: '{{ lang._("Delete") }}',
-                callback: function (result) {
-                    if (result) {
-                        ajaxCall('/api/podman/containers/delete/' + cid, {}, function () {
-                            loadContainers();
-                            loadSystemDf();
-                        });
-                    }
-                }
-            });
+            confirmDelete(
+                '{{ lang._("Delete Container") }}',
+                '{{ lang._("Are you sure you want to delete container") }} ' + (name ? name + ' (' + cid + ')' : cid) + '?',
+                '/api/podman/containers/delete/' + cid
+            );
         });
 
         $(document).on('click', '.act-delete-image', function () {
             var iid = $(this).data('id');
             var name = $(this).data('name');
-            BootstrapDialog.confirm({
-                title: '{{ lang._("Delete Image") }}',
-                message: '{{ lang._("Are you sure you want to delete image") }} ' + (name ? name + ' (' + iid + ')' : iid) + '?',
-                type: BootstrapDialog.TYPE_DANGER,
-                btnOKClass: 'btn-danger',
-                btnOKLabel: '{{ lang._("Delete") }}',
-                callback: function (result) {
-                    if (result) {
-                        ajaxCall('/api/podman/images/delete/' + iid, {}, function () {
-                            loadImages();
-                            loadSystemDf();
-                        });
-                    }
-                }
-            });
+            confirmDelete(
+                '{{ lang._("Delete Image") }}',
+                '{{ lang._("Are you sure you want to delete image") }} ' + (name ? name + ' (' + iid + ')' : iid) + '?',
+                '/api/podman/images/delete/' + iid
+            );
         });
 
         $(document).on('click', '.act-delete-volume', function () {
             var name = $(this).data('name');
-            BootstrapDialog.confirm({
-                title: '{{ lang._("Delete Volume") }}',
-                message: '{{ lang._("Are you sure you want to delete volume") }} ' + name + '?',
-                type: BootstrapDialog.TYPE_DANGER,
-                btnOKClass: 'btn-danger',
-                btnOKLabel: '{{ lang._("Delete") }}',
-                callback: function (result) {
-                    if (result) {
-                        ajaxCall('/api/podman/volumes/delete/' + encodeURIComponent(name), {}, function () {
-                            loadVolumes();
-                            loadSystemDf();
-                        });
-                    }
-                }
-            });
+            confirmDelete(
+                '{{ lang._("Delete Volume") }}',
+                '{{ lang._("Are you sure you want to delete volume") }} ' + name + '?',
+                '/api/podman/volumes/delete/' + encodeURIComponent(name)
+            );
         });
 
         $(document).on('click', '.act-delete-network', function () {
             var name = $(this).data('name');
-            BootstrapDialog.confirm({
-                title: '{{ lang._("Delete Network") }}',
-                message: '{{ lang._("Are you sure you want to delete network") }} ' + name + '?',
-                type: BootstrapDialog.TYPE_DANGER,
-                btnOKClass: 'btn-danger',
-                btnOKLabel: '{{ lang._("Delete") }}',
-                callback: function (result) {
-                    if (result) {
-                        ajaxCall('/api/podman/networks/delete/' + encodeURIComponent(name), {}, function () {
-                            loadNetworks();
-                            loadSystemDf();
-                        });
-                    }
-                }
-            });
+            confirmDelete(
+                '{{ lang._("Delete Network") }}',
+                '{{ lang._("Are you sure you want to delete network") }} ' + name + '?',
+                '/api/podman/networks/delete/' + encodeURIComponent(name)
+            );
         });
 
         // System Prune
@@ -442,7 +445,7 @@
                         <th>{{ lang._('Image') }}</th>
                         <th>{{ lang._('Status') }}</th>
                         <th>{{ lang._('Created') }}</th>
-                        <th style="width: 170px;">{{ lang._('Actions') }}</th>
+                        <th style="width: 200px;">{{ lang._('Actions') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -525,6 +528,24 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-default" id="btn_refresh_modal_logs"><i class="fa fa-refresh"></i> {{ lang._('Refresh') }}</button>
+                <button type="button" class="btn btn-primary" data-dismiss="modal">{{ lang._('Close') }}</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Container Inspect Modal -->
+<div class="modal fade" id="modal-inspect" tabindex="-1" role="dialog" aria-labelledby="modal-inspect-title" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title" id="modal-inspect-title">{{ lang._('Container Inspection') }}</h4>
+            </div>
+            <div class="modal-body" style="padding: 10px;">
+                <pre id="modal-inspect-body" style="background: #1e1e1e; color: #d4d4d4; font-family: monospace; font-size: 12px; max-height: 450px; overflow-y: auto; padding: 15px; border-radius: 4px; margin-bottom: 0; white-space: pre-wrap;"></pre>
+            </div>
+            <div class="modal-footer">
                 <button type="button" class="btn btn-primary" data-dismiss="modal">{{ lang._('Close') }}</button>
             </div>
         </div>

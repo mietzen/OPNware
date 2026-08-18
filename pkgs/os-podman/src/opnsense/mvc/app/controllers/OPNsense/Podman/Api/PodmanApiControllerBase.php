@@ -28,23 +28,31 @@
 
 namespace OPNsense\Podman\Api;
 
-class SystemController extends PodmanApiControllerBase
+use OPNsense\Base\ApiControllerBase;
+use OPNsense\Core\Backend;
+
+abstract class PodmanApiControllerBase extends ApiControllerBase
 {
-    public function dfAction()
+    protected function executeAction($cmd, $param = null)
     {
-        return $this->executeAction('system_df');
-    }
-
-    public function pruneAction()
-    {
-        if ($this->request->isPost()) {
-            return $this->executeAction('system_prune');
+        $backend = new Backend();
+        if ($param !== null) {
+            $response = $backend->configdpRun("podman {$cmd}", [$param]);
+        } else {
+            $response = $backend->configdRun("podman {$cmd}");
         }
-        return ["status" => "failed"];
-    }
 
-    public function infoAction()
-    {
-        return $this->executeAction('system_info');
+        $result = json_decode($response, true);
+        if ($result === null) {
+            $statusFile = '/var/db/podman/manage_status.json';
+            if (file_exists($statusFile)) {
+                $fileData = json_decode(file_get_contents($statusFile), true);
+                if ($fileData !== null) {
+                    return $fileData;
+                }
+            }
+            return ["status" => "error", "message" => $response ?: "Empty response from configd"];
+        }
+        return $result;
     }
 }
