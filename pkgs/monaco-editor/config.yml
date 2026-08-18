@@ -10,7 +10,7 @@ pkg_manifest:
   # primary component of the shared editor tree). Bump it for a new release —
   # the daily update flow emits a refresh PR (plain version bump), and
   # build.sh fetches + packs at that version.
-  version: 0.56.0_3
+  version: 0.56.0_4
   comment: Shared Monaco editor assets for the OPNsense WebUI
   www: https://microsoft.github.io/monaco-editor/
   maintainer: github.nstein@mailbox.org
@@ -19,14 +19,13 @@ pkg_manifest:
   licenses:
     - MIT
   desc: |
-    Shared Monaco editor + TextMate stack served from
+    Shared Monaco editor served from
     /usr/local/opnsense/www/js/vendor. Owned by this package so os-caddy-advanced
     and os-homer can both depend on it without pkg file-ownership conflicts.
 
     Built in CI, not checked in: build.sh npm-packs monaco-editor (at the
-    pinned version) plus the TextMate stack, and ships the hand-written
-    bridge and Caddyfile grammar from src/. The editor pages extend the
-    OPNsense CSP per-controller (worker-src blob:, font-src data:), so the
-    fetched monaco tree ships unpatched. check-updates tracks the npm
-    registry via the vendor adapter; a new monaco release becomes a small
-    refresh PR instead of a huge vendored-tree diff.
+    pinned version) and ships the hand-written Caddyfile Monarch grammar from
+    src/. The editor pages extend the OPNsense CSP per-controller (worker-src
+    blob:, font-src data:), so the fetched monaco tree ships unpatched.
+    check-updates tracks the npm registry via the vendor adapter; a new monaco
+    release becomes a small refresh PR instead of a huge vendored-tree diff.

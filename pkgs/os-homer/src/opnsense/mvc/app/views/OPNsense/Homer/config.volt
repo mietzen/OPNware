@@ -10,7 +10,7 @@
  #
  # The editor is Monaco (vendored, no CDN) with YAML syntax highlighting from
  # Monaco's built-in basic language (vs/basic-languages/monaco.contribution
- # registers it) — no TextMate grammar is needed for YAML. The vendor tree is
+ # registers it) — no custom grammar is needed for YAML. The vendor tree is
  # shipped by build.sh; see docs/design/shared-editor-vendor.md.
  #}
 
@@ -37,7 +37,7 @@
         // --- Monaco + built-in YAML language ---------------------------------
 
         // vs/basic-languages/monaco.contribution registers the built-in
-        // 'yaml' language (lazily loaded chunk); no TextMate grammar needed.
+        // 'yaml' language (lazily loaded chunk); no custom grammar needed.
         require(['vs/editor/editor.main', 'vs/basic-languages/monaco.contribution'], function(monaco) {
             window.opnwareHomerMonaco = monaco;
             editor = monaco.editor.create(document.getElementById('editor-container'), {

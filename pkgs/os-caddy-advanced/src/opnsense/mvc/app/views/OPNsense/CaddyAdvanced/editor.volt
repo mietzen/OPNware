@@ -8,11 +8,13 @@
  # atomically and reloads Caddy gracefully; a reload failure rolls back to
  # the previous config.
  #
- # The editor is Monaco (vendored, no CDN) with Caddyfile syntax highlighting
- # from the vendored TextMate grammar (caddyserver/vscode-caddyfile). The
- # hidden <textarea id="editor-content"> stays in the DOM as the transport for
- # the existing save cycle: Monaco writes every model change back into it, so
- # the /api/caddyadvanced/editor/save endpoint is untouched.
+  # The editor is Monaco (vendored, no CDN) with Caddyfile syntax highlighting
+  # from a hand-written Monarch grammar (pkgs/monaco-editor/src/caddyfile.js,
+  # shipped as /ui/js/vendor/caddyfile.js). The grammar only emits tokens that
+  # exist in the stock vs/vs-dark themes, so no theme extension is needed. The
+  # hidden <textarea id="editor-content"> stays in the DOM as the transport for
+  # the existing save cycle: Monaco writes every model change back into it, so
+  # the /api/caddyadvanced/editor/save endpoint is untouched.
  #
  # The file tree is jstree (vendored, no CDN): right-click context menu
  # (new file, rename, copy, move, delete) and drag-and-drop moves. jstree
@@ -113,9 +115,7 @@
     require.config({
         paths: {
             vs: '/ui/js/vendor/monaco/vs',
-            'vscode-textmate': '/ui/js/vendor/textmate/vscode-textmate/main',
-            'vscode-oniguruma': '/ui/js/vendor/textmate/vscode-oniguruma/release/main',
-            'monaco-editor-textmate': '/ui/js/vendor/textmate/monaco-editor-textmate'
+            caddyfile: '/ui/js/vendor/caddyfile'
         }
     });
 
@@ -123,17 +123,14 @@
         let currentFile = null;
         let editor = null;
 
-        // --- Monaco + TextMate grammar wiring -------------------------------
+        // --- Monaco + grammar wiring ---------------------------------------
+        // The 'caddyfile' module (the vendored Monarch grammar) is a loaded
+        // dependency of the require below, so the 'caddyfile' and
+        // 'opnware-json' languages are registered before the editor is
+        // created with language 'caddyfile'. No TextMate runtime, no wasm.
 
-        require(['vs/editor/editor.main', 'monaco-editor-textmate'], function(monaco, bridge) {
+        require(['vs/editor/editor.main', 'caddyfile'], function(monaco) {
             window.opnwareMonaco = monaco;
-            monaco.languages.register({ id: 'caddyfile' });
-
-            // The extended themes must exist before the editor is created
-            // (the create options carry the theme name). The bridge module has
-            // no deps, so loading it here is safe; defineEditorThemes is
-            // idempotent, so the grammar require below may reuse it freely.
-            bridge.defineEditorThemes(monaco);
 
             editor = monaco.editor.create(document.getElementById('editor-container'), {
                 value: document.getElementById('editor-content').value,
@@ -155,29 +152,24 @@
             editor.onDidChangeModelContent(function() {
                 document.getElementById('editor-content').value = editor.getValue();
             });
-
-            require(['vscode-textmate', 'vscode-oniguruma'],
-                function(tm, onig) {
-                    wireCaddyfileGrammar(monaco, tm, onig, bridge);
-                }
-            );
         });
 
         function preferredEditorTheme() {
             const saved = window.localStorage.getItem('opnware-editor-theme');
-            // Map legacy stored values to the extended theme names so existing
-            // users keep their choice.
-            if (saved === 'vs') {
-                return 'opnware-vs';
+            // Map legacy stored values ('opnware-vs' / 'opnware-vs-dark' from
+            // the TextMate-era extended themes) to the stock themes so users
+            // keep their choice.
+            if (saved === 'opnware-vs') {
+                return 'vs';
             }
-            if (saved === 'vs-dark') {
-                return 'opnware-vs-dark';
+            if (saved === 'opnware-vs-dark') {
+                return 'vs-dark';
             }
-            if (saved === 'opnware-vs' || saved === 'opnware-vs-dark') {
+            if (saved === 'vs' || saved === 'vs-dark') {
                 return saved;
             }
             return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
-                ? 'opnware-vs-dark' : 'opnware-vs';
+                ? 'vs-dark' : 'vs';
         }
 
         function syncEditorTheme() {
@@ -202,41 +194,6 @@
                     syncEditorTheme();
                 }
             });
-        }
-
-        // Load the vendored oniguruma wasm and register the Caddyfile TextMate
-        // grammar as Monaco token provider. The grammar JSON is passed to the
-        // vscode-textmate Registry as a raw IRawGrammar object.
-        function wireCaddyfileGrammar(monaco, tm, onig, bridge) {
-            fetch('/ui/js/vendor/textmate/vscode-oniguruma/release/onig.wasm')
-                .then(function(r) { return r.arrayBuffer(); })
-                .then(function(wasmData) { return onig.loadWASM({ data: wasmData }); })
-                .then(function() {
-                    return fetch('/ui/js/vendor/caddyfile.tmLanguage.json').then(function(r) { return r.json(); });
-                })
-                .then(function(grammarJson) {
-                    var registry = new tm.Registry({
-                        onigLib: Promise.resolve({
-                            createOnigScanner: onig.createOnigScanner,
-                            createOnigString: onig.createOnigString
-                        }),
-                        loadGrammar: function(scopeName) {
-                            return Promise.resolve(scopeName === 'source.Caddyfile' ? grammarJson : null);
-                        }
-                    });
-                    return bridge.wireTmGrammars(
-                        monaco, registry, new Map([['caddyfile', 'source.Caddyfile']])
-                    );
-                })
-                .then(function() {
-                    var model = editor && editor.getModel();
-                    if (model && typeof model.forceTokenization === 'function') {
-                        model.forceTokenization(model.getLineCount());
-                    }
-                })
-                .catch(function(err) {
-                    console.error('Caddyfile grammar wiring failed:', err);
-                });
         }
 
         // Set the current document in both the transport textarea and Monaco.
@@ -751,8 +708,8 @@
                 <div class="col-md-4 text-right __mt">
                     <label class="text-muted" for="editor-theme">{{ lang._('Theme') }}</label>
                     <select id="editor-theme" class="selectpicker" data-width="110px">
-                        <option value="opnware-vs">{{ lang._('Light') }}</option>
-                        <option value="opnware-vs-dark">{{ lang._('Dark') }}</option>
+                        <option value="vs">{{ lang._('Light') }}</option>
+                        <option value="vs-dark">{{ lang._('Dark') }}</option>
                     </select>
                 </div>
             </div>
