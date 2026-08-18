@@ -78,3 +78,10 @@ function podman_xmlrpc_sync()
     );
     return $result;
 }
+
+function podman_firewall($fw)
+{
+    $fw->registerAnchor('cni-rdr/*', 'rdr', 0, 'head');
+    $fw->registerAnchor('cni-rdr/*', 'nat', 0, 'head');
+    $fw->registerAnchor('cni-rdr/*', 'fw', 0, 'head');
+}

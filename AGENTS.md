@@ -133,6 +133,13 @@ plugin `.inc` hooks (`<name>_services()`, `<name>_configure()`,
   model has no image input, so visual checks go through a multimodal-looker
   subagent. Restore both VM snapshots after testing.
 
+## FreeBSD Podman & OCI jail mechanics (learned on hardware, os-podman)
+
+- **CNI Port Forwarding & PF Anchors**: When containers publish ports (`-p host:container`), CNI's `portmap` plugin inserts `rdr pass` and `nat` rules into child anchors (`cni-rdr/*`). OPNsense PF ruleset ignores child anchors unless registered via `<name>_firewall($fw)` with `$fw->registerAnchor('cni-rdr/*', 'rdr', 0, 'head')`, `nat`, and `fw`. External/LAN network packets entering host interfaces are translated to container IPs (`10.88.0.x`); host-local processes reach containers directly via their container IP.
+- **Linux ELF Fallback Branding**: Pure Go binaries compiled for Linux (`CGO_ENABLED=0`, e.g. Portainer, Hugo, Traefik) omit `.note.ABI-tag` ELF headers. FreeBSD rejects unbranded ELFs with `ENOEXEC` unless `sysctl kern.elf64.fallback_brand=3 kern.elf32.fallback_brand=3` is active. Native FreeBSD binaries carry `ELFOSABI_FREEBSD` (9) and remain unaffected.
+- **Socket Mounts vs nullfs**: FreeBSD `nullfs` cannot bind mount a single socket inode across a jail boundary (`EINVAL`). Containerized tools needing Docker API access must either mount the parent directory (`-v /var/run/podman:/var/run/podman:rw`) with `-H unix:///var/run/podman/podman.sock` or connect via the Docker TCP REST API (`tcp://<opnsense-ip>:2375`).
+- **Daemon Detachment**: Invoking background daemons in rc.d scripts requires `daemon -f -p "${pidfile}" -o "${logfile}" ... </dev/null >/dev/null 2>&1` to fully close inherited stdio descriptors and prevent SSH sessions from hanging on termination.
+
 ## Plugin rename mechanics (learned on hardware, os-caddy-advanced)
 
 Renaming a plugin is a **full-surface rename** — every one of these collides
