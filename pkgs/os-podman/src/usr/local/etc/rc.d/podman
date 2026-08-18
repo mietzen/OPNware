@@ -12,6 +12,7 @@ rcvar="podman_enable"
 load_rc_config "${name}"
 
 : ${podman_enable:="NO"}
+: ${podman_tcp_enable:="NO"}
 : ${podman_listen_address:="127.0.0.1"}
 : ${podman_listen_port:="2376"}
 : ${podman_tls_enable:="NO"}
@@ -25,14 +26,15 @@ command="/usr/sbin/daemon"
 
 podman_bin="/usr/local/bin/podman"
 
-# Construct endpoints
+# Construct endpoints and flags
 endpoints=""
+tls_flags=""
+
 if [ "${podman_socket_enable}" = "YES" ]; then
     endpoints="unix:///var/run/podman/podman.sock"
 fi
 
-if [ "${podman_tls_enable}" = "YES" ] && [ -n "${podman_listen_port}" ]; then
-    tls_flags=""
+if [ "${podman_tls_enable}" = "YES" ]; then
     if [ -f "${podman_tls_cert}" ] && [ -f "${podman_tls_key}" ]; then
         tls_flags="--tls-cert=${podman_tls_cert} --tls-key=${podman_tls_key}"
         if [ -f "${podman_tls_ca}" ]; then
@@ -45,7 +47,7 @@ if [ "${podman_tls_enable}" = "YES" ] && [ -n "${podman_listen_port}" ]; then
     else
         endpoints="${tcp_endpoint}"
     fi
-elif [ -n "${podman_listen_port}" ] && [ "${podman_listen_address}" != "" ]; then
+elif [ "${podman_tcp_enable}" = "YES" ]; then
     tcp_endpoint="tcp://${podman_listen_address}:${podman_listen_port}"
     if [ -n "${endpoints}" ]; then
         endpoints="${endpoints} ${tcp_endpoint}"
@@ -58,7 +60,7 @@ if [ -z "${endpoints}" ]; then
     endpoints="unix:///var/run/podman/podman.sock"
 fi
 
-command_args="-p ${pidfile} -u root -o /var/log/podman/system-service.log -f ${podman_bin} system service --time=0 ${endpoints}"
+command_args="-p ${pidfile} -u root -o /var/log/podman/system-service.log -f ${podman_bin} system service --time=0 ${tls_flags} ${endpoints}"
 
 start_precmd="podman_prestart"
 stop_postcmd="podman_poststop"

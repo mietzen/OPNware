@@ -12,6 +12,12 @@
         <help>Automatically load FreeBSD 64-bit Linux kernel modules (linux64.ko, linprocfs, linsysfs) to allow running Linux container images.</help>
     </field>
     <field>
+        <id>podman.general.tcp_enabled</id>
+        <label>Enable TCP Socket</label>
+        <type>checkbox</type>
+        <help>Expose the Docker-compatible REST API over a TCP socket.</help>
+    </field>
+    <field>
         <id>podman.general.listen_address</id>
         <label>Listen Address</label>
         <type>text</type>
@@ -34,5 +40,11 @@
         <label>Server Certificate</label>
         <type>dropdown</type>
         <help>Select the SSL/TLS server certificate from System: Trust: Certificates.</help>
+    </field>
+    <field>
+        <id>podman.general.ca</id>
+        <label>Client CA Certificate</label>
+        <type>dropdown</type>
+        <help>Select the Certificate Authority for validating client certificates.</help>
     </field>
 </form>

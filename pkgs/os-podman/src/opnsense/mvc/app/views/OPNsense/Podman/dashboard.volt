@@ -25,6 +25,21 @@
  #}
 
 <script>
+    var autoRefreshInterval = null;
+
+    function refreshActiveTab() {
+        var activeTab = $('#maintabs li.active a').attr('href');
+        if (activeTab === '#tab-containers') {
+            loadContainers();
+        } else if (activeTab === '#tab-images') {
+            loadImages();
+        } else if (activeTab === '#tab-volumes') {
+            loadVolumes();
+        } else if (activeTab === '#tab-networks') {
+            loadNetworks();
+        }
+    }
+
     function loadContainers() {
         $('#containers-loading').show();
         ajaxGet('/api/podman/containers/list', {}, function (data, status) {
@@ -76,7 +91,7 @@
             $tbody.empty();
             var items = (data && data.items) ? data.items : [];
             if (items.length === 0) {
-                $tbody.append('<tr><td colspan="5" class="text-center"><em>{{ lang._("No images found") }}</em></td></tr>');
+                $tbody.append('<tr><td colspan="4" class="text-center"><em>{{ lang._("No images found") }}</em></td></tr>');
                 return;
             }
             $.each(items, function (idx, img) {
@@ -147,6 +162,13 @@
         loadImages();
         loadVolumes();
         loadNetworks();
+
+        // 10s live auto-refresh
+        autoRefreshInterval = setInterval(refreshActiveTab, 10000);
+
+        $('#maintabs a[data-toggle="tab"]').on('shown.bs.tab', function () {
+            refreshActiveTab();
+        });
 
         $('#btn_refresh_containers').click(function () { loadContainers(); });
         $('#btn_refresh_images').click(function () { loadImages(); });

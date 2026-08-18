@@ -19,7 +19,7 @@
  * AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
  * AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY,
  * OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF delicate OR PROFITS; OR BUSINESS
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
  * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
  * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
@@ -39,6 +39,13 @@ class ImagesController extends ApiControllerBase
         $response = $backend->configdRun('podman images.list');
         $result = json_decode($response, true);
         if ($result === null) {
+            $statusFile = '/var/db/podman/manage_status.json';
+            if (file_exists($statusFile)) {
+                $fileData = json_decode(file_get_contents($statusFile), true);
+                if ($fileData !== null) {
+                    return $fileData;
+                }
+            }
             return ["status" => "error", "message" => $response ?: "Empty response from configd"];
         }
         return $result;

@@ -12,6 +12,10 @@
                 <default>1</default>
                 <required>Y</required>
             </enable_linux>
+            <tcp_enabled type="BooleanField">
+                <default>0</default>
+                <required>N</required>
+            </tcp_enabled>
             <listen_address type="TextField">
                 <default>127.0.0.1</default>
                 <required>N</required>
@@ -29,6 +33,9 @@
             <certificate type="CertificateField">
                 <required>N</required>
             </certificate>
+            <ca type="CertificateField">
+                <required>N</required>
+            </ca>
         </general>
     </items>
 </model>

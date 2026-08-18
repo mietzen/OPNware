@@ -39,6 +39,13 @@ class NetworksController extends ApiControllerBase
         $response = $backend->configdRun('podman networks.list');
         $result = json_decode($response, true);
         if ($result === null) {
+            $statusFile = '/var/db/podman/manage_status.json';
+            if (file_exists($statusFile)) {
+                $fileData = json_decode(file_get_contents($statusFile), true);
+                if ($fileData !== null) {
+                    return $fileData;
+                }
+            }
             return ["status" => "error", "message" => $response ?: "Empty response from configd"];
         }
         return $result;

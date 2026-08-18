@@ -91,7 +91,7 @@ if ($enableLinux) {
     @mkdir('/compat/linux/proc', 0755, true);
     @mkdir('/compat/linux/sys', 0755, true);
 
-    $mounts = file_get_contents('/sbin/mount 2>/dev/null') ?: '';
+    $mounts = shell_exec('/sbin/mount 2>/dev/null') ?: '';
     if (strpos($mounts, '/compat/linux/proc') === false) {
         exec('/sbin/mount -t linprocfs linprocfs /compat/linux/proc 2>/dev/null');
     }
@@ -100,7 +100,7 @@ if ($enableLinux) {
     }
 }
 
-// 3. TLS Certificate Generation if configured
+// 3. TLS Certificate & CA Generation if configured
 if ($podmanCfg !== null && !empty((string)$podmanCfg->general->certificate)) {
     $certRefId = (string)$podmanCfg->general->certificate;
     $certObj = null;
@@ -119,6 +119,24 @@ if ($podmanCfg !== null && !empty((string)$podmanCfg->general->certificate)) {
         file_put_contents("{$etcDir}/key.pem", $keyPem);
         chmod("{$etcDir}/cert.pem", 0644);
         chmod("{$etcDir}/key.pem", 0600);
+    }
+}
+
+if ($podmanCfg !== null && !empty((string)$podmanCfg->general->ca)) {
+    $caRefId = (string)$podmanCfg->general->ca;
+    $caObj = null;
+    if (isset($config->ca)) {
+        foreach ($config->ca as $ca) {
+            if ((string)$ca->refid === $caRefId) {
+                $caObj = $ca;
+                break;
+            }
+        }
+    }
+    if ($caObj !== null) {
+        $caPem = base64_decode((string)$caObj->crt);
+        file_put_contents("{$etcDir}/ca.pem", $caPem);
+        chmod("{$etcDir}/ca.pem", 0644);
     }
 }
 

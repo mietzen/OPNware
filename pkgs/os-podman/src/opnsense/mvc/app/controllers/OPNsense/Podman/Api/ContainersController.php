@@ -37,14 +37,13 @@ class ContainersController extends ApiControllerBase
     {
         $backend = new Backend();
         if ($param !== null) {
-            $response = $backend->configdpRun('podman', [$cmd, $param]);
+            $response = $backend->configdpRun("podman {$cmd}", [$param]);
         } else {
             $response = $backend->configdRun("podman {$cmd}");
         }
 
         $result = json_decode($response, true);
         if ($result === null) {
-            // Fall back to state file
             $statusFile = '/var/db/podman/manage_status.json';
             if (file_exists($statusFile)) {
                 $fileData = json_decode(file_get_contents($statusFile), true);
@@ -57,6 +56,18 @@ class ContainersController extends ApiControllerBase
         return $result;
     }
 
+    private function handleContainerAction($action, $id)
+    {
+        if ($this->request->isPost()) {
+            $containerId = $id ?: $this->request->getPost('id');
+            if (empty($containerId)) {
+                return ["status" => "error", "message" => "Container ID is required"];
+            }
+            return $this->executeAction("containers.{$action}", escapeshellarg($containerId));
+        }
+        return ["status" => "failed"];
+    }
+
     public function listAction()
     {
         return $this->executeAction('containers.list');
@@ -64,49 +75,21 @@ class ContainersController extends ApiControllerBase
 
     public function startAction($id = null)
     {
-        if ($this->request->isPost()) {
-            $containerId = $id ?: $this->request->getPost('id');
-            if (empty($containerId)) {
-                return ["status" => "error", "message" => "Container ID is required"];
-            }
-            return $this->executeAction('containers.start', escapeshellarg($containerId));
-        }
-        return ["status" => "failed"];
+        return $this->handleContainerAction('start', $id);
     }
 
     public function stopAction($id = null)
     {
-        if ($this->request->isPost()) {
-            $containerId = $id ?: $this->request->getPost('id');
-            if (empty($containerId)) {
-                return ["status" => "error", "message" => "Container ID is required"];
-            }
-            return $this->executeAction('containers.stop', escapeshellarg($containerId));
-        }
-        return ["status" => "failed"];
+        return $this->handleContainerAction('stop', $id);
     }
 
     public function killAction($id = null)
     {
-        if ($this->request->isPost()) {
-            $containerId = $id ?: $this->request->getPost('id');
-            if (empty($containerId)) {
-                return ["status" => "error", "message" => "Container ID is required"];
-            }
-            return $this->executeAction('containers.kill', escapeshellarg($containerId));
-        }
-        return ["status" => "failed"];
+        return $this->handleContainerAction('kill', $id);
     }
 
     public function restartAction($id = null)
     {
-        if ($this->request->isPost()) {
-            $containerId = $id ?: $this->request->getPost('id');
-            if (empty($containerId)) {
-                return ["status" => "error", "message" => "Container ID is required"];
-            }
-            return $this->executeAction('containers.restart', escapeshellarg($containerId));
-        }
-        return ["status" => "failed"];
+        return $this->handleContainerAction('restart', $id);
     }
 }

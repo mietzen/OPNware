@@ -29,7 +29,11 @@
         var data_get_map = {'frm_general-settings': '/api/podman/general/get'};
         mapDataToFormUI(data_get_map).done(function (data) {
             formatTokenizersUI();
-            $('.selectpicker').selectpicker('refresh');
+            $('.selectpicker').each(function () {
+                if ($(this).data('selectpicker')) {
+                    $(this).selectpicker('refresh');
+                }
+            });
             updateServiceControlUI('podman');
         });
 
