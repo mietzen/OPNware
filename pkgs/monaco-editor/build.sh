@@ -9,8 +9,8 @@ REPO_ROOT=$( cd "${SCRIPT_DIR}/../.." && pwd )
 DIST_ROOT="${GITHUB_WORKSPACE:-${REPO_ROOT}}"
 WORK="${DIST_ROOT}/dist/pkg/usr/local/opnsense/www/js/vendor"
 
-# monaco-editor's version comes from config.yml so the daily update flow can
-# drive refresh PRs for it.
+# monaco-editor's version comes from config.yml; bumps are manual (build.sh
+# fetches the pinned release at build time).
 
 echo "Building monaco-editor - ARCH: ${ARCH} - ABI: ${ABI}"
 
@@ -18,8 +18,7 @@ PKG_NAME=$(pkg-tool dump "${CONFIG}" pkg_manifest.name)
 PKG_VERSION=$(pkg-tool dump "${CONFIG}" pkg_manifest.version)
 # pkg_manifest.version is the source of truth for the monaco-editor release
 # to fetch; the base version (with any FreeBSD _N revision suffix stripped)
-# is the npm version. Keeping the version in config.yml lets check-updates
-# emit refresh PRs for a new release.
+# is the npm version.
 MONACO_VERSION=$(printf '%s' "${PKG_VERSION}" | sed -E 's/_[0-9]+$//')
 
 mkdir -p "${WORK}"

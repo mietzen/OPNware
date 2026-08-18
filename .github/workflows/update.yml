@@ -82,16 +82,7 @@ jobs:
 
       - name: Upgrade Pkg
         run: |
-          if [ "${{ matrix.abi_arch }}" = "vendor" ]; then
-            # Vendored npm assets (the shared editor): a bare version bump is
-            # the entire update — the CI build npm-packs the new release,
-            # applies the CSP worker patch and packs the payload. The PR is
-            # never auto-merged: the human reviews the diff, and the patch
-            # codemod fails the build if the pristine patterns changed.
-            ./scripts/refresh-editor.sh "${{ matrix.version }}"
-          else
-            pkg-tool bump ${{ matrix.pkg }} --version ${{ matrix.version }} --abi-arch ${{ matrix.abi_arch }}
-          fi
+          pkg-tool bump ${{ matrix.pkg }} --version ${{ matrix.version }} --abi-arch ${{ matrix.abi_arch }}
 
       - name: Create Pull Request
         id: pr
@@ -107,10 +98,9 @@ jobs:
             update
           body: |
             Upgrading ${{ matrix.pkg }} to newest version: ${{ matrix.version }}
-            ${{ matrix.abi_arch == 'vendor' && 'Vendored npm asset — review the diff, then merge manually.' || '' }}
 
       - name: Enable Pull Request auto merge
-        if: steps.pr.outputs.pull-request-operation == 'created' && matrix.abi_arch != 'vendor'
+        if: steps.pr.outputs.pull-request-operation == 'created'
         run: gh pr merge --merge --auto "${{ steps.pr.outputs.pull-request-number }}"
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}

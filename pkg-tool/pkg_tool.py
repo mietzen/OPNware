@@ -151,10 +151,6 @@ def _validate_spec(spec, source):
             raise ValueError(f"{source}: content.version required")
         if isinstance(content['version'], (dict, list)):
             raise TypeError(f"{source}: content.version must be a scalar")
-    if 'vendor' in spec:
-        vendor = spec['vendor']
-        if not isinstance(vendor, dict) or not vendor.get('npm') or not isinstance(vendor['npm'], str):
-            raise ValueError(f"{source}: vendor.npm required (the npm package name)")
     if pkg_manifest is not None:
         if not isinstance(pkg_manifest, dict):
             raise TypeError(f"{source}: pkg_manifest is not a mapping")
@@ -870,16 +866,6 @@ def _gh_latest_version(src_repo, token=None):
         raise ValueError(f"no release found for {src_repo}")
     return remote_version
 
-def _npm_latest_version(package):
-    """The latest version of an npm package (e.g. monaco-editor)."""
-    response = requests.get(f"https://registry.npmjs.org/{quote_plus(package)}/latest")
-    if response.status_code != 200:
-        raise ValueError(f"failed to get release info from npm registry: HTTP {response.status_code}")
-    remote = str(response.json().get('version', ''))
-    if not remote:
-        raise ValueError(f"no version found for npm package {package}")
-    return remote
-
 def check_updates(pkgs_dir='pkgs'):
     """
     Check all package specs for newer versions.
@@ -892,23 +878,6 @@ def check_updates(pkgs_dir='pkgs'):
     for config_file in sorted(Path(pkgs_dir).glob('*/config.yml')):
         pkg_name = config_file.parent.name
         config = _load_spec(config_file)
-        if config.get('vendor'):
-            # npm-built assets (e.g. the shared editor) are checked against
-            # the npm registry. The 'vendor' abi_arch routes the workflow to
-            # scripts/refresh-editor.sh (a plain version bump — the package's
-            # build.sh fetches the pinned release from npm) and skips
-            # auto-merge (the refresh PR is reviewed manually).
-            remote = _npm_latest_version(config['vendor']['npm'])
-            local = str(config.get('pkg_manifest', {}).get('version'))
-            # A FreeBSD revision suffix (_N) marks package-only changes and is
-            # not a version difference — strip it before comparing, mirroring
-            # the build.sh derivation, so a vendored npm release equal to the
-            # base version does not emit a nightly update.
-            local_base = re.sub(r'_[0-9]+$', '', local)
-            if str(remote) != local_base:
-                matrix['pkg'].append(pkg_name)
-                matrix['include'].append({'pkg': pkg_name, 'abi_arch': 'vendor', 'version': remote})
-            continue
         if config.get('content'):
             # Bundled content (e.g. the Homer dashboard inside os-homer)
             # follows the upstream repo releases — checked even though the
@@ -937,7 +906,7 @@ def check_updates(pkgs_dir='pkgs'):
                 continue  # static asset packages (e.g. the shared editor) have no remote version source
             # A FreeBSD revision suffix (_N) marks package-only changes and is
             # not a version difference — strip it before comparing, mirroring
-            # the guard in pkgs/*/build.sh and the vendor branch above.
+            # the guard in pkgs/*/build.sh.
             local_base = re.sub(r'_[0-9]+$', '', local)
             if str(remote) != local_base:
                 matrix['pkg'].append(pkg_name)

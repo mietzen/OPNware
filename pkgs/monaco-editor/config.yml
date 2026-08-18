@@ -1,15 +1,13 @@
 ---
 build_config:
   include: {}
-vendor:
-  npm: monaco-editor
 pkg_manifest:
   name: monaco-editor
   origin: opnware/monaco-editor
   # Version tracks the monaco-editor release fetched at build time (the
-  # primary component of the shared editor tree). Bump it for a new release —
-  # the daily update flow emits a refresh PR (plain version bump), and
-  # build.sh fetches + packs at that version.
+  # primary component of the shared editor tree). Update policy is manual:
+  # bump the version here, build, install on the test VM and visually verify
+  # both editors — the nightly update flow no longer proposes monaco bumps.
   version: 0.56.0_4
   comment: Shared Monaco editor assets for the OPNsense WebUI
   www: https://microsoft.github.io/monaco-editor/
@@ -27,5 +25,6 @@ pkg_manifest:
     pinned version) and ships the hand-written Caddyfile Monarch grammar from
     src/. The editor pages extend the OPNsense CSP per-controller (worker-src
     blob:, font-src data:), so the fetched monaco tree ships unpatched.
-    check-updates tracks the npm registry via the vendor adapter; a new monaco
-    release becomes a small refresh PR instead of a huge vendored-tree diff.
+    Bumps are manual and deliberate (base version = the monaco release, a _N
+    suffix = package-only changes): bump the version, build, install on the
+    test VM and verify both editors.
