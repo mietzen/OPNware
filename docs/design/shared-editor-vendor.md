@@ -87,12 +87,11 @@ change the `monaco-editor` package instead.
 > and extend the CSP **per-controller** (the `content_security_policy` merge
 > in `ControllerBase`: `worker-src 'self' blob:` and `font-src 'self' data:`),
 > so Monaco's native blob: workers and inline codicon font work as-is. This
-> replaced the earlier build-time codemods (`patch-csp-worker.py`,
-> `extract-codicon-font.py`) that edited the pristine tree; a version bump can
-> no longer silently lose a patch, at the cost of requiring the page
-> controller to carry the CSP extension. Keep the version contract: base
-> version must equal the monaco release, a `_N` revision suffix may be used
-> for package-only changes.
+> replaced the earlier build-time codemods that edited the pristine tree; a
+> version bump can no longer silently lose a patch, at the cost of requiring
+> the page controller to carry the CSP extension. Keep the version contract:
+> base version must equal the monaco release, a `_N` revision suffix may be
+> used for package-only changes.
 
 ## Caddy editor tree
 
@@ -164,26 +163,25 @@ Key points for a consumer:
 > per-controller with `font-src 'self' data:`, so the inline font is allowed
 > and the vendored tree ships unpatched (see the CSP note above).
 
-## Refreshing the vendor (the monaco-editor package's update mechanism)
+## Updating the editor (manual, pinned version)
 
-The `monaco-editor` package's `vendor:` spec section
-(`vendor.npm: monaco-editor`) makes the daily update flow check the npm
-registry. When a newer monaco-editor release exists, `check-updates` emits a
-`vendor` entry and the workflow runs `./scripts/refresh-editor.sh <version>`
-— which bumps `pkg_manifest.version` (a **plain version bump; the build
-fetches the release**) — then opens a PR. **The PR is NOT auto-merged**: a
-new Monaco release is meant to be reviewed (a new Monaco can silently break
-the hand-written Monarch grammar — CI can't catch that), so the human merges
-it. The version contract (`_N` suffix for package-only changes) keeps review
-small: a plain bump re-fetches the release, only the package-only change is
-the build.sh/src diff.
+The `monaco-editor` version is **pinned** — the daily update flow
+(`pkg-tool check-updates`, `.github/workflows/update.yml`) does NOT propose
+monaco bumps. There is no refresh script and no npm vendor adapter; the package
+spec carries no `vendor:` section. Updating is a deliberate, manual act:
 
-The script can also be run by hand:
+1. Bump `pkg_manifest.version` in `pkgs/monaco-editor/config.yml`. The version
+   contract is preserved: the base version must equal the monaco release, a
+   `_N` suffix marks package-only changes. `build.sh` derives the npm version
+   by stripping the `_N` suffix and fetches the pinned release at build time,
+   so a manual bump still produces a working package.
+2. Build locally (`./build.sh amd64 15`) and inspect the payload — the
+   vendored tree is fetched fresh, so a new release can silently break the
+   hand-written Monarch grammar (`src/caddyfile.js`) or the CSP assumptions
+   the editor pages rely on. CI cannot catch highlighting or CSP regressions.
+3. Install on the test VM and **visually verify both editors** (the
+   os-caddy-advanced Caddyfile editor and the os-homer YAML editor) before
+   merging the bump PR.
 
-```sh
-./scripts/refresh-editor.sh          # bump to the latest npm release
-./scripts/refresh-editor.sh 0.57.0   # bump to a specific release
-```
-
-The grammar (`src/caddyfile.js`) is never touched by a refresh; it is
+The grammar (`src/caddyfile.js`) is never touched by a bump; it is
 monaco-version-independent (Monarch API is stable).
