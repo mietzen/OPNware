@@ -114,18 +114,21 @@ def load_grammar():
 def walk_tokenizer(tokenizer):
     """Walk every state of a Monarch tokenizer.
 
-    Returns (states, nexts, embeds, leave_states, embed_states):
+    Returns (states, nexts, embeds, leave_states, embed_states, includes):
       states      - set of state names (keys)
       nexts       - set of next: targets (without the leading @)
       embeds      - set of nextEmbedded: values
       leave_states- states containing a rule with nextEmbedded '@pop'
       embed_states- states entered via a rule with a real nextEmbedded
+      includes    - set of include: targets (without the leading @)
     """
     states = set(tokenizer.keys())
-    nexts, embeds = set(), set()
+    nexts, embeds, includes = set(), set(), set()
     leave_states, embed_states = set(), set()
     for state, rules in tokenizer.items():
         for rule in rules:
+            if isinstance(rule, dict) and "include" in rule:
+                includes.add(rule["include"].lstrip("@"))
             action = rule[1] if isinstance(rule, (list, tuple)) and len(rule) >= 2 else None
             if isinstance(action, dict):
                 if action.get("next"):
@@ -136,7 +139,7 @@ def walk_tokenizer(tokenizer):
                         leave_states.add(state)
                     else:
                         embed_states.add(action.get("next", "").lstrip("@"))
-    return states, nexts, embeds, leave_states, embed_states
+    return states, nexts, embeds, leave_states, embed_states, includes
 
 
 def emitted_tokens(tokenizer):
@@ -271,7 +274,7 @@ def test_tokens_are_stock_theme_tokens_only():
 def test_heredoc_embed_states_have_leave_rules():
     data = load_grammar()
     tokenizer = data["caddyfileGrammar"]["tokenizer"]
-    states, nexts, embeds, leave_states, embed_states = walk_tokenizer(tokenizer)
+    states, nexts, embeds, leave_states, embed_states, _ = walk_tokenizer(tokenizer)
     # Every state entered with a real nextEmbedded must contain a leave rule
     # that pops the embed (Monarch throws otherwise).
     assert embed_states, "no heredoc embed states found"
@@ -283,7 +286,7 @@ def test_heredoc_embed_states_have_leave_rules():
 def test_next_embedded_languages_are_registered():
     data = load_grammar()
     tokenizer = data["caddyfileGrammar"]["tokenizer"]
-    _, _, embeds, _, _ = walk_tokenizer(tokenizer)
+    _, _, embeds, _, _, _ = walk_tokenizer(tokenizer)
     real = {e for e in embeds if e != "@pop"}
     assert real <= EMBEDDABLE_LANGUAGES, f"unknown embed target: {sorted(real - EMBEDDABLE_LANGUAGES)}"
 
@@ -293,12 +296,41 @@ def test_next_targets_are_existing_states():
     data = load_grammar()
     for name in ("caddyfileGrammar", "jsonGrammar", "cssGrammar", "htmlGrammar", "jsGrammar", "xmlGrammar"):
         tokenizer = data[name]["tokenizer"]
-        states, nexts, _, _, _ = walk_tokenizer(tokenizer)
+        states, nexts, _, _, _, _ = walk_tokenizer(tokenizer)
         # @pop/@push/@pushall are built-in Monarch pseudo-states, not tokenizer states.
         unknown = nexts - states - {"pop", "push", "pushall"}
         assert not unknown, f"{name}: next targets without a state: {sorted(unknown)}"
     # Cross-language reaches (if any) go through nextEmbedded, which
     # test_next_embedded_languages_are_registered already pins.
+
+
+@pytest.mark.skipif(NODE is None, reason="node not available")
+def test_include_targets_are_existing_states():
+    data = load_grammar()
+    for name in ("caddyfileGrammar", "jsonGrammar", "cssGrammar", "htmlGrammar", "jsGrammar", "xmlGrammar"):
+        tokenizer = data[name]["tokenizer"]
+        states, _, _, _, _, includes = walk_tokenizer(tokenizer)
+        missing = includes - states
+        assert not missing, f"{name}: include targets without a state: {sorted(missing)}"
+
+
+@pytest.mark.skipif(NODE is None, reason="node not available")
+def test_language_configurations_have_character_pair_brackets():
+    data = load_grammar()
+    configs = ("caddyfileConfig", "jsonConfig", "cssConfig", "htmlConfig", "jsConfig", "xmlConfig")
+    for name in configs:
+        assert name in data, f"{name} is not exported"
+        config = data[name]
+        brackets = config.get("brackets")
+        assert isinstance(brackets, list), f"{name}: brackets must be a list"
+        assert len(brackets) > 0, f"{name}: brackets list must not be empty"
+        for pair in brackets:
+            assert isinstance(pair, list) and len(pair) == 2, (
+                f"{name}: each bracket item must be a 2-element list [open, close], got {pair!r}"
+            )
+            assert isinstance(pair[0], str) and isinstance(pair[1], str), (
+                f"{name}: bracket pair elements must be strings, got {pair!r}"
+            )
 
 
 @pytest.mark.skipif(NODE is None, reason="node not available")
