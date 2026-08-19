@@ -627,11 +627,11 @@
     <li><a data-toggle="tab" href="#tab-networks"><i class="fa fa-sitemap"></i> {{ lang._('Networks') }}</a></li>
 </ul>
 
-<div class="content-box tab-content" style="padding-top: 0;">
+<div class="content-box tab-content" style="padding: 0;">
     <!-- Containers Tab -->
     <div id="tab-containers" class="tab-pane fade in active">
         <div class="table-responsive">
-            <table class="table table-striped table-hover" id="grid-containers">
+            <table class="table table-striped table-condensed table-hover" id="grid-containers" style="margin-bottom: 0;">
                 <thead>
                     <tr>
                         <th style="width: 120px;">{{ lang._('Container ID') }}</th>
@@ -652,7 +652,7 @@
     <!-- Images Tab -->
     <div id="tab-images" class="tab-pane fade">
         <div class="table-responsive">
-            <table class="table table-striped table-hover" id="grid-images">
+            <table class="table table-striped table-condensed table-hover" id="grid-images" style="margin-bottom: 0;">
                 <thead>
                     <tr>
                         <th>{{ lang._('Repository:Tag') }}</th>
@@ -672,7 +672,7 @@
     <!-- Volumes Tab -->
     <div id="tab-volumes" class="tab-pane fade">
         <div class="table-responsive">
-            <table class="table table-striped table-hover" id="grid-volumes">
+            <table class="table table-striped table-condensed table-hover" id="grid-volumes" style="margin-bottom: 0;">
                 <thead>
                     <tr>
                         <th>{{ lang._('Volume Name') }}</th>
@@ -691,7 +691,7 @@
     <!-- Networks Tab -->
     <div id="tab-networks" class="tab-pane fade">
         <div class="table-responsive">
-            <table class="table table-striped table-hover" id="grid-networks">
+            <table class="table table-striped table-condensed table-hover" id="grid-networks" style="margin-bottom: 0;">
                 <thead>
                     <tr>
                         <th>{{ lang._('Network Name') }}</th>

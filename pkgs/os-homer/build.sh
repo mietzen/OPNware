@@ -14,6 +14,8 @@ SRC_REPO=$(pkg-tool dump "${CONFIG}" content.repo)
 # the daily update flow can bump it (check-updates content adapter).
 HOMER_VERSION=$(pkg-tool dump "${CONFIG}" content.version)
 
+HOMER_BUILD_SRC="${DIST_ROOT}/dist/homer-src"
+
 echo "::group::Install pnpm"
 npm install -g pnpm@latest-10
 echo "::endgroup::"
@@ -21,12 +23,12 @@ echo "::endgroup::"
 echo "Building ${PKG_NAME} - ARCH: ${ARCH} - ABI: ${ABI}"
 
 echo "::group::Git Checkout Repository"
-rm -rf "${DIST_ROOT}/src"
-git clone --depth 1 --branch "v${HOMER_VERSION}" "${SRC_REPO}" "${DIST_ROOT}/src"
+rm -rf "${HOMER_BUILD_SRC}"
+git clone --depth 1 --branch "v${HOMER_VERSION}" "${SRC_REPO}" "${HOMER_BUILD_SRC}"
 echo "::endgroup::"
 
 echo "::group::Building Homer"
-cd "${DIST_ROOT}/src"
+cd "${HOMER_BUILD_SRC}"
 pnpm install
 pnpm build
 echo "::endgroup::"
@@ -55,12 +57,12 @@ rm -rf "${DIST_ROOT}/dist/pkg/usr/local/usr/local"
 # Stage the built static dashboard under /usr/local/www/homer.
 mkdir -p "${DIST_ROOT}/dist/pkg/usr/local/www"
 chmod 0755 "${DIST_ROOT}/dist/pkg/usr/local/www"
-cp -R "${DIST_ROOT}/src/dist/." "${DIST_ROOT}/dist/pkg/usr/local/www/homer/"
+cp -R "${HOMER_BUILD_SRC}/dist/." "${DIST_ROOT}/dist/pkg/usr/local/www/homer/"
 
 # The bundled Homer dashboard's own license + source pointer.
 mkdir -p "${DIST_ROOT}/dist/pkg/usr/local/share/doc/homer"
 chmod 0755 "${DIST_ROOT}/dist/pkg/usr/local/share/doc/homer"
-cp "${DIST_ROOT}/src/LICENSE" "${DIST_ROOT}/dist/pkg/usr/local/share/doc/homer/LICENSE"
+cp "${HOMER_BUILD_SRC}/LICENSE" "${DIST_ROOT}/dist/pkg/usr/local/share/doc/homer/LICENSE"
 chmod 0644 "${DIST_ROOT}/dist/pkg/usr/local/share/doc/homer/LICENSE"
 
 # Our own MIT license for the plugin code (distinct from Homer's Apache-2.0).
@@ -70,7 +72,7 @@ mkdir -p "${DIST_ROOT}/dist/pkg/usr/local/share/doc/os-homer"
 chmod 0755 "${DIST_ROOT}/dist/pkg/usr/local/share/doc/os-homer"
 cp "${SCRIPT_DIR}/LICENSE" "${DIST_ROOT}/dist/pkg/usr/local/share/doc/os-homer/LICENSE.MIT"
 chmod 0644 "${DIST_ROOT}/dist/pkg/usr/local/share/doc/os-homer/LICENSE.MIT"
-cp "${DIST_ROOT}/src/LICENSE" "${DIST_ROOT}/dist/pkg/usr/local/share/doc/os-homer/LICENSE.APACHE20"
+cp "${HOMER_BUILD_SRC}/LICENSE" "${DIST_ROOT}/dist/pkg/usr/local/share/doc/os-homer/LICENSE.APACHE20"
 chmod 0644 "${DIST_ROOT}/dist/pkg/usr/local/share/doc/os-homer/LICENSE.APACHE20"
 
 # Provide Source Code Link

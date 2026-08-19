@@ -4,10 +4,6 @@
  # The generated Caddyfile is intentionally never shown or editable here:
  # it is plugin-owned and regenerated from the settings on every apply.
  #}
-<style>
-    .opnware-editor-tabs { margin-bottom: 0; }
-    .opnware-tab-pane { padding: 0 15px 15px; }
-</style>
 
 <script>
     $(document).ready(function() {
@@ -146,27 +142,22 @@
                     <td>{{ lang._('Bind Interface') }}</td>
                     <td id="status-interface">--</td>
                 </tr>
-                <tr>
-                    <td>{{ lang._('Config File') }}</td>
-                    <td><code>/usr/local/etc/os-homer/Caddyfile</code></td>
-                </tr>
-                <tr>
-                    <td>{{ lang._('Dashboard Assets') }}</td>
-                    <td><code>/usr/local/www/homer</code></td>
-                </tr>
             </tbody>
         </table>
     </div>
 </div>
 
-<ul id="generalTabsHeader" class="nav nav-tabs opnware-editor-tabs" role="tablist">
-    {{ partial("layout_partials/base_tabs_header", ['formData': generalForm]) }}
-</ul>
-
-<div id="generalTabsContent" class="content-box tab-content opnware-tab-pane">
-    {{ partial("layout_partials/base_tabs_content", ['formData': generalForm]) }}
+<div class="content-box">
+    {{ partial("layout_partials/base_form", ['fields': generalForm, 'id': 'frm_general-settings']) }}
+    <div class="col-md-12">
+        <hr/>
+        <button class="btn btn-primary" id="save_general-settings" type="button">
+            <b>{{ lang._('Apply') }}</b> <i id="btn_save_progress"></i>
+        </button>
+        <br/><br/>
+    </div>
 </div>
 
-<p class="help-block">
+<p class="help-block" style="margin-top: 15px;">
     {{ lang._('The dashboard is served from the plugin-owned Caddyfile at /usr/local/etc/os-homer/Caddyfile. The Caddyfile is generated from the settings above and is not editable from the WebUI.') }}
 </p>

@@ -98,15 +98,13 @@
                     editor.setValue(data.content || '');
                 }
                 if (!data.exists) {
-                    $("#config-notice").text(
-                        "{{ lang._('config.yml does not exist yet — it will be created on first save.') }}"
-                    ).show();
+                    $("#config-notice").show();
                 }
             });
         }
 
         $("#save-config").click(function() {
-            $("#editor-result").hide();
+            $("#save-status-msg").empty();
             $.post("/api/homer/config/save", {
                 content: editor ? editor.getValue() : ''
             }, function(data) {
@@ -120,30 +118,27 @@
         });
 
         function showError(message) {
-            const $box = $("#editor-result");
-            $box.removeClass("alert-success alert-warning").addClass("alert-danger");
-            $box.text(message || "{{ lang._('Error') }}");
-            $box.show();
-        }
-
-        function showWarning(message) {
-            const $box = $("#editor-result");
-            $box.removeClass("alert-success alert-danger").addClass("alert-warning");
-            $box.text(message);
-            $box.show();
+            $("#save-status-msg").html(
+                '<span class="text-danger"><i class="fa fa-times"></i> ' +
+                $('<div>').text(message || "{{ lang._('Error') }}").html() +
+                '</span>'
+            );
         }
 
         function showSuccess(message) {
-            const $box = $("#editor-result");
-            $box.removeClass("alert-danger alert-warning").addClass("alert-success");
-            $box.text(message);
-            $box.show();
+            $("#save-status-msg").html(
+                '<span class="text-success"><i class="fa fa-check"></i> ' +
+                $('<div>').text(message || "{{ lang._('Saved') }}").html() +
+                '</span>'
+            );
+            setTimeout(function() {
+                $("#save-status-msg").fadeOut(500, function() {
+                    $(this).empty().show();
+                });
+            }, 3000);
         }
     });
 </script>
-
-<div id="config-notice" class="alert alert-info" style="display:none;"></div>
-<div id="editor-result" class="alert" style="display:none;"></div>
 
 <div class="content-box opnware-homer-config-pane" style="padding: 15px;">
     <div class="row">
@@ -159,7 +154,11 @@
     <div id="editor-container" style="height: 450px; border: 1px solid #1d2733; border-radius: 4px; overflow: hidden;"></div>
     <div style="margin-top: 12px;">
         <button id="save-config" type="button" class="btn btn-primary"><b>{{ lang._('Save') }}</b></button>
-        <span class="help-block">
+        <span id="save-status-msg" style="margin-left: 15px; font-weight: bold;"></span>
+        <span id="config-notice" class="text-info" style="margin-left: 15px; display:none;">
+            <i class="fa fa-info-circle"></i> {{ lang._('config.yml does not exist yet — it will be created on first save.') }}
+        </span>
+        <span class="help-block" style="margin-top: 8px;">
             {{ lang._('Saving YAML-parses and validates the content before writing. Invalid YAML is rejected and nothing is written. Homer re-reads config.yml in the browser — no service reload happens on save.') }}
         </span>
     </div>
