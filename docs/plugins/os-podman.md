@@ -91,6 +91,8 @@ The OPNsense WebUI provides complete container management under **Services → P
 
 - **System Stats Bar**: Real-time summary of Running/Total Containers, Active/Total Images, Volumes, and Reclaimable Disk Space.
 - **System Prune**: One-click cleanup button to remove stopped containers and dangling images.
-- **Containers**: Start, Stop, Restart, Force Stop, View Logs, Inspect JSON configuration, and Delete.
+- **Containers**: Start, Stop, Restart, Force Stop, Interactive Web CLI, View Logs (with ANSI color rendering), Inspect JSON configuration, and Delete.
+- **Interactive Container CLI**: Built-in web terminal modal with customizable shell (`/bin/sh`), command history (Up/Down arrow navigation), Stop/Abort execution action, and Ctrl+C interrupt support.
+- **Outbound Connectivity & Firewall**: Outbound traffic pass rules and WAN Outbound SNAT for container subnets (`10.88.0.0/16`) are registered automatically in PF alongside CNI port forwarding anchors.
 - **Images, Volumes, Networks**: Interactive listing and deletion with confirmation protection.
 - **Diagnostics Log Viewer**: Live service and operational daemon logging under **Services → Podman → Log File** (`/ui/diagnostics/log/core/podman`).

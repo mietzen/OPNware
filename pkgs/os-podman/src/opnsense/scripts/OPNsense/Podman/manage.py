@@ -36,8 +36,11 @@ def run_podman(args):
         out = proc.stdout.strip()
         err = proc.stderr.strip()
 
+        combined = (out + ("\n" + err if err else "")) if out else err
+
         if proc.returncode != 0:
-            res = {"status": "error", "message": err or f"Process exited with code {proc.returncode}"}
+            msg = combined or f"Process exited with code {proc.returncode}"
+            res = {"status": "error", "message": msg, "output": combined}
             write_status(res)
             print(json.dumps(res))
             sys.exit(0)
@@ -56,7 +59,6 @@ def run_podman(args):
                 except Exception:
                     res = {"status": "ok", "items": [], "raw": out}
         else:
-            combined = (out + ("\n" + err if err else "")) if out else err
             res = {"status": "ok", "output": combined}
 
         write_status(res)
