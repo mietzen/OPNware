@@ -92,10 +92,53 @@ function podman_firewall($fw)
         $interfaces = ['lan'];
     }
 
+    // 1. Dynamic CNI port forwarding anchors
     $fw->registerAnchor('cni-rdr/*', 'rdr', 0, 'head');
     $fw->registerAnchor('cni-rdr/*', 'nat', 0, 'head');
     $fw->registerAnchor('cni-rdr/*', 'fw', 0, 'head');
 
+    // 2. Outbound container traffic pass rule (DNS, Internet, LAN routing)
+    $fw->registerFilterRule(
+        10,
+        [
+            'type' => 'pass',
+            'quick' => true,
+            'direction' => 'in',
+            'from' => '10.88.0.0/16',
+            'to' => 'any',
+            'statetype' => 'keep',
+            'descr' => 'Allow outbound traffic from Podman container networks',
+            '#ref' => 'ui/podman/general'
+        ]
+    );
+
+    // 3. Outbound NAT on WAN interfaces for container networks
+    $wanInterfaces = [];
+    if (!empty($config['interfaces'])) {
+        foreach ($config['interfaces'] as $intfKey => $intfConfig) {
+            if (!empty($intfConfig['enable']) && (!empty($intfConfig['gateway']) || $intfKey === 'wan')) {
+                $wanInterfaces[] = $intfKey;
+            }
+        }
+    }
+    if (empty($wanInterfaces)) {
+        $wanInterfaces = ['wan'];
+    }
+
+    foreach ($wanInterfaces as $wanIntf) {
+        $fw->registerSNatRule(
+            150,
+            [
+                'interface' => $wanIntf,
+                'from' => '10.88.0.0/16',
+                'to' => 'any',
+                'descr' => 'Outbound NAT for Podman container networks',
+                '#ref' => 'ui/podman/general'
+            ]
+        );
+    }
+
+    // 4. Inbound container port access on selected interfaces
     foreach ($interfaces as $intf) {
         $fw->registerFilterRule(
             10,

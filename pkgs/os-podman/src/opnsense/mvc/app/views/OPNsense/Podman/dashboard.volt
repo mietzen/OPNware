@@ -319,14 +319,35 @@
         });
     }
 
+    var currentCliXhr = null;
+
+    function resetCliUi() {
+        $('#btn-cli-stop').hide();
+        $('#btn-cli-run').show();
+        var el = document.getElementById('modal-cli-console');
+        if (el) el.scrollTop = el.scrollHeight;
+        $('#cli-cmd-input').focus();
+    }
+
     function showContainerCli(cid, name) {
         currentCliContainerId = cid;
         cliHistoryIdx = -1;
         $('#modal-cli-title').text('{{ lang._("Container CLI") }}: ' + (name || cid));
         $('#modal-cli-console').html('<span style="color: #767676;">{{ lang._("Connected to container") }} ' + cid + '. {{ lang._("Enter commands below.") }}\n</span>');
         $('#cli-cmd-input').val('');
+        resetCliUi();
         $('#modal-cli').modal('show');
         setTimeout(function() { $('#cli-cmd-input').focus(); }, 500);
+    }
+
+    function stopContainerCli() {
+        if (currentCliXhr) {
+            currentCliXhr.abort();
+            currentCliXhr = null;
+        }
+        var $console = $('#modal-cli-console');
+        $console.append('<span style="color: #ff6b68;">^C ({{ lang._("command aborted") }})\n</span>');
+        resetCliUi();
     }
 
     function runContainerCli() {
@@ -341,21 +362,34 @@
         var $console = $('#modal-cli-console');
         $console.append('<span style="color: #57c7ff;">$ ' + $('<div>').text(cmd).html() + '\n</span>');
 
-        $('#btn-cli-run-icon').removeClass('fa-play').addClass('fa-spinner fa-pulse');
-        ajaxCall('/api/podman/containers/exec/' + currentCliContainerId, {cmd: cmd, shell: shell}, function (data, status) {
-            $('#btn-cli-run-icon').removeClass('fa-spinner fa-pulse').addClass('fa-play');
-            var out = '';
-            if (data && data.output) {
-                out = data.output;
-            } else if (data && data.message) {
-                out = data.message;
-            } else {
-                out = '(no output)';
+        $('#btn-cli-run').hide();
+        $('#btn-cli-stop').show();
+
+        currentCliXhr = $.ajax({
+            url: '/api/podman/containers/exec/' + currentCliContainerId,
+            type: 'POST',
+            dataType: 'json',
+            data: {cmd: cmd, shell: shell},
+            success: function (data) {
+                currentCliXhr = null;
+                var out = '';
+                if (data && data.output) {
+                    out = data.output;
+                } else if (data && data.message) {
+                    out = data.message;
+                } else {
+                    out = '(no output)';
+                }
+                $console.append(ansiToHtml(out) + '\n');
+                resetCliUi();
+            },
+            error: function (xhr, status, error) {
+                currentCliXhr = null;
+                if (status !== 'abort') {
+                    $console.append('<span style="color: #ff6b68;">{{ lang._("Execution error") }}: ' + $('<div>').text(error || status).html() + '\n</span>');
+                }
+                resetCliUi();
             }
-            $console.append(ansiToHtml(out) + '\n');
-            var el = document.getElementById('modal-cli-console');
-            if (el) el.scrollTop = el.scrollHeight;
-            $('#cli-cmd-input').focus();
         });
     }
 
@@ -437,10 +471,17 @@
             runContainerCli();
         });
 
+        $('#btn-cli-stop').click(function () {
+            stopContainerCli();
+        });
+
         $('#cli-cmd-input').keydown(function (e) {
             if (e.which === 13) { // Enter
                 e.preventDefault();
                 runContainerCli();
+            } else if (e.ctrlKey && e.which === 67) { // Ctrl+C
+                e.preventDefault();
+                stopContainerCli();
             } else if (e.which === 38) { // Arrow Up (history back)
                 e.preventDefault();
                 if (cliHistory.length > 0) {
@@ -463,6 +504,15 @@
                     }
                 }
             }
+        });
+
+        $('#modal-cli').on('hidden.bs.modal', function () {
+            if (currentCliXhr) {
+                currentCliXhr.abort();
+                currentCliXhr = null;
+            }
+            $('#btn-cli-stop').hide();
+            $('#btn-cli-run').show();
         });
 
         // Deletion
@@ -711,22 +761,22 @@
                     <button type="button" class="close" data-dismiss="modal" aria-label="Close" style="margin-left: 10px;"><span aria-hidden="true">&times;</span></button>
                 </div>
             </div>
-            <div class="modal-body" style="padding: 0; background: #121212;">
-                <pre id="modal-cli-console" style="background: #121212; color: #5af78e; font-family: monospace; font-size: 13px; max-height: 400px; min-height: 250px; overflow-y: auto; padding: 15px; border-radius: 0; margin-bottom: 0; border: none; white-space: pre-wrap;"></pre>
-                <div style="padding: 10px; background: #1a1a1a; border-top: 1px solid #333;">
+            <div class="modal-body" style="padding: 0; background: #121212; border-radius: 0 0 6px 6px;">
+                <pre id="modal-cli-console" style="background: #121212; color: #5af78e; font-family: monospace; font-size: 13px; max-height: 420px; min-height: 280px; overflow-y: auto; padding: 15px; border-radius: 0; margin-bottom: 0; border: none; white-space: pre-wrap;"></pre>
+                <div style="padding: 10px; background: #1a1a1a; border-top: 1px solid #333; border-radius: 0 0 6px 6px;">
                     <div class="input-group">
                         <span class="input-group-addon" style="background: #222; color: #5af78e; border-color: #444; font-family: monospace;"><b>$</b></span>
-                        <input type="text" class="form-control" id="cli-cmd-input" placeholder="{{ lang._('Type command (e.g. ls -la, uname -a, ps aux) and press Enter...') }}" style="background: #2a2a2a; color: #fff; border-color: #444; font-family: monospace;" />
+                        <input type="text" class="form-control" id="cli-cmd-input" placeholder="{{ lang._('Type command (e.g. ping 1.1.1.1, ls -la, ps aux) and press Enter...') }}" style="background: #2a2a2a; color: #fff; border-color: #444; font-family: monospace;" />
                         <span class="input-group-btn">
                             <button class="btn btn-success" type="button" id="btn-cli-run">
                                 <i class="fa fa-play" id="btn-cli-run-icon"></i> {{ lang._('Run') }}
                             </button>
+                            <button class="btn btn-danger" type="button" id="btn-cli-stop" style="display: none;">
+                                <i class="fa fa-stop"></i> {{ lang._('Stop') }}
+                            </button>
                         </span>
                     </div>
                 </div>
-            </div>
-            <div class="modal-footer" style="margin-top: 0;">
-                <button type="button" class="btn btn-default" data-dismiss="modal">{{ lang._('Close') }}</button>
             </div>
         </div>
     </div>

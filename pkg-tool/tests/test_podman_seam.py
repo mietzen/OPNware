@@ -41,7 +41,7 @@ def test_os_podman_spec_and_files_valid():
     manifest = spec.get("pkg_manifest", {})
     assert manifest.get("name") == "podman"
     assert manifest.get("origin") == "opnware/os-podman"
-    assert manifest.get("version") == "0.1.5"
+    assert manifest.get("version") == "0.1.6"
 
     deps = manifest.get("deps", {})
     for name in REDISTRIBUTE_PKGS:
@@ -53,6 +53,8 @@ def test_os_podman_spec_and_files_valid():
     assert "/var/run/podman/podman_service.pid" in inc_content
     assert "function podman_firewall" in inc_content
     assert "cni-rdr/*" in inc_content
+    assert "registerSNatRule" in inc_content
+    assert "Allow outbound traffic from Podman container networks" in inc_content
 
     assert (src / "etc" / "syslog-ng.conf.d" / "podman.conf").exists()
     assert (src / "usr" / "local" / "etc" / "rc.d" / "podman_service").exists()
@@ -83,6 +85,10 @@ def test_os_podman_spec_and_files_valid():
     assert "modal-logs" in dashboard_content
     assert "modal-inspect" in dashboard_content
     assert "modal-cli" in dashboard_content
+    assert "btn-cli-stop" in dashboard_content
+    assert "stopContainerCli" in dashboard_content
+    cli_modal_section = dashboard_content[dashboard_content.find('id="modal-cli"'):]
+    assert 'class="modal-footer"' not in cli_modal_section
     assert "ansiToHtml" in dashboard_content
     assert "act-cli" in dashboard_content
     assert "btn_system_prune" in dashboard_content
