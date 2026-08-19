@@ -22,17 +22,12 @@ load_rc_config "${name}"
 : ${podman_service_socket_enable:="YES"}
 
 pidfile="/var/run/podman/podman_service.pid"
+tcppidfile="/var/run/podman/podman_service_tcp.pid"
 logfile="/var/log/podman/system-service.log"
 podman_bin="/usr/local/bin/podman"
 
-# Construct endpoints and flags
-endpoints=""
+# Construct TLS flags for TCP service
 tls_flags=""
-
-if [ "${podman_service_socket_enable}" = "YES" ]; then
-    endpoints="unix:///var/run/podman/podman.sock"
-fi
-
 if [ "${podman_service_tls_enable}" = "YES" ]; then
     if [ -f "${podman_service_tls_cert}" ] && [ -f "${podman_service_tls_key}" ]; then
         tls_flags="--tls-cert=${podman_service_tls_cert} --tls-key=${podman_service_tls_key}"
@@ -40,23 +35,6 @@ if [ "${podman_service_tls_enable}" = "YES" ]; then
             tls_flags="${tls_flags} --tls-client-ca=${podman_service_tls_ca}"
         fi
     fi
-    tcp_endpoint="tcp://${podman_service_listen_address}:${podman_service_listen_port}"
-    if [ -n "${endpoints}" ]; then
-        endpoints="${endpoints} ${tcp_endpoint}"
-    else
-        endpoints="${tcp_endpoint}"
-    fi
-elif [ "${podman_service_tcp_enable}" = "YES" ]; then
-    tcp_endpoint="tcp://${podman_service_listen_address}:${podman_service_listen_port}"
-    if [ -n "${endpoints}" ]; then
-        endpoints="${endpoints} ${tcp_endpoint}"
-    else
-        endpoints="${tcp_endpoint}"
-    fi
-fi
-
-if [ -z "${endpoints}" ]; then
-    endpoints="unix:///var/run/podman/podman.sock"
 fi
 
 podman_service_prestart()
@@ -70,27 +48,52 @@ podman_service_start()
 {
     podman_service_prestart
     echo -n "Starting ${name}... "
-    echo "$(date '+%Y-%m-%dT%H:%M:%S%z') [info] Starting Podman system service daemon..." >> "${logfile}"
-    /usr/sbin/daemon -f -p "${pidfile}" -o "${logfile}" "${podman_bin}" --log-level=info system service --time=0 ${tls_flags} ${endpoints} </dev/null >/dev/null 2>&1
+    echo "$(date '+%Y-%m-%dT%H:%M:%S%z') [info] Starting Podman UNIX socket daemon..." >> "${logfile}"
+    
+    # 1. Primary UNIX socket service (always active for local CLI & WebUI)
+    /usr/sbin/daemon -f -p "${pidfile}" -o "${logfile}" "${podman_bin}" --log-level=info system service --time=0 unix:///var/run/podman/podman.sock </dev/null >/dev/null 2>&1
     sleep 1
-    if [ -f "${pidfile}" ] && /bin/kill -0 "$(/bin/cat "${pidfile}")" 2>/dev/null; then
-        echo "$(date '+%Y-%m-%dT%H:%M:%S%z') [info] Podman system service daemon started (pid $(/bin/cat "${pidfile}"))." >> "${logfile}"
-        echo "done."
-        return 0
+
+    if [ ! -f "${pidfile}" ] || ! /bin/kill -0 "$(/bin/cat "${pidfile}")" 2>/dev/null; then
+        echo "$(date '+%Y-%m-%dT%H:%M:%S%z') [error] Podman system service daemon failed to start." >> "${logfile}"
+        echo "failed (see ${logfile})."
+        return 1
     fi
-    echo "$(date '+%Y-%m-%dT%H:%M:%S%z') [error] Podman system service daemon failed to start." >> "${logfile}"
-    echo "failed (see ${logfile})."
-    return 1
+
+    # 2. Optional TCP socket service (when TCP or TLS is enabled)
+    if [ "${podman_service_tcp_enable}" = "YES" ] || [ "${podman_service_tls_enable}" = "YES" ]; then
+        tcp_endpoint="tcp://${podman_service_listen_address}:${podman_service_listen_port}"
+        echo "$(date '+%Y-%m-%dT%H:%M:%S%z') [info] Starting Podman TCP service on ${tcp_endpoint}..." >> "${logfile}"
+        /usr/sbin/daemon -f -p "${tcppidfile}" -o "${logfile}" "${podman_bin}" --log-level=info system service --time=0 ${tls_flags} "${tcp_endpoint}" </dev/null >/dev/null 2>&1
+    fi
+
+    echo "$(date '+%Y-%m-%dT%H:%M:%S%z') [info] Podman system service daemon started (pid $(/bin/cat "${pidfile}"))." >> "${logfile}"
+    echo "done."
+    return 0
 }
 
 podman_service_stop()
 {
+    # Stop TCP daemon if running
+    if [ -f "${tcppidfile}" ]; then
+        tcppid=$(cat "${tcppidfile}" 2>/dev/null)
+        if [ -n "${tcppid}" ] && kill -0 "${tcppid}" 2>/dev/null; then
+            kill -TERM "${tcppid}" 2>/dev/null
+            sleep 1
+            if kill -0 "${tcppid}" 2>/dev/null; then
+                kill -KILL "${tcppid}" 2>/dev/null
+            fi
+        fi
+        rm -f "${tcppidfile}"
+    fi
+
+    # Stop Primary UNIX socket daemon
     if [ -f "${pidfile}" ]; then
         pid=$(cat "${pidfile}" 2>/dev/null)
         if [ -n "${pid}" ] && kill -0 "${pid}" 2>/dev/null; then
             echo -n "Stopping ${name}... "
             echo "$(date '+%Y-%m-%dT%H:%M:%S%z') [info] Stopping Podman system service daemon (pid ${pid})..." >> "${logfile}"
-            kill -TERM "${pid}"
+            kill -TERM "${pid}" 2>/dev/null
             sleep 1
             if kill -0 "${pid}" 2>/dev/null; then
                 kill -KILL "${pid}" 2>/dev/null
