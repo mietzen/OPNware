@@ -310,7 +310,7 @@
             if (!name || !name.trim()) {
                 return;
             }
-            $("#editor-result").hide();
+            $("#editor-error-msg").hide();
             const path = (dirPath || 'conf.d') + '/' + name.trim();
             $.post("/api/caddyadvanced/editor/add", {path: path}, function(data) {
                 if (data.status !== "ok") {
@@ -328,7 +328,7 @@
             if (!name || !name.trim() || name.trim() === oldName) {
                 return;
             }
-            $("#editor-result").hide();
+            $("#editor-error-msg").hide();
             const target = dir + '/' + name.trim();
             $.post('/api/caddyadvanced/editor/move', {path: path, target: target}, function(data) {
                 if (data.status !== 'ok') {
@@ -362,7 +362,7 @@
             if (!confirm("{{ lang._('Delete this file?') }}")) {
                 return;
             }
-            $("#editor-result").hide();
+            $("#editor-error-msg").hide();
             $.post("/api/caddyadvanced/editor/delete", {path: path}, function(data) {
                 if (data.status !== "ok") {
                     showError(data.message);
@@ -381,7 +381,7 @@
             if (!currentFile) {
                 return;
             }
-            $("#editor-result").hide();
+            $("#editor-error-msg").hide();
             $.post("/api/caddyadvanced/editor/save", {
                 path: currentFile,
                 content: $("#editor-content").val()
@@ -400,7 +400,7 @@
             if (!name) {
                 return;
             }
-            $("#editor-result").hide();
+            $("#editor-error-msg").hide();
             $.post("/api/caddyadvanced/editor/add", {path: 'conf.d/' + name}, function(data) {
                 if (data.status !== "ok") {
                     showError(data.message);
@@ -412,11 +412,13 @@
         });
 
         function showError(message) {
-            $("#editor-status").html(
-                '<span class="text-danger"><i class="fa fa-times"></i> ' +
-                $('<div>').text(message || "{{ lang._('Error') }}").html() +
-                '</span>'
-            );
+            $("#editor-error-msg").html(
+                '<i class="fa fa-times"></i> ' +
+                $('<div>').text(message || "{{ lang._('Error') }}").html()
+            ).show();
+            setTimeout(function() {
+                $("#editor-error-msg").fadeOut(500);
+            }, 4000);
         }
 
         function showSuccess(message) {
@@ -717,6 +719,7 @@
             <div class="opnware-editor-actions">
                 <hr/>
                 <button id="save-editor" type="button" class="btn btn-primary"><b>{{ lang._('Save') }}</b></button>
+                <span id="editor-error-msg" class="text-danger __ml" style="display: none; font-weight: bold;"></span>
                 <span id="editor-status" class="text-muted __ml">
                     {{ lang._('Last save') }}: <span id="status-last-save">-</span>
                     · <span id="status-result">-</span>
