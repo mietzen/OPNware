@@ -5,12 +5,9 @@
  # it is plugin-owned and regenerated from the settings on every apply.
  #}
 <style>
-    .content-box.opnware-editor-pane { padding: 15px; }
-    .content-box.opnware-editor-pane h2 { margin-top: 0; }
     .opnware-editor-tabs { margin-bottom: 0; }
     .opnware-tab-pane { padding: 0 15px 15px; }
 </style>
-
 
 <script>
     $(document).ready(function() {
@@ -54,6 +51,7 @@
                             // SimpleActionButton has no onActionDone callback —
                             // this is the one reliable post-save hook.)
                             updateEffectiveUrl();
+                            updateStatus();
                         },
                         // disable_dialog: validation errors surface as the
                         // inline field note only, no BootstrapDialog popup.
@@ -69,12 +67,15 @@
 
         function updateStatus() {
             $.getJSON("/api/homer/service/status", function (data) {
-                const $status = $("#homer-status");
+                const $status = $("#tbl_homer_status");
                 if (!$status.length) {
                     return;
                 }
                 const running = data.status === "running";
-                $status.find("#status-running").html("<strong>" + (running ? "{{ lang._('running') }}" : "{{ lang._('stopped') }}") + "</strong>");
+                const badge = running
+                    ? '<span class="label label-success">{{ lang._("running") }}</span>'
+                    : '<span class="label label-default">{{ lang._("stopped") }}</span>';
+                $status.find("#status-running").html(badge);
             });
         }
 
@@ -101,20 +102,59 @@
             }
             const scheme = tls ? "https" : "http";
             const url = scheme + "://" + host + ":" + port + "/";
-            $("#effective-url").attr("href", url);
-            $("#effective-url").text(url);
+            $("#effective-url").attr("href", url).text(url);
+            $("#status-port").text(port);
+            $("#status-tls").html(tls ? '<span class="label label-success">{{ lang._("Enabled (HTTPS)") }}</span>' : '<span class="label label-default">{{ lang._("Disabled (HTTP)") }}</span>');
+            let intfText = "{{ lang._('All Interfaces') }}";
+            if (interfaceValue === "localhost") intfText = "{{ lang._('Localhost (127.0.0.1)') }}";
+            else if (interfaceValue === "lan") intfText = "{{ lang._('LAN') }}";
+            else if (interfaceValue === "wan") intfText = "{{ lang._('WAN') }}";
+            $("#status-interface").text(intfText);
         }
     });
 </script>
 
-<div id="homer-status" class="content-box opnware-editor-pane __mb">
-    <h2>{{ lang._('Status') }}</h2>
-    <table class="table table-striped table-condensed">
-        <tbody>
-            <tr><td class="text-muted" style="width: 220px;">{{ lang._('Service') }}</td><td id="status-running"></td></tr>
-            <tr><td class="text-muted">{{ lang._('Effective URL') }}</td><td><a id="effective-url" href="{{ effectiveUrl }}" target="_blank" rel="noreferrer">{{ effectiveUrl }}</a></td></tr>
-        </tbody>
-    </table>
+<!-- Live Homer Status Card -->
+<div class="content-box" style="margin-bottom: 20px;">
+    <div class="table-responsive">
+        <table class="table table-striped table-condensed" id="tbl_homer_status">
+            <thead>
+                <tr>
+                    <th colspan="2"><b>{{ lang._('Homer Service Status') }}</b></th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td style="width: 250px;">{{ lang._('Service Status') }}</td>
+                    <td id="status-running"><i class="fa fa-spinner fa-pulse"></i></td>
+                </tr>
+                <tr>
+                    <td>{{ lang._('Dashboard URL') }}</td>
+                    <td id="status-url"><a id="effective-url" href="{{ effectiveUrl }}" target="_blank" rel="noreferrer">{{ effectiveUrl }}</a></td>
+                </tr>
+                <tr>
+                    <td>{{ lang._('Listen Port') }}</td>
+                    <td id="status-port">9443</td>
+                </tr>
+                <tr>
+                    <td>{{ lang._('TLS Encryption') }}</td>
+                    <td id="status-tls"><span class="label label-success">{{ lang._('Enabled (HTTPS)') }}</span></td>
+                </tr>
+                <tr>
+                    <td>{{ lang._('Bind Interface') }}</td>
+                    <td id="status-interface">{{ lang._('All Interfaces') }}</td>
+                </tr>
+                <tr>
+                    <td>{{ lang._('Config File') }}</td>
+                    <td><code>/usr/local/etc/os-homer/Caddyfile</code></td>
+                </tr>
+                <tr>
+                    <td>{{ lang._('Dashboard Assets') }}</td>
+                    <td><code>/usr/local/www/homer</code></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
 </div>
 
 <ul id="generalTabsHeader" class="nav nav-tabs opnware-editor-tabs" role="tablist">

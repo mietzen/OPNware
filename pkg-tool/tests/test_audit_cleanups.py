@@ -60,3 +60,24 @@ def test_no_stale_os_caddy_docblock_headers():
         if path.suffix in [".php", ".volt"]:
             content = path.read_text()
             assert "OPNware os-caddy —" not in content, f"Found stale docblock in {path}"
+
+
+def test_status_tables_aligned_across_plugins():
+    homer_general = (REPO_ROOT / "pkgs/os-homer/src/opnsense/mvc/app/views/OPNsense/Homer/general.volt").read_text()
+    caddy_general = (REPO_ROOT / "pkgs/os-caddy-advanced/src/opnsense/mvc/app/views/OPNsense/CaddyAdvanced/general.volt").read_text()
+    caddy_modules = (REPO_ROOT / "pkgs/os-caddy-advanced/src/opnsense/mvc/app/views/OPNsense/CaddyAdvanced/modules.volt").read_text()
+    podman_general = (REPO_ROOT / "pkgs/os-podman/src/opnsense/mvc/app/views/OPNsense/Podman/general.volt").read_text()
+
+    for content, table_id in [
+        (homer_general, "tbl_homer_status"),
+        (caddy_general, "tbl_caddy_status"),
+        (caddy_modules, "tbl_caddy_modules_status"),
+        (podman_general, "tbl_podman_status"),
+    ]:
+        assert f'id="{table_id}"' in content
+        assert '<table class="table table-striped table-condensed"' in content
+        assert '<thead>' in content
+        assert '<tr>' in content
+        assert '<th colspan="2"><b>' in content
+        assert '<td style="width: 250px;">' in content
+        assert 'class="content-box" style="margin-bottom: 20px;"' in content
