@@ -226,6 +226,9 @@
                 // Show the managed files without requiring a click on conf.d.
                 $('#editor-tree').one('ready.jstree', function() {
                     $(this).jstree('open_all');
+                    if (!currentFile && data.caddyfile) {
+                        $(this).jstree('select_node', 'Caddyfile');
+                    }
                 });
                 $('#editor-tree').jstree({
                     core: {
@@ -409,17 +412,15 @@
         });
 
         function showError(message) {
-            const $box = $("#editor-result");
-            $box.removeClass("alert-success").addClass("alert-danger");
-            $box.text(message || "{{ lang._('Error') }}");
-            $box.show();
+            $("#editor-status").html(
+                '<span class="text-danger"><i class="fa fa-times"></i> ' +
+                $('<div>').text(message || "{{ lang._('Error') }}").html() +
+                '</span>'
+            );
         }
 
         function showSuccess(message) {
-            const $box = $("#editor-result");
-            $box.removeClass("alert-danger").addClass("alert-success");
-            $box.text(message);
-            $box.show();
+            updateStatus();
         }
 
         function updateStatus() {
@@ -681,8 +682,6 @@
     });
 </script>
 
-<div id="editor-result" class="alert" style="display:none;"></div>
-
 <ul class="nav nav-tabs opnware-editor-tabs" role="tablist">
     <li class="active"><a href="#editor-files-tab" data-toggle="tab">{{ lang._('Files') }}</a></li>
     <li><a href="#editor-environment-tab" data-toggle="tab">{{ lang._('Environment') }}</a></li>
@@ -698,7 +697,7 @@
                 <input id="new-file-name" type="text" class="form-control input-sm" placeholder="site.caddy">
             </div>
             <button id="add-editor" type="button" class="btn btn-primary btn-sm">{{ lang._('Add to conf.d') }}</button>
-            <span class="help-block">{{ lang._('The tree is flat: Caddyfile plus conf.d/*.caddy. Click a file to open it; right-click for rename and delete. The Caddyfile itself cannot be renamed or deleted.') }}</span>
+            <span class="help-block">{{ lang._('The tree contains Caddyfile and conf.d/*.caddy. Click a file to open it, and right-click to rename or delete. The root Caddyfile cannot be renamed or deleted.') }}</span>
         </div>
         <div class="opnware-editor-main">
             <div class="row">
@@ -725,7 +724,7 @@
                     · <span id="status-message">-</span>
                 </span>
             </div>
-            <span class="help-block">{{ lang._('Saving validates the whole Caddy file tree first; invalid configuration is rejected without writing anything.') }}</span>
+            <span class="help-block">{{ lang._('Saving validates the full Caddy configuration before applying changes. Invalid configuration is rejected without modifying files.') }}</span>
         </div>
     </div>
 </div>
@@ -733,7 +732,7 @@
 <div id="editor-environment-tab" class="tab-pane fade">
     <h2>{{ lang._('Environment') }}</h2>
     <p class="help-block">
-        {{ lang._('Environment variables are passed to the Caddy process through the envfile (--envfile). Secret rows are masked by default; use the reveal button to inspect a value. The plugin-managed CADDY_LOG_LEVEL row cannot be edited. The envfile is separate from the file tree above and is never shown there.') }}
+        {{ lang._('Environment variables are passed to the Caddy process through the envfile (--envfile). Secret rows are masked by default, and can be inspected using the reveal button. The plugin-managed CADDY_LOG_LEVEL row cannot be edited. The envfile is separate from the file tree above and is never shown there.') }}
     </p>
     <table class="table table-striped table-condensed" id="env-table">
         <thead>
@@ -755,7 +754,7 @@
         <hr/>
         <button id="env-add-row" type="button" class="btn btn-primary"><b>{{ lang._('Add row') }}</b></button>
         <button id="env-save" type="button" class="btn btn-primary __ml"><b>{{ lang._('Save env') }}</b></button>
-        <div id="env-result" class="alert" style="display:none;"></div>
+        <div id="env-result" class="alert" style="display:none; margin-top: 10px;"></div>
     </div>
 </div>
 </div>

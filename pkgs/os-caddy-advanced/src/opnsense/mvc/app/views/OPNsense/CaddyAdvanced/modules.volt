@@ -270,7 +270,7 @@
 <div class="content-box opnware-editor-pane __mb">
     <h2>{{ lang._('Declared modules') }}</h2>
     <p class="help-block">
-        {{ lang._('Pick a module from the official Caddy module catalog, or paste any Go module path below. The list is saved automatically; Install / Rebuild compiles a caddy binary pinned to the installed version. A failed rebuild never replaces the running binary.') }}
+        {{ lang._('Pick a module from the official Caddy module catalog, or paste any Go module path below. The list is saved automatically. Rebuild compiles a caddy binary pinned to the installed version without replacing the running binary on failure.') }}
     </p>
     <table class="table table-striped table-condensed" id="modules-table">
         <thead>
@@ -298,7 +298,7 @@
     <h2>{{ lang._('Rebuild') }}</h2>
     <button id="rebuild_modules" type="button" class="btn btn-primary"><b>{{ lang._('Rebuild') }}</b></button>
     <span class="help-block">
-        {{ lang._('Compiles a new caddy binary with the declared modules (the list is saved automatically on every change). A failed build leaves the running binary untouched; the build output below shows what went wrong.') }}
+        {{ lang._('Compiles a new caddy binary with the declared modules. The list is saved automatically on every change. A failed build leaves the running binary untouched, and the build output below shows what went wrong.') }}
     </span>
     <pre id="build-log">{{ lang._('No build output yet.') }}</pre>
 </div>

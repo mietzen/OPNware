@@ -56,9 +56,7 @@
                     : '<span class="label label-default">{{ lang._("stopped") }}</span>';
                 $status.find("#status-running").html(running);
                 $status.find("#status-version").text(data.version || "--");
-                $status.find("#status-config").html(data.config_path ? '<code>' + $('<div>').text(data.config_path).html() + '</code>' : '<code>/usr/local/etc/caddy/Caddyfile</code>');
                 $status.find("#status-modules").text((data.modules && data.modules.length > 0) ? data.modules.join(", ") : "{{ lang._('Standard distribution') }}");
-                $status.find("#status-checksum").html(data.checksum ? '<code>' + $('<div>').text(data.checksum.substring(0, 16) + '…').html() + '</code>' : '--');
 
                 let valHtml = '--';
                 if (data.validate === 'OK') {
@@ -91,16 +89,8 @@
                     <td id="status-version">--</td>
                 </tr>
                 <tr>
-                    <td>{{ lang._('Config File') }}</td>
-                    <td id="status-config"><code>/usr/local/etc/caddy/Caddyfile</code></td>
-                </tr>
-                <tr>
                     <td>{{ lang._('Loaded Plugins') }}</td>
                     <td id="status-modules">--</td>
-                </tr>
-                <tr>
-                    <td>{{ lang._('Config Checksum') }}</td>
-                    <td id="status-checksum">--</td>
                 </tr>
                 <tr>
                     <td>{{ lang._('Configuration State') }}</td>
