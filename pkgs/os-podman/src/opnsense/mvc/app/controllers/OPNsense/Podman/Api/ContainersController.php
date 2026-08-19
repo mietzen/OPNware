@@ -89,4 +89,20 @@ class ContainersController extends PodmanApiControllerBase
         }
         return $this->executeAction('containers_inspect', $containerId);
     }
+
+    public function execAction($id = null)
+    {
+        if ($this->request->isPost()) {
+            $containerId = $id ?: $this->request->getPost('id');
+            if (empty($containerId)) {
+                return ["status" => "error", "message" => "Container ID is required"];
+            }
+            $cmd = $this->request->getPost('cmd', 'string', 'id');
+            $shell = $this->request->getPost('shell', 'string', '/bin/sh');
+            $payload = json_encode(['shell' => $shell, 'cmd' => $cmd]);
+            $b64payload = base64_encode($payload);
+            return $this->executeAction('containers_exec', "{$containerId} {$b64payload}");
+        }
+        return ["status" => "failed"];
+    }
 }
