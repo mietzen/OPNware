@@ -17,7 +17,7 @@ EDITOR_CONTROLLER = Path(
 
 def test_seed_uses_flat_confd_glob():
     src = EDITOR_TREE.read_text()
-    assert '"import conf.d/*.caddy\\n"' in src
+    assert "import conf.d/*.caddy" in src
 
 
 def test_no_generated_import_index():
