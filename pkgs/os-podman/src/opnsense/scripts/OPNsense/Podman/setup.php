@@ -173,7 +173,7 @@ if (!empty($verOut) && preg_match('/version\s+([^\s]+)/i', $verOut, $m)) {
     $podmanVersion = $m[1];
 }
 
-// 4. Record status
+// 5. Record status
 $status = [
     'status' => 'ok',
     'version' => $podmanVersion,

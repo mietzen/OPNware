@@ -19,7 +19,6 @@ load_rc_config "${name}"
 : ${podman_service_tls_cert:=""}
 : ${podman_service_tls_key:=""}
 : ${podman_service_tls_ca:=""}
-: ${podman_service_socket_enable:="YES"}
 
 pidfile="/var/run/podman/podman_service.pid"
 tcppidfile="/var/run/podman/podman_service_tcp.pid"
@@ -42,6 +41,22 @@ podman_service_prestart()
     /usr/local/bin/php /usr/local/opnsense/scripts/OPNsense/Podman/setup.php
     mkdir -p /var/run/podman /var/log/podman /var/db/containers
     chmod 0755 /var/run/podman
+}
+
+_stop_pid()
+{
+    _target_pidfile="$1"
+    if [ -f "${_target_pidfile}" ]; then
+        _pid=$(cat "${_target_pidfile}" 2>/dev/null)
+        if [ -n "${_pid}" ] && kill -0 "${_pid}" 2>/dev/null; then
+            kill -TERM "${_pid}" 2>/dev/null
+            sleep 1
+            if kill -0 "${_pid}" 2>/dev/null; then
+                kill -KILL "${_pid}" 2>/dev/null
+            fi
+        fi
+        rm -f "${_target_pidfile}"
+    fi
 }
 
 podman_service_start()
@@ -74,35 +89,13 @@ podman_service_start()
 
 podman_service_stop()
 {
-    # Stop TCP daemon if running
-    if [ -f "${tcppidfile}" ]; then
-        tcppid=$(cat "${tcppidfile}" 2>/dev/null)
-        if [ -n "${tcppid}" ] && kill -0 "${tcppid}" 2>/dev/null; then
-            kill -TERM "${tcppid}" 2>/dev/null
-            sleep 1
-            if kill -0 "${tcppid}" 2>/dev/null; then
-                kill -KILL "${tcppid}" 2>/dev/null
-            fi
-        fi
-        rm -f "${tcppidfile}"
-    fi
-
-    # Stop Primary UNIX socket daemon
-    if [ -f "${pidfile}" ]; then
-        pid=$(cat "${pidfile}" 2>/dev/null)
-        if [ -n "${pid}" ] && kill -0 "${pid}" 2>/dev/null; then
-            echo -n "Stopping ${name}... "
-            echo "$(date '+%Y-%m-%dT%H:%M:%S%z') [info] Stopping Podman system service daemon (pid ${pid})..." >> "${logfile}"
-            kill -TERM "${pid}" 2>/dev/null
-            sleep 1
-            if kill -0 "${pid}" 2>/dev/null; then
-                kill -KILL "${pid}" 2>/dev/null
-            fi
-            echo "$(date '+%Y-%m-%dT%H:%M:%S%z') [info] Podman system service daemon stopped." >> "${logfile}"
-            echo "done."
-        fi
-        rm -f "${pidfile}" /var/run/podman/podman.sock
-    fi
+    echo -n "Stopping ${name}... "
+    echo "$(date '+%Y-%m-%dT%H:%M:%S%z') [info] Stopping Podman system service daemons..." >> "${logfile}"
+    _stop_pid "${tcppidfile}"
+    _stop_pid "${pidfile}"
+    rm -f /var/run/podman/podman.sock
+    echo "$(date '+%Y-%m-%dT%H:%M:%S%z') [info] Podman system service daemon stopped." >> "${logfile}"
+    echo "done."
 }
 
 podman_service_status()
@@ -110,6 +103,13 @@ podman_service_status()
     if [ -f "${pidfile}" ]; then
         pid=$(cat "${pidfile}" 2>/dev/null)
         if [ -n "${pid}" ] && kill -0 "${pid}" 2>/dev/null; then
+            if [ -f "${tcppidfile}" ]; then
+                tcppid=$(cat "${tcppidfile}" 2>/dev/null)
+                if [ -n "${tcppid}" ] && kill -0 "${tcppid}" 2>/dev/null; then
+                    echo "${name} is running as pid ${pid} (UNIX socket) and pid ${tcppid} (TCP)."
+                    return 0
+                fi
+            fi
             echo "${name} is running as pid ${pid}."
             return 0
         fi
