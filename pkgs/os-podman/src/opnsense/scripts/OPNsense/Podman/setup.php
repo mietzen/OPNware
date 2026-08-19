@@ -161,13 +161,19 @@ if ($podmanCfg !== null && !empty((string)$podmanCfg->general->ca)) {
     }
 }
 
+// 4. Docker CLI Compatibility Symlink
+if (!file_exists('/usr/local/bin/docker') && file_exists('/usr/local/bin/podman')) {
+    @symlink('/usr/local/bin/podman', '/usr/local/bin/docker');
+    log_msg("Created /usr/local/bin/docker compatibility symlink -> /usr/local/bin/podman");
+}
+
 $podmanVersion = '5.8.4';
 $verOut = trim(shell_exec('/usr/local/bin/podman --version 2>/dev/null') ?: '');
 if (!empty($verOut) && preg_match('/version\s+([^\s]+)/i', $verOut, $m)) {
     $podmanVersion = $m[1];
 }
 
-// 4. Record status
+// 5. Record status
 $status = [
     'status' => 'ok',
     'version' => $podmanVersion,
