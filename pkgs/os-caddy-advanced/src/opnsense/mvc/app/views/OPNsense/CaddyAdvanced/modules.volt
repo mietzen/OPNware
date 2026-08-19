@@ -39,16 +39,22 @@
 
         function updateStatus() {
             $.getJSON("/api/caddyadvanced/modules/status", function(data) {
-                const $status = $("#modules-status");
+                const $status = $("#tbl_caddy_modules_status");
                 if (!$status.length) {
                     return;
                 }
-                $status.find("#status-modules").text((data.modules || []).join(", ") || "-");
-                $status.find("#status-fingerprint").text(data.fingerprint || "-");
+                $status.find("#status-modules").text((data.modules && data.modules.length > 0) ? data.modules.join(", ") : "{{ lang._('Standard distribution') }}");
+                $status.find("#status-fingerprint").html(data.fingerprint ? '<code>' + $('<div>').text(data.fingerprint).html() + '</code>' : '--');
                 const last = data.last_result || {};
                 if (!busy) {
-                    $status.find("#status-last-ok").text(last.ok === true ? "{{ lang._('OK') }}" : (last.ok === false ? "{{ lang._('FAILED') }}" : "-"));
-                    $status.find("#status-last-ts").text(last.ts ? new Date(last.ts * 1000).toLocaleString() : "-");
+                    let lastBadge = '--';
+                    if (last.ok === true) {
+                        lastBadge = '<span class="label label-success">{{ lang._("OK") }}</span>';
+                    } else if (last.ok === false) {
+                        lastBadge = '<span class="label label-danger">{{ lang._("FAILED") }}</span>';
+                    }
+                    $status.find("#status-last-ok").html(lastBadge);
+                    $status.find("#status-last-ts").text(last.ts ? new Date(last.ts * 1000).toLocaleString() : "--");
                 }
             });
         }
@@ -155,9 +161,9 @@
         function setBusy(state) {
             busy = state;
             $("#rebuild_modules, #add-module, #add-custom-module").prop('disabled', state);
-            const $status = $("#modules-status");
+            const $status = $("#tbl_caddy_modules_status");
             if (state) {
-                $status.find("#status-last-ok").text("{{ lang._('Running…') }}");
+                $status.find("#status-last-ok").html('<span class="label label-warning">{{ lang._("Running…") }}</span>');
                 $status.find("#status-last-ts").text(new Date().toLocaleTimeString());
                 $("#build-log").text('');
             }
@@ -199,17 +205,16 @@
             setBusy(true);
             appendLog("{{ lang._('Building caddy binary with the declared modules — this can take a few minutes…') }}");
             $.post("/api/caddyadvanced/modules/rebuild", function(data) {
+                const $status = $("#tbl_caddy_modules_status");
                 if (data.ok === true) {
-                    const $status = $("#modules-status");
-                    $status.find("#status-last-ok").text("{{ lang._('OK') }}");
+                    $status.find("#status-last-ok").html('<span class="label label-success">{{ lang._("OK") }}</span>');
                     $status.find("#status-last-ts").text(new Date().toLocaleTimeString());
                     appendLog(data.message || "{{ lang._('Rebuild complete.') }}");
                     if (data.output) {
                         appendLog(data.output);
                     }
                 } else {
-                    const $status = $("#modules-status");
-                    $status.find("#status-last-ok").text("{{ lang._('FAILED') }}");
+                    $status.find("#status-last-ok").html('<span class="label label-danger">{{ lang._("FAILED") }}</span>');
                     $status.find("#status-last-ts").text(new Date().toLocaleTimeString());
                     appendLog(data.message || JSON.stringify(data));
                     if (data.output) {
@@ -231,16 +236,35 @@
     });
 </script>
 
-<div id="modules-status" class="content-box opnware-editor-pane __mb">
-    <h2>{{ lang._('Module status') }}</h2>
-    <table class="table table-striped table-condensed">
-        <tbody>
-            <tr><td class="text-muted" style="width: 220px;">{{ lang._('Installed modules') }}</td><td id="status-modules"></td></tr>
-            <tr><td class="text-muted">{{ lang._('Build fingerprint') }}</td><td id="status-fingerprint"></td></tr>
-            <tr><td class="text-muted">{{ lang._('Last result') }}</td><td id="status-last-ok"></td></tr>
-            <tr><td class="text-muted">{{ lang._('Last run') }}</td><td id="status-last-ts"></td></tr>
-        </tbody>
-    </table>
+<!-- Live Caddy Module Build Status Card -->
+<div class="content-box" style="margin-bottom: 20px;">
+    <div class="table-responsive">
+        <table class="table table-striped table-condensed" id="tbl_caddy_modules_status">
+            <thead>
+                <tr>
+                    <th colspan="2"><b>{{ lang._('Caddy Module Build Status') }}</b></th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td style="width: 250px;">{{ lang._('Installed Modules') }}</td>
+                    <td id="status-modules">--</td>
+                </tr>
+                <tr>
+                    <td>{{ lang._('Build Fingerprint') }}</td>
+                    <td id="status-fingerprint">--</td>
+                </tr>
+                <tr>
+                    <td>{{ lang._('Last Build Result') }}</td>
+                    <td id="status-last-ok"><i class="fa fa-spinner fa-pulse"></i></td>
+                </tr>
+                <tr>
+                    <td>{{ lang._('Last Build Timestamp') }}</td>
+                    <td id="status-last-ts">--</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
 </div>
 
 <div class="content-box opnware-editor-pane __mb">

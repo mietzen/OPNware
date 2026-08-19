@@ -2,12 +2,9 @@
  # OPNware os-caddy-advanced — General Settings
  #}
 <style>
-    .content-box.opnware-editor-pane { padding: 15px; }
-    .content-box.opnware-editor-pane h2 { margin-top: 0; }
     .opnware-editor-tabs { margin-bottom: 0; }
     .opnware-tab-pane { padding: 0 15px 15px; }
 </style>
-
 
 <script>
     $(document).ready(function() {
@@ -36,6 +33,7 @@
                         formId,
                         function () {
                             dfObj.resolve();
+                            updateStatus();
                         },
                         true,
                         function () {
@@ -49,34 +47,68 @@
 
         function updateStatus() {
             $.getJSON("/api/caddyadvanced/status", function (data) {
-                const $status = $("#caddyadvanced-status");
+                const $status = $("#tbl_caddy_status");
                 if (!$status.length) {
                     return;
                 }
-                const running = data.running ? "{{ lang._('running') }}" : "{{ lang._('stopped') }}";
-                $status.find("#status-running").html("<strong>" + running + "</strong>");
-                $status.find("#status-version").text(data.version || "-");
-                $status.find("#status-config").text(data.config_path || "-");
-                $status.find("#status-modules").text((data.modules || []).join(", ") || "-");
-                $status.find("#status-checksum").text(data.checksum || "-");
-                $status.find("#status-validate").text(data.validate || "-");
+                const running = data.running
+                    ? '<span class="label label-success">{{ lang._("running") }}</span>'
+                    : '<span class="label label-default">{{ lang._("stopped") }}</span>';
+                $status.find("#status-running").html(running);
+                $status.find("#status-version").text(data.version || "--");
+                $status.find("#status-config").html(data.config_path ? '<code>' + $('<div>').text(data.config_path).html() + '</code>' : '<code>/usr/local/etc/caddy/Caddyfile</code>');
+                $status.find("#status-modules").text((data.modules && data.modules.length > 0) ? data.modules.join(", ") : "{{ lang._('Standard distribution') }}");
+                $status.find("#status-checksum").html(data.checksum ? '<code>' + $('<div>').text(data.checksum.substring(0, 16) + '…').html() + '</code>' : '--');
+
+                let valHtml = '--';
+                if (data.validate === 'OK') {
+                    valHtml = '<span class="label label-success">{{ lang._("OK") }}</span>';
+                } else if (data.validate) {
+                    valHtml = '<span class="label label-danger">' + $('<div>').text(data.validate).html() + '</span>';
+                }
+                $status.find("#status-validate").html(valHtml);
             });
         }
     });
 </script>
 
-<div id="caddyadvanced-status" class="content-box opnware-editor-pane __mb">
-    <h2>{{ lang._('Status') }}</h2>
-    <table class="table table-striped table-condensed">
-        <tbody>
-            <tr><td class="text-muted" style="width: 220px;">{{ lang._('Service') }}</td><td id="status-running"></td></tr>
-            <tr><td class="text-muted">{{ lang._('Version') }}</td><td id="status-version"></td></tr>
-            <tr><td class="text-muted">{{ lang._('Config path') }}</td><td id="status-config"></td></tr>
-            <tr><td class="text-muted">{{ lang._('Modules') }}</td><td id="status-modules"></td></tr>
-            <tr><td class="text-muted">{{ lang._('Config checksum') }}</td><td id="status-checksum"></td></tr>
-            <tr><td class="text-muted">{{ lang._('Config validation') }}</td><td id="status-validate"></td></tr>
-        </tbody>
-    </table>
+<!-- Live Caddy Status Card -->
+<div class="content-box" style="margin-bottom: 20px;">
+    <div class="table-responsive">
+        <table class="table table-striped table-condensed" id="tbl_caddy_status">
+            <thead>
+                <tr>
+                    <th colspan="2"><b>{{ lang._('Caddy Service Status') }}</b></th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td style="width: 250px;">{{ lang._('Service Status') }}</td>
+                    <td id="status-running"><i class="fa fa-spinner fa-pulse"></i></td>
+                </tr>
+                <tr>
+                    <td>{{ lang._('Caddy Version') }}</td>
+                    <td id="status-version">--</td>
+                </tr>
+                <tr>
+                    <td>{{ lang._('Config File') }}</td>
+                    <td id="status-config"><code>/usr/local/etc/caddy/Caddyfile</code></td>
+                </tr>
+                <tr>
+                    <td>{{ lang._('Loaded Plugins') }}</td>
+                    <td id="status-modules">--</td>
+                </tr>
+                <tr>
+                    <td>{{ lang._('Config Checksum') }}</td>
+                    <td id="status-checksum">--</td>
+                </tr>
+                <tr>
+                    <td>{{ lang._('Configuration State') }}</td>
+                    <td id="status-validate">--</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
 </div>
 
 <ul id="generalTabsHeader" class="nav nav-tabs opnware-editor-tabs" role="tablist">
