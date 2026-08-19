@@ -256,7 +256,7 @@
                 </tr>
                 <tr>
                     <td>{{ lang._('Last Build Result') }}</td>
-                    <td id="status-last-ok">--</td>
+                    <td id="status-last-ok"><i class="fa fa-spinner fa-pulse"></i></td>
                 </tr>
                 <tr>
                     <td>{{ lang._('Last Build Timestamp') }}</td>

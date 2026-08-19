@@ -62,7 +62,7 @@
 
                 let valHtml = '--';
                 if (data.validate === 'OK') {
-                    valHtml = '<span class="label label-success">{{ lang._("Valid") }}</span>';
+                    valHtml = '<span class="label label-success">{{ lang._("OK") }}</span>';
                 } else if (data.validate) {
                     valHtml = '<span class="label label-danger">' + $('<div>').text(data.validate).html() + '</span>';
                 }

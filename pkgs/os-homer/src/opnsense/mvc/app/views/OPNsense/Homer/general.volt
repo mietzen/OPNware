@@ -105,10 +105,12 @@
             $("#effective-url").attr("href", url).text(url);
             $("#status-port").text(port);
             $("#status-tls").html(tls ? '<span class="label label-success">{{ lang._("Enabled (HTTPS)") }}</span>' : '<span class="label label-default">{{ lang._("Disabled (HTTP)") }}</span>');
-            let intfText = "{{ lang._('All Interfaces') }}";
-            if (interfaceValue === "localhost") intfText = "{{ lang._('Localhost (127.0.0.1)') }}";
-            else if (interfaceValue === "lan") intfText = "{{ lang._('LAN') }}";
-            else if (interfaceValue === "wan") intfText = "{{ lang._('WAN') }}";
+            const intfMap = {
+                "localhost": "{{ lang._('Localhost (127.0.0.1)') }}",
+                "lan": "{{ lang._('LAN') }}",
+                "wan": "{{ lang._('WAN') }}"
+            };
+            const intfText = intfMap[interfaceValue] || "{{ lang._('All Interfaces') }}";
             $("#status-interface").text(intfText);
         }
     });
@@ -134,15 +136,15 @@
                 </tr>
                 <tr>
                     <td>{{ lang._('Listen Port') }}</td>
-                    <td id="status-port">9443</td>
+                    <td id="status-port">--</td>
                 </tr>
                 <tr>
                     <td>{{ lang._('TLS Encryption') }}</td>
-                    <td id="status-tls"><span class="label label-success">{{ lang._('Enabled (HTTPS)') }}</span></td>
+                    <td id="status-tls">--</td>
                 </tr>
                 <tr>
                     <td>{{ lang._('Bind Interface') }}</td>
-                    <td id="status-interface">{{ lang._('All Interfaces') }}</td>
+                    <td id="status-interface">--</td>
                 </tr>
                 <tr>
                     <td>{{ lang._('Config File') }}</td>
