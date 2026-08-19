@@ -3,130 +3,182 @@
 # OPNware
 
 This is my personal OPNsense `pkg` repository.\
-It contains packages that I use or have used:
+It provides custom OPNsense plugins and FreeBSD packages that I use on my firewalls:
 
-- [caddy](https://caddyserver.com/) (cross-compiled)
-- [monaco-editor](pkgs/monaco-editor) (vendored Monaco + Caddyfile Monarch grammar)
-- [go126](https://go.dev/) (redistributed)
-- [htop](https://htop.dev/) (redistributed)
-- [xcaddy](https://github.com/caddyserver/xcaddy) (cross-compiled)
-- [yq](https://mikefarah.gitbook.io/yq) (cross-compiled)
-- [zsh](https://git.code.sf.net/p/zsh/code) (redistributed)
+- **[os-podman](pkgs/os-podman)** — Native OCI container engine on FreeBSD Jails with ZFS storage, Linux emulation, WebUI Dashboard, container metrics, and remote Docker/Podman context support
+- **[os-caddy-advanced](pkgs/os-caddy-advanced)** — WebUI-managed Caddy web server: process settings, a user-owned Caddyfile editor (validated save cycle, Monaco editor), envfile secrets, and xcaddy module builder
+- **[os-homer](pkgs/os-homer)** — Homer dashboard served via its own isolated Caddy instance, automatic TLS, and Monaco YAML editor
+- **[monaco-editor](pkgs/monaco-editor)** — Shared Monaco editor assets with custom Caddyfile Monarch syntax grammar
+- **[caddy](pkgs/caddy)**, **[xcaddy](pkgs/xcaddy)**, **[yq](pkgs/yq)**, **[zsh](pkgs/zsh)**, **[htop](pkgs/htop)**, **[go126](pkgs/go126)**, and container dependencies (**[podman](pkgs/podman)**, **[ocijail](pkgs/ocijail)**, **[conmon](pkgs/conmon)**, **[containernetworking-plugins](pkgs/containernetworking-plugins)**, **[containers-common](pkgs/containers-common)**, **[gpgme](pkgs/gpgme)**)
 
-Most of the packages are cross-compiled Go binaries or redistributed FreeBSD pkgs.
-Some are built from source in a FreeBSD VM.
+---
 
-All packages install on FreeBSD default paths: binaries in `/usr/local/bin`,
-`LICENSE`/`SOURCE` under `/usr/local/share/doc/<name>/`.
+## 🚀 OPNsense Plugins Showcase
 
-The repo also builds two OPNsense MVC plugins via pkg-tool's plugin-package
-support:
+### 1. os-podman (Container Engine & Dashboard)
 
-- [os-caddy-advanced](pkgs/os-caddy-advanced) — WebUI-managed Caddy: process settings, a
-  user-owned Caddyfile editor (validated save cycle, Monaco), an envfile
-  grid with masked secrets, xcaddy-pinned module management and
-  docker-proxy options
-- [os-homer](pkgs/os-homer) — Homer served via its own isolated caddy
-  instance, settings-generated config, Monaco YAML editor
+Run Docker and OCI containers natively on FreeBSD using Podman and `ocijail`:
 
-Both plugins depend on the shared [monaco-editor](pkgs/monaco-editor) package for
-the vendored Monaco editor assets.
+- **Live Dashboard**: Container lifecycle management (Start, Stop, Restart, Force Kill, Container CLI, Logs, Inspect, Delete), real-time CPU & Memory resource usage indicators, human-readable relative creation timestamps, and safe resource locks.
+- **Storage & Emulation**: Automated ZFS dataset provisioning (`zroot/containers`) and 64-bit Linux kernel emulation (`linux64`, `linprocfs`, `linsysfs`, `fallback_brand=3`).
+- **Firewall Integration**: Automatic CNI port forwarding anchor registration (`cni-rdr/*`), outbound container NAT (DNS/Internet access), and interface filtering.
+- **Remote Contexts**: Connect directly from your local terminal using `docker context` or `podman --remote` over SSH or TCP/TLS.
 
-## Why
+![os-podman Dashboard](docs/images/os-podman-dashboard.png)
 
-Instead of using a full-blown [FreeBSD poudriere build system](https://github.com/freebsd/poudriere).
+![os-podman Settings & Remote Connection Guide](docs/images/os-podman-general.png)
 
-I use: 
-- GitHub Actions to build and update `pkgs`
-- Python scripts to create FreeBSD `pkgs` and a repo layout
-- GitHub Pages to mimic a FreeBSD `pkg` repository
+---
 
-This comes at 0 costs and I don't need to maintain a FreeBSD server.
+### 2. os-caddy-advanced (Caddy Web Server)
 
-## ⚠️ Package Requests? -> Fork It!
+Enterprise-grade reverse proxy and web server with complete configuration flexibility:
 
-**I will NOT accept or respond to package requests.**
+- **Split Caddyfile Editor**: Full Monaco code editor with Caddyfile syntax highlighting, toolbar controls (Word Wrap, Minimap, Font Size adjustment), keyboard shortcuts (`Ctrl+S` / `⌘S`), and inline syntax validation before save.
+- **File Management**: Manage root `Caddyfile` and modular `conf.d/*.caddy` site configs in a hierarchical tree.
+- **Environment & Secrets**: Dedicated environment variable management with masked secrets passed securely via `--envfile`.
+- **Custom Modules**: Build custom Caddy binaries on the firewall using `xcaddy` with pinned upstream plugins.
 
-As mentioned above, this is my **personal** repo, at the moment I don't have much time and it comes "as is". If something brakes I will fix it when I get to it, therefore Issues and Discussions are deactived.
+![os-caddy-advanced Editor](docs/images/os-caddy-advanced.png)
 
-You are welcome to [**fork**](https://github.com/mietzen/OPNware/fork) it and build your own `pkg` repo with additional `pkgs`.
+---
 
-The included GitHub workflows are generic and should work once you configure the following:
+### 3. os-homer (Dashboard)
 
-- Repository secret `APP_ID` — the GitHub App Client ID
-- Repository secret `APP_PRIVATE_KEY` — the GitHub App private key
+Clean, fast personal dashboard for your network services:
 
-For the `actions/create-github-app-token@v3` action. See the [usage guide](https://github.com/actions/create-github-app-token?tab=readme-ov-file#usage) on how to create a GitHub App.
+- **Isolated Instance**: Served via its own dedicated, unprivileged Caddy instance (`/usr/local/www/homer`) completely independent of the main web server.
+- **Monaco YAML Editor**: Interactive Monaco editor for `/usr/local/www/homer/config.yml` with YAML validation, toolbar toggles, and live theme synchronization.
+- **Automatic TLS**: Built-in internal HTTPS certificate minting and configurable bind interfaces.
 
-The App will need these permissions:
+![os-homer Config Editor](docs/images/os-homer.png)
 
-- **Contents:** Read/Write
-- **Pull requests:** Read/Write
+---
 
-### How to add `pkgs`:
+## 📦 Included Packages
 
-1. Copy an existing package folder (e.g. [`pkgs/yq`](https://github.com/mietzen/OPNware/tree/main/pkgs/yq)) and rename it.
-2. Fill in `config.yml` — the package spec glossary lives in [`CONTEXT.md`](CONTEXT.md). Plain packages use `pkg_manifest` (+ `redistribute` for re-shipped pkgs); OPNsense plugins add a `plugin:` section; plugins with bundled upstream content (like os-homer's dashboard) add a `content:` section so the daily update flow can track it.
-3. Adjust `build.sh` so it produces your payload (staged on FreeBSD default paths), then finishes with `pkg-tool pack`.
-4. Build locally (next section). The rest — build matrix, update checks, repo assembly — is driven by pkg-tool and GitHub Actions automatically.
+| Package | Type | Description |
+|---|---|---|
+| **os-podman** | Plugin | Native Podman container management & WebUI dashboard |
+| **os-caddy-advanced** | Plugin | Advanced Caddy web server & Monaco Caddyfile editor |
+| **os-homer** | Plugin | Homer dashboard served via isolated Caddy instance |
+| **monaco-editor** | Plugin Asset | Shared Monaco editor assets with Caddyfile Monarch grammar |
+| **caddy** | Cross-compiled | Fast, multi-protocol HTTP/1-2-3 web server |
+| **podman** | Redistributed | Podman 5.8 container engine for FreeBSD jails |
+| **ocijail** | Redistributed | FreeBSD OCI runtime wrapper for jail containerization |
+| **conmon** | Redistributed | OCI container monitor |
+| **containernetworking-plugins** | Redistributed | Standard CNI plugins (bridge, firewall, host-local, portmap) |
+| **containers-common** | Redistributed | Container configuration and registries defaults |
+| **xcaddy** | Cross-compiled | Custom Caddy binary builder |
+| **yq** | Cross-compiled | Portable command-line YAML/JSON/XML processor |
+| **zsh** | Redistributed | Z shell |
+| **htop** | Redistributed | Interactive process viewer |
+| **go126** | Redistributed | Go 1.26 toolchain |
+| **gpgme** | Redistributed | GnuPG Made Easy library |
 
-For examples see the [build scripts (`build.sh`)](https://github.com/mietzen/OPNware/blob/main/pkgs/yq/build.sh) and [configs (`config.yml`)](https://github.com/mietzen/OPNware/blob/main/pkgs/yq/config.yml) in the [`pkg` folders](https://github.com/mietzen/OPNware/tree/main/pkgs) and the [main `config.yml`](https://github.com/mietzen/OPNware/blob/main/config.yml).
+---
 
-### Local build & repo preview
+## ⚡ Remote Container Management
 
-Build a package from a plain checkout — no CI env vars needed:
+Manage containers running on your OPNsense box directly from your workstation:
 
-```sh
-pip install ./pkg-tool
-cd pkgs/yq && ./build.sh amd64 15
+### Option A: Docker over SSH (Native Socket Tunnel)
+
+```bash
+# Create and use a remote Docker SSH context
+docker context create opnsense-ssh --docker "host=ssh://root@<opnsense-ip>"
+docker context use opnsense-ssh
+
+# Run standard Docker and Compose commands
+docker ps
+docker compose -f docker-compose.yml up -d
 ```
 
-Build outputs land in `dist/`. Assemble a local repo preview from the repo root and serve it:
+### Option B: Podman Remote over SSH
 
-```sh
-pkg-tool assemble-repo dist config.yml --owner <you> --repo <repo> --output-dir pages
-python3 -m http.server 8000 -d pages
+```bash
+# Add remote system connection in Podman CLI
+podman system connection add opnsense ssh://root@<opnsense-ip>/var/run/podman/podman.sock
+
+# Manage remote containers
+podman -c opnsense ps
 ```
 
-The generated `pages/opnware.conf` points at the published GitHub Pages URL — for a local test, point it at your server instead:
+### Option C: Docker REST API over TCP / TLS
 
+When the TCP socket is enabled in **Services: Podman: Settings**:
+
+```bash
+export DOCKER_HOST="tcp://<opnsense-ip>:2376"
+docker ps
 ```
-opnware: {
-  url: "http://<your-ip>:8000/${ABI}/latest",
-  priority: 5,
-  enabled: yes
-}
-```
 
-Then on an OPNsense/FreeBSD box: `fetch -o /usr/local/etc/pkg/repos/opnware.conf http://<your-ip>:8000/opnware.conf`, `pkg update`, and `pkg install <pkg>`.
+---
 
-## Installation
+## 📥 Installation
 
 Open an `ssh` session on your OPNsense/FreeBSD box and run:
 
 ```sh
 fetch -o /usr/local/etc/pkg/repos/opnware.conf https://mietzen.github.io/OPNware/opnware.conf
 pkg update
-````
-
-You can now install packages from this repo.\
-For example:
-
-```sh
-pkg install zsh
 ```
 
-## Browse
+You can now install any package or plugin directly from the WebUI (**System: Firmware: Plugins**) or command line:
 
-You can browse and download packages directly at:
+```sh
+pkg install os-podman os-caddy-advanced os-homer
+```
 
-[https://mietzen.github.io/OPNware/](https://mietzen.github.io/OPNware/)
+Browse all available packages and versions online at: [https://mietzen.github.io/OPNware/](https://mietzen.github.io/OPNware/)
 
+---
 
-## Package Licenses
+## 🛠️ Why & Architecture
 
-- Redistributed and source-built packages retain their **original upstream licenses** — see each project's repository or documentation.
-- The **plugins** (os-caddy-advanced, os-homer) are original code of this repository, licensed **MIT** (their LICENSE ships inside the package). os-homer additionally bundles the Homer dashboard, which keeps its upstream **Apache-2.0** license (its LICENSE ships at `/usr/local/share/doc/homer/LICENSE`).
-- The **monaco-editor** package vendors monaco-editor and the hand-written
-  Caddyfile Monarch grammar — all **MIT** components (provenance `package.json`
-  files ship alongside the vendored tree).
+Instead of maintaining a heavy, expensive [FreeBSD poudriere build server](https://github.com/freebsd/poudriere), this repo uses:
+
+- **GitHub Actions** matrix builds for cross-compiling Go binaries and bundling FreeBSD packages.
+- **`pkg-tool`** — A custom Python toolchain (`pkg-tool/`) that builds FreeBSD packages (`.pkg`), resolves dependency graphs, validates manifests, and generates signed `packagesite` repository catalogues.
+- **GitHub Pages** to host and publish the package repository at 0 cost.
+
+---
+
+## ⚠️ Package Requests? -> Fork It!
+
+**I will NOT accept or respond to package requests.**
+
+This is my **personal** repository provided "as is". If something breaks I will fix it when I get to it, therefore Issues and Discussions are deactivated.
+
+You are welcome to [**fork**](https://github.com/mietzen/OPNware/fork) it and build your own repository. The included GitHub workflows are generic and require only two repository secrets:
+
+- `APP_ID` — GitHub App Client ID
+- `APP_PRIVATE_KEY` — GitHub App private key
+
+See the [GitHub App usage guide](https://github.com/actions/create-github-app-token?tab=readme-ov-file#usage) (permissions needed: `Contents: Read/Write`, `Pull requests: Read/Write`).
+
+---
+
+## 💻 Local Build & Repo Preview
+
+Build packages locally without CI environment variables:
+
+```sh
+pip install -e "./pkg-tool[dev]"
+cd pkgs/os-podman && ./build.sh amd64 15
+```
+
+Assemble a preview repository and serve it locally:
+
+```sh
+pkg-tool assemble-repo dist config.yml --owner <you> --repo <repo> --output-dir pages
+python3 -m http.server 8080 -d pages
+```
+
+---
+
+## 📄 License
+
+- **Plugins** (`os-podman`, `os-caddy-advanced`, `os-homer`) are original work of this repository, licensed under the **MIT License**.
+- **Vendored assets** (`monaco-editor`) and bundled components retain their respective upstream licenses (**MIT** / **Apache-2.0**).
+- **Redistributed packages** retain their original upstream licenses.

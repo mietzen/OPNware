@@ -34,7 +34,15 @@ class GeneralController extends IndexController
 {
     public function indexAction()
     {
+        $config = \OPNsense\Core\Config::getInstance()->object();
+        $lanIp = (string)($config->interfaces->lan->ipaddr ?? '127.0.0.1');
+        $sshEnabled = isset($config->system->ssh->enabled);
+        $requestHost = isset($_SERVER['HTTP_HOST']) ? preg_replace('/:\d+$/', '', $_SERVER['HTTP_HOST']) : $lanIp;
+
         $this->view->generalForm = $this->getForm("general");
+        $this->view->lanIp = $lanIp;
+        $this->view->sshEnabled = $sshEnabled;
+        $this->view->requestHost = $requestHost;
         $this->view->pick('OPNsense/Podman/general');
     }
 }

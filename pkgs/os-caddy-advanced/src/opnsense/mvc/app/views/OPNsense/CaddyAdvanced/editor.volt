@@ -127,6 +127,23 @@
         // 'opnware-json' languages are registered before the editor is
         // created with language 'caddyfile'. No TextMate runtime, no wasm.
 
+        let wordWrapState = window.localStorage.getItem('opnware-editor-wrap') || 'on';
+        let minimapState = (window.localStorage.getItem('opnware-editor-minimap') === 'true');
+        let fontSizeState = parseInt(window.localStorage.getItem('opnware-editor-fontsize') || '13', 10);
+
+        function updateToolbarUI() {
+            if (wordWrapState === 'on') {
+                $('#btn-toggle-wrap').addClass('active');
+            } else {
+                $('#btn-toggle-wrap').removeClass('active');
+            }
+            if (minimapState) {
+                $('#btn-toggle-minimap').addClass('active');
+            } else {
+                $('#btn-toggle-minimap').removeClass('active');
+            }
+        }
+
         require(['vs/editor/editor.main', 'caddyfile'], function(monaco) {
             window.opnwareMonaco = monaco;
 
@@ -135,15 +152,16 @@
                 language: 'caddyfile',
                 theme: preferredEditorTheme(),
                 automaticLayout: true,
-                minimap: { enabled: false },
-                fontSize: 13,
+                minimap: { enabled: minimapState },
+                fontSize: fontSizeState,
                 tabSize: 2,
-                wordWrap: 'on',
+                wordWrap: wordWrapState,
                 scrollBeyondLastLine: false,
                 lineNumbersMinChars: 3
             });
 
             syncEditorTheme();
+            updateToolbarUI();
 
             // Keep the hidden textarea (the save transport) in sync with the
             // Monaco model so the existing save flow works unchanged.
@@ -154,6 +172,44 @@
             editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, function() {
                 $("#save-editor").click();
             });
+        });
+
+        $('#btn-toggle-wrap').click(function() {
+            wordWrapState = (wordWrapState === 'on') ? 'off' : 'on';
+            window.localStorage.setItem('opnware-editor-wrap', wordWrapState);
+            if (editor) {
+                editor.updateOptions({ wordWrap: wordWrapState });
+            }
+            updateToolbarUI();
+        });
+
+        $('#btn-toggle-minimap').click(function() {
+            minimapState = !minimapState;
+            window.localStorage.setItem('opnware-editor-minimap', minimapState ? 'true' : 'false');
+            if (editor) {
+                editor.updateOptions({ minimap: { enabled: minimapState } });
+            }
+            updateToolbarUI();
+        });
+
+        $('#btn-font-dec').click(function() {
+            if (fontSizeState > 9) {
+                fontSizeState--;
+                window.localStorage.setItem('opnware-editor-fontsize', fontSizeState);
+                if (editor) {
+                    editor.updateOptions({ fontSize: fontSizeState });
+                }
+            }
+        });
+
+        $('#btn-font-inc').click(function() {
+            if (fontSizeState < 24) {
+                fontSizeState++;
+                window.localStorage.setItem('opnware-editor-fontsize', fontSizeState);
+                if (editor) {
+                    editor.updateOptions({ fontSize: fontSizeState });
+                }
+            }
         });
 
         function preferredEditorTheme() {
@@ -706,10 +762,23 @@
             <span class="help-block">{{ lang._('The tree contains Caddyfile and conf.d/*.caddy. Click a file to open it, and right-click to rename or delete. The root Caddyfile cannot be renamed or deleted.') }}</span>
         </div>
         <div class="opnware-editor-main">
-            <div class="row">
-                <div class="col-md-8"><h2 id="editor-name">{{ lang._('Caddyfile') }}</h2></div>
-                <div class="col-md-4 text-right __mt">
-                    <label class="text-muted" for="editor-theme">{{ lang._('Theme') }}</label>
+            <div class="row" style="margin-bottom: 10px;">
+                <div class="col-md-7"><h2 id="editor-name" style="margin-top: 0;">{{ lang._('Caddyfile') }}</h2></div>
+                <div class="col-md-5 text-right" style="display: flex; align-items: center; justify-content: flex-end; gap: 8px;">
+                    <div class="btn-group btn-group-xs" role="group" style="margin-right: 5px;">
+                        <button type="button" class="btn btn-default" id="btn-toggle-wrap" title="{{ lang._('Toggle Word Wrap') }}">
+                            <i class="fa fa-align-left"></i>
+                        </button>
+                        <button type="button" class="btn btn-default" id="btn-toggle-minimap" title="{{ lang._('Toggle Minimap') }}">
+                            <i class="fa fa-map-o"></i>
+                        </button>
+                        <button type="button" class="btn btn-default" id="btn-font-dec" title="{{ lang._('Decrease Font Size') }}">
+                            <i class="fa fa-minus"></i>
+                        </button>
+                        <button type="button" class="btn btn-default" id="btn-font-inc" title="{{ lang._('Increase Font Size') }}">
+                            <i class="fa fa-plus"></i>
+                        </button>
+                    </div>
                     <select id="editor-theme" class="selectpicker" data-width="110px">
                         <option value="vs">{{ lang._('Light') }}</option>
                         <option value="vs-dark">{{ lang._('Dark') }}</option>
