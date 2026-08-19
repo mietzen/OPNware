@@ -154,9 +154,16 @@ if ($podmanCfg !== null && !empty((string)$podmanCfg->general->ca)) {
     }
 }
 
+$podmanVersion = '5.8.4';
+$verOut = trim(shell_exec('/usr/local/bin/podman --version 2>/dev/null') ?: '');
+if (!empty($verOut) && preg_match('/version\s+([^\s]+)/i', $verOut, $m)) {
+    $podmanVersion = $m[1];
+}
+
 // 4. Record status
 $status = [
     'status' => 'ok',
+    'version' => $podmanVersion,
     'zfs' => $hasZfs,
     'driver' => $storageDriver,
     'linux_emulation' => $enableLinux,

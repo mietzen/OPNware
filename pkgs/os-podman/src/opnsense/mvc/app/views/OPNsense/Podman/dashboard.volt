@@ -391,28 +391,18 @@
         });
 
         // Lifecycle Actions
-        $(document).on('click', '.act-start', function () {
-            var cid = $(this).data('id');
+        $(document).on('click', '.act-start, .act-stop, .act-restart, .act-kill', function () {
             if ($(this).is(':disabled')) return;
-            ajaxCall('/api/podman/containers/start/' + cid, {}, function () { loadContainers(); loadSystemDf(); });
-        });
+            var cid = $(this).data('id');
+            var action = 'start';
+            if ($(this).hasClass('act-stop')) action = 'stop';
+            else if ($(this).hasClass('act-restart')) action = 'restart';
+            else if ($(this).hasClass('act-kill')) action = 'kill';
 
-        $(document).on('click', '.act-stop', function () {
-            var cid = $(this).data('id');
-            if ($(this).is(':disabled')) return;
-            ajaxCall('/api/podman/containers/stop/' + cid, {}, function () { loadContainers(); loadSystemDf(); });
-        });
-
-        $(document).on('click', '.act-restart', function () {
-            var cid = $(this).data('id');
-            if ($(this).is(':disabled')) return;
-            ajaxCall('/api/podman/containers/restart/' + cid, {}, function () { loadContainers(); loadSystemDf(); });
-        });
-
-        $(document).on('click', '.act-kill', function () {
-            var cid = $(this).data('id');
-            if ($(this).is(':disabled')) return;
-            ajaxCall('/api/podman/containers/kill/' + cid, {}, function () { loadContainers(); loadSystemDf(); });
+            ajaxCall('/api/podman/containers/' + action + '/' + cid, {}, function () {
+                loadContainers();
+                loadSystemDf();
+            });
         });
 
         // Logs, Inspect & CLI

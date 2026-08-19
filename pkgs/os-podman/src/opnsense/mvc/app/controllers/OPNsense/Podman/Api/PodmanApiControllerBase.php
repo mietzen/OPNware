@@ -37,7 +37,8 @@ abstract class PodmanApiControllerBase extends ApiControllerBase
     {
         $backend = new Backend();
         if ($param !== null) {
-            $response = $backend->configdpRun("podman {$cmd}", [$param]);
+            $params = is_array($param) ? $param : [$param];
+            $response = $backend->configdpRun("podman {$cmd}", $params);
         } else {
             $response = $backend->configdRun("podman {$cmd}");
         }

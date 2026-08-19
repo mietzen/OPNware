@@ -101,9 +101,8 @@ def main():
     elif action == "containers.inspect" and param:
         run_podman(["inspect", param, "--format", "json"])
     elif action == "containers.exec" and param:
-        parts = param.split(" ", 1)
-        container_id = parts[0]
-        cmd_arg = parts[1] if len(parts) > 1 else (sys.argv[3] if len(sys.argv) >= 4 else "")
+        container_id = param
+        cmd_arg = sys.argv[3] if len(sys.argv) >= 4 else ""
         shell_bin = "/bin/sh"
         exec_cmd = "id"
         if cmd_arg:

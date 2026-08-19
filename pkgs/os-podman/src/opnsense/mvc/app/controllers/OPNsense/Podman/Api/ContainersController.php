@@ -101,7 +101,7 @@ class ContainersController extends PodmanApiControllerBase
             $shell = $this->request->getPost('shell', 'string', '/bin/sh');
             $payload = json_encode(['shell' => $shell, 'cmd' => $cmd]);
             $b64payload = base64_encode($payload);
-            return $this->executeAction('containers_exec', "{$containerId} {$b64payload}");
+            return $this->executeAction('containers_exec', [$containerId, $b64payload]);
         }
         return ["status" => "failed"];
     }

@@ -55,15 +55,11 @@ class SystemController extends PodmanApiControllerBase
         $isRunning = (stripos($statusRaw, 'is running') !== false);
 
         $setupData = [];
-        if (file_exists('/var/db/os-podman/setup_status.json')) {
-            $setupData = json_decode(@file_get_contents('/var/db/os-podman/setup_status.json'), true) ?: [];
+        if (file_exists('/var/db/podman/setup_status.json')) {
+            $setupData = json_decode(@file_get_contents('/var/db/podman/setup_status.json'), true) ?: [];
         }
 
-        $version = '5.8.4';
-        $verOut = trim(shell_exec('/usr/local/bin/podman --version 2>/dev/null') ?: '');
-        if (!empty($verOut) && preg_match('/version\s+([^\s]+)/i', $verOut, $m)) {
-            $version = $m[1];
-        }
+        $version = $setupData['version'] ?? '5.8.4';
 
         $model = new \OPNsense\Podman\Podman();
         $general = $model->general;
