@@ -41,7 +41,7 @@ def test_os_podman_spec_and_files_valid():
     manifest = spec.get("pkg_manifest", {})
     assert manifest.get("name") == "podman"
     assert manifest.get("origin") == "opnware/os-podman"
-    assert manifest.get("version") == "0.1.8"
+    assert manifest.get("version") == "0.1.9"
 
     deps = manifest.get("deps", {})
     for name in REDISTRIBUTE_PKGS:
@@ -79,6 +79,7 @@ def test_os_podman_spec_and_files_valid():
     assert "'frm_general': '/api/podman/general/get'" in general_volt
     assert "tbl_podman_status" in general_volt
     assert "updateStatus()" in general_volt
+    assert "updateRemoteGuide" in general_volt
 
     dashboard_content = (src / "opnsense" / "mvc" / "app" / "views" / "OPNsense" / "Podman" / "dashboard.volt").read_text()
     assert "btn_refresh_containers" not in dashboard_content
@@ -92,6 +93,7 @@ def test_os_podman_spec_and_files_valid():
     assert "ansiToHtml" in dashboard_content
     assert "act-cli" in dashboard_content
     assert "btn_system_prune" in dashboard_content
+    assert "formatTimestamp" in dashboard_content
 
     assert (src / "opnsense" / "mvc" / "app" / "controllers" / "OPNsense" / "Podman" / "Api" / "PodmanApiControllerBase.php").exists()
 
@@ -101,14 +103,17 @@ def test_os_podman_spec_and_files_valid():
     assert "public function logsAction" in containers_ctrl
     assert "public function inspectAction" in containers_ctrl
     assert "public function execAction" in containers_ctrl
+    assert "public function statsAction" in containers_ctrl
 
     system_ctrl = (src / "opnsense" / "mvc" / "app" / "controllers" / "OPNsense" / "Podman" / "Api" / "SystemController.php").read_text()
     assert "public function statusAction" in system_ctrl
 
     setup_content = (src / "opnsense" / "scripts" / "OPNsense" / "Podman" / "setup.php").read_text()
     assert "kern.elf64.fallback_brand=3" in setup_content
+    assert "kern.racct.enable" in setup_content
 
     manage_content = (src / "opnsense" / "scripts" / "OPNsense" / "Podman" / "manage.py").read_text()
     assert "containers.exec" in manage_content
+    assert "containers.stats" in manage_content
 
     assert (ROOT_DIR / "docs" / "plugins" / "os-podman.md").exists()

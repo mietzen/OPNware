@@ -64,11 +64,14 @@ class SystemController extends PodmanApiControllerBase
         $model = new \OPNsense\Podman\Podman();
         $general = $model->general;
 
+        $tcpEnabled = ((string)$general->tcp_enabled === '1');
+        $tlsEnabled = ((string)$general->tls_enabled === '1');
+        $addr = (string)$general->listen_address ?: '127.0.0.1';
+        $port = (string)$general->listen_port ?: '2376';
+
         $tcpEndpoint = 'Disabled';
-        if ((string)$general->tcp_enabled === '1') {
-            $addr = (string)$general->listen_address ?: '127.0.0.1';
-            $port = (string)$general->listen_port ?: '2376';
-            $proto = ((string)$general->tls_enabled === '1') ? 'tcp (TLS)' : 'tcp';
+        if ($tcpEnabled) {
+            $proto = $tlsEnabled ? 'tcp (TLS)' : 'tcp';
             $tcpEndpoint = "{$proto}://{$addr}:{$port}";
         }
 
@@ -78,6 +81,10 @@ class SystemController extends PodmanApiControllerBase
         $storageInfo = $hasZfs ? "ZFS (zroot/containers)" : "VFS (/var/db/containers/storage)";
         $linuxEmulation = ((string)$general->enable_linux === '1') ? 'Enabled (64-bit ABI, linprocfs, linsysfs)' : 'Disabled';
 
+        $config = \OPNsense\Core\Config::getInstance()->object();
+        $lanIp = (string)($config->interfaces->lan->ipaddr ?? '127.0.0.1');
+        $sshEnabled = isset($config->system->ssh->enabled);
+
         return [
             'status' => $isRunning ? 'running' : 'stopped',
             'running' => $isRunning,
@@ -86,6 +93,12 @@ class SystemController extends PodmanApiControllerBase
             'storage' => $storageInfo,
             'linux_emulation' => $linuxEmulation,
             'tcp_endpoint' => $tcpEndpoint,
+            'tcp_enabled' => $tcpEnabled,
+            'tls_enabled' => $tlsEnabled,
+            'listen_address' => $addr,
+            'listen_port' => $port,
+            'lan_ip' => $lanIp,
+            'ssh_enabled' => $sshEnabled,
             'interfaces' => $interfaces
         ];
     }

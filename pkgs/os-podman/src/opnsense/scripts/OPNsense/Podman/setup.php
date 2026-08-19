@@ -112,6 +112,13 @@ if ($enableLinux) {
     }
 }
 
+// Ensure jail resource accounting is armed in /boot/loader.conf.local
+$loaderConf = @file_get_contents('/boot/loader.conf.local') ?: '';
+if (strpos($loaderConf, 'kern.racct.enable') === false) {
+    @file_put_contents('/boot/loader.conf.local', $loaderConf . "\nkern.racct.enable=\"1\"\n");
+    log_msg("Added kern.racct.enable=\"1\" to /boot/loader.conf.local for container resource accounting");
+}
+
 // 3. TLS Certificate & CA Generation if configured
 if ($podmanCfg !== null && !empty((string)$podmanCfg->general->certificate)) {
     $certRefId = (string)$podmanCfg->general->certificate;

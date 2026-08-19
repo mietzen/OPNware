@@ -34,6 +34,23 @@
 
         // --- Monaco + built-in YAML language ---------------------------------
 
+        let wordWrapState = window.localStorage.getItem('opnware-editor-wrap') || 'on';
+        let minimapState = (window.localStorage.getItem('opnware-editor-minimap') === 'true');
+        let fontSizeState = parseInt(window.localStorage.getItem('opnware-editor-fontsize') || '13', 10);
+
+        function updateToolbarUI() {
+            if (wordWrapState === 'on') {
+                $('#btn-toggle-wrap').addClass('active');
+            } else {
+                $('#btn-toggle-wrap').removeClass('active');
+            }
+            if (minimapState) {
+                $('#btn-toggle-minimap').addClass('active');
+            } else {
+                $('#btn-toggle-minimap').removeClass('active');
+            }
+        }
+
         // vs/basic-languages/monaco.contribution registers the built-in
         // 'yaml' language (lazily loaded chunk); no custom grammar needed.
         require(['vs/editor/editor.main', 'vs/basic-languages/monaco.contribution'], function(monaco) {
@@ -43,10 +60,10 @@
                 language: 'yaml',
                 theme: preferredEditorTheme(),
                 automaticLayout: true,
-                minimap: { enabled: false },
-                fontSize: 13,
+                minimap: { enabled: minimapState },
+                fontSize: fontSizeState,
                 tabSize: 2,
-                wordWrap: 'on',
+                wordWrap: wordWrapState,
                 scrollBeyondLastLine: false,
                 lineNumbersMinChars: 3
             });
@@ -56,7 +73,46 @@
             });
 
             syncEditorTheme();
+            updateToolbarUI();
             loadConfig();
+        });
+
+        $('#btn-toggle-wrap').click(function() {
+            wordWrapState = (wordWrapState === 'on') ? 'off' : 'on';
+            window.localStorage.setItem('opnware-editor-wrap', wordWrapState);
+            if (editor) {
+                editor.updateOptions({ wordWrap: wordWrapState });
+            }
+            updateToolbarUI();
+        });
+
+        $('#btn-toggle-minimap').click(function() {
+            minimapState = !minimapState;
+            window.localStorage.setItem('opnware-editor-minimap', minimapState ? 'true' : 'false');
+            if (editor) {
+                editor.updateOptions({ minimap: { enabled: minimapState } });
+            }
+            updateToolbarUI();
+        });
+
+        $('#btn-font-dec').click(function() {
+            if (fontSizeState > 9) {
+                fontSizeState--;
+                window.localStorage.setItem('opnware-editor-fontsize', fontSizeState);
+                if (editor) {
+                    editor.updateOptions({ fontSize: fontSizeState });
+                }
+            }
+        });
+
+        $('#btn-font-inc').click(function() {
+            if (fontSizeState < 24) {
+                fontSizeState++;
+                window.localStorage.setItem('opnware-editor-fontsize', fontSizeState);
+                if (editor) {
+                    editor.updateOptions({ fontSize: fontSizeState });
+                }
+            }
         });
 
         function preferredEditorTheme() {
@@ -145,10 +201,23 @@
 </script>
 
 <div class="content-box opnware-homer-config-pane" style="padding: 15px;">
-    <div class="row">
-        <div class="col-md-8"><h2 style="margin-top: 0;">{{ lang._('Homer config.yml') }}</h2></div>
-        <div class="col-md-4 text-right">
-            <label class="text-muted" for="editor-theme">{{ lang._('Theme') }}</label>
+    <div class="row" style="margin-bottom: 10px;">
+        <div class="col-md-7"><h2 style="margin-top: 0;">{{ lang._('Homer config.yml') }}</h2></div>
+        <div class="col-md-5 text-right" style="display: flex; align-items: center; justify-content: flex-end; gap: 8px;">
+            <div class="btn-group btn-group-xs" role="group" style="margin-right: 5px;">
+                <button type="button" class="btn btn-default" id="btn-toggle-wrap" title="{{ lang._('Toggle Word Wrap') }}">
+                    <i class="fa fa-align-left"></i>
+                </button>
+                <button type="button" class="btn btn-default" id="btn-toggle-minimap" title="{{ lang._('Toggle Minimap') }}">
+                    <i class="fa fa-map-o"></i>
+                </button>
+                <button type="button" class="btn btn-default" id="btn-font-dec" title="{{ lang._('Decrease Font Size') }}">
+                    <i class="fa fa-minus"></i>
+                </button>
+                <button type="button" class="btn btn-default" id="btn-font-inc" title="{{ lang._('Increase Font Size') }}">
+                    <i class="fa fa-plus"></i>
+                </button>
+            </div>
             <select id="editor-theme" class="selectpicker" data-width="110px">
                 <option value="vs">{{ lang._('Light') }}</option>
                 <option value="vs-dark">{{ lang._('Dark') }}</option>

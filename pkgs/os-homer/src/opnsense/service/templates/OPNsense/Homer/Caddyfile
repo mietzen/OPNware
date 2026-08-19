@@ -42,8 +42,8 @@
 	log {
 		output net unixgram//var/run/homer/log.sock {
 		}
-		format json {
-			time_format rfc3339
+		format console {
+			time_format wall
 		}
 	}
 }

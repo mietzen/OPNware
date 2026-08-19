@@ -136,54 +136,131 @@
         });
     }
 
+    var cachedContainers = [];
+
+    function formatTimestamp(val) {
+        if (!val) return '--';
+        var d = null;
+        if (typeof val === 'number') {
+            d = new Date(val > 1e11 ? val : val * 1000);
+        } else if (/^\d+$/.test(val)) {
+            var n = parseInt(val, 10);
+            d = new Date(n > 1e11 ? n : n * 1000);
+        } else {
+            d = new Date(val);
+        }
+        if (!d || isNaN(d.getTime())) {
+            return $('<div>').text(val).html();
+        }
+        var now = new Date();
+        var diffSec = Math.floor((now - d) / 1000);
+        var rel = '';
+        if (diffSec < 60) {
+            rel = '{{ lang._("just now") }}';
+        } else if (diffSec < 3600) {
+            var m = Math.floor(diffSec / 60);
+            rel = m + (m === 1 ? ' {{ lang._("min ago") }}' : ' {{ lang._("mins ago") }}');
+        } else if (diffSec < 86400) {
+            var h = Math.floor(diffSec / 3600);
+            rel = h + (h === 1 ? ' {{ lang._("hour ago") }}' : ' {{ lang._("hours ago") }}');
+        } else {
+            var days = Math.floor(diffSec / 86400);
+            rel = days + (days === 1 ? ' {{ lang._("day ago") }}' : ' {{ lang._("days ago") }}');
+        }
+        var iso = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0') + ' ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+        return '<span title="' + iso + '">' + rel + ' <small class="text-muted">(' + iso + ')</small></span>';
+    }
+
     function loadContainers() {
         ajaxGet('/api/podman/containers/list', {}, function (data, status) {
             var $tbody = $('#grid-containers tbody');
             var items = (data && data.items) ? data.items : [];
+            cachedContainers = items;
             if (items.length === 0) {
-                $tbody.html('<tr><td colspan="6" class="text-center"><em>{{ lang._("No containers found") }}</em></td></tr>');
+                $tbody.html('<tr><td colspan="7" class="text-center"><em>{{ lang._("No containers found") }}</em></td></tr>');
                 return;
             }
 
-            var rows = '';
-            $.each(items, function (idx, c) {
-                var cid = (c.Id || c.ID || '').substring(0, 12);
-                var names = Array.isArray(c.Names) ? c.Names.join(', ') : (c.Names || '');
-                var image = c.Image || '';
-                var state = c.State || c.Status || '';
-                var created = c.Created || c.CreatedAt || '';
+            // Fetch live stats in parallel
+            ajaxGet('/api/podman/containers/stats', {}, function(statsData) {
+                var statsMap = {};
+                if (statsData && Array.isArray(statsData.items)) {
+                    $.each(statsData.items, function(i, st) {
+                        var sid = (st.Id || st.ID || st.Container || '').substring(0, 12);
+                        statsMap[sid] = st;
+                        if (st.Name) {
+                            statsMap[st.Name] = st;
+                        }
+                    });
+                }
 
-                var isRunning = (state.toLowerCase().indexOf('up') !== -1 || state.toLowerCase() === 'running');
-                var badgeClass = isRunning ? 'label-success' : 'label-default';
+                var rows = '';
+                $.each(items, function (idx, c) {
+                    var cid = (c.Id || c.ID || '').substring(0, 12);
+                    var names = Array.isArray(c.Names) ? c.Names.join(', ') : (c.Names || '');
+                    var image = c.Image || '';
+                    var state = c.State || c.Status || '';
+                    var created = c.Created || c.CreatedAt || '';
 
-                var startDisabled = isRunning ? 'disabled="disabled"' : '';
-                var stopDisabled = !isRunning ? 'disabled="disabled"' : '';
-                var restartDisabled = !isRunning ? 'disabled="disabled"' : '';
-                var killDisabled = !isRunning ? 'disabled="disabled"' : '';
-                var cliDisabled = !isRunning ? 'disabled="disabled"' : '';
-                var deleteDisabled = isRunning ? 'disabled="disabled"' : '';
-                var deleteTitle = isRunning ? '{{ lang._("Cannot delete running container. Stop container first.") }}' : '{{ lang._("Delete Container") }}';
+                    var isRunning = (state.toLowerCase().indexOf('up') !== -1 || state.toLowerCase() === 'running');
+                    var badgeClass = isRunning ? 'label-success' : 'label-default';
 
-                var actions = '';
-                actions += '<button class="btn btn-xs btn-default act-start" data-id="' + cid + '" ' + startDisabled + ' title="{{ lang._("Start") }}"><i class="fa fa-play text-success"></i></button> ';
-                actions += '<button class="btn btn-xs btn-default act-stop" data-id="' + cid + '" ' + stopDisabled + ' title="{{ lang._("Stop") }}"><i class="fa fa-stop text-warning"></i></button> ';
-                actions += '<button class="btn btn-xs btn-default act-restart" data-id="' + cid + '" ' + restartDisabled + ' title="{{ lang._("Restart") }}"><i class="fa fa-refresh text-info"></i></button> ';
-                actions += '<button class="btn btn-xs btn-default act-kill" data-id="' + cid + '" ' + killDisabled + ' title="{{ lang._("Force Stop") }}"><i class="fa fa-bolt text-danger"></i></button> ';
-                actions += '<button class="btn btn-xs btn-default act-cli" data-id="' + cid + '" data-name="' + $('<div>').text(names).html() + '" ' + cliDisabled + ' title="{{ lang._("Container CLI") }}"><i class="fa fa-terminal text-warning"></i></button> ';
-                actions += '<button class="btn btn-xs btn-default act-logs" data-id="' + cid + '" data-name="' + $('<div>').text(names).html() + '" title="{{ lang._("View Logs") }}"><i class="fa fa-file-text-o text-primary"></i></button> ';
-                actions += '<button class="btn btn-xs btn-default act-inspect" data-id="' + cid + '" data-name="' + $('<div>').text(names).html() + '" title="{{ lang._("Inspect Container") }}"><i class="fa fa-info-circle text-info"></i></button> ';
-                actions += '<button class="btn btn-xs btn-default act-delete-container" data-id="' + cid + '" data-name="' + $('<div>').text(names).html() + '" ' + deleteDisabled + ' title="' + deleteTitle + '"><i class="fa fa-trash text-danger"></i></button>';
+                    var stat = statsMap[cid] || (names ? statsMap[names] : null);
+                    var resourceBadges = '--';
+                    if (isRunning && stat) {
+                        var cpu = stat.CPUPerc || stat.CPU || '--';
+                        var mem = stat.MemUsage || stat.Mem || '--';
+                        resourceBadges = '<span class="label label-info" title="{{ lang._("CPU Usage") }}"><i class="fa fa-dashboard"></i> ' + cpu + '</span> <span class="label label-primary" title="{{ lang._("Memory Usage") }}"><i class="fa fa-microchip"></i> ' + mem + '</span>';
+                    } else if (isRunning) {
+                        resourceBadges = '<span class="text-muted"><i class="fa fa-dashboard"></i> --</span>';
+                    }
 
-                rows += '<tr>' +
-                    '<td><code>' + cid + '</code></td>' +
-                    '<td><strong>' + $('<div>').text(names).html() + '</strong></td>' +
-                    '<td>' + $('<div>').text(image).html() + '</td>' +
-                    '<td><span class="label ' + badgeClass + '">' + $('<div>').text(state).html() + '</span></td>' +
-                    '<td>' + $('<div>').text(created).html() + '</td>' +
-                    '<td>' + actions + '</td>' +
-                    '</tr>';
+                    // Merged Start/Stop button
+                    var startStopBtn = '';
+                    if (isRunning) {
+                        startStopBtn = '<button class="btn btn-xs btn-default act-stop" data-id="' + cid + '" title="{{ lang._("Stop Container") }}"><i class="fa fa-stop text-warning"></i></button> ';
+                    } else {
+                        startStopBtn = '<button class="btn btn-xs btn-default act-start" data-id="' + cid + '" title="{{ lang._("Start Container") }}"><i class="fa fa-play text-success"></i></button> ';
+                    }
+
+                    // Restart, Kill, CLI actions (muted grey face when disabled)
+                    var restartBtn = isRunning
+                        ? '<button class="btn btn-xs btn-default act-restart" data-id="' + cid + '" title="{{ lang._("Restart") }}"><i class="fa fa-refresh text-info"></i></button> '
+                        : '<button class="btn btn-xs btn-default" disabled="disabled" title="{{ lang._("Restart (Container stopped)") }}"><i class="fa fa-refresh text-muted"></i></button> ';
+
+                    var killBtn = isRunning
+                        ? '<button class="btn btn-xs btn-default act-kill" data-id="' + cid + '" title="{{ lang._("Force Stop") }}"><i class="fa fa-bolt text-danger"></i></button> '
+                        : '<button class="btn btn-xs btn-default" disabled="disabled" title="{{ lang._("Force Stop (Container stopped)") }}"><i class="fa fa-bolt text-muted"></i></button> ';
+
+                    var cliBtn = isRunning
+                        ? '<button class="btn btn-xs btn-default act-cli" data-id="' + cid + '" data-name="' + $('<div>').text(names).html() + '" title="{{ lang._("Container CLI") }}"><i class="fa fa-terminal text-warning"></i></button> '
+                        : '<button class="btn btn-xs btn-default" disabled="disabled" title="{{ lang._("Container CLI (Container stopped)") }}"><i class="fa fa-terminal text-muted"></i></button> ';
+
+                    var logsBtn = '<button class="btn btn-xs btn-default act-logs" data-id="' + cid + '" data-name="' + $('<div>').text(names).html() + '" title="{{ lang._("View Logs") }}"><i class="fa fa-file-text-o text-primary"></i></button> ';
+                    var inspectBtn = '<button class="btn btn-xs btn-default act-inspect" data-id="' + cid + '" data-name="' + $('<div>').text(names).html() + '" title="{{ lang._("Inspect Container") }}"><i class="fa fa-info-circle text-info"></i></button> ';
+
+                    // Delete or Lock button
+                    var deleteBtn = '';
+                    if (isRunning) {
+                        deleteBtn = '<button class="btn btn-xs btn-default" disabled="disabled" title="{{ lang._("Cannot delete running container. Stop container first.") }}"><i class="fa fa-lock text-muted"></i></button>';
+                    } else {
+                        deleteBtn = '<button class="btn btn-xs btn-default act-delete-container" data-id="' + cid + '" data-name="' + $('<div>').text(names).html() + '" title="{{ lang._("Delete Container") }}"><i class="fa fa-trash text-danger"></i></button>';
+                    }
+
+                    var actions = startStopBtn + restartBtn + killBtn + cliBtn + logsBtn + inspectBtn + deleteBtn;
+
+                    rows += '<tr>' +
+                        '<td><code>' + cid + '</code></td>' +
+                        '<td><strong>' + $('<div>').text(names).html() + '</strong></td>' +
+                        '<td>' + $('<div>').text(image).html() + '</td>' +
+                        '<td><span class="label ' + badgeClass + '">' + $('<div>').text(state).html() + '</span></td>' +
+                        '<td>' + resourceBadges + '</td>' +
+                        '<td>' + formatTimestamp(created) + '</td>' +
+                        '<td>' + actions + '</td>' +
+                        '</tr>';
+                });
+                $tbody.html(rows);
             });
-            $tbody.html(rows);
         });
     }
 
@@ -195,6 +272,17 @@
                 $tbody.html('<tr><td colspan="5" class="text-center"><em>{{ lang._("No images found") }}</em></td></tr>');
                 return;
             }
+
+            var usedImages = {};
+            $.each(cachedContainers, function(idx, c) {
+                var cimg = c.Image || '';
+                var cname = Array.isArray(c.Names) ? c.Names[0] : (c.Names || c.Id);
+                usedImages[cimg] = cname;
+                if (c.ImageID) {
+                    usedImages[c.ImageID.substring(0, 12)] = cname;
+                }
+            });
+
             var rows = '';
             $.each(items, function (idx, img) {
                 var repo = Array.isArray(img.Names) ? img.Names.join(', ') : (img.Repository || img.History || 'none');
@@ -202,13 +290,19 @@
                 var size = img.Size ? (typeof img.Size === 'number' ? (img.Size / (1024*1024)).toFixed(1) + ' MB' : img.Size) : '';
                 var created = img.Created || img.CreatedAt || '';
 
-                var actions = '<button class="btn btn-xs btn-default act-delete-image" data-id="' + iid + '" data-name="' + $('<div>').text(repo).html() + '" title="{{ lang._("Delete Image") }}"><i class="fa fa-trash text-danger"></i></button>';
+                var inUseBy = usedImages[repo] || usedImages[iid];
+                var actions = '';
+                if (inUseBy) {
+                    actions = '<button class="btn btn-xs btn-default" disabled="disabled" title="{{ lang._("Image is currently used by container: ") }}' + $('<div>').text(inUseBy).html() + '"><i class="fa fa-lock text-muted"></i></button>';
+                } else {
+                    actions = '<button class="btn btn-xs btn-default act-delete-image" data-id="' + iid + '" data-name="' + $('<div>').text(repo).html() + '" title="{{ lang._("Delete Image") }}"><i class="fa fa-trash text-danger"></i></button>';
+                }
 
                 rows += '<tr>' +
                     '<td><strong>' + $('<div>').text(repo).html() + '</strong></td>' +
                     '<td><code>' + iid + '</code></td>' +
                     '<td>' + size + '</td>' +
-                    '<td>' + $('<div>').text(created).html() + '</td>' +
+                    '<td>' + formatTimestamp(created) + '</td>' +
                     '<td>' + actions + '</td>' +
                     '</tr>';
             });
@@ -224,10 +318,28 @@
                 $tbody.html('<tr><td colspan="4" class="text-center"><em>{{ lang._("No volumes found") }}</em></td></tr>');
                 return;
             }
+
+            var usedVolumes = {};
+            $.each(cachedContainers, function(idx, c) {
+                if (Array.isArray(c.Mounts)) {
+                    $.each(c.Mounts, function(mIdx, m) {
+                        if (m.Name) {
+                            usedVolumes[m.Name] = Array.isArray(c.Names) ? c.Names[0] : c.Names;
+                        }
+                    });
+                }
+            });
+
             var rows = '';
             $.each(items, function (idx, v) {
                 var vname = v.Name || '';
-                var actions = '<button class="btn btn-xs btn-default act-delete-volume" data-name="' + $('<div>').text(vname).html() + '" title="{{ lang._("Delete Volume") }}"><i class="fa fa-trash text-danger"></i></button>';
+                var inUseBy = usedVolumes[vname];
+                var actions = '';
+                if (inUseBy) {
+                    actions = '<button class="btn btn-xs btn-default" disabled="disabled" title="{{ lang._("Volume is in use by container: ") }}' + $('<div>').text(inUseBy).html() + '"><i class="fa fa-lock text-muted"></i></button>';
+                } else {
+                    actions = '<button class="btn btn-xs btn-default act-delete-volume" data-name="' + $('<div>').text(vname).html() + '" title="{{ lang._("Delete Volume") }}"><i class="fa fa-trash text-danger"></i></button>';
+                }
 
                 rows += '<tr>' +
                     '<td><strong>' + $('<div>').text(vname).html() + '</strong></td>' +
@@ -260,7 +372,7 @@
                 if (!isDefault) {
                     actions = '<button class="btn btn-xs btn-default act-delete-network" data-name="' + $('<div>').text(netName).html() + '" title="{{ lang._("Delete Network") }}"><i class="fa fa-trash text-danger"></i></button>';
                 } else {
-                    actions = '<span class="text-muted"><i class="fa fa-lock" title="{{ lang._("Default system network") }}"></i></span>';
+                    actions = '<button class="btn btn-xs btn-default" disabled="disabled" title="{{ lang._("Default system network cannot be deleted") }}"><i class="fa fa-lock text-muted"></i></button>';
                 }
 
                 rows += '<tr>' +
@@ -637,13 +749,14 @@
                         <th style="width: 120px;">{{ lang._('Container ID') }}</th>
                         <th>{{ lang._('Name') }}</th>
                         <th>{{ lang._('Image') }}</th>
-                        <th>{{ lang._('Status') }}</th>
-                        <th>{{ lang._('Created') }}</th>
-                        <th style="width: 270px;">{{ lang._('Actions') }}</th>
+                        <th style="width: 100px;">{{ lang._('Status') }}</th>
+                        <th style="width: 150px;">{{ lang._('CPU / Memory') }}</th>
+                        <th style="width: 180px;">{{ lang._('Created') }}</th>
+                        <th style="width: 230px;">{{ lang._('Actions') }}</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr><td colspan="6" class="text-center" id="containers-loading"><i class="fa fa-spinner fa-pulse"></i> {{ lang._('Loading containers...') }}</td></tr>
+                    <tr><td colspan="7" class="text-center" id="containers-loading"><i class="fa fa-spinner fa-pulse"></i> {{ lang._('Loading containers...') }}</td></tr>
                 </tbody>
             </table>
         </div>

@@ -25,6 +25,48 @@
  #}
 
 <script>
+    function updateRemoteGuide(data) {
+        var host = (data.listen_address && data.listen_address !== '0.0.0.0') ? data.listen_address : (data.lan_ip || '{{ lanIp }}');
+        var port = data.listen_port || '2376';
+        var tcpActive = data.tcp_enabled;
+        var tlsActive = data.tls_enabled;
+        var sshActive = data.ssh_enabled;
+
+        if (tcpActive) {
+            $('#guide-tcp-section').show();
+            $('#guide-fallback-section').hide();
+            var tcpHost = 'tcp://' + host + ':' + port;
+            $('#snippet-docker-env').text('export DOCKER_HOST="' + tcpHost + '"');
+            $('#snippet-docker-context').text('docker context create opnsense-podman --docker "host=' + tcpHost + '"\ndocker context use opnsense-podman');
+            $('#snippet-podman-remote').text('podman --remote -c ' + tcpHost + ' ps');
+            if (tlsActive) {
+                $('#snippet-docker-tls').show().text('docker --tlsverify --tlscacert=ca.pem --tlscert=cert.pem --tlskey=key.pem -H ' + tcpHost + ' ps');
+            } else {
+                $('#snippet-docker-tls').hide();
+            }
+        } else {
+            $('#guide-tcp-section').hide();
+            $('#guide-fallback-section').show();
+        }
+
+        var sshHost = 'ssh://root@' + (data.lan_ip || '{{ lanIp }}');
+        $('#snippet-ssh-docker').text('docker context create opnsense-ssh --docker "host=' + sshHost + '"\ndocker context use opnsense-ssh');
+        $('#snippet-ssh-podman').text('podman system connection add opnsense ' + sshHost + '/var/run/podman/podman.sock\npodman -c opnsense ps');
+    }
+
+    function copySnippet(elemId, btnElem) {
+        var text = $('#' + elemId).text();
+        if (navigator.clipboard) {
+            navigator.clipboard.writeText(text).then(function() {
+                var $icon = $(btnElem).find('i');
+                $icon.removeClass('fa-clipboard').addClass('fa-check text-success');
+                setTimeout(function() {
+                    $icon.removeClass('fa-check text-success').addClass('fa-clipboard');
+                }, 2000);
+            });
+        }
+    }
+
     function updateStatus() {
         ajaxGet('/api/podman/system/status', {}, function (data, status) {
             if (data) {
@@ -35,6 +77,7 @@
                 $('#status-linux').text(data.linux_emulation || '--');
                 $('#status-tcp').text(data.tcp_endpoint || '--');
                 $('#status-interfaces').text(data.interfaces ? data.interfaces.toUpperCase() : 'LAN');
+                updateRemoteGuide(data);
             }
         });
     }
@@ -110,6 +153,83 @@
                 </tr>
             </tbody>
         </table>
+    </div>
+</div>
+
+<!-- Remote Connection Guide Card -->
+<div class="content-box" style="margin-bottom: 20px; padding: 15px;">
+    <h4 style="margin-top: 0;"><b>{{ lang._('Remote Client Setup & Connection Guide') }}</b></h4>
+    <p class="text-muted">
+        {{ lang._('Manage containers on this OPNsense firewall from your workstation using standard Docker CLI, Docker Compose, VS Code, or Podman Remote.') }}
+    </p>
+
+    <!-- TCP Guide (visible when TCP enabled) -->
+    <div id="guide-tcp-section" style="display: none;">
+        <ul class="nav nav-tabs" role="tablist" style="margin-bottom: 15px;">
+            <li class="active"><a href="#tab-guide-docker" data-toggle="tab"><b>{{ lang._('Docker CLI (TCP)') }}</b></a></li>
+            <li><a href="#tab-guide-podman" data-toggle="tab"><b>{{ lang._('Podman Remote CLI') }}</b></a></li>
+            <li><a href="#tab-guide-ssh" data-toggle="tab"><b>{{ lang._('SSH Context') }}</b></a></li>
+        </ul>
+        <div class="tab-content" style="padding: 0;">
+            <div id="tab-guide-docker" class="tab-pane active">
+                <p><b>1. {{ lang._('Temporary Shell Environment') }}:</b></p>
+                <div class="input-group" style="margin-bottom: 10px;">
+                    <pre id="snippet-docker-env" style="margin: 0; background: #1b2430; color: #5af78e; font-family: monospace; border-radius: 4px 0 0 4px;"></pre>
+                    <span class="input-group-btn" style="vertical-align: top;">
+                        <button class="btn btn-default" type="button" onclick="copySnippet('snippet-docker-env', this)" title="{{ lang._('Copy') }}" style="height: 38px;"><i class="fa fa-clipboard"></i></button>
+                    </span>
+                </div>
+                <p><b>2. {{ lang._('Persistent Docker Context') }}:</b></p>
+                <div class="input-group" style="margin-bottom: 10px;">
+                    <pre id="snippet-docker-context" style="margin: 0; background: #1b2430; color: #5af78e; font-family: monospace; border-radius: 4px 0 0 4px;"></pre>
+                    <span class="input-group-btn" style="vertical-align: top;">
+                        <button class="btn btn-default" type="button" onclick="copySnippet('snippet-docker-context', this)" title="{{ lang._('Copy') }}" style="height: 52px;"><i class="fa fa-clipboard"></i></button>
+                    </span>
+                </div>
+                <pre id="snippet-docker-tls" style="margin-top: 10px; background: #1b2430; color: #f3f99d; font-family: monospace; display: none;"></pre>
+            </div>
+            <div id="tab-guide-podman" class="tab-pane">
+                <p><b>{{ lang._('Connect via Podman Remote') }}:</b></p>
+                <div class="input-group" style="margin-bottom: 10px;">
+                    <pre id="snippet-podman-remote" style="margin: 0; background: #1b2430; color: #5af78e; font-family: monospace; border-radius: 4px 0 0 4px;"></pre>
+                    <span class="input-group-btn" style="vertical-align: top;">
+                        <button class="btn btn-default" type="button" onclick="copySnippet('snippet-podman-remote', this)" title="{{ lang._('Copy') }}" style="height: 38px;"><i class="fa fa-clipboard"></i></button>
+                    </span>
+                </div>
+            </div>
+            <div id="tab-guide-ssh" class="tab-pane">
+                <p><b>{{ lang._('Docker over SSH') }}:</b></p>
+                <div class="input-group" style="margin-bottom: 10px;">
+                    <pre id="snippet-ssh-docker" style="margin: 0; background: #1b2430; color: #5af78e; font-family: monospace; border-radius: 4px 0 0 4px;"></pre>
+                    <span class="input-group-btn" style="vertical-align: top;">
+                        <button class="btn btn-default" type="button" onclick="copySnippet('snippet-ssh-docker', this)" title="{{ lang._('Copy') }}" style="height: 52px;"><i class="fa fa-clipboard"></i></button>
+                    </span>
+                </div>
+                <p><b>{{ lang._('Podman Connection over SSH') }}:</b></p>
+                <div class="input-group" style="margin-bottom: 10px;">
+                    <pre id="snippet-ssh-podman" style="margin: 0; background: #1b2430; color: #5af78e; font-family: monospace; border-radius: 4px 0 0 4px;"></pre>
+                    <span class="input-group-btn" style="vertical-align: top;">
+                        <button class="btn btn-default" type="button" onclick="copySnippet('snippet-ssh-podman', this)" title="{{ lang._('Copy') }}" style="height: 52px;"><i class="fa fa-clipboard"></i></button>
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Fallback Section (visible when TCP disabled) -->
+    <div id="guide-fallback-section">
+        <div class="alert alert-info" style="margin-bottom: 15px;">
+            <i class="fa fa-info-circle"></i>
+            {{ lang._('To manage containers remotely via Docker CLI or Compose, enable the TCP Socket in General Settings below (with optional TLS authentication). Alternatively, connect via SSH using:') }}
+        </div>
+        <p><b>{{ lang._('Docker over SSH (Native socket tunnel)') }}:</b></p>
+        <div class="input-group" style="margin-bottom: 10px;">
+            <pre id="snippet-ssh-docker-fallback" style="margin: 0; background: #1b2430; color: #5af78e; font-family: monospace; border-radius: 4px 0 0 4px;">docker context create opnsense-ssh --docker "host=ssh://root@{{ lanIp }}"
+docker context use opnsense-ssh</pre>
+            <span class="input-group-btn" style="vertical-align: top;">
+                <button class="btn btn-default" type="button" onclick="copySnippet('snippet-ssh-docker-fallback', this)" title="{{ lang._('Copy') }}" style="height: 52px;"><i class="fa fa-clipboard"></i></button>
+            </span>
+        </div>
     </div>
 </div>
 
