@@ -150,7 +150,8 @@ function editor_tree_seed($base = EDITOR_TREE_BASE)
     }
     $caddyfile = $base . '/Caddyfile';
     if (!is_file($caddyfile)) {
-        if (file_put_contents($caddyfile, "import conf.d/*.caddy\n") === false) {
+        $seedContent = "{\n\tlog {\n\t\toutput file /var/log/caddy/caddy.log\n\t\tformat console\n\t}\n}\n\nimport conf.d/*.caddy\n";
+        if (file_put_contents($caddyfile, $seedContent) === false) {
             return 'cannot create Caddyfile';
         }
     } else {

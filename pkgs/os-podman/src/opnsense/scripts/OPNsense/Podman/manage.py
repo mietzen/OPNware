@@ -102,8 +102,6 @@ def main():
         run_podman(["logs", "--tail", "200", param])
     elif action == "containers.inspect" and param:
         run_podman(["inspect", param, "--format", "json"])
-    elif action == "containers.stats":
-        run_podman(["stats", "--no-stream", "--format", "json"])
     elif action == "containers.exec" and param:
         container_id = param
         cmd_arg = sys.argv[3] if len(sys.argv) >= 4 else ""

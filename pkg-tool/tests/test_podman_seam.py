@@ -41,7 +41,7 @@ def test_os_podman_spec_and_files_valid():
     manifest = spec.get("pkg_manifest", {})
     assert manifest.get("name") == "podman"
     assert manifest.get("origin") == "opnware/os-podman"
-    assert manifest.get("version") == "0.1.9"
+    assert manifest.get("version") == "0.1.10"
 
     deps = manifest.get("deps", {})
     for name in REDISTRIBUTE_PKGS:
@@ -103,7 +103,6 @@ def test_os_podman_spec_and_files_valid():
     assert "public function logsAction" in containers_ctrl
     assert "public function inspectAction" in containers_ctrl
     assert "public function execAction" in containers_ctrl
-    assert "public function statsAction" in containers_ctrl
 
     system_ctrl = (src / "opnsense" / "mvc" / "app" / "controllers" / "OPNsense" / "Podman" / "Api" / "SystemController.php").read_text()
     assert "public function statusAction" in system_ctrl
@@ -114,6 +113,5 @@ def test_os_podman_spec_and_files_valid():
 
     manage_content = (src / "opnsense" / "scripts" / "OPNsense" / "Podman" / "manage.py").read_text()
     assert "containers.exec" in manage_content
-    assert "containers.stats" in manage_content
 
     assert (ROOT_DIR / "docs" / "plugins" / "os-podman.md").exists()

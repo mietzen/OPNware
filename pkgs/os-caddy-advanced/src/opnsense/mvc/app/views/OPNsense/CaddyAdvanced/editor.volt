@@ -437,11 +437,18 @@
             });
         }
 
+        $(window).on('keydown', function(e) {
+            if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S' || e.keyCode === 83)) {
+                e.preventDefault();
+                $("#save-editor").click();
+            }
+        });
+
         $("#save-editor").click(function() {
             if (!currentFile) {
                 return;
             }
-            $("#editor-error-msg").hide();
+            $("#save-status-msg").empty();
             $.post("/api/caddyadvanced/editor/save", {
                 path: currentFile,
                 content: $("#editor-content").val()
@@ -451,7 +458,6 @@
                 } else {
                     showError(data.message || JSON.stringify(data));
                 }
-                updateStatus();
             });
         });
 
@@ -460,7 +466,7 @@
             if (!name) {
                 return;
             }
-            $("#editor-error-msg").hide();
+            $("#save-status-msg").empty();
             $.post("/api/caddyadvanced/editor/add", {path: 'conf.d/' + name}, function(data) {
                 if (data.status !== "ok") {
                     showError(data.message);
@@ -472,47 +478,27 @@
         });
 
         function showError(message) {
-            $("#editor-error-msg").html(
-                '<i class="fa fa-times"></i> ' +
-                $('<div>').text(message || "{{ lang._('Error') }}").html()
-            ).show();
-            setTimeout(function() {
-                $("#editor-error-msg").fadeOut(500);
-            }, 4000);
+            $("#save-status-msg").html(
+                '<span class="text-danger"><i class="fa fa-times"></i> ' +
+                $('<div>').text(message || "{{ lang._('Error') }}").html() +
+                '</span>'
+            );
         }
 
         function showSuccess(message) {
-            updateStatus();
-        }
-
-        function updateStatus() {
-            $.getJSON("/api/caddyadvanced/editor/status", function(data) {
-                const $status = $("#editor-status");
-                if (!$status.length) {
-                    return;
-                }
-                $status.find("#status-last-save").text(
-                    data.last_save ? new Date(data.last_save * 1000).toLocaleString() : "-"
-                );
-                $status.find("#status-result").text(
-                    data.result === "ok" ? "{{ lang._('OK') }}"
-                    : (data.result === "failure" ? "{{ lang._('FAILED') }}" : "-")
-                );
-                $status.find("#status-message").text(data.message || "-");
-                // The rollback segment is only meaningful when a rollback
-                // actually happened; hiding it when not avoids a redundant
-                // "· no" right before a "no changes to save" message.
-                if (data.rollback === true) {
-                    $status.find("#status-rollback").text("{{ lang._('yes') }}");
-                    $status.find("#status-rollback-seg").show();
-                } else {
-                    $status.find("#status-rollback-seg").hide();
-                }
-            });
+            $("#save-status-msg").html(
+                '<span class="text-success"><i class="fa fa-check"></i> ' +
+                $('<div>').text(message || "{{ lang._('Saved') }}").html() +
+                '</span>'
+            );
+            setTimeout(function() {
+                $("#save-status-msg").fadeOut(500, function() {
+                    $(this).empty().show();
+                });
+            }, 3000);
         }
 
         loadTree();
-        updateStatus();
     });
 </script>
 
@@ -789,16 +775,9 @@
             {# Hidden transport for the existing save cycle — the Monaco model mirrors its value. #}
             <textarea id="editor-content" class="form-control" rows="20" spellcheck="false"
                       style="font-family: monospace; display: none;"></textarea>
-            <div class="opnware-editor-actions">
-                <hr/>
-                <button id="save-editor" type="button" class="btn btn-primary"><b>{{ lang._('Save') }}</b> <small style="font-weight: normal; opacity: 0.85;">(Ctrl+S / ⌘S)</small></button>
-                <span id="editor-error-msg" class="text-danger __ml" style="display: none; font-weight: bold;"></span>
-                <span id="editor-status" class="text-muted __ml">
-                    {{ lang._('Last save') }}: <span id="status-last-save">-</span>
-                    · <span id="status-result">-</span>
-                    <span id="status-rollback-seg">· <span id="status-rollback">-</span></span>
-                    · <span id="status-message">-</span>
-                </span>
+            <div class="opnware-editor-actions" style="margin-top: 12px;">
+                <button id="save-editor" type="button" class="btn btn-primary"><b>{{ lang._('Save') }}</b></button>
+                <span id="save-status-msg" style="margin-left: 15px; font-weight: bold;"></span>
             </div>
             <span class="help-block">{{ lang._('Saving validates the full Caddy configuration before applying changes. Invalid configuration is rejected without modifying files.') }}</span>
         </div>

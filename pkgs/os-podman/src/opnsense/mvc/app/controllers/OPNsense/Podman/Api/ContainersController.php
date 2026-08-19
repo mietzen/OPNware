@@ -47,11 +47,6 @@ class ContainersController extends PodmanApiControllerBase
         return $this->executeAction('containers_list');
     }
 
-    public function statsAction()
-    {
-        return $this->executeAction('containers_stats');
-    }
-
     public function startAction($id = null)
     {
         return $this->handleContainerAction('start', $id);
