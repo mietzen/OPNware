@@ -150,6 +150,10 @@
             editor.onDidChangeModelContent(function() {
                 document.getElementById('editor-content').value = editor.getValue();
             });
+
+            editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, function() {
+                $("#save-editor").click();
+            });
         });
 
         function preferredEditorTheme() {
@@ -718,7 +722,7 @@
                       style="font-family: monospace; display: none;"></textarea>
             <div class="opnware-editor-actions">
                 <hr/>
-                <button id="save-editor" type="button" class="btn btn-primary"><b>{{ lang._('Save') }}</b></button>
+                <button id="save-editor" type="button" class="btn btn-primary"><b>{{ lang._('Save') }}</b> <small style="font-weight: normal; opacity: 0.85;">(Ctrl+S / ⌘S)</small></button>
                 <span id="editor-error-msg" class="text-danger __ml" style="display: none; font-weight: bold;"></span>
                 <span id="editor-status" class="text-muted __ml">
                     {{ lang._('Last save') }}: <span id="status-last-save">-</span>

@@ -23,6 +23,8 @@
             updateEffectiveUrl();
         });
 
+        $form.on('input change', 'input, select', updateEffectiveUrl);
+
         $('[id^="save_general-"]').each(function () {
             const $btn = $(this);
             const formId = this.id.replace(/^save_/, 'frm_');
@@ -79,7 +81,7 @@
             const port = fieldVal("homer.general.Port", "9443");
             const tls = $form.find("#homer\\.general\\.TlsEnabled").is(":checked");
             const interfaceValue = $form.find("#homer\\.general\\.Interface").val() || "all";
-            const servername = $form.find("#homer\\.general\\.ServerName").val().trim();
+            const servername = ($form.find("#homer\\.general\\.ServerName").val() || "").trim();
             let host;
             if (servername !== "") {
                 // A configured server name is the canonical address (used for

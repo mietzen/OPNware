@@ -51,6 +51,10 @@
                 lineNumbersMinChars: 3
             });
 
+            editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, function() {
+                $("#save-config").click();
+            });
+
             syncEditorTheme();
             loadConfig();
         });
@@ -153,7 +157,7 @@
     </div>
     <div id="editor-container" style="height: 450px; border: 1px solid #1d2733; border-radius: 4px; overflow: hidden;"></div>
     <div style="margin-top: 12px;">
-        <button id="save-config" type="button" class="btn btn-primary"><b>{{ lang._('Save') }}</b></button>
+        <button id="save-config" type="button" class="btn btn-primary"><b>{{ lang._('Save') }}</b> <small style="font-weight: normal; opacity: 0.85;">(Ctrl+S / ⌘S)</small></button>
         <span id="save-status-msg" style="margin-left: 15px; font-weight: bold;"></span>
         <span id="config-notice" class="text-info" style="margin-left: 15px; display:none;">
             <i class="fa fa-info-circle"></i> {{ lang._('config.yml does not exist yet — it will be created on first save.') }}

@@ -46,24 +46,37 @@ class GeneralController extends IndexController
         $hostname = isset($config->system->hostname) ? (string)$config->system->hostname : '';
         $hint = $hostname !== '' ? $hostname : 'homer.lan';
 
-        // Plain foreach (no `??`): a null-coalescing expression creates a
-        // temporary that reference iteration would mutate without touching
-        // the form array.
-        if (!isset($form['tabs']) || !is_array($form['tabs'])) {
-            return;
-        }
-        foreach ($form['tabs'] as &$tab) {
-            foreach ($tab['sections'] as &$section) {
-                foreach ($section['children'] as &$field) {
-                    if (($field['id'] ?? '') === 'homer.general.ServerName') {
-                        $field['hint'] = $hint;
+        // Support tabless form structure ($form['sections']) as well as tabbed ($form['tabs'])
+        if (isset($form['sections']) && is_array($form['sections'])) {
+            foreach ($form['sections'] as &$section) {
+                if (isset($section['children']) && is_array($section['children'])) {
+                    foreach ($section['children'] as &$field) {
+                        if (($field['id'] ?? '') === 'homer.general.ServerName') {
+                            $field['hint'] = $hint;
+                        }
                     }
+                    unset($field);
                 }
-                unset($field);
             }
             unset($section);
+        } elseif (isset($form['tabs']) && is_array($form['tabs'])) {
+            foreach ($form['tabs'] as &$tab) {
+                if (isset($tab['sections']) && is_array($tab['sections'])) {
+                    foreach ($tab['sections'] as &$section) {
+                        if (isset($section['children']) && is_array($section['children'])) {
+                            foreach ($section['children'] as &$field) {
+                                if (($field['id'] ?? '') === 'homer.general.ServerName') {
+                                    $field['hint'] = $hint;
+                                }
+                            }
+                            unset($field);
+                        }
+                    }
+                    unset($section);
+                }
+            }
+            unset($tab);
         }
-        unset($tab);
     }
 
     /**
