@@ -12,6 +12,12 @@
         <help>Automatically load FreeBSD 64-bit Linux kernel modules (linux64.ko, linprocfs, linsysfs) to allow running Linux container images.</help>
     </field>
     <field>
+        <id>podman.general.interfaces</id>
+        <label>Firewall Interfaces</label>
+        <type>select_multiple</type>
+        <help>Select the network interfaces where auto-generated container port forwarding rules should apply (default: LAN).</help>
+    </field>
+    <field>
         <id>podman.general.tcp_enabled</id>
         <label>Enable TCP Socket</label>
         <type>checkbox</type>

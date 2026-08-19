@@ -12,6 +12,11 @@
                 <default>1</default>
                 <required>Y</required>
             </enable_linux>
+            <interfaces type="OPNsense\Base\FieldTypes\InterfaceField">
+                <Multiple>Y</Multiple>
+                <default>lan</default>
+                <required>N</required>
+            </interfaces>
             <tcp_enabled type="BooleanField">
                 <default>0</default>
                 <required>N</required>

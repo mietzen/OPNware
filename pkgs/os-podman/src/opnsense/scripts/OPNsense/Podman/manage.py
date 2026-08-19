@@ -8,6 +8,7 @@ import sys
 import json
 import subprocess
 import os
+import base64
 
 STATUS_FILE = "/var/db/podman/manage_status.json"
 PODMAN_BIN = "/usr/local/bin/podman"
@@ -99,6 +100,23 @@ def main():
         run_podman(["logs", "--tail", "200", param])
     elif action == "containers.inspect" and param:
         run_podman(["inspect", param, "--format", "json"])
+    elif action == "containers.exec" and param:
+        container_id = param
+        cmd_arg = sys.argv[3] if len(sys.argv) >= 4 else ""
+        shell_bin = "/bin/sh"
+        exec_cmd = "id"
+        if cmd_arg:
+            try:
+                raw_data = base64.b64decode(cmd_arg).decode('utf-8')
+                try:
+                    payload = json.loads(raw_data)
+                    shell_bin = payload.get("shell", "/bin/sh")
+                    exec_cmd = payload.get("cmd", "")
+                except json.JSONDecodeError:
+                    exec_cmd = raw_data
+            except Exception:
+                exec_cmd = cmd_arg
+        run_podman(["exec", container_id, shell_bin, "-c", exec_cmd])
 
     # Images
     elif action == "images.list":

@@ -47,4 +47,46 @@ class SystemController extends PodmanApiControllerBase
     {
         return $this->executeAction('system_info');
     }
+
+    public function statusAction()
+    {
+        $backend = new \OPNsense\Core\Backend();
+        $statusRaw = trim($backend->configdRun('podman status') ?: '');
+        $isRunning = (stripos($statusRaw, 'is running') !== false);
+
+        $setupData = [];
+        if (file_exists('/var/db/podman/setup_status.json')) {
+            $setupData = json_decode(@file_get_contents('/var/db/podman/setup_status.json'), true) ?: [];
+        }
+
+        $version = $setupData['version'] ?? '5.8.4';
+
+        $model = new \OPNsense\Podman\Podman();
+        $general = $model->general;
+
+        $tcpEndpoint = 'Disabled';
+        if ((string)$general->tcp_enabled === '1') {
+            $addr = (string)$general->listen_address ?: '127.0.0.1';
+            $port = (string)$general->listen_port ?: '2376';
+            $proto = ((string)$general->tls_enabled === '1') ? 'tcp (TLS)' : 'tcp';
+            $tcpEndpoint = "{$proto}://{$addr}:{$port}";
+        }
+
+        $interfaces = (string)$general->interfaces ?: 'lan';
+        $driver = $setupData['driver'] ?? 'zfs';
+        $hasZfs = !empty($setupData['zfs']);
+        $storageInfo = $hasZfs ? "ZFS (zroot/containers)" : "VFS (/var/db/containers/storage)";
+        $linuxEmulation = ((string)$general->enable_linux === '1') ? 'Enabled (64-bit ABI, linprocfs, linsysfs)' : 'Disabled';
+
+        return [
+            'status' => $isRunning ? 'running' : 'stopped',
+            'running' => $isRunning,
+            'version' => $version,
+            'socket' => '/var/run/podman/podman.sock',
+            'storage' => $storageInfo,
+            'linux_emulation' => $linuxEmulation,
+            'tcp_endpoint' => $tcpEndpoint,
+            'interfaces' => $interfaces
+        ];
+    }
 }

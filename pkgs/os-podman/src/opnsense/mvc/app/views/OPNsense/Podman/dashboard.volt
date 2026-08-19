@@ -27,6 +27,67 @@
 <script>
     var autoRefreshInterval = null;
     var currentLogContainerId = null;
+    var currentCliContainerId = null;
+    var cliHistory = [];
+    var cliHistoryIdx = -1;
+
+    function ansiToHtml(str) {
+        if (!str) return '';
+        var html = str
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+
+        var colors = {
+            '30': '#4e4e4e', '31': '#ff6b68', '32': '#5af78e', '33': '#f3f99d',
+            '34': '#57c7ff', '35': '#ff6ac1', '36': '#9aedfe', '37': '#f1f1f0',
+            '90': '#767676', '91': '#e74c3c', '92': '#2ecc71', '93': '#f1c40f',
+            '94': '#3498db', '95': '#9b59b6', '96': '#1abc9c', '97': '#ecf0f1'
+        };
+
+        var openSpans = 0;
+        html = html.replace(/\x1b\[([0-9;]+)m/g, function(match, codeStr) {
+            var codes = codeStr.split(';');
+            var styles = [];
+            var reset = false;
+
+            for (var i = 0; i < codes.length; i++) {
+                var code = codes[i];
+                if (code === '0' || code === '') {
+                    reset = true;
+                } else if (code === '1') {
+                    styles.push('font-weight: bold;');
+                } else if (code === '4') {
+                    styles.push('text-decoration: underline;');
+                } else if (colors[code]) {
+                    styles.push('color: ' + colors[code] + ';');
+                }
+            }
+
+            var res = '';
+            if (reset) {
+                while (openSpans > 0) {
+                    res += '</span>';
+                    openSpans--;
+                }
+            }
+            if (styles.length > 0) {
+                res += '<span style="' + styles.join(' ') + '">';
+                openSpans++;
+            }
+            return res;
+        });
+
+        while (openSpans > 0) {
+            html += '</span>';
+            openSpans--;
+        }
+
+        html = html.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, '');
+        return html;
+    }
 
     function refreshActiveTab() {
         var activeTab = $('#maintabs li.active a').attr('href');
@@ -95,17 +156,23 @@
                 var isRunning = (state.toLowerCase().indexOf('up') !== -1 || state.toLowerCase() === 'running');
                 var badgeClass = isRunning ? 'label-success' : 'label-default';
 
+                var startDisabled = isRunning ? 'disabled="disabled"' : '';
+                var stopDisabled = !isRunning ? 'disabled="disabled"' : '';
+                var restartDisabled = !isRunning ? 'disabled="disabled"' : '';
+                var killDisabled = !isRunning ? 'disabled="disabled"' : '';
+                var cliDisabled = !isRunning ? 'disabled="disabled"' : '';
+                var deleteDisabled = isRunning ? 'disabled="disabled"' : '';
+                var deleteTitle = isRunning ? '{{ lang._("Cannot delete running container. Stop container first.") }}' : '{{ lang._("Delete Container") }}';
+
                 var actions = '';
-                if (!isRunning) {
-                    actions += '<button class="btn btn-xs btn-default act-start" data-id="' + cid + '" title="{{ lang._("Start") }}"><i class="fa fa-play text-success"></i></button> ';
-                } else {
-                    actions += '<button class="btn btn-xs btn-default act-stop" data-id="' + cid + '" title="{{ lang._("Stop") }}"><i class="fa fa-stop text-warning"></i></button> ';
-                    actions += '<button class="btn btn-xs btn-default act-restart" data-id="' + cid + '" title="{{ lang._("Restart") }}"><i class="fa fa-refresh text-info"></i></button> ';
-                    actions += '<button class="btn btn-xs btn-default act-kill" data-id="' + cid + '" title="{{ lang._("Force Stop") }}"><i class="fa fa-bolt text-danger"></i></button> ';
-                }
+                actions += '<button class="btn btn-xs btn-default act-start" data-id="' + cid + '" ' + startDisabled + ' title="{{ lang._("Start") }}"><i class="fa fa-play text-success"></i></button> ';
+                actions += '<button class="btn btn-xs btn-default act-stop" data-id="' + cid + '" ' + stopDisabled + ' title="{{ lang._("Stop") }}"><i class="fa fa-stop text-warning"></i></button> ';
+                actions += '<button class="btn btn-xs btn-default act-restart" data-id="' + cid + '" ' + restartDisabled + ' title="{{ lang._("Restart") }}"><i class="fa fa-refresh text-info"></i></button> ';
+                actions += '<button class="btn btn-xs btn-default act-kill" data-id="' + cid + '" ' + killDisabled + ' title="{{ lang._("Force Stop") }}"><i class="fa fa-bolt text-danger"></i></button> ';
+                actions += '<button class="btn btn-xs btn-default act-cli" data-id="' + cid + '" data-name="' + $('<div>').text(names).html() + '" ' + cliDisabled + ' title="{{ lang._("Container CLI") }}"><i class="fa fa-terminal text-warning"></i></button> ';
                 actions += '<button class="btn btn-xs btn-default act-logs" data-id="' + cid + '" data-name="' + $('<div>').text(names).html() + '" title="{{ lang._("View Logs") }}"><i class="fa fa-file-text-o text-primary"></i></button> ';
                 actions += '<button class="btn btn-xs btn-default act-inspect" data-id="' + cid + '" data-name="' + $('<div>').text(names).html() + '" title="{{ lang._("Inspect Container") }}"><i class="fa fa-info-circle text-info"></i></button> ';
-                actions += '<button class="btn btn-xs btn-default act-delete-container" data-id="' + cid + '" data-name="' + $('<div>').text(names).html() + '" title="{{ lang._("Delete Container") }}"><i class="fa fa-trash text-danger"></i></button>';
+                actions += '<button class="btn btn-xs btn-default act-delete-container" data-id="' + cid + '" data-name="' + $('<div>').text(names).html() + '" ' + deleteDisabled + ' title="' + deleteTitle + '"><i class="fa fa-trash text-danger"></i></button>';
 
                 rows += '<tr>' +
                     '<td><code>' + cid + '</code></td>' +
@@ -227,7 +294,7 @@
             } else {
                 text = '({{ lang._("No log output") }})';
             }
-            $('#modal-logs-body').text(text);
+            $('#modal-logs-body').html(ansiToHtml(text));
             var pre = document.getElementById('modal-logs-body');
             if (pre) {
                 pre.scrollTop = pre.scrollHeight;
@@ -249,6 +316,46 @@
                 text = JSON.stringify(data, null, 2);
             }
             $('#modal-inspect-body').text(text);
+        });
+    }
+
+    function showContainerCli(cid, name) {
+        currentCliContainerId = cid;
+        cliHistoryIdx = -1;
+        $('#modal-cli-title').text('{{ lang._("Container CLI") }}: ' + (name || cid));
+        $('#modal-cli-console').html('<span style="color: #767676;">{{ lang._("Connected to container") }} ' + cid + '. {{ lang._("Enter commands below.") }}\n</span>');
+        $('#cli-cmd-input').val('');
+        $('#modal-cli').modal('show');
+        setTimeout(function() { $('#cli-cmd-input').focus(); }, 500);
+    }
+
+    function runContainerCli() {
+        var cmd = $('#cli-cmd-input').val().trim();
+        if (!cmd || !currentCliContainerId) return;
+        var shell = $('#cli-shell').val().trim() || '/bin/sh';
+
+        cliHistory.push(cmd);
+        cliHistoryIdx = -1;
+        $('#cli-cmd-input').val('');
+
+        var $console = $('#modal-cli-console');
+        $console.append('<span style="color: #57c7ff;">$ ' + $('<div>').text(cmd).html() + '\n</span>');
+
+        $('#btn-cli-run-icon').removeClass('fa-play').addClass('fa-spinner fa-pulse');
+        ajaxCall('/api/podman/containers/exec/' + currentCliContainerId, {cmd: cmd, shell: shell}, function (data, status) {
+            $('#btn-cli-run-icon').removeClass('fa-spinner fa-pulse').addClass('fa-play');
+            var out = '';
+            if (data && data.output) {
+                out = data.output;
+            } else if (data && data.message) {
+                out = data.message;
+            } else {
+                out = '(no output)';
+            }
+            $console.append(ansiToHtml(out) + '\n');
+            var el = document.getElementById('modal-cli-console');
+            if (el) el.scrollTop = el.scrollHeight;
+            $('#cli-cmd-input').focus();
         });
     }
 
@@ -277,7 +384,6 @@
         loadVolumes();
         loadNetworks();
 
-        // 5-second dynamic auto-refresh for real-time visibility
         autoRefreshInterval = setInterval(refreshActiveTab, 5000);
 
         $('#maintabs a[data-toggle="tab"]').on('shown.bs.tab', function () {
@@ -285,27 +391,21 @@
         });
 
         // Lifecycle Actions
-        $(document).on('click', '.act-start', function () {
+        $(document).on('click', '.act-start, .act-stop, .act-restart, .act-kill', function () {
+            if ($(this).is(':disabled')) return;
             var cid = $(this).data('id');
-            ajaxCall('/api/podman/containers/start/' + cid, {}, function () { loadContainers(); loadSystemDf(); });
+            var action = 'start';
+            if ($(this).hasClass('act-stop')) action = 'stop';
+            else if ($(this).hasClass('act-restart')) action = 'restart';
+            else if ($(this).hasClass('act-kill')) action = 'kill';
+
+            ajaxCall('/api/podman/containers/' + action + '/' + cid, {}, function () {
+                loadContainers();
+                loadSystemDf();
+            });
         });
 
-        $(document).on('click', '.act-stop', function () {
-            var cid = $(this).data('id');
-            ajaxCall('/api/podman/containers/stop/' + cid, {}, function () { loadContainers(); loadSystemDf(); });
-        });
-
-        $(document).on('click', '.act-restart', function () {
-            var cid = $(this).data('id');
-            ajaxCall('/api/podman/containers/restart/' + cid, {}, function () { loadContainers(); loadSystemDf(); });
-        });
-
-        $(document).on('click', '.act-kill', function () {
-            var cid = $(this).data('id');
-            ajaxCall('/api/podman/containers/kill/' + cid, {}, function () { loadContainers(); loadSystemDf(); });
-        });
-
-        // Logs & Inspect
+        // Logs, Inspect & CLI
         $(document).on('click', '.act-logs', function () {
             var cid = $(this).data('id');
             var name = $(this).data('name');
@@ -318,12 +418,56 @@
             showContainerInspect(cid, name);
         });
 
+        $(document).on('click', '.act-cli', function () {
+            var cid = $(this).data('id');
+            var name = $(this).data('name');
+            if ($(this).is(':disabled')) return;
+            showContainerCli(cid, name);
+        });
+
         $('#btn_refresh_modal_logs').click(function () {
             fetchLogsContent();
         });
 
+        $('#btn_clear_cli').click(function () {
+            $('#modal-cli-console').html('<span style="color: #767676;">{{ lang._("Console cleared.") }}\n</span>');
+        });
+
+        $('#btn-cli-run').click(function () {
+            runContainerCli();
+        });
+
+        $('#cli-cmd-input').keydown(function (e) {
+            if (e.which === 13) { // Enter
+                e.preventDefault();
+                runContainerCli();
+            } else if (e.which === 38) { // Arrow Up (history back)
+                e.preventDefault();
+                if (cliHistory.length > 0) {
+                    if (cliHistoryIdx === -1) {
+                        cliHistoryIdx = cliHistory.length - 1;
+                    } else if (cliHistoryIdx > 0) {
+                        cliHistoryIdx--;
+                    }
+                    $('#cli-cmd-input').val(cliHistory[cliHistoryIdx]);
+                }
+            } else if (e.which === 40) { // Arrow Down (history forward)
+                e.preventDefault();
+                if (cliHistoryIdx !== -1) {
+                    if (cliHistoryIdx < cliHistory.length - 1) {
+                        cliHistoryIdx++;
+                        $('#cli-cmd-input').val(cliHistory[cliHistoryIdx]);
+                    } else {
+                        cliHistoryIdx = -1;
+                        $('#cli-cmd-input').val('');
+                    }
+                }
+            }
+        });
+
         // Deletion
         $(document).on('click', '.act-delete-container', function () {
+            if ($(this).is(':disabled')) return;
             var cid = $(this).data('id');
             var name = $(this).data('name');
             confirmDelete(
@@ -445,7 +589,7 @@
                         <th>{{ lang._('Image') }}</th>
                         <th>{{ lang._('Status') }}</th>
                         <th>{{ lang._('Created') }}</th>
-                        <th style="width: 200px;">{{ lang._('Actions') }}</th>
+                        <th style="width: 270px;">{{ lang._('Actions') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -547,6 +691,42 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-primary" data-dismiss="modal">{{ lang._('Close') }}</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Container CLI Modal -->
+<div class="modal fade" id="modal-cli" tabindex="-1" role="dialog" aria-labelledby="modal-cli-title" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center;">
+                <h4 class="modal-title" id="modal-cli-title" style="margin: 0;">{{ lang._('Container CLI') }}</h4>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <div style="display: inline-flex; align-items: center; gap: 5px;">
+                        <label for="cli-shell" style="margin: 0; font-size: 12px; font-weight: normal;">{{ lang._('Shell') }}:</label>
+                        <input type="text" class="form-control input-sm" id="cli-shell" value="/bin/sh" style="width: 100px; display: inline-block; height: 26px;" />
+                    </div>
+                    <button type="button" class="btn btn-xs btn-default" id="btn_clear_cli" title="{{ lang._('Clear Console') }}"><i class="fa fa-eraser"></i> {{ lang._('Clear') }}</button>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close" style="margin-left: 10px;"><span aria-hidden="true">&times;</span></button>
+                </div>
+            </div>
+            <div class="modal-body" style="padding: 0; background: #121212;">
+                <pre id="modal-cli-console" style="background: #121212; color: #5af78e; font-family: monospace; font-size: 13px; max-height: 400px; min-height: 250px; overflow-y: auto; padding: 15px; border-radius: 0; margin-bottom: 0; border: none; white-space: pre-wrap;"></pre>
+                <div style="padding: 10px; background: #1a1a1a; border-top: 1px solid #333;">
+                    <div class="input-group">
+                        <span class="input-group-addon" style="background: #222; color: #5af78e; border-color: #444; font-family: monospace;"><b>$</b></span>
+                        <input type="text" class="form-control" id="cli-cmd-input" placeholder="{{ lang._('Type command (e.g. ls -la, uname -a, ps aux) and press Enter...') }}" style="background: #2a2a2a; color: #fff; border-color: #444; font-family: monospace;" />
+                        <span class="input-group-btn">
+                            <button class="btn btn-success" type="button" id="btn-cli-run">
+                                <i class="fa fa-play" id="btn-cli-run-icon"></i> {{ lang._('Run') }}
+                            </button>
+                        </span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer" style="margin-top: 0;">
+                <button type="button" class="btn btn-default" data-dismiss="modal">{{ lang._('Close') }}</button>
             </div>
         </div>
     </div>

@@ -81,7 +81,33 @@ function podman_xmlrpc_sync()
 
 function podman_firewall($fw)
 {
+    global $config;
+
+    $interfaces = [];
+    if (isset($config['OPNsense']['podman']['general']['interfaces'])) {
+        $raw = (string)$config['OPNsense']['podman']['general']['interfaces'];
+        $interfaces = array_filter(explode(',', $raw));
+    }
+    if (empty($interfaces)) {
+        $interfaces = ['lan'];
+    }
+
     $fw->registerAnchor('cni-rdr/*', 'rdr', 0, 'head');
     $fw->registerAnchor('cni-rdr/*', 'nat', 0, 'head');
     $fw->registerAnchor('cni-rdr/*', 'fw', 0, 'head');
+
+    foreach ($interfaces as $intf) {
+        $fw->registerFilterRule(
+            10,
+            [
+                'interface' => $intf,
+                'statetype' => 'keep',
+                'direction' => 'in',
+                'from' => 'any',
+                'to' => '(self)',
+                'descr' => "Allow access to Podman container published ports on {$intf}",
+                '#ref' => 'ui/podman/general'
+            ]
+        );
+    }
 }

@@ -25,6 +25,20 @@
  #}
 
 <script>
+    function updateStatus() {
+        ajaxGet('/api/podman/system/status', {}, function (data, status) {
+            if (data) {
+                var running = data.running ? '<span class="label label-success">{{ lang._("running") }}</span>' : '<span class="label label-default">{{ lang._("stopped") }}</span>';
+                $('#status-running').html(running);
+                $('#status-version').text(data.version || '--');
+                $('#status-storage').text(data.storage || '--');
+                $('#status-linux').text(data.linux_emulation || '--');
+                $('#status-tcp').text(data.tcp_endpoint || '--');
+                $('#status-interfaces').text(data.interfaces ? data.interfaces.toUpperCase() : 'LAN');
+            }
+        });
+    }
+
     $(document).ready(function () {
         var data_get_map = {'frm_general': '/api/podman/general/get'};
         mapDataToFormUI(data_get_map).done(function (data) {
@@ -35,6 +49,7 @@
                 }
             });
             updateServiceControlUI('podman');
+            updateStatus();
         });
 
         $('#btn_save').click(function () {
@@ -45,6 +60,7 @@
                     $('#btn_save_progress').removeClass('fa fa-spinner fa-pulse');
                     $('#btn_save').prop('disabled', false);
                     updateServiceControlUI('podman');
+                    updateStatus();
                 });
             }, false, function () {
                 $('#btn_save_progress').removeClass('fa fa-spinner fa-pulse');
@@ -53,6 +69,49 @@
         });
     });
 </script>
+
+<!-- Live Podman Status Card -->
+<div class="content-box" style="margin-bottom: 20px;">
+    <div class="table-responsive">
+        <table class="table table-striped table-condensed" id="tbl_podman_status">
+            <thead>
+                <tr>
+                    <th colspan="2"><b>{{ lang._('Podman Service & Storage Status') }}</b></th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td style="width: 250px;">{{ lang._('Service Status') }}</td>
+                    <td id="status-running"><i class="fa fa-spinner fa-pulse"></i></td>
+                </tr>
+                <tr>
+                    <td>{{ lang._('Podman Version') }}</td>
+                    <td id="status-version">--</td>
+                </tr>
+                <tr>
+                    <td>{{ lang._('UNIX Socket') }}</td>
+                    <td><code>/var/run/podman/podman.sock</code></td>
+                </tr>
+                <tr>
+                    <td>{{ lang._('Storage Driver') }}</td>
+                    <td id="status-storage">--</td>
+                </tr>
+                <tr>
+                    <td>{{ lang._('Linux Emulation') }}</td>
+                    <td id="status-linux">--</td>
+                </tr>
+                <tr>
+                    <td>{{ lang._('TCP REST Endpoint') }}</td>
+                    <td id="status-tcp">--</td>
+                </tr>
+                <tr>
+                    <td>{{ lang._('Firewall Interfaces') }}</td>
+                    <td id="status-interfaces">--</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
 
 <div class="content-box">
     {{ partial("layout_partials/base_form", ['fields': generalForm, 'id': 'frm_general-settings']) }}
