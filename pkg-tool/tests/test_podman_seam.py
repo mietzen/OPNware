@@ -41,7 +41,7 @@ def test_os_podman_spec_and_files_valid():
     manifest = spec.get("pkg_manifest", {})
     assert manifest.get("name") == "podman"
     assert manifest.get("origin") == "opnware/os-podman"
-    assert manifest.get("version") == "0.1.7"
+    assert manifest.get("version") == "0.1.8"
 
     deps = manifest.get("deps", {})
     for name in REDISTRIBUTE_PKGS:
@@ -57,7 +57,7 @@ def test_os_podman_spec_and_files_valid():
     assert "Allow outbound traffic from Podman container networks" in inc_content
 
     assert (src / "etc" / "syslog-ng.conf.d" / "podman.conf").exists()
-    assert (src / "usr" / "local" / "etc" / "rc.d" / "podman_service").exists()
+    assert (src / "usr" / "local" / "etc" / "rc.d" / "podman-service").exists()
     assert (src / "opnsense" / "service" / "conf" / "actions.d" / "actions_podman.conf").exists()
     assert (src / "opnsense" / "service" / "templates" / "OPNsense" / "Podman" / "+TARGETS").exists()
 

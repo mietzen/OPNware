@@ -24,8 +24,8 @@ cp -R "${SCRIPT_DIR}/src/." "${DIST_ROOT}/dist/pkg/usr/local/"
 # usr/local/etc/rc.d and drop the double-prefixed copy.
 mkdir -p "${DIST_ROOT}/dist/pkg/usr/local/etc/rc.d"
 chmod 0755 "${DIST_ROOT}/dist/pkg/usr/local/etc/rc.d"
-install -m 0755 "${SCRIPT_DIR}/src/usr/local/etc/rc.d/podman_service" \
-    "${DIST_ROOT}/dist/pkg/usr/local/etc/rc.d/podman_service"
+install -m 0755 "${SCRIPT_DIR}/src/usr/local/etc/rc.d/podman-service" \
+    "${DIST_ROOT}/dist/pkg/usr/local/etc/rc.d/podman-service"
 rm -rf "${DIST_ROOT}/dist/pkg/usr/local/usr/local"
 
 # License file
@@ -37,7 +37,7 @@ chmod 0644 "${DIST_ROOT}/dist/pkg/usr/local/share/doc/os-podman/LICENSE"
 # Normalize permissions
 find "${DIST_ROOT}/dist/pkg/usr/local" -type d -exec chmod 0755 {} +
 find "${DIST_ROOT}/dist/pkg/usr/local" -type f -exec chmod 0644 {} +
-chmod 0755 "${DIST_ROOT}/dist/pkg/usr/local/etc/rc.d/podman_service"
+chmod 0755 "${DIST_ROOT}/dist/pkg/usr/local/etc/rc.d/podman-service"
 chmod 0755 "${DIST_ROOT}/dist/pkg/usr/local/opnsense/scripts/OPNsense/Podman/"*.php 2>/dev/null || true
 chmod 0755 "${DIST_ROOT}/dist/pkg/usr/local/opnsense/scripts/OPNsense/Podman/"*.py 2>/dev/null || true
 
