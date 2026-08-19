@@ -38,22 +38,45 @@ function podman_services()
             'stop' => array('podman stop'),
         ),
         'name' => 'podman',
-        'pidfile' => '/var/run/podman/podman_service.pid',
-        'nocheck' => false,
+        'pidfile' => '/var/run/podman/podman_service.pid'
     );
 
     return $services;
 }
 
+function podman_configure()
+{
+    return array(
+        'bootup' => array('podman_configure_do'),
+        'early' => array('podman_configure_do'),
+    );
+}
+
+function podman_configure_do($verbose = false)
+{
+    configd_run('template reload OPNsense/Podman');
+    configd_run('podman setup');
+}
+
 function podman_syslog()
 {
     $logfacilities = array();
-
     $logfacilities['podman'] = array(
-        'facility' => array('podman'),
+        'facility' => array('podman')
     );
-
     return $logfacilities;
+}
+
+function podman_xmlrpc_sync()
+{
+    $result = array();
+    $result[] = array(
+        'description' => gettext('Podman Container Engine'),
+        'section' => 'OPNsense.podman',
+        'id' => 'podman',
+        'services' => ['podman'],
+    );
+    return $result;
 }
 
 function podman_firewall($fw)
@@ -74,7 +97,7 @@ function podman_firewall($fw)
     $fw->registerAnchor('cni-rdr/*', 'nat', 0, 'head');
     $fw->registerAnchor('cni-rdr/*', 'fw', 0, 'head');
 
-    // 2. Outbound container traffic pass rule (DNS, Internet, LAN)
+    // 2. Outbound container traffic pass rule (DNS, Internet, LAN routing)
     $fw->registerFilterRule(
         10,
         [
@@ -89,17 +112,31 @@ function podman_firewall($fw)
         ]
     );
 
-    // 3. Outbound NAT on WAN for container networks
-    $fw->registerSNatRule(
-        150,
-        [
-            'interface' => 'wan',
-            'from' => '10.88.0.0/16',
-            'to' => 'any',
-            'descr' => 'Outbound NAT for Podman container networks',
-            '#ref' => 'ui/podman/general'
-        ]
-    );
+    // 3. Outbound NAT on WAN interfaces for container networks
+    $wanInterfaces = [];
+    if (!empty($config['interfaces'])) {
+        foreach ($config['interfaces'] as $intfKey => $intfConfig) {
+            if (!empty($intfConfig['enable']) && (!empty($intfConfig['gateway']) || $intfKey === 'wan')) {
+                $wanInterfaces[] = $intfKey;
+            }
+        }
+    }
+    if (empty($wanInterfaces)) {
+        $wanInterfaces = ['wan'];
+    }
+
+    foreach ($wanInterfaces as $wanIntf) {
+        $fw->registerSNatRule(
+            150,
+            [
+                'interface' => $wanIntf,
+                'from' => '10.88.0.0/16',
+                'to' => 'any',
+                'descr' => 'Outbound NAT for Podman container networks',
+                '#ref' => 'ui/podman/general'
+            ]
+        );
+    }
 
     // 4. Inbound container port access on selected interfaces
     foreach ($interfaces as $intf) {

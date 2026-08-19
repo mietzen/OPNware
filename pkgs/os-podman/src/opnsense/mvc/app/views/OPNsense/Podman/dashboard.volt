@@ -321,14 +321,21 @@
 
     var currentCliXhr = null;
 
+    function resetCliUi() {
+        $('#btn-cli-stop').hide();
+        $('#btn-cli-run').show();
+        var el = document.getElementById('modal-cli-console');
+        if (el) el.scrollTop = el.scrollHeight;
+        $('#cli-cmd-input').focus();
+    }
+
     function showContainerCli(cid, name) {
         currentCliContainerId = cid;
         cliHistoryIdx = -1;
         $('#modal-cli-title').text('{{ lang._("Container CLI") }}: ' + (name || cid));
         $('#modal-cli-console').html('<span style="color: #767676;">{{ lang._("Connected to container") }} ' + cid + '. {{ lang._("Enter commands below.") }}\n</span>');
         $('#cli-cmd-input').val('');
-        $('#btn-cli-stop').hide();
-        $('#btn-cli-run').show();
+        resetCliUi();
         $('#modal-cli').modal('show');
         setTimeout(function() { $('#cli-cmd-input').focus(); }, 500);
     }
@@ -338,13 +345,9 @@
             currentCliXhr.abort();
             currentCliXhr = null;
         }
-        $('#btn-cli-stop').hide();
-        $('#btn-cli-run').show();
         var $console = $('#modal-cli-console');
         $console.append('<span style="color: #ff6b68;">^C ({{ lang._("command aborted") }})\n</span>');
-        var el = document.getElementById('modal-cli-console');
-        if (el) el.scrollTop = el.scrollHeight;
-        $('#cli-cmd-input').focus();
+        resetCliUi();
     }
 
     function runContainerCli() {
@@ -369,8 +372,6 @@
             data: {cmd: cmd, shell: shell},
             success: function (data) {
                 currentCliXhr = null;
-                $('#btn-cli-stop').hide();
-                $('#btn-cli-run').show();
                 var out = '';
                 if (data && data.output) {
                     out = data.output;
@@ -380,20 +381,14 @@
                     out = '(no output)';
                 }
                 $console.append(ansiToHtml(out) + '\n');
-                var el = document.getElementById('modal-cli-console');
-                if (el) el.scrollTop = el.scrollHeight;
-                $('#cli-cmd-input').focus();
+                resetCliUi();
             },
             error: function (xhr, status, error) {
                 currentCliXhr = null;
-                $('#btn-cli-stop').hide();
-                $('#btn-cli-run').show();
                 if (status !== 'abort') {
                     $console.append('<span style="color: #ff6b68;">{{ lang._("Execution error") }}: ' + $('<div>').text(error || status).html() + '\n</span>');
                 }
-                var el = document.getElementById('modal-cli-console');
-                if (el) el.scrollTop = el.scrollHeight;
-                $('#cli-cmd-input').focus();
+                resetCliUi();
             }
         });
     }
