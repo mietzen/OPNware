@@ -28,3 +28,9 @@ def test_modules_volt_deduplicates_loaded_modules():
     src = MODULES_VOLT.read_text()
     load_modules_block = src[src.index("function loadModules()"):src.index("function appendLog")]
     assert "modules.indexOf(mod) === -1" in load_modules_block
+
+
+def test_modules_volt_deduplicates_add_module():
+    src = MODULES_VOLT.read_text()
+    add_module_block = src[src.index("function addModule(value)"):src.index('$("#add-module").click')]
+    assert "modules.indexOf(value) !== -1" in add_module_block
