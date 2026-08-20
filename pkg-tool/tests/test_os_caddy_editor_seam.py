@@ -163,8 +163,8 @@ def test_rc_scripts_export_no_color():
         assert "TERM=dumb" in content
 
 
-def test_seed_uses_format_json_and_absolute_import_path():
+def test_seed_uses_streamlined_absolute_import_path():
     src = EDITOR_TREE.read_text()
-    assert "format json" in src
+    assert "$seedContent = \"import \" . $importPath . \"\\n\";" in src
     assert "$importPath = $base . '/conf.d/*.caddy';" in src
 
