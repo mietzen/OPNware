@@ -349,7 +349,37 @@
 
         // Only files may be dragged, and only into directories.
         function contextMenuItems(node) {
+            const tree = $('#editor-tree').jstree(true);
+            var selectedNodes = tree ? tree.get_selected(true) : [node];
+            var isNodeSelected = selectedNodes.some(function(n) { return n.id === node.id; });
+            if (!isNodeSelected) {
+                if (tree) {
+                    tree.deselect_all();
+                    tree.select_node(node);
+                }
+                selectedNodes = [node];
+            }
+            const isMulti = selectedNodes && selectedNodes.length > 1;
+
             const items = {};
+
+            if (isMulti) {
+                // In multi-selection, only show Delete for deletable files (never root Caddyfile or directories)
+                const deletableNodes = selectedNodes.filter(function(n) {
+                    return n.type === 'file' && n.id !== 'Caddyfile';
+                });
+
+                if (deletableNodes.length > 0) {
+                    items.delete = {
+                        label: "{{ lang._('Delete') }} (" + deletableNodes.length + ")",
+                        action: function() {
+                            deleteMultipleFiles(deletableNodes.map(function(n) { return n.data.path; }));
+                        }
+                    };
+                }
+                return items;
+            }
+
             if (node.type === 'directory') {
                 items.newFile = {
                     label: "{{ lang._('New file here') }}",
@@ -381,7 +411,7 @@
             if (!name || !name.trim()) {
                 return;
             }
-            $("#editor-error-msg").hide();
+            $("#save-status-msg").empty();
             const path = (dirPath || 'conf.d') + '/' + name.trim();
             $.post("/api/caddyadvanced/editor/add", {path: path}, function(data) {
                 if (data.status !== "ok") {
@@ -399,7 +429,7 @@
             if (!name || !name.trim() || name.trim() === oldName) {
                 return;
             }
-            $("#editor-error-msg").hide();
+            $("#save-status-msg").empty();
             const target = dir + '/' + name.trim();
             $.post('/api/caddyadvanced/editor/move', {path: path, target: target}, function(data) {
                 if (data.status !== 'ok') {
@@ -429,23 +459,61 @@
             });
         }
 
-        function deleteFile(path) {
-            if (!confirm("{{ lang._('Delete this file?') }}")) {
+        function deleteMultipleFiles(paths) {
+            if (!paths || paths.length === 0) {
                 return;
             }
-            $("#editor-error-msg").hide();
-            $.post("/api/caddyadvanced/editor/delete", {path: path}, function(data) {
-                if (data.status !== "ok") {
-                    showError(data.message);
+            var confirmMsg = paths.length === 1
+                ? "{{ lang._('Delete this file?') }}"
+                : "{{ lang._('Delete selected files?') }} (" + paths.length + ")";
+            if (!confirm(confirmMsg)) {
+                return;
+            }
+            $("#save-status-msg").empty();
+
+            var deletedPaths = [];
+            var lastError = null;
+
+            function deleteNext(index) {
+                if (index >= paths.length) {
+                    if (deletedPaths.length > 0) {
+                        deletedPaths.forEach(function(path) {
+                            if (currentFile === path) {
+                                currentFile = null;
+                                setEditorValue('');
+                                $("#editor-name").text('');
+                            }
+                        });
+                        loadTree();
+                    }
+                    if (lastError) {
+                        showError(lastError);
+                    } else {
+                        showSuccess("{{ lang._('Deleted') }}");
+                    }
                     return;
                 }
-                if (currentFile === path) {
-                    currentFile = null;
-                    setEditorValue('');
-                    $("#editor-name").text('');
-                }
-                loadTree();
-            });
+
+                var path = paths[index];
+                $.post("/api/caddyadvanced/editor/delete", {path: path}, function(data) {
+                    if (data && data.status === "ok") {
+                        deletedPaths.push(path);
+                        deleteNext(index + 1);
+                    } else {
+                        lastError = (data && data.message) ? data.message : "{{ lang._('Failed to delete file') }}";
+                        deleteNext(index + 1);
+                    }
+                }).fail(function() {
+                    lastError = "{{ lang._('Failed to delete file') }}";
+                    deleteNext(index + 1);
+                });
+            }
+
+            deleteNext(0);
+        }
+
+        function deleteFile(path) {
+            deleteMultipleFiles([path]);
         }
 
         $(window).on('keydown', function(e) {
@@ -759,12 +827,12 @@
             <span class="help-block">{{ lang._('The tree contains Caddyfile and conf.d/*.caddy. Click a file to open it, and right-click to rename or delete. The root Caddyfile cannot be renamed or deleted.') }}</span>
         </div>
         <div class="opnware-editor-main">
-            <div class="row" style="margin-bottom: 10px;">
-                <div class="col-md-5"><h2 id="editor-name" style="margin-top: 0; margin-bottom: 0; line-height: 30px;">{{ lang._('Caddyfile') }}</h2></div>
-                <div class="col-md-7 text-right" style="display: flex; align-items: center; justify-content: flex-end; gap: 8px;">
-                    <span id="save-status-msg" style="margin-right: 5px; font-weight: bold;"></span>
-                    <button id="save-editor" type="button" class="btn btn-primary btn-xs" style="padding: 4px 12px; font-size: 12px;"><b>{{ lang._('Save') }}</b></button>
-                    <div class="btn-group btn-group-xs" role="group" style="margin-left: 5px;">
+            <div class="row" style="margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between;">
+                <div style="flex: 1; min-width: 0;">
+                    <h2 id="editor-name" style="margin-top: 0; margin-bottom: 0; line-height: 30px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ lang._('Caddyfile') }}</h2>
+                </div>
+                <div style="flex: 0 0 auto; text-align: center; padding: 0 10px;">
+                    <div class="btn-group btn-group-xs" role="group">
                         <button type="button" class="btn btn-default" id="btn-toggle-wrap" title="{{ lang._('Toggle Word Wrap') }}">
                             <i class="fa fa-align-left"></i>
                         </button>
@@ -781,6 +849,10 @@
                             <i class="fa fa-sun-o" id="theme-toggle-icon"></i>
                         </button>
                     </div>
+                </div>
+                <div style="flex: 1; text-align: right; display: flex; align-items: center; justify-content: flex-end; gap: 8px;">
+                    <span id="save-status-msg" style="font-weight: bold;"></span>
+                    <button id="save-editor" type="button" class="btn btn-primary btn-xs" style="padding: 4px 14px; font-size: 12px;"><b>{{ lang._('Save') }}</b></button>
                 </div>
             </div>
             <div id="editor-container" style="height: 520px; border: 1px solid #1d2733; border-radius: 4px; overflow: hidden;"></div>

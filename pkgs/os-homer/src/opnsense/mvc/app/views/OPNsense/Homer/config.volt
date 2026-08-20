@@ -214,12 +214,12 @@
 </script>
 
 <div class="content-box opnware-homer-config-pane" style="padding: 15px;">
-    <div class="row" style="margin-bottom: 10px;">
-        <div class="col-md-5"><h2 style="margin-top: 0; margin-bottom: 0; line-height: 30px;">{{ lang._('Homer config.yml') }}</h2></div>
-        <div class="col-md-7 text-right" style="display: flex; align-items: center; justify-content: flex-end; gap: 8px;">
-            <span id="save-status-msg" style="margin-right: 5px; font-weight: bold;"></span>
-            <button id="save-config" type="button" class="btn btn-primary btn-xs" style="padding: 4px 12px; font-size: 12px;"><b>{{ lang._('Save') }}</b></button>
-            <div class="btn-group btn-group-xs" role="group" style="margin-left: 5px;">
+    <div class="row" style="margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between;">
+        <div style="flex: 1; min-width: 0;">
+            <h2 style="margin-top: 0; margin-bottom: 0; line-height: 30px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ lang._('Homer config.yml') }}</h2>
+        </div>
+        <div style="flex: 0 0 auto; text-align: center; padding: 0 10px;">
+            <div class="btn-group btn-group-xs" role="group">
                 <button type="button" class="btn btn-default" id="btn-toggle-wrap" title="{{ lang._('Toggle Word Wrap') }}">
                     <i class="fa fa-align-left"></i>
                 </button>
@@ -236,6 +236,10 @@
                     <i class="fa fa-sun-o" id="theme-toggle-icon"></i>
                 </button>
             </div>
+        </div>
+        <div style="flex: 1; text-align: right; display: flex; align-items: center; justify-content: flex-end; gap: 8px;">
+            <span id="save-status-msg" style="font-weight: bold;"></span>
+            <button id="save-config" type="button" class="btn btn-primary btn-xs" style="padding: 4px 14px; font-size: 12px;"><b>{{ lang._('Save') }}</b></button>
         </div>
     </div>
     <div id="editor-container" style="height: 520px; border: 1px solid #1d2733; border-radius: 4px; overflow: hidden;"></div>
