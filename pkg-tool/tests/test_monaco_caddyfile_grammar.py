@@ -213,9 +213,9 @@ def test_volt_uses_caddyfile_module_not_textmate():
 
 def test_volt_uses_stock_theme_names():
     src = EDITOR_VOLT.read_text()
-    # The selector options use the stock theme names.
-    assert '<option value="vs">' in src
-    assert '<option value="vs-dark">' in src
+    # The theme toggle switches between the stock theme names 'vs' and 'vs-dark'.
+    assert "'vs'" in src
+    assert "'vs-dark'" in src
     # No extended-theme wiring remains.
     assert "defineEditorThemes" not in src
     assert "theme: 'opnware-vs'" not in src

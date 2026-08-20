@@ -97,10 +97,13 @@ docker compose -f docker-compose.yml up -d
 ### Option B: Podman Remote over SSH
 
 ```bash
-# Add remote system connection in Podman CLI
-podman system connection add opnsense ssh://root@<opnsense-ip>/var/run/podman/podman.sock
+# Modern Podman context (Podman 6.1+):
+podman context create opnsense --docker "host=ssh://root@<opnsense-ip>/var/run/podman/podman.sock"
+podman context use opnsense
+podman ps
 
-# Manage remote containers
+# Alternative (Legacy Podman connection):
+podman system connection add opnsense ssh://root@<opnsense-ip>/var/run/podman/podman.sock
 podman -c opnsense ps
 ```
 
