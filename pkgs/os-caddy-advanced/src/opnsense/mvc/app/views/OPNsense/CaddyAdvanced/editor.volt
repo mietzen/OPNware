@@ -350,7 +350,15 @@
         // Only files may be dragged, and only into directories.
         function contextMenuItems(node) {
             const tree = $('#editor-tree').jstree(true);
-            const selectedNodes = tree ? tree.get_selected(true) : [node];
+            var selectedNodes = tree ? tree.get_selected(true) : [node];
+            var isNodeSelected = selectedNodes.some(function(n) { return n.id === node.id; });
+            if (!isNodeSelected) {
+                if (tree) {
+                    tree.deselect_all();
+                    tree.select_node(node);
+                }
+                selectedNodes = [node];
+            }
             const isMulti = selectedNodes && selectedNodes.length > 1;
 
             const items = {};
@@ -457,29 +465,51 @@
             }
             var confirmMsg = paths.length === 1
                 ? "{{ lang._('Delete this file?') }}"
-                : "{{ lang._('Delete') }} " + paths.length + " {{ lang._('selected files?') }}";
+                : "{{ lang._('Delete selected files?') }} (" + paths.length + ")";
             if (!confirm(confirmMsg)) {
                 return;
             }
             $("#save-status-msg").empty();
-            var promises = paths.map(function(path) {
-                return $.post("/api/caddyadvanced/editor/delete", {path: path});
-            });
 
-            $.when.apply($, promises).done(function() {
-                paths.forEach(function(path) {
-                    if (currentFile === path) {
-                        currentFile = null;
-                        setEditorValue('');
-                        $("#editor-name").text('');
+            var deletedPaths = [];
+            var lastError = null;
+
+            function deleteNext(index) {
+                if (index >= paths.length) {
+                    if (deletedPaths.length > 0) {
+                        deletedPaths.forEach(function(path) {
+                            if (currentFile === path) {
+                                currentFile = null;
+                                setEditorValue('');
+                                $("#editor-name").text('');
+                            }
+                        });
+                        loadTree();
                     }
+                    if (lastError) {
+                        showError(lastError);
+                    } else {
+                        showSuccess("{{ lang._('Deleted') }}");
+                    }
+                    return;
+                }
+
+                var path = paths[index];
+                $.post("/api/caddyadvanced/editor/delete", {path: path}, function(data) {
+                    if (data && data.status === "ok") {
+                        deletedPaths.push(path);
+                        deleteNext(index + 1);
+                    } else {
+                        lastError = (data && data.message) ? data.message : "{{ lang._('Failed to delete file') }}";
+                        deleteNext(index + 1);
+                    }
+                }).fail(function() {
+                    lastError = "{{ lang._('Failed to delete file') }}";
+                    deleteNext(index + 1);
                 });
-                showSuccess("{{ lang._('Deleted') }}");
-                loadTree();
-            }).fail(function() {
-                showError("{{ lang._('Failed to delete some files') }}");
-                loadTree();
-            });
+            }
+
+            deleteNext(0);
         }
 
         function deleteFile(path) {
