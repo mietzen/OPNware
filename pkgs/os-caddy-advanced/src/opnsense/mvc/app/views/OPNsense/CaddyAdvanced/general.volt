@@ -8,10 +8,12 @@
 
 <script>
     $(document).ready(function() {
+        window.scrollTo(0, 0);
         mapDataToFormUI({'frm_general': "/api/caddyadvanced/general/get"}).done(function() {
             $('.selectpicker').selectpicker('refresh');
             updateServiceControlUI('caddyadvanced');
             updateStatus();
+            window.scrollTo(0, 0);
         });
 
         $('[id^="save_general-"]').each(function () {
