@@ -302,7 +302,7 @@ function editor_save_cycle()
     }
 
     // 3. Snapshot the current files for rollback.
-    $snapshot = ROLLBACK_DIR . '/' . gmdate('YmdHis', $ts);
+    $snapshot = ROLLBACK_DIR . '/' . gmdate('YmdHis', $ts) . '_' . sprintf('%04x', mt_rand(0, 0xffff));
     if (!mkdir($snapshot, 0700, true)) {
         editor_rmtree($tmp);
         return editor_complete($out, 'failure', "cannot create snapshot $snapshot", $ts);

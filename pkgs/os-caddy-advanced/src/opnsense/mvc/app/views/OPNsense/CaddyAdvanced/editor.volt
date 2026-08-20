@@ -471,45 +471,25 @@
             }
             $("#save-status-msg").empty();
 
-            var deletedPaths = [];
-            var lastError = null;
-
-            function deleteNext(index) {
-                if (index >= paths.length) {
-                    if (deletedPaths.length > 0) {
-                        deletedPaths.forEach(function(path) {
-                            if (currentFile === path) {
-                                currentFile = null;
-                                setEditorValue('');
-                                $("#editor-name").text('');
-                            }
-                        });
-                        loadTree();
-                    }
-                    if (lastError) {
-                        showError(lastError);
-                    } else {
-                        showSuccess("{{ lang._('Deleted') }}");
-                    }
-                    return;
+            $.post("/api/caddyadvanced/editor/delete", {paths: paths}, function(data) {
+                if (data && data.status === "ok") {
+                    paths.forEach(function(path) {
+                        if (currentFile === path) {
+                            currentFile = null;
+                            setEditorValue('');
+                            $("#editor-name").text('');
+                        }
+                    });
+                    showSuccess("{{ lang._('Deleted') }}");
+                    loadTree();
+                } else {
+                    showError((data && data.message) ? data.message : "{{ lang._('Failed to delete files') }}");
+                    loadTree();
                 }
-
-                var path = paths[index];
-                $.post("/api/caddyadvanced/editor/delete", {path: path}, function(data) {
-                    if (data && data.status === "ok") {
-                        deletedPaths.push(path);
-                        deleteNext(index + 1);
-                    } else {
-                        lastError = (data && data.message) ? data.message : "{{ lang._('Failed to delete file') }}";
-                        deleteNext(index + 1);
-                    }
-                }).fail(function() {
-                    lastError = "{{ lang._('Failed to delete file') }}";
-                    deleteNext(index + 1);
-                });
-            }
-
-            deleteNext(0);
+            }).fail(function() {
+                showError("{{ lang._('Failed to delete files') }}");
+                loadTree();
+            });
         }
 
         function deleteFile(path) {

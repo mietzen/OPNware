@@ -377,29 +377,49 @@ class EditorController extends ApiControllerBase
     }
 
     /**
-     * Delete a conf.d/*.caddy file (staged, then saved). Caddyfile is never
-     * deleted.
+     * Delete one or more conf.d/*.caddy files (staged, then saved). Caddyfile
+     * is never deleted. Accepts single 'path' or array 'paths'.
      * @return array
      */
     public function deleteAction()
     {
-        $rel = $this->treeRelPath($this->request->get('path'));
-        if ($rel === null) {
+        $rawPaths = $this->request->get('paths');
+        if (!is_array($rawPaths)) {
+            $rawPath = $this->request->get('path');
+            if ($rawPath !== null && $rawPath !== '') {
+                $rawPaths = array($rawPath);
+            } else {
+                $rawPaths = array();
+            }
+        }
+        if (empty($rawPaths)) {
             return array('status' => 'failure', 'message' => gettext('invalid path'));
         }
-        if ($rel === 'Caddyfile') {
-            return array('status' => 'failure', 'message' => gettext('Caddyfile cannot be deleted'));
+
+        $validRels = array();
+        foreach ($rawPaths as $p) {
+            $rel = $this->treeRelPath($p);
+            if ($rel === null) {
+                return array('status' => 'failure', 'message' => gettext('invalid path'));
+            }
+            if ($rel === 'Caddyfile') {
+                return array('status' => 'failure', 'message' => gettext('Caddyfile cannot be deleted'));
+            }
+            $validRels[] = $rel;
         }
+
         $error = $this->prepareStaging();
         if ($error !== null) {
             return array('status' => 'failure', 'message' => $error);
         }
-        $staged = self::STAGING_DIR . '/' . $rel;
-        if (!is_file($staged)) {
-            return array('status' => 'failure', 'message' => gettext('file does not exist'));
-        }
-        if (!unlink($staged)) {
-            return array('status' => 'failure', 'message' => gettext('cannot delete file'));
+
+        foreach ($validRels as $rel) {
+            $staged = self::STAGING_DIR . '/' . $rel;
+            if (is_file($staged)) {
+                if (!unlink($staged)) {
+                    return array('status' => 'failure', 'message' => gettext('cannot delete file'));
+                }
+            }
         }
         return $this->runStagedSave();
     }
