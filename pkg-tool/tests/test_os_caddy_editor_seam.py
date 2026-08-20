@@ -91,3 +91,14 @@ def test_caddy_modules_validates_go_import_paths():
     assert "$this->request->isPost()" in modules_ctrl
 
 
+def test_caddy_modules_status_separates_fingerprints():
+    modules_ctrl = Path("pkgs/os-caddy-advanced/src/opnsense/mvc/app/controllers/OPNsense/CaddyAdvanced/Api/ModulesController.php").read_text()
+    assert "$data['binary_fingerprint']" in modules_ctrl
+    assert "$data['moduleset_fingerprint']" in modules_ctrl
+
+    modules_volt = Path("pkgs/os-caddy-advanced/src/opnsense/mvc/app/views/OPNsense/CaddyAdvanced/modules.volt").read_text()
+    assert "status-binary-fingerprint" in modules_volt
+    assert "status-moduleset-fingerprint" in modules_volt
+
+
+
