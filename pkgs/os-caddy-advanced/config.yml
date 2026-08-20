@@ -9,7 +9,7 @@ plugin:
 pkg_manifest:
   name: caddy-advanced
   origin: opnware/os-caddy-advanced
-  version: 0.8.7
+  version: 0.8.8
   comment: Caddy web server plugin
   www: https://caddyserver.com/
   maintainer: github.nstein@mailbox.org

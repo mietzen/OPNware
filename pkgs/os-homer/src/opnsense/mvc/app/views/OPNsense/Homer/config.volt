@@ -30,6 +30,7 @@
     });
 
     $(document).ready(function() {
+        window.scrollTo(0, 0);
         let editor = null;
 
         // --- Monaco + built-in YAML language ---------------------------------

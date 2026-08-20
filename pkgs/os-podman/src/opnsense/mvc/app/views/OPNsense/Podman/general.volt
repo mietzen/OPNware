@@ -69,10 +69,22 @@
                 $('#tab-nav-podman-tcp').hide();
             }
 
+            function selectGuideTab(navId, paneId) {
+                var $activeNav = $('#guide-tabs-container .nav-tabs li.active');
+                var $activePane = $('#guide-tabs-container .tab-content .tab-pane.active');
+                if ($activeNav.attr('id') === navId && $activePane.attr('id') === paneId) {
+                    return;
+                }
+                $activeNav.removeClass('active');
+                $activePane.removeClass('active');
+                $('#' + navId).addClass('active');
+                $('#' + paneId).addClass('active');
+            }
+
             if (sshActive) {
-                $('#tab-nav-ssh a').tab('show');
+                selectGuideTab('tab-nav-ssh', 'tab-guide-ssh');
             } else if (tcpActive) {
-                $('#tab-nav-docker-tcp a').tab('show');
+                selectGuideTab('tab-nav-docker-tcp', 'tab-guide-docker');
             }
         }
     }
@@ -106,6 +118,7 @@
     }
 
     $(document).ready(function () {
+        window.scrollTo(0, 0);
         var data_get_map = {'frm_general': '/api/podman/general/get'};
         mapDataToFormUI(data_get_map).done(function (data) {
             formatTokenizersUI();
@@ -116,6 +129,7 @@
             });
             updateServiceControlUI('podman');
             updateStatus();
+            window.scrollTo(0, 0);
         });
 
         $('#btn_save').click(function () {

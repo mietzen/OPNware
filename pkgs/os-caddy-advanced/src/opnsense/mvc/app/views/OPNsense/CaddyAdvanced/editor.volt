@@ -129,6 +129,7 @@
     });
 
     $(document).ready(function() {
+        window.scrollTo(0, 0);
         let currentFile = null;
         let editor = null;
 

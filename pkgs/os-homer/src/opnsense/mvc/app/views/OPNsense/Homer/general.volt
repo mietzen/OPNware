@@ -7,6 +7,7 @@
 
 <script>
     $(document).ready(function() {
+        window.scrollTo(0, 0);
         // OPNsense MVC form fields carry dotted ids (homer.general.Port) and
         // no name attribute; the form itself is frm_<tab-id>.
         const $form = $("#frm_general-settings");
@@ -21,6 +22,7 @@
             updateServiceControlUI('homer');
             updateStatus();
             updateEffectiveUrl();
+            window.scrollTo(0, 0);
         });
 
         $form.on('input change', 'input, select', updateEffectiveUrl);
