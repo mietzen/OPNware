@@ -133,7 +133,11 @@ class EnvController extends ApiControllerBase
      */
     public function revealAction()
     {
-        $name = $this->request->get('name');
+        if (!$this->request->isPost()) {
+            return array('status' => 'failure', 'message' => gettext('Method Not Allowed'));
+        }
+
+        $name = $this->request->getPost('name');
         if (!is_string($name) || !preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/', $name)) {
             return array('status' => 'failure', 'message' => gettext('invalid variable name'));
         }
@@ -167,7 +171,11 @@ class EnvController extends ApiControllerBase
      */
     public function saveAction()
     {
-        $rows = $this->request->get('rows');
+        if (!$this->request->isPost()) {
+            return array('status' => 'failure', 'message' => gettext('Method Not Allowed'));
+        }
+
+        $rows = $this->request->getPost('rows');
         if (!is_array($rows)) {
             return array('status' => 'failure', 'message' => gettext('missing rows'));
         }

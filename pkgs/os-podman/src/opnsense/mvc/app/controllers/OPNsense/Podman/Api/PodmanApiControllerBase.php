@@ -56,4 +56,9 @@ abstract class PodmanApiControllerBase extends ApiControllerBase
         }
         return $result;
     }
+
+    protected function isValidIdentifier($val)
+    {
+        return is_string($val) && preg_match('/^[a-zA-Z0-9][a-zA-Z0-9_.:\/-]*$/', $val) === 1;
+    }
 }

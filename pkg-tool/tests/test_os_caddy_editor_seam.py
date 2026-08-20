@@ -69,3 +69,22 @@ def test_failed_save_cycle_cleans_staging():
     complete_block = src[src.index("function editor_complete"):]
     assert "if ($result !== 'ok') {" in complete_block
     assert "editor_rmtree(STAGING_DIR);" in complete_block
+
+
+def test_editor_controller_enforces_post_method():
+    src = EDITOR_CONTROLLER.read_text()
+    for action in ["public function saveAction", "public function addAction", "public function deleteAction", "private function copyOrMove"]:
+        block = src[src.index(action):]
+        assert "$this->request->isPost()" in block[:200]
+        assert "gettext('Method Not Allowed')" in block[:200]
+
+
+def test_caddy_modules_validates_go_import_paths():
+    modules_script = Path("pkgs/os-caddy-advanced/src/opnsense/scripts/OPNsense/CaddyAdvanced/modules.php").read_text()
+    assert "is_valid_module_path" in modules_script
+    assert "invalid declared module path" in modules_script
+
+    modules_ctrl = Path("pkgs/os-caddy-advanced/src/opnsense/mvc/app/controllers/OPNsense/CaddyAdvanced/Api/ModulesController.php").read_text()
+    assert "isValidModulePath" in modules_ctrl
+    assert "$this->request->isPost()" in modules_ctrl
+

@@ -226,16 +226,20 @@ class EditorController extends ApiControllerBase
      */
     public function saveAction()
     {
+        if (!$this->request->isPost()) {
+            return array('status' => 'failure', 'message' => gettext('Method Not Allowed'));
+        }
+
         $seed = $this->seedIfMissing();
         if (is_array($seed)) {
             return $seed;
         }
 
-        $rel = $this->treeRelPath($this->request->get('path'));
+        $rel = $this->treeRelPath($this->request->getPost('path'));
         if ($rel === null) {
             return array('status' => 'failure', 'message' => gettext('invalid path'));
         }
-        $content = $this->request->get('content');
+        $content = $this->request->getPost('content');
         if (!is_string($content)) {
             return array('status' => 'failure', 'message' => gettext('missing content'));
         }
@@ -305,9 +309,13 @@ class EditorController extends ApiControllerBase
      */
     public function addAction()
     {
-        $target = $this->request->get('path');
+        if (!$this->request->isPost()) {
+            return array('status' => 'failure', 'message' => gettext('Method Not Allowed'));
+        }
+
+        $target = $this->request->getPost('path');
         if (!is_string($target) || $target === '') {
-            $target = 'conf.d/' . $this->request->get('name');
+            $target = 'conf.d/' . $this->request->getPost('name');
         }
         if (!editor_tree_rel_safe($target)) {
             return array(
@@ -349,8 +357,12 @@ class EditorController extends ApiControllerBase
 
     private function copyOrMove($move)
     {
-        $source = $this->treeRelPath($this->request->get('path'));
-        $target = $this->treeRelPath($this->request->get('target') ?: $this->request->get('name'));
+        if (!$this->request->isPost()) {
+            return array('status' => 'failure', 'message' => gettext('Method Not Allowed'));
+        }
+
+        $source = $this->treeRelPath($this->request->getPost('path'));
+        $target = $this->treeRelPath($this->request->getPost('target') ?: $this->request->getPost('name'));
         if ($source === null || $source === 'Caddyfile' || $target === null || $target === 'Caddyfile') {
             return array('status' => 'failure', 'message' => gettext('only conf.d/*.caddy files can be copied or moved'));
         }
@@ -383,9 +395,13 @@ class EditorController extends ApiControllerBase
      */
     public function deleteAction()
     {
-        $rawPaths = $this->request->get('paths');
+        if (!$this->request->isPost()) {
+            return array('status' => 'failure', 'message' => gettext('Method Not Allowed'));
+        }
+
+        $rawPaths = $this->request->getPost('paths');
         if (!is_array($rawPaths)) {
-            $rawPath = $this->request->get('path');
+            $rawPath = $this->request->getPost('path');
             if ($rawPath !== null && $rawPath !== '') {
                 $rawPaths = array($rawPath);
             } else {

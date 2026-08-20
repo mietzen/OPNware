@@ -130,6 +130,9 @@ class ModulesController extends ApiMutableModelControllerBase
      */
     public function rebuildAction()
     {
+        if (!$this->request->isPost()) {
+            return ['ok' => false, 'message' => gettext('Method Not Allowed')];
+        }
         $backend = new Backend();
         return $this->resultOr($backend->configdRun('caddyadvanced-modules modules-rebuild'));
     }
@@ -142,8 +145,18 @@ class ModulesController extends ApiMutableModelControllerBase
      */
     public function ensureAction()
     {
+        if (!$this->request->isPost()) {
+            return ['ok' => false, 'message' => gettext('Method Not Allowed')];
+        }
         $backend = new Backend();
         return $this->resultOr($backend->configdRun('caddyadvanced-modules modules-ensure'));
+    }
+
+    public static function isValidModulePath($path)
+    {
+        return is_string($path)
+            && preg_match('/^[a-zA-Z0-9_\.\-\/]+(@[a-zA-Z0-9_\.\-\+]+)?$/', $path) === 1
+            && strpos($path, '..') === false;
     }
 
     /**
