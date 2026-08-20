@@ -72,16 +72,31 @@ Open **`https://<OPNSENSE_IP>:9443`** in your browser to complete initial admini
 
 ---
 
-## 5. Exposing the Docker REST API over TCP / TLS
+## 5. Remote Client Access (SSH, TCP, and TLS)
 
-To manage OPNsense containers remotely from external tools (Portainer running on another server, Docker CLI, VS Code Docker extension):
+Containers on OPNsense can be managed remotely from your workstation using Docker CLI, Docker Compose, VS Code, or Podman Remote:
 
+### Option A: SSH Context (Docker CLI & Podman Remote)
+- **Root Privileges Required**: FreeBSD kernel Jails and CNI networking require root privileges (rootless mode is unsupported on FreeBSD). Remote SSH tunnels must connect as `root@<OPNSENSE_IP>`.
+- **Enabling Root SSH in OPNsense**: Navigate to **System → Settings → Administration**, ensure **Permit root user login** is enabled (public key authentication recommended), and add your SSH public key to the root user.
+- **Connection Examples**:
+  ```bash
+  # Docker CLI Context over SSH
+  docker context create opnsense --docker "host=ssh://root@<OPNSENSE_IP>"
+  docker context use opnsense
+
+  # Podman Remote over SSH
+  podman system connection add opnsense ssh://root@<OPNSENSE_IP>/var/run/podman/podman.sock
+  podman --remote -c opnsense ps
+  ```
+
+### Option B: TCP REST API Socket
 1. Navigate to **Services → Podman → Settings** in the OPNsense WebUI.
 2. Check **Enable TCP Socket**.
 3. Set **Listen Address** to your LAN IP (e.g. `10.100.0.1` or `0.0.0.0`) and **Listen Port** to `2375` (or `2376` with TLS).
 4. *(Optional)* Check **Enable TLS** and select a Server Certificate and Client CA from OPNsense Trust Manager.
 5. Click **Apply**.
-6. Connect external clients to `tcp://<OPNSENSE_IP>:2375`.
+6. Connect external clients via `export DOCKER_HOST="tcp://<OPNSENSE_IP>:2375"`.
 
 ---
 

@@ -237,6 +237,11 @@
                         <button class="btn btn-default" type="button" onclick="copySnippet('snippet-ssh-podman-legacy', this)" title="{{ lang._('Copy') }}" style="height: 52px;"><i class="fa fa-clipboard"></i></button>
                     </span>
                 </div>
+                <div class="alert alert-info" style="margin-top: 15px; margin-bottom: 5px;">
+                    <i class="fa fa-info-circle"></i>
+                    <b>{{ lang._('Note on SSH Access & Root Privileges:') }}</b><br>
+                    {{ lang._('FreeBSD executes Podman containers with root kernel privileges (rootless mode is not supported on FreeBSD). Therefore, SSH tunnels must connect as <code>root@<opnsense></code>. Ensure <b>Permit root user login</b> is enabled in <i>System: Settings: Administration</i> (public key authentication recommended), and configure public key authentication for the root user. Alternatively, use the Docker CLI (TCP) or Podman Remote (TCP) tabs above.') }}
+                </div>
             </div>
 
             <!-- Docker TCP Tab -->
