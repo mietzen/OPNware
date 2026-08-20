@@ -827,7 +827,7 @@
             <span class="help-block">{{ lang._('The tree contains Caddyfile and conf.d/*.caddy. Click a file to open it, and right-click to rename or delete. The root Caddyfile cannot be renamed or deleted.') }}</span>
         </div>
         <div class="opnware-editor-main">
-            <div class="row" style="margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between;">
+            <div style="margin: 0 0 10px 0; display: flex; align-items: center; justify-content: space-between;">
                 <div style="flex: 1; min-width: 0;">
                     <h2 id="editor-name" style="margin-top: 0; margin-bottom: 0; line-height: 30px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ lang._('Caddyfile') }}</h2>
                 </div>
