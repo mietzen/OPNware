@@ -214,7 +214,7 @@
 </script>
 
 <div class="content-box opnware-homer-config-pane" style="padding: 15px;">
-    <div class="row" style="margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between;">
+    <div style="margin: 0 0 10px 0; display: flex; align-items: center; justify-content: space-between;">
         <div style="flex: 1; min-width: 0;">
             <h2 style="margin-top: 0; margin-bottom: 0; line-height: 30px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ lang._('Homer config.yml') }}</h2>
         </div>
