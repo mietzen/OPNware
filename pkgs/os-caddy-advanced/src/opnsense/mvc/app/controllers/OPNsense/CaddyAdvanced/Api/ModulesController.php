@@ -11,7 +11,7 @@ class ModulesController extends ApiMutableModelControllerBase
     protected static $internalModelClass = 'OPNsense\CaddyAdvanced\CaddyAdvanced';
 
     /**
-     * Expose only the declared module set (general.Modules) to the UI.
+     * Expose only the declared module set (general.Modules) to the UI, deduplicated.
      * @return array
      * @throws \ReflectionException
      */
@@ -19,7 +19,10 @@ class ModulesController extends ApiMutableModelControllerBase
     {
         $result = [];
         $node = $this->getModel()->getNodeByReference('general.Modules');
-        $result['general'] = ['Modules' => $node != null ? (string)$node : ''];
+        $raw = $node != null ? (string)$node : '';
+        $lines = array_filter(array_map('trim', explode("\n", $raw)));
+        $unique = array_values(array_unique($lines));
+        $result['general'] = ['Modules' => implode("\n", $unique)];
         return $result;
     }
 
@@ -155,7 +158,7 @@ class ModulesController extends ApiMutableModelControllerBase
     }
 
     /**
-     * Set declared module set with validation against valid Go package paths.
+     * Set declared module set with validation and deduplication against valid Go package paths.
      * @return array
      */
     public function setAction()
@@ -165,9 +168,13 @@ class ModulesController extends ApiMutableModelControllerBase
             if (isset($postData['general']['Modules'])) {
                 $modulesStr = (string)$postData['general']['Modules'];
                 $lines = explode("\n", $modulesStr);
+                $unique = [];
                 foreach ($lines as $line) {
                     $mod = trim($line);
-                    if ($mod !== '' && !self::isValidModulePath($mod)) {
+                    if ($mod === '') {
+                        continue;
+                    }
+                    if (!self::isValidModulePath($mod)) {
                         return [
                             'result' => 'failed',
                             'validations' => [
@@ -175,7 +182,12 @@ class ModulesController extends ApiMutableModelControllerBase
                             ]
                         ];
                     }
+                    if (!in_array($mod, $unique, true)) {
+                        $unique[] = $mod;
+                    }
                 }
+                $postData['general']['Modules'] = implode("\n", $unique);
+                $_POST[static::$internalModelName] = $postData;
             }
         }
         return parent::setAction();

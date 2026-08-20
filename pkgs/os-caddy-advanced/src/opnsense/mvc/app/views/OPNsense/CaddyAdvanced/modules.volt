@@ -141,9 +141,15 @@
                     appendLog("{{ lang._('Could not load declared modules.') }}");
                     return;
                 }
-                modules = String(data.caddyadvanced.general.Modules || '')
+                const raw = String(data.caddyadvanced.general.Modules || '')
                     .split("\n").map(function(s) { return s.trim(); })
                     .filter(function(s) { return s !== ''; });
+                modules = [];
+                raw.forEach(function(mod) {
+                    if (modules.indexOf(mod) === -1) {
+                        modules.push(mod);
+                    }
+                });
                 renderModules();
             });
         }
