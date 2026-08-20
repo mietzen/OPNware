@@ -43,9 +43,10 @@
         $('#snippet-ssh-podman-legacy').text('podman system connection add opnsense ' + sshHost + '/var/run/podman/podman.sock\npodman -c opnsense ps');
 
         if (tlsActive) {
-            $('#snippet-docker-tls').show().text('docker --tlsverify --tlscacert=ca.pem --tlscert=cert.pem --tlskey=key.pem -H ' + tcpHost + ' ps');
+            $('#wrap-docker-tls').show();
+            $('#snippet-docker-tls').text('docker --tlsverify --tlscacert=ca.pem --tlscert=cert.pem --tlskey=key.pem -H ' + tcpHost + ' ps');
         } else {
-            $('#snippet-docker-tls').hide();
+            $('#wrap-docker-tls').hide();
         }
 
         if (!tcpActive && !sshActive) {
@@ -217,60 +218,52 @@
             <!-- SSH Context Tab -->
             <div id="tab-guide-ssh" class="tab-pane active">
                 <p><b>{{ lang._('1. Docker CLI & Compose over SSH (Native socket tunnel)') }}:</b></p>
-                <div class="input-group" style="margin-bottom: 15px; width: 100%;">
-                    <pre id="snippet-ssh-docker" style="margin: 0; font-family: monospace; border-radius: 3px 0 0 3px;"></pre>
-                    <span class="input-group-btn" style="vertical-align: top;">
-                        <button class="btn btn-default" type="button" onclick="copySnippet('snippet-ssh-docker', this)" title="{{ lang._('Copy') }}" style="height: 52px;"><i class="fa fa-clipboard"></i></button>
-                    </span>
+                <div style="position: relative; margin-bottom: 15px;">
+                    <pre id="snippet-ssh-docker" style="margin: 0; padding: 10px 45px 10px 12px; font-family: monospace; border-radius: 3px; background-color: #f5f5f5; border: 1px solid #ccc; white-space: pre-wrap; word-break: break-all;"></pre>
+                    <button class="btn btn-xs btn-default" type="button" onclick="copySnippet('snippet-ssh-docker', this)" title="{{ lang._('Copy') }}" style="position: absolute; top: 6px; right: 6px; z-index: 10; padding: 4px 8px;"><i class="fa fa-clipboard"></i></button>
                 </div>
                 <p><b>{{ lang._('2. Podman Remote Context over SSH (Podman 6.1+)') }}:</b></p>
-                <div class="input-group" style="margin-bottom: 15px; width: 100%;">
-                    <pre id="snippet-ssh-podman" style="margin: 0; font-family: monospace; border-radius: 3px 0 0 3px;"></pre>
-                    <span class="input-group-btn" style="vertical-align: top;">
-                        <button class="btn btn-default" type="button" onclick="copySnippet('snippet-ssh-podman', this)" title="{{ lang._('Copy') }}" style="height: 52px;"><i class="fa fa-clipboard"></i></button>
-                    </span>
+                <div style="position: relative; margin-bottom: 15px;">
+                    <pre id="snippet-ssh-podman" style="margin: 0; padding: 10px 45px 10px 12px; font-family: monospace; border-radius: 3px; background-color: #f5f5f5; border: 1px solid #ccc; white-space: pre-wrap; word-break: break-all;"></pre>
+                    <button class="btn btn-xs btn-default" type="button" onclick="copySnippet('snippet-ssh-podman', this)" title="{{ lang._('Copy') }}" style="position: absolute; top: 6px; right: 6px; z-index: 10; padding: 4px 8px;"><i class="fa fa-clipboard"></i></button>
                 </div>
                 <p><b>{{ lang._('3. Alternative: Podman System Connection (Legacy)') }}:</b></p>
-                <div class="input-group" style="margin-bottom: 10px; width: 100%;">
-                    <pre id="snippet-ssh-podman-legacy" style="margin: 0; font-family: monospace; border-radius: 3px 0 0 3px;"></pre>
-                    <span class="input-group-btn" style="vertical-align: top;">
-                        <button class="btn btn-default" type="button" onclick="copySnippet('snippet-ssh-podman-legacy', this)" title="{{ lang._('Copy') }}" style="height: 52px;"><i class="fa fa-clipboard"></i></button>
-                    </span>
+                <div style="position: relative; margin-bottom: 10px;">
+                    <pre id="snippet-ssh-podman-legacy" style="margin: 0; padding: 10px 45px 10px 12px; font-family: monospace; border-radius: 3px; background-color: #f5f5f5; border: 1px solid #ccc; white-space: pre-wrap; word-break: break-all;"></pre>
+                    <button class="btn btn-xs btn-default" type="button" onclick="copySnippet('snippet-ssh-podman-legacy', this)" title="{{ lang._('Copy') }}" style="position: absolute; top: 6px; right: 6px; z-index: 10; padding: 4px 8px;"><i class="fa fa-clipboard"></i></button>
                 </div>
                 <div class="alert alert-info" style="margin-top: 15px; margin-bottom: 5px;">
                     <i class="fa fa-info-circle"></i>
                     <b>{{ lang._('Note on SSH Access & Root Privileges:') }}</b><br>
-                    {{ lang._('FreeBSD executes Podman containers with root kernel privileges (rootless mode is not supported on FreeBSD). Therefore, SSH tunnels must connect as <code>root@<opnsense></code>. Ensure <b>Permit root user login</b> is enabled in <i>System: Settings: Administration</i> (public key authentication recommended), and configure public key authentication for the root user. Alternatively, use the Docker CLI (TCP) or Podman Remote (TCP) tabs above.') }}
+                    {{ lang._('FreeBSD executes Podman containers with root kernel privileges (rootless mode is not supported on FreeBSD). Therefore, SSH tunnels must connect as') }} <code>root@&lt;opnsense&gt;</code>.
+                    {{ lang._('Ensure') }} <b>{{ lang._('Permit root user login') }}</b> {{ lang._('is enabled in') }} <i>System: Settings: Administration</i> ({{ lang._('public key authentication recommended') }}), {{ lang._('and configure public key authentication for the root user. Alternatively, use the Docker CLI (TCP) or Podman Remote (TCP) tabs above.') }}
                 </div>
             </div>
 
             <!-- Docker TCP Tab -->
             <div id="tab-guide-docker" class="tab-pane">
                 <p><b>{{ lang._('1. Temporary Shell Environment') }}:</b></p>
-                <div class="input-group" style="margin-bottom: 15px; width: 100%;">
-                    <pre id="snippet-docker-env" style="margin: 0; font-family: monospace; border-radius: 3px 0 0 3px;"></pre>
-                    <span class="input-group-btn" style="vertical-align: top;">
-                        <button class="btn btn-default" type="button" onclick="copySnippet('snippet-docker-env', this)" title="{{ lang._('Copy') }}" style="height: 38px;"><i class="fa fa-clipboard"></i></button>
-                    </span>
+                <div style="position: relative; margin-bottom: 15px;">
+                    <pre id="snippet-docker-env" style="margin: 0; padding: 10px 45px 10px 12px; font-family: monospace; border-radius: 3px; background-color: #f5f5f5; border: 1px solid #ccc; white-space: pre-wrap; word-break: break-all;"></pre>
+                    <button class="btn btn-xs btn-default" type="button" onclick="copySnippet('snippet-docker-env', this)" title="{{ lang._('Copy') }}" style="position: absolute; top: 6px; right: 6px; z-index: 10; padding: 4px 8px;"><i class="fa fa-clipboard"></i></button>
                 </div>
                 <p><b>{{ lang._('2. Persistent Docker Context') }}:</b></p>
-                <div class="input-group" style="margin-bottom: 10px; width: 100%;">
-                    <pre id="snippet-docker-context" style="margin: 0; font-family: monospace; border-radius: 3px 0 0 3px;"></pre>
-                    <span class="input-group-btn" style="vertical-align: top;">
-                        <button class="btn btn-default" type="button" onclick="copySnippet('snippet-docker-context', this)" title="{{ lang._('Copy') }}" style="height: 52px;"><i class="fa fa-clipboard"></i></button>
-                    </span>
+                <div style="position: relative; margin-bottom: 10px;">
+                    <pre id="snippet-docker-context" style="margin: 0; padding: 10px 45px 10px 12px; font-family: monospace; border-radius: 3px; background-color: #f5f5f5; border: 1px solid #ccc; white-space: pre-wrap; word-break: break-all;"></pre>
+                    <button class="btn btn-xs btn-default" type="button" onclick="copySnippet('snippet-docker-context', this)" title="{{ lang._('Copy') }}" style="position: absolute; top: 6px; right: 6px; z-index: 10; padding: 4px 8px;"><i class="fa fa-clipboard"></i></button>
                 </div>
-                <pre id="snippet-docker-tls" style="margin-top: 10px; font-family: monospace; display: none;"></pre>
+                <div style="position: relative; margin-top: 10px; display: none;" id="wrap-docker-tls">
+                    <pre id="snippet-docker-tls" style="margin: 0; padding: 10px 45px 10px 12px; font-family: monospace; border-radius: 3px; background-color: #f5f5f5; border: 1px solid #ccc; white-space: pre-wrap; word-break: break-all;"></pre>
+                    <button class="btn btn-xs btn-default" type="button" onclick="copySnippet('snippet-docker-tls', this)" title="{{ lang._('Copy') }}" style="position: absolute; top: 6px; right: 6px; z-index: 10; padding: 4px 8px;"><i class="fa fa-clipboard"></i></button>
+                </div>
             </div>
 
             <!-- Podman TCP Tab -->
             <div id="tab-guide-podman" class="tab-pane">
                 <p><b>{{ lang._('Connect via Podman Remote Context') }}:</b></p>
-                <div class="input-group" style="margin-bottom: 10px; width: 100%;">
-                    <pre id="snippet-podman-remote" style="margin: 0; font-family: monospace; border-radius: 3px 0 0 3px;"></pre>
-                    <span class="input-group-btn" style="vertical-align: top;">
-                        <button class="btn btn-default" type="button" onclick="copySnippet('snippet-podman-remote', this)" title="{{ lang._('Copy') }}" style="height: 52px;"><i class="fa fa-clipboard"></i></button>
-                    </span>
+                <div style="position: relative; margin-bottom: 10px;">
+                    <pre id="snippet-podman-remote" style="margin: 0; padding: 10px 45px 10px 12px; font-family: monospace; border-radius: 3px; background-color: #f5f5f5; border: 1px solid #ccc; white-space: pre-wrap; word-break: break-all;"></pre>
+                    <button class="btn btn-xs btn-default" type="button" onclick="copySnippet('snippet-podman-remote', this)" title="{{ lang._('Copy') }}" style="position: absolute; top: 6px; right: 6px; z-index: 10; padding: 4px 8px;"><i class="fa fa-clipboard"></i></button>
                 </div>
             </div>
         </div>
