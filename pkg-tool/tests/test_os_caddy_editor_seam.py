@@ -144,6 +144,7 @@ def test_syslog_ng_json_parsing_and_ansi_stripping():
         Path("pkgs/os-homer/src/etc/syslog-ng.conf.d/homer.conf"),
     ]:
         content = conf_path.read_text()
+        assert "junction {" in content
         assert "json-parser(prefix(\".caddy.\"))" in content
         assert "set-severity(\"7\" condition(match(\"debug\" value(\".caddy.level\"))))" in content
         assert "set-severity(\"3\" condition(match(\"error\" value(\".caddy.level\"))))" in content
