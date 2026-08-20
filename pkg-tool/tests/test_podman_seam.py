@@ -41,7 +41,7 @@ def test_os_podman_spec_and_files_valid():
     manifest = spec.get("pkg_manifest", {})
     assert manifest.get("name") == "podman"
     assert manifest.get("origin") == "opnware/os-podman"
-    assert manifest.get("version") == "0.1.16"
+    assert manifest.get("version") == "0.1.17"
 
     deps = manifest.get("deps", {})
     for name in REDISTRIBUTE_PKGS:
@@ -117,6 +117,8 @@ def test_os_podman_spec_and_files_valid():
     assert "kern.elf64.fallback_brand=3" in setup_content
     assert "kern.racct.enable" in setup_content
     assert "/usr/local/bin/docker" in setup_content
+    assert "hasExistingStorage" in setup_content
+    assert "skipping zroot/containers creation" in setup_content
 
     manage_content = (src / "opnsense" / "scripts" / "OPNsense" / "Podman" / "manage.py").read_text()
     assert "containers.exec" in manage_content
