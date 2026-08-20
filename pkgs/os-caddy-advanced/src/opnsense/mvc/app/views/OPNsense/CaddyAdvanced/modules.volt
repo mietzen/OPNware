@@ -141,9 +141,15 @@
                     appendLog("{{ lang._('Could not load declared modules.') }}");
                     return;
                 }
-                modules = String(data.caddyadvanced.general.Modules || '')
+                const raw = String(data.caddyadvanced.general.Modules || '')
                     .split("\n").map(function(s) { return s.trim(); })
                     .filter(function(s) { return s !== ''; });
+                modules = [];
+                raw.forEach(function(mod) {
+                    if (modules.indexOf(mod) === -1) {
+                        modules.push(mod);
+                    }
+                });
                 renderModules();
             });
         }
@@ -170,6 +176,20 @@
             }
         }
 
+        function addModule(value) {
+            value = (value || '').trim();
+            if (!value) {
+                return;
+            }
+            if (modules.indexOf(value) !== -1) {
+                appendLog("{{ lang._('Module already declared: ') }}" + value);
+                return;
+            }
+            modules.push(value);
+            renderModules();
+            autoSave();
+        }
+
         $("#add-module").click(function() {
             const value = $("#module-catalog").val() || "";
             if (!value) {
@@ -179,9 +199,7 @@
             if ($("#module-catalog").data('selectpicker')) {
                 $("#module-catalog").selectpicker('refresh');
             }
-            modules.push(value);
-            renderModules();
-            autoSave();
+            addModule(value);
         });
 
         $("#add-custom-module").click(function() {
@@ -190,9 +208,7 @@
                 return;
             }
             $("#new-module").val('');
-            modules.push(value);
-            renderModules();
-            autoSave();
+            addModule(value);
         });
 
         $("#new-module").keydown(function(e) {
