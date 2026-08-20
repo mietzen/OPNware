@@ -43,9 +43,19 @@ class ModulesController extends ApiMutableModelControllerBase
         return ['ok' => false, 'message' => trim($result)];
     }
 
-    public static $defaultCatalogModules = [
+    private const DEFAULT_CATALOG_MODULES = [
         'github.com/lucaslorentz/caddy-docker-proxy/v2',
     ];
+
+    private function mergeDefaultModules(array &$modules)
+    {
+        foreach (self::DEFAULT_CATALOG_MODULES as $def) {
+            if (!in_array($def, $modules, true)) {
+                $modules[] = $def;
+            }
+        }
+        sort($modules, SORT_STRING);
+    }
 
     /**
      * The module catalog from https://caddyserver.com/api/modules, cached for
@@ -69,12 +79,7 @@ class ModulesController extends ApiMutableModelControllerBase
         }
         if (is_array($cached) && isset($cached['modules']) && isset($cached['fetched_at'])
             && (time() - $cached['fetched_at']) < $ttl) {
-            foreach (self::$defaultCatalogModules as $def) {
-                if (!in_array($def, $cached['modules'], true)) {
-                    $cached['modules'][] = $def;
-                }
-            }
-            sort($cached['modules'], SORT_STRING);
+            $this->mergeDefaultModules($cached['modules']);
             return $cached;
         }
 
@@ -92,18 +97,13 @@ class ModulesController extends ApiMutableModelControllerBase
         if ($body === false || $body === '') {
             // Stale cache beats an error — report the age so the UI can note it.
             if (is_array($cached) && isset($cached['modules'])) {
-                foreach (self::$defaultCatalogModules as $def) {
-                    if (!in_array($def, $cached['modules'], true)) {
-                        $cached['modules'][] = $def;
-                    }
-                }
-                sort($cached['modules'], SORT_STRING);
+                $this->mergeDefaultModules($cached['modules']);
                 $cached['stale'] = true;
                 return $cached;
             }
             return array(
                 'status' => 'ok',
-                'modules' => self::$defaultCatalogModules,
+                'modules' => self::DEFAULT_CATALOG_MODULES,
                 'stale' => true,
                 'message' => gettext('catalog fetch failed: ') . $error
             );
@@ -112,25 +112,20 @@ class ModulesController extends ApiMutableModelControllerBase
         $data = json_decode($body, true);
         if (!is_array($data) || !isset($data['result']) || !is_array($data['result'])) {
             if (is_array($cached) && isset($cached['modules'])) {
-                foreach (self::$defaultCatalogModules as $def) {
-                    if (!in_array($def, $cached['modules'], true)) {
-                        $cached['modules'][] = $def;
-                    }
-                }
-                sort($cached['modules'], SORT_STRING);
+                $this->mergeDefaultModules($cached['modules']);
                 $cached['stale'] = true;
                 return $cached;
             }
             return array(
                 'status' => 'ok',
-                'modules' => self::$defaultCatalogModules,
+                'modules' => self::DEFAULT_CATALOG_MODULES,
                 'stale' => true,
                 'message' => gettext('unexpected catalog response')
             );
         }
 
         $packages = array();
-        foreach (self::$defaultCatalogModules as $def) {
+        foreach (self::DEFAULT_CATALOG_MODULES as $def) {
             $packages[$def] = $def;
         }
         foreach ($data['result'] as $entries) {
