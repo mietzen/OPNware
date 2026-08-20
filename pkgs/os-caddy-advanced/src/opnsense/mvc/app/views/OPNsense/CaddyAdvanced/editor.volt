@@ -80,9 +80,20 @@
         padding-right: 15px;
         margin-right: 15px;
         border-right: 1px solid #E5E5E5;
+        display: flex;
+        flex-direction: column;
     }
     .opnware-editor-main { flex: 1 1 auto; min-width: 0; }
-    #editor-tree { min-height: 120px; }
+    #editor-tree {
+        min-height: 120px;
+        max-height: 380px;
+        overflow-y: auto;
+        overflow-x: hidden;
+        margin-bottom: 10px;
+        border: 1px solid #e5e5e5;
+        border-radius: 3px;
+        padding: 5px;
+    }
     #editor-tree .jstree-anchor { max-width: 100%; }
     #editor-tree .jstree-anchor .jstree-icon { margin-right: 4px; }
     @media (max-width: 767px) {
@@ -214,17 +225,11 @@
 
         function preferredEditorTheme() {
             const saved = window.localStorage.getItem('opnware-editor-theme');
-            // Map legacy stored values ('opnware-vs' / 'opnware-vs-dark' from
-            // the TextMate-era extended themes) to the stock themes so users
-            // keep their choice.
-            if (saved === 'opnware-vs') {
+            if (saved === 'opnware-vs' || saved === 'vs') {
                 return 'vs';
             }
-            if (saved === 'opnware-vs-dark') {
+            if (saved === 'opnware-vs-dark' || saved === 'vs-dark') {
                 return 'vs-dark';
-            }
-            if (saved === 'vs' || saved === 'vs-dark') {
-                return saved;
             }
             return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
                 ? 'vs-dark' : 'vs';
@@ -234,15 +239,21 @@
             if (!editor || !window.opnwareMonaco) {
                 return;
             }
-            window.opnwareMonaco.editor.setTheme(preferredEditorTheme());
-            $('#editor-theme').val(preferredEditorTheme());
-            if ($('#editor-theme').data('selectpicker')) {
-                $('#editor-theme').selectpicker('refresh');
+            var theme = preferredEditorTheme();
+            window.opnwareMonaco.editor.setTheme(theme);
+            if (theme === 'vs-dark') {
+                $('#theme-toggle-icon').removeClass('fa-moon-o').addClass('fa-sun-o');
+                $('#btn-toggle-theme').attr('title', '{{ lang._("Switch to Light Theme") }}');
+            } else {
+                $('#theme-toggle-icon').removeClass('fa-sun-o').addClass('fa-moon-o');
+                $('#btn-toggle-theme').attr('title', '{{ lang._("Switch to Dark Theme") }}');
             }
         }
 
-        $('#editor-theme').change(function() {
-            window.localStorage.setItem('opnware-editor-theme', $(this).val());
+        $('#btn-toggle-theme').click(function() {
+            var current = preferredEditorTheme();
+            var next = (current === 'vs-dark') ? 'vs' : 'vs-dark';
+            window.localStorage.setItem('opnware-editor-theme', next);
             syncEditorTheme();
         });
 
@@ -749,9 +760,11 @@
         </div>
         <div class="opnware-editor-main">
             <div class="row" style="margin-bottom: 10px;">
-                <div class="col-md-7"><h2 id="editor-name" style="margin-top: 0;">{{ lang._('Caddyfile') }}</h2></div>
-                <div class="col-md-5 text-right" style="display: flex; align-items: center; justify-content: flex-end; gap: 8px;">
-                    <div class="btn-group btn-group-xs" role="group" style="margin-right: 5px;">
+                <div class="col-md-5"><h2 id="editor-name" style="margin-top: 0; margin-bottom: 0; line-height: 30px;">{{ lang._('Caddyfile') }}</h2></div>
+                <div class="col-md-7 text-right" style="display: flex; align-items: center; justify-content: flex-end; gap: 8px;">
+                    <span id="save-status-msg" style="margin-right: 5px; font-weight: bold;"></span>
+                    <button id="save-editor" type="button" class="btn btn-primary btn-xs" style="padding: 4px 12px; font-size: 12px;"><b>{{ lang._('Save') }}</b></button>
+                    <div class="btn-group btn-group-xs" role="group" style="margin-left: 5px;">
                         <button type="button" class="btn btn-default" id="btn-toggle-wrap" title="{{ lang._('Toggle Word Wrap') }}">
                             <i class="fa fa-align-left"></i>
                         </button>
@@ -764,22 +777,17 @@
                         <button type="button" class="btn btn-default" id="btn-font-inc" title="{{ lang._('Increase Font Size') }}">
                             <i class="fa fa-plus"></i>
                         </button>
+                        <button type="button" class="btn btn-default" id="btn-toggle-theme" title="{{ lang._('Toggle Dark / Light Theme') }}">
+                            <i class="fa fa-sun-o" id="theme-toggle-icon"></i>
+                        </button>
                     </div>
-                    <select id="editor-theme" class="selectpicker" data-width="110px">
-                        <option value="vs">{{ lang._('Light') }}</option>
-                        <option value="vs-dark">{{ lang._('Dark') }}</option>
-                    </select>
                 </div>
             </div>
-            <div id="editor-container" style="height: 450px; border: 1px solid #1d2733; border-radius: 4px; overflow: hidden;"></div>
+            <div id="editor-container" style="height: 520px; border: 1px solid #1d2733; border-radius: 4px; overflow: hidden;"></div>
             {# Hidden transport for the existing save cycle — the Monaco model mirrors its value. #}
             <textarea id="editor-content" class="form-control" rows="20" spellcheck="false"
                       style="font-family: monospace; display: none;"></textarea>
-            <div class="opnware-editor-actions" style="margin-top: 12px;">
-                <button id="save-editor" type="button" class="btn btn-primary"><b>{{ lang._('Save') }}</b></button>
-                <span id="save-status-msg" style="margin-left: 15px; font-weight: bold;"></span>
-            </div>
-            <span class="help-block">{{ lang._('Saving validates the full Caddy configuration before applying changes. Invalid configuration is rejected without modifying files.') }}</span>
+            <span class="help-block" style="margin-top: 8px;">{{ lang._('Saving validates the full Caddy configuration before applying changes. Invalid configuration is rejected without modifying files.') }}</span>
         </div>
     </div>
 </div>

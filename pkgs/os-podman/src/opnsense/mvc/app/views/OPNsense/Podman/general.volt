@@ -37,9 +37,10 @@
 
         $('#snippet-docker-env').text('export DOCKER_HOST="' + tcpHost + '"');
         $('#snippet-docker-context').text('docker context create opnsense-podman --docker "host=' + tcpHost + '"\ndocker context use opnsense-podman');
-        $('#snippet-podman-remote').text('podman --remote -c ' + tcpHost + ' ps');
+        $('#snippet-podman-remote').text('podman context create opnsense-tcp --docker "host=' + tcpHost + '"\npodman context use opnsense-tcp');
         $('#snippet-ssh-docker').text('docker context create opnsense-ssh --docker "host=' + sshHost + '"\ndocker context use opnsense-ssh');
-        $('#snippet-ssh-podman').text('podman system connection add opnsense ' + sshHost + '/var/run/podman/podman.sock\npodman -c opnsense ps');
+        $('#snippet-ssh-podman').text('podman context create opnsense --docker "host=' + sshHost + '/var/run/podman/podman.sock"\npodman context use opnsense');
+        $('#snippet-ssh-podman-legacy').text('podman system connection add opnsense ' + sshHost + '/var/run/podman/podman.sock\npodman -c opnsense ps');
 
         if (tlsActive) {
             $('#snippet-docker-tls').show().text('docker --tlsverify --tlscacert=ca.pem --tlscert=cert.pem --tlskey=key.pem -H ' + tcpHost + ' ps');
@@ -63,11 +64,15 @@
             if (tcpActive) {
                 $('#tab-nav-docker-tcp').show();
                 $('#tab-nav-podman-tcp').show();
-                $('#tab-nav-docker-tcp a').tab('show');
             } else {
                 $('#tab-nav-docker-tcp').hide();
                 $('#tab-nav-podman-tcp').hide();
+            }
+
+            if (sshActive) {
                 $('#tab-nav-ssh a').tab('show');
+            } else if (tcpActive) {
+                $('#tab-nav-docker-tcp a').tab('show');
             }
         }
     }
@@ -204,11 +209,18 @@
                         <button class="btn btn-default" type="button" onclick="copySnippet('snippet-ssh-docker', this)" title="{{ lang._('Copy') }}" style="height: 52px;"><i class="fa fa-clipboard"></i></button>
                     </span>
                 </div>
-                <p><b>{{ lang._('2. Podman Remote CLI over SSH') }}:</b></p>
-                <div class="input-group" style="margin-bottom: 10px; width: 100%;">
+                <p><b>{{ lang._('2. Podman Remote Context over SSH (Podman 6.1+)') }}:</b></p>
+                <div class="input-group" style="margin-bottom: 15px; width: 100%;">
                     <pre id="snippet-ssh-podman" style="margin: 0; font-family: monospace; border-radius: 3px 0 0 3px;"></pre>
                     <span class="input-group-btn" style="vertical-align: top;">
                         <button class="btn btn-default" type="button" onclick="copySnippet('snippet-ssh-podman', this)" title="{{ lang._('Copy') }}" style="height: 52px;"><i class="fa fa-clipboard"></i></button>
+                    </span>
+                </div>
+                <p><b>{{ lang._('3. Alternative: Podman System Connection (Legacy)') }}:</b></p>
+                <div class="input-group" style="margin-bottom: 10px; width: 100%;">
+                    <pre id="snippet-ssh-podman-legacy" style="margin: 0; font-family: monospace; border-radius: 3px 0 0 3px;"></pre>
+                    <span class="input-group-btn" style="vertical-align: top;">
+                        <button class="btn btn-default" type="button" onclick="copySnippet('snippet-ssh-podman-legacy', this)" title="{{ lang._('Copy') }}" style="height: 52px;"><i class="fa fa-clipboard"></i></button>
                     </span>
                 </div>
             </div>
@@ -234,11 +246,11 @@
 
             <!-- Podman TCP Tab -->
             <div id="tab-guide-podman" class="tab-pane">
-                <p><b>{{ lang._('Connect via Podman Remote') }}:</b></p>
+                <p><b>{{ lang._('Connect via Podman Remote Context') }}:</b></p>
                 <div class="input-group" style="margin-bottom: 10px; width: 100%;">
                     <pre id="snippet-podman-remote" style="margin: 0; font-family: monospace; border-radius: 3px 0 0 3px;"></pre>
                     <span class="input-group-btn" style="vertical-align: top;">
-                        <button class="btn btn-default" type="button" onclick="copySnippet('snippet-podman-remote', this)" title="{{ lang._('Copy') }}" style="height: 38px;"><i class="fa fa-clipboard"></i></button>
+                        <button class="btn btn-default" type="button" onclick="copySnippet('snippet-podman-remote', this)" title="{{ lang._('Copy') }}" style="height: 52px;"><i class="fa fa-clipboard"></i></button>
                     </span>
                 </div>
             </div>

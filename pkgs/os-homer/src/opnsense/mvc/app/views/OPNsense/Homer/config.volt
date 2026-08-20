@@ -128,15 +128,21 @@
             if (!editor || !window.opnwareHomerMonaco) {
                 return;
             }
-            window.opnwareHomerMonaco.editor.setTheme(preferredEditorTheme());
-            $('#editor-theme').val(preferredEditorTheme());
-            if ($('#editor-theme').data('selectpicker')) {
-                $('#editor-theme').selectpicker('refresh');
+            var theme = preferredEditorTheme();
+            window.opnwareHomerMonaco.editor.setTheme(theme);
+            if (theme === 'vs-dark') {
+                $('#theme-toggle-icon').removeClass('fa-moon-o').addClass('fa-sun-o');
+                $('#btn-toggle-theme').attr('title', '{{ lang._("Switch to Light Theme") }}');
+            } else {
+                $('#theme-toggle-icon').removeClass('fa-sun-o').addClass('fa-moon-o');
+                $('#btn-toggle-theme').attr('title', '{{ lang._("Switch to Dark Theme") }}');
             }
         }
 
-        $('#editor-theme').change(function() {
-            window.localStorage.setItem('opnware-homer-editor-theme', $(this).val());
+        $('#btn-toggle-theme').click(function() {
+            var current = preferredEditorTheme();
+            var next = (current === 'vs-dark') ? 'vs' : 'vs-dark';
+            window.localStorage.setItem('opnware-homer-editor-theme', next);
             syncEditorTheme();
         });
 
@@ -209,9 +215,11 @@
 
 <div class="content-box opnware-homer-config-pane" style="padding: 15px;">
     <div class="row" style="margin-bottom: 10px;">
-        <div class="col-md-7"><h2 style="margin-top: 0;">{{ lang._('Homer config.yml') }}</h2></div>
-        <div class="col-md-5 text-right" style="display: flex; align-items: center; justify-content: flex-end; gap: 8px;">
-            <div class="btn-group btn-group-xs" role="group" style="margin-right: 5px;">
+        <div class="col-md-5"><h2 style="margin-top: 0; margin-bottom: 0; line-height: 30px;">{{ lang._('Homer config.yml') }}</h2></div>
+        <div class="col-md-7 text-right" style="display: flex; align-items: center; justify-content: flex-end; gap: 8px;">
+            <span id="save-status-msg" style="margin-right: 5px; font-weight: bold;"></span>
+            <button id="save-config" type="button" class="btn btn-primary btn-xs" style="padding: 4px 12px; font-size: 12px;"><b>{{ lang._('Save') }}</b></button>
+            <div class="btn-group btn-group-xs" role="group" style="margin-left: 5px;">
                 <button type="button" class="btn btn-default" id="btn-toggle-wrap" title="{{ lang._('Toggle Word Wrap') }}">
                     <i class="fa fa-align-left"></i>
                 </button>
@@ -224,22 +232,17 @@
                 <button type="button" class="btn btn-default" id="btn-font-inc" title="{{ lang._('Increase Font Size') }}">
                     <i class="fa fa-plus"></i>
                 </button>
+                <button type="button" class="btn btn-default" id="btn-toggle-theme" title="{{ lang._('Toggle Dark / Light Theme') }}">
+                    <i class="fa fa-sun-o" id="theme-toggle-icon"></i>
+                </button>
             </div>
-            <select id="editor-theme" class="selectpicker" data-width="110px">
-                <option value="vs">{{ lang._('Light') }}</option>
-                <option value="vs-dark">{{ lang._('Dark') }}</option>
-            </select>
         </div>
     </div>
-    <div id="editor-container" style="height: 450px; border: 1px solid #1d2733; border-radius: 4px; overflow: hidden;"></div>
-    <div style="margin-top: 12px;">
-        <button id="save-config" type="button" class="btn btn-primary"><b>{{ lang._('Save') }}</b></button>
-        <span id="save-status-msg" style="margin-left: 15px; font-weight: bold;"></span>
-        <span id="config-notice" class="text-info" style="margin-left: 15px; display:none;">
-            <i class="fa fa-info-circle"></i> {{ lang._('config.yml does not exist yet — it will be created on first save.') }}
-        </span>
-        <span class="help-block" style="margin-top: 8px;">
-            {{ lang._('Saving YAML-parses and validates the content before writing. Invalid YAML is rejected and nothing is written. Homer re-reads config.yml in the browser — no service reload happens on save.') }}
-        </span>
-    </div>
+    <div id="editor-container" style="height: 520px; border: 1px solid #1d2733; border-radius: 4px; overflow: hidden;"></div>
+    <span id="config-notice" class="text-info" style="margin-top: 8px; display:none;">
+        <i class="fa fa-info-circle"></i> {{ lang._('config.yml does not exist yet — it will be created on first save.') }}
+    </span>
+    <span class="help-block" style="margin-top: 8px;">
+        {{ lang._('Saving YAML-parses and validates the content before writing. Invalid YAML is rejected and nothing is written. Homer re-reads config.yml in the browser — no service reload happens on save.') }}
+    </span>
 </div>
