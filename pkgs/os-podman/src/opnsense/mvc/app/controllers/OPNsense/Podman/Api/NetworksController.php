@@ -39,11 +39,11 @@ class NetworksController extends PodmanApiControllerBase
     {
         if ($this->request->isPost()) {
             $netName = $name ?: $this->request->getPost('name');
-            if (empty($netName)) {
-                return ["status" => "error", "message" => "Network name is required"];
+            if (empty($netName) || !$this->isValidIdentifier($netName)) {
+                return ["status" => "error", "message" => gettext("Valid network name is required")];
             }
             return $this->executeAction('networks_delete', $netName);
         }
-        return ["status" => "failed"];
+        return ["status" => "failed", "message" => gettext("Method Not Allowed")];
     }
 }

@@ -34,12 +34,12 @@ class ContainersController extends PodmanApiControllerBase
     {
         if ($this->request->isPost()) {
             $containerId = $id ?: $this->request->getPost('id');
-            if (empty($containerId)) {
-                return ["status" => "error", "message" => "Container ID is required"];
+            if (empty($containerId) || !$this->isValidIdentifier($containerId)) {
+                return ["status" => "error", "message" => gettext("Valid container ID is required")];
             }
             return $this->executeAction("containers_{$action}", $containerId);
         }
-        return ["status" => "failed"];
+        return ["status" => "failed", "message" => gettext("Method Not Allowed")];
     }
 
     public function listAction()
@@ -75,8 +75,8 @@ class ContainersController extends PodmanApiControllerBase
     public function logsAction($id = null)
     {
         $containerId = $id ?: $this->request->get('id');
-        if (empty($containerId)) {
-            return ["status" => "error", "message" => "Container ID is required"];
+        if (empty($containerId) || !$this->isValidIdentifier($containerId)) {
+            return ["status" => "error", "message" => gettext("Valid container ID is required")];
         }
         return $this->executeAction('containers_logs', $containerId);
     }
@@ -84,8 +84,8 @@ class ContainersController extends PodmanApiControllerBase
     public function inspectAction($id = null)
     {
         $containerId = $id ?: $this->request->get('id');
-        if (empty($containerId)) {
-            return ["status" => "error", "message" => "Container ID is required"];
+        if (empty($containerId) || !$this->isValidIdentifier($containerId)) {
+            return ["status" => "error", "message" => gettext("Valid container ID is required")];
         }
         return $this->executeAction('containers_inspect', $containerId);
     }
@@ -94,15 +94,19 @@ class ContainersController extends PodmanApiControllerBase
     {
         if ($this->request->isPost()) {
             $containerId = $id ?: $this->request->getPost('id');
-            if (empty($containerId)) {
-                return ["status" => "error", "message" => "Container ID is required"];
+            if (empty($containerId) || !$this->isValidIdentifier($containerId)) {
+                return ["status" => "error", "message" => gettext("Valid container ID is required")];
             }
             $cmd = $this->request->getPost('cmd', 'string', 'id');
             $shell = $this->request->getPost('shell', 'string', '/bin/sh');
+            $allowedShells = ['/bin/sh', '/bin/bash', '/bin/zsh', '/bin/ash', '/bin/csh', '/bin/tcsh'];
+            if (!in_array($shell, $allowedShells, true)) {
+                $shell = '/bin/sh';
+            }
             $payload = json_encode(['shell' => $shell, 'cmd' => $cmd]);
             $b64payload = base64_encode($payload);
             return $this->executeAction('containers_exec', [$containerId, $b64payload]);
         }
-        return ["status" => "failed"];
+        return ["status" => "failed", "message" => gettext("Method Not Allowed")];
     }
 }

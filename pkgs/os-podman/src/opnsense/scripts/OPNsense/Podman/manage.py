@@ -85,23 +85,25 @@ def main():
     action = sys.argv[1]
     param = sys.argv[2] if len(sys.argv) >= 3 else None
 
+    VALID_SHELLS = {"/bin/sh", "/bin/bash", "/bin/zsh", "/bin/ash", "/bin/csh", "/bin/tcsh"}
+
     # Containers
     if action == "containers.list":
         run_podman(["ps", "-a", "--format", "json"])
     elif action == "containers.start" and param:
-        run_podman(["start", param])
+        run_podman(["start", "--", param])
     elif action == "containers.stop" and param:
-        run_podman(["stop", param])
+        run_podman(["stop", "--", param])
     elif action == "containers.kill" and param:
-        run_podman(["kill", param])
+        run_podman(["kill", "--", param])
     elif action == "containers.restart" and param:
-        run_podman(["restart", param])
+        run_podman(["restart", "--", param])
     elif action == "containers.delete" and param:
-        run_podman(["rm", "-f", param])
+        run_podman(["rm", "-f", "--", param])
     elif action == "containers.logs" and param:
-        run_podman(["logs", "--tail", "200", param])
+        run_podman(["logs", "--tail", "200", "--", param])
     elif action == "containers.inspect" and param:
-        run_podman(["inspect", param, "--format", "json"])
+        run_podman(["inspect", "--format", "json", "--", param])
     elif action == "containers.exec" and param:
         container_id = param
         cmd_arg = sys.argv[3] if len(sys.argv) >= 4 else ""
@@ -118,25 +120,27 @@ def main():
                     exec_cmd = raw_data
             except Exception:
                 exec_cmd = cmd_arg
-        run_podman(["exec", container_id, shell_bin, "-c", exec_cmd])
+        if shell_bin not in VALID_SHELLS:
+            shell_bin = "/bin/sh"
+        run_podman(["exec", "--", container_id, shell_bin, "-c", exec_cmd])
 
     # Images
     elif action == "images.list":
         run_podman(["images", "--format", "json"])
     elif action == "images.delete" and param:
-        run_podman(["rmi", "-f", param])
+        run_podman(["rmi", "-f", "--", param])
 
     # Volumes
     elif action == "volumes.list":
         run_podman(["volume", "ls", "--format", "json"])
     elif action == "volumes.delete" and param:
-        run_podman(["volume", "rm", "-f", param])
+        run_podman(["volume", "rm", "-f", "--", param])
 
     # Networks
     elif action == "networks.list":
         run_podman(["network", "ls", "--format", "json"])
     elif action == "networks.delete" and param:
-        run_podman(["network", "rm", param])
+        run_podman(["network", "rm", "--", param])
 
     # System
     elif action == "system.df":

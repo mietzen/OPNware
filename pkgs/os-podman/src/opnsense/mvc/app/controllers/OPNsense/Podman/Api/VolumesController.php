@@ -39,11 +39,11 @@ class VolumesController extends PodmanApiControllerBase
     {
         if ($this->request->isPost()) {
             $volName = $name ?: $this->request->getPost('name');
-            if (empty($volName)) {
-                return ["status" => "error", "message" => "Volume name is required"];
+            if (empty($volName) || !$this->isValidIdentifier($volName)) {
+                return ["status" => "error", "message" => gettext("Valid volume name is required")];
             }
             return $this->executeAction('volumes_delete', $volName);
         }
-        return ["status" => "failed"];
+        return ["status" => "failed", "message" => gettext("Method Not Allowed")];
     }
 }

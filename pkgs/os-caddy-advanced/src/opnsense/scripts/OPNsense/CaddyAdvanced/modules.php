@@ -95,6 +95,16 @@ function run_cmd($cmd, &$out, &$code)
 }
 
 /**
+ * Check if a module path is a valid Go package / repository identifier.
+ */
+function is_valid_module_path($path)
+{
+    return is_string($path)
+        && preg_match('/^[a-zA-Z0-9_\.\-\/]+(@[a-zA-Z0-9_\.\-\+]+)?$/', $path) === 1
+        && strpos($path, '..') === false;
+}
+
+/**
  * Declared module set from the OPNsense config (general.Modules, one per line).
  */
 function declared_modules()
@@ -108,7 +118,13 @@ function declared_modules()
     $result = array();
     foreach ($modules as $module) {
         $module = trim($module);
-        if ($module !== '' && !isset($seen[$module])) {
+        if ($module === '') {
+            continue;
+        }
+        if (!is_valid_module_path($module)) {
+            fail('invalid declared module path: ' . $module);
+        }
+        if (!isset($seen[$module])) {
             $seen[$module] = true;
             $result[] = $module;
         }

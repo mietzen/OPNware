@@ -54,7 +54,11 @@ class ConfigController extends ApiControllerBase
      */
     public function saveAction()
     {
-        $content = $this->request->get('content');
+        if (!$this->request->isPost()) {
+            return array('status' => 'failure', 'message' => gettext('Method Not Allowed'));
+        }
+
+        $content = $this->request->getPost('content');
         if (!is_string($content)) {
             return array('status' => 'failure', 'message' => gettext('missing content'));
         }

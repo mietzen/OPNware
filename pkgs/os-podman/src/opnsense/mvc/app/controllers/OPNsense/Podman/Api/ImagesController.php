@@ -39,11 +39,11 @@ class ImagesController extends PodmanApiControllerBase
     {
         if ($this->request->isPost()) {
             $imageId = $id ?: $this->request->getPost('id');
-            if (empty($imageId)) {
-                return ["status" => "error", "message" => "Image ID is required"];
+            if (empty($imageId) || !$this->isValidIdentifier($imageId)) {
+                return ["status" => "error", "message" => gettext("Valid image ID is required")];
             }
             return $this->executeAction('images_delete', $imageId);
         }
-        return ["status" => "failed"];
+        return ["status" => "failed", "message" => gettext("Method Not Allowed")];
     }
 }
