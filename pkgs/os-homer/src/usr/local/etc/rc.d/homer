@@ -72,7 +72,7 @@ homer_start()
     homer_prestart
     echo -n "Starting ${name}... "
     /usr/bin/su -m "${homer_user}" -c \
-        "${homer_caddy} start ${homer_flags} --pidfile ${homer_pidfile}" \
+        "export NO_COLOR=1 TERM=dumb; ${homer_caddy} start ${homer_flags} --pidfile ${homer_pidfile}" \
         >> "${homer_logfile}" 2>&1
     if [ -f "${homer_pidfile}" ] && /bin/kill -0 "$(/bin/cat "${homer_pidfile}" 2>/dev/null)" 2>/dev/null; then
         echo "done."

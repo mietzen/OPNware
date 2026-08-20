@@ -113,7 +113,7 @@ reloadssl_cmd="caddy_execute reload --force ${caddy_flags}"
 
 caddy_execute()
 {
-    /usr/bin/su -m "${caddy_user}" -c "${caddy_command} $*"
+    /usr/bin/su -m "${caddy_user}" -c "export NO_COLOR=1 TERM=dumb; ${caddy_command} $*"
 }
 
 caddy_precmd()
@@ -144,7 +144,7 @@ caddy_precmd()
 caddy_start()
 {
     echo -n "Starting caddy... "
-    /usr/bin/su -m "${caddy_user}" -c "${caddy_command} start ${caddy_flags} \
+    /usr/bin/su -m "${caddy_user}" -c "export NO_COLOR=1 TERM=dumb; ${caddy_command} start ${caddy_flags} \
         ${caddy_extra_flags} --pidfile ${pidfile}" >> ${caddy_logfile} 2>&1
     if [ $? -eq 0 ] && ps -ax -o pid | grep -q "$(cat ${pidfile})"; then
         echo "done"
