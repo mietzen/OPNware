@@ -86,5 +86,8 @@ def test_caddy_modules_validates_go_import_paths():
 
     modules_ctrl = Path("pkgs/os-caddy-advanced/src/opnsense/mvc/app/controllers/OPNsense/CaddyAdvanced/Api/ModulesController.php").read_text()
     assert "isValidModulePath" in modules_ctrl
+    assert "public function setAction" in modules_ctrl
+    assert "isValidModulePath($mod)" in modules_ctrl
     assert "$this->request->isPost()" in modules_ctrl
+
 

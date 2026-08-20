@@ -124,6 +124,33 @@ class ModulesController extends ApiMutableModelControllerBase
     }
 
     /**
+     * Set declared module set with validation against valid Go package paths.
+     * @return array
+     */
+    public function setAction()
+    {
+        if ($this->request->isPost() && $this->request->hasPost(static::$internalModelName)) {
+            $postData = $this->request->getPost(static::$internalModelName);
+            if (isset($postData['general']['Modules'])) {
+                $modulesStr = (string)$postData['general']['Modules'];
+                $lines = explode("\n", $modulesStr);
+                foreach ($lines as $line) {
+                    $mod = trim($line);
+                    if ($mod !== '' && !self::isValidModulePath($mod)) {
+                        return [
+                            'result' => 'failed',
+                            'validations' => [
+                                'general.Modules' => sprintf(gettext('Invalid module path: %s'), $mod)
+                            ]
+                        ];
+                    }
+                }
+            }
+        }
+        return parent::setAction();
+    }
+
+    /**
      * Rebuild the caddy binary from the declared module set, pinned to the
      * installed caddy version (configd action "caddyadvanced-modules modules-rebuild").
      * @return array
@@ -131,7 +158,7 @@ class ModulesController extends ApiMutableModelControllerBase
     public function rebuildAction()
     {
         if (!$this->request->isPost()) {
-            return ['ok' => false, 'message' => gettext('Method Not Allowed')];
+            return ['status' => 'failure', 'ok' => false, 'message' => gettext('Method Not Allowed')];
         }
         $backend = new Backend();
         return $this->resultOr($backend->configdRun('caddyadvanced-modules modules-rebuild'));
@@ -146,7 +173,7 @@ class ModulesController extends ApiMutableModelControllerBase
     public function ensureAction()
     {
         if (!$this->request->isPost()) {
-            return ['ok' => false, 'message' => gettext('Method Not Allowed')];
+            return ['status' => 'failure', 'ok' => false, 'message' => gettext('Method Not Allowed')];
         }
         $backend = new Backend();
         return $this->resultOr($backend->configdRun('caddyadvanced-modules modules-ensure'));
