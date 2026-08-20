@@ -37,6 +37,7 @@ $owned = array(
     'CADDY_DOCKER_ENVFILE',
     'CADDY_DOCKER_POLLING_INTERVAL',
     'CADDY_DOCKER_PROXY_SERVICE_TASKS',
+    'CADDY_DOCKER_NO_SCOPE',
     'DOCKER_HOST',
     'DOCKER_TLS_VERIFY',
 );
@@ -87,6 +88,9 @@ if ($enabled === '1') {
     }
     if (isset($dockerproxy->proxy_service_tasks)) {
         $rows['CADDY_DOCKER_PROXY_SERVICE_TASKS'] = ((string)$dockerproxy->proxy_service_tasks === '1') ? 'true' : 'false';
+    }
+    if (isset($dockerproxy->no_scope)) {
+        $rows['CADDY_DOCKER_NO_SCOPE'] = ((string)$dockerproxy->no_scope === '1') ? 'true' : 'false';
     }
     if (isset($dockerproxy->docker_host) && (string)$dockerproxy->docker_host !== '') {
         $rows['DOCKER_HOST'] = (string)$dockerproxy->docker_host;

@@ -132,8 +132,10 @@ def test_dockerproxy_syncs_polling_and_service_tasks():
     dp_script = Path("pkgs/os-caddy-advanced/src/opnsense/scripts/OPNsense/CaddyAdvanced/dockerproxy.php").read_text()
     assert "'CADDY_DOCKER_POLLING_INTERVAL'" in dp_script
     assert "'CADDY_DOCKER_PROXY_SERVICE_TASKS'" in dp_script
+    assert "'CADDY_DOCKER_NO_SCOPE'" in dp_script
     assert "$rows['CADDY_DOCKER_POLLING_INTERVAL']" in dp_script
     assert "$rows['CADDY_DOCKER_PROXY_SERVICE_TASKS']" in dp_script
+    assert "$rows['CADDY_DOCKER_NO_SCOPE']" in dp_script
 
 
 def test_syslog_ng_json_parsing_and_ansi_stripping():
