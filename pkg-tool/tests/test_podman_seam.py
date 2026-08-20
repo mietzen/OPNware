@@ -41,7 +41,7 @@ def test_os_podman_spec_and_files_valid():
     manifest = spec.get("pkg_manifest", {})
     assert manifest.get("name") == "podman"
     assert manifest.get("origin") == "opnware/os-podman"
-    assert manifest.get("version") == "0.1.17"
+    assert manifest.get("version") == "0.1.18"
 
     deps = manifest.get("deps", {})
     for name in REDISTRIBUTE_PKGS:
@@ -86,6 +86,7 @@ def test_os_podman_spec_and_files_valid():
     assert "updateStatus()" in general_volt
     assert "updateRemoteGuide" in general_volt
     assert "selectGuideTab" in general_volt
+    assert "Note on SSH Access & Root Privileges" in general_volt
 
     dashboard_content = (src / "opnsense" / "mvc" / "app" / "views" / "OPNsense" / "Podman" / "dashboard.volt").read_text()
     assert "btn_refresh_containers" not in dashboard_content
@@ -129,4 +130,6 @@ def test_os_podman_spec_and_files_valid():
     api_base = (src / "opnsense" / "mvc" / "app" / "controllers" / "OPNsense" / "Podman" / "Api" / "PodmanApiControllerBase.php").read_text()
     assert "isValidIdentifier" in api_base
 
+    doc_text = (ROOT_DIR / "docs" / "plugins" / "os-podman.md").read_text()
+    assert "Root Privileges Required" in doc_text
     assert (ROOT_DIR / "docs" / "plugins" / "os-podman.md").exists()
