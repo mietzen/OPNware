@@ -42,9 +42,7 @@
 	log {
 		output net unixgram//var/run/homer/log.sock {
 		}
-		format console {
-			time_format wall
-		}
+		format json
 	}
 }
 

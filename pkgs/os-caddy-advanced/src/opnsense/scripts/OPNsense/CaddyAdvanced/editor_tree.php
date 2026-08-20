@@ -149,8 +149,9 @@ function editor_tree_seed($base = EDITOR_TREE_BASE)
         return 'cannot create ' . $base . '/conf.d';
     }
     $caddyfile = $base . '/Caddyfile';
+    $importPath = $base . '/conf.d/*.caddy';
     if (!is_file($caddyfile)) {
-        $seedContent = "{\n\tlog {\n\t\toutput file /var/log/caddy/caddy.log\n\t\tformat console\n\t}\n}\n\nimport conf.d/*.caddy\n";
+        $seedContent = "{\n\tlog {\n\t\toutput file /var/log/caddy/caddy.log\n\t\tformat json\n\t}\n}\n\nimport " . $importPath . "\n";
         if (file_put_contents($caddyfile, $seedContent) === false) {
             return 'cannot create Caddyfile';
         }
@@ -166,16 +167,16 @@ function editor_tree_seed($base = EDITOR_TREE_BASE)
         }
     } else {
         $content = file_get_contents($caddyfile);
-        if ($content !== false && strpos($content, 'import conf.d/*.caddy') === false) {
-            // Replace the legacy generated-import seed with the flat glob.
-            $legacy = preg_replace(
-                '/^import \.opnware\/imports\.caddy\s*$/m',
-                'import conf.d/*.caddy',
+        if ($content !== false && strpos($content, $importPath) === false) {
+            // Replace relative import or legacy generated-import with the absolute glob.
+            $migrated = preg_replace(
+                '/^import (?:conf\.d\/\*\.caddy|\.opnware\/imports\.caddy)\s*$/m',
+                'import ' . $importPath,
                 $content,
                 -1,
                 $count
             );
-            $content = $count > 0 ? $legacy : rtrim($content, "\n") . "\n\nimport conf.d/*.caddy\n";
+            $content = $count > 0 ? $migrated : rtrim($content, "\n") . "\n\nimport " . $importPath . "\n";
             if (file_put_contents($caddyfile, $content) === false) {
                 return 'cannot update Caddyfile import';
             }

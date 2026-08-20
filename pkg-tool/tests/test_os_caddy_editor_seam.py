@@ -17,7 +17,7 @@ EDITOR_CONTROLLER = Path(
 
 def test_seed_uses_flat_confd_glob():
     src = EDITOR_TREE.read_text()
-    assert "import conf.d/*.caddy" in src
+    assert "$importPath = $base . '/conf.d/*.caddy';" in src
 
 
 def test_no_generated_import_index():
@@ -134,4 +134,35 @@ def test_dockerproxy_syncs_polling_and_service_tasks():
     assert "'CADDY_DOCKER_PROXY_SERVICE_TASKS'" in dp_script
     assert "$rows['CADDY_DOCKER_POLLING_INTERVAL']" in dp_script
     assert "$rows['CADDY_DOCKER_PROXY_SERVICE_TASKS']" in dp_script
+
+
+def test_syslog_ng_json_parsing_and_ansi_stripping():
+    for conf_path in [
+        Path("pkgs/os-caddy-advanced/src/etc/syslog-ng.conf.d/caddyadvanced.conf"),
+        Path("pkgs/os-homer/src/etc/syslog-ng.conf.d/homer.conf"),
+    ]:
+        content = conf_path.read_text()
+        assert "json-parser(prefix(\".caddy.\"))" in content
+        assert "set-severity(\"7\" condition(match(\"debug\" value(\".caddy.level\"))))" in content
+        assert "set-severity(\"3\" condition(match(\"error\" value(\".caddy.level\"))))" in content
+        assert "set(\"${.caddy.msg}\" value(\"MESSAGE\")" in content
+        assert 'value("MESSAGE")' in content
+        assert "subst(" in content
+        assert "destination" in content
+
+
+def test_rc_scripts_export_no_color():
+    for rc_path in [
+        Path("pkgs/os-caddy-advanced/src/usr/local/etc/rc.d/caddy"),
+        Path("pkgs/os-homer/src/usr/local/etc/rc.d/homer"),
+    ]:
+        content = rc_path.read_text()
+        assert "NO_COLOR=1" in content
+        assert "TERM=dumb" in content
+
+
+def test_seed_uses_format_json_and_absolute_import_path():
+    src = EDITOR_TREE.read_text()
+    assert "format json" in src
+    assert "$importPath = $base . '/conf.d/*.caddy';" in src
 
