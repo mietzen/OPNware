@@ -151,7 +151,7 @@ function editor_tree_seed($base = EDITOR_TREE_BASE)
     $caddyfile = $base . '/Caddyfile';
     $importPath = $base . '/conf.d/*.caddy';
     if (!is_file($caddyfile)) {
-        $seedContent = "{\n\tlog {\n\t\toutput file /var/log/caddy/caddy.log\n\t\tformat json\n\t}\n}\n\nimport " . $importPath . "\n";
+        $seedContent = "import " . $importPath . "\n";
         if (file_put_contents($caddyfile, $seedContent) === false) {
             return 'cannot create Caddyfile';
         }
