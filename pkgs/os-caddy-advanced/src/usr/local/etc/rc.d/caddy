@@ -130,6 +130,15 @@ caddy_precmd()
     else
         /usr/bin/install -m 644 -o "${caddy_user}" -g "${caddy_group}" /dev/null ${caddy_logfile}
     fi
+    # Ensure the envfile exists if specified in caddy_extra_flags or default path
+    _envfile=$(echo "${caddy_extra_flags}" | sed -n 's/.*--envfile[= ]\([^ ]*\).*/\1/p')
+    if [ -z "${_envfile}" ]; then
+        _envfile="/usr/local/etc/caddy/env"
+    fi
+    if [ ! -f "${_envfile}" ]; then
+        /usr/bin/install -d -m 750 -o "${caddy_user}" -g "${caddy_group}" "$(/usr/bin/dirname "${_envfile}")"
+        /usr/bin/install -m 600 -o "${caddy_user}" -g "${caddy_group}" /dev/null "${_envfile}"
+    fi
 }
 
 caddy_start()

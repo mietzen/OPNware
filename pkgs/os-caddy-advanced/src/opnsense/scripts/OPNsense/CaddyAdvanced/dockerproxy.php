@@ -35,6 +35,8 @@ $owned = array(
     'CADDY_DOCKER_INGRESS_NETWORKS',
     'CADDY_DOCKER_CADDYFILE_PATH',
     'CADDY_DOCKER_ENVFILE',
+    'CADDY_DOCKER_POLLING_INTERVAL',
+    'CADDY_DOCKER_PROXY_SERVICE_TASKS',
     'DOCKER_HOST',
     'DOCKER_TLS_VERIFY',
 );
@@ -79,6 +81,12 @@ if ($enabled === '1') {
     }
     if (isset($dockerproxy->envfile) && (string)$dockerproxy->envfile !== '') {
         $rows['CADDY_DOCKER_ENVFILE'] = (string)$dockerproxy->envfile;
+    }
+    if (isset($dockerproxy->polling_interval) && (string)$dockerproxy->polling_interval !== '') {
+        $rows['CADDY_DOCKER_POLLING_INTERVAL'] = (string)$dockerproxy->polling_interval;
+    }
+    if (isset($dockerproxy->proxy_service_tasks)) {
+        $rows['CADDY_DOCKER_PROXY_SERVICE_TASKS'] = ((string)$dockerproxy->proxy_service_tasks === '1') ? 'true' : 'false';
     }
     if (isset($dockerproxy->docker_host) && (string)$dockerproxy->docker_host !== '') {
         $rows['DOCKER_HOST'] = (string)$dockerproxy->docker_host;

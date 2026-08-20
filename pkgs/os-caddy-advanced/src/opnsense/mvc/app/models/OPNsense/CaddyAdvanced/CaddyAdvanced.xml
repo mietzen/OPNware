@@ -58,6 +58,10 @@
             <envfile type="TextField">
                 <Default>/usr/local/etc/caddy/env</Default>
             </envfile>
+            <polling_interval type="TextField"/>
+            <proxy_service_tasks type="BooleanField">
+                <Default>0</Default>
+            </proxy_service_tasks>
             <docker_host type="TextField"/>
             <docker_tls_verify type="BooleanField">
                 <Default>0</Default>
