@@ -94,6 +94,12 @@
             <help>Discover Swarm service tasks. Uncheck when connecting to standalone Docker or Podman engines. Delivered as CADDY_DOCKER_PROXY_SERVICE_TASKS.</help>
         </field>
         <field>
+            <id>caddyadvanced.dockerproxy.no_scope</id>
+            <label>No Scope Event Filter</label>
+            <type>checkbox</type>
+            <help>Omit scope filter in Docker event subscription (required for Podman event stream compatibility). Delivered as CADDY_DOCKER_NO_SCOPE.</help>
+        </field>
+        <field>
             <id>caddyadvanced.dockerproxy.docker_host</id>
             <label>Docker host</label>
             <type>text</type>

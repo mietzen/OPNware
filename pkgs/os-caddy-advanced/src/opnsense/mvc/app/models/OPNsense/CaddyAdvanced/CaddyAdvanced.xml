@@ -62,6 +62,9 @@
             <proxy_service_tasks type="BooleanField">
                 <Default>0</Default>
             </proxy_service_tasks>
+            <no_scope type="BooleanField">
+                <Default>1</Default>
+            </no_scope>
             <docker_host type="TextField"/>
             <docker_tls_verify type="BooleanField">
                 <Default>0</Default>
