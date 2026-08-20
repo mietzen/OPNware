@@ -65,12 +65,14 @@ if ($zpoolRc === 0 && !empty($zpoolOut)) {
     $zfsListRc = 0;
     exec('/sbin/zfs list -H -o name zroot/containers 2>/dev/null', $zfsListOut, $zfsListRc);
     if ($zfsListRc !== 0) {
-        $hasExistingStorage = file_exists('/var/db/containers/storage') && is_dir('/var/db/containers/storage') && count(scandir('/var/db/containers/storage')) > 2;
+        $storageDir = $containersDir . '/storage';
+        $storageFiles = is_dir($storageDir) ? @scandir($storageDir) : false;
+        $hasExistingStorage = is_array($storageFiles) && count($storageFiles) > 2;
         if (!$hasExistingStorage) {
-            log_msg("Creating ZFS dataset zroot/containers mounted at /var/db/containers");
-            exec('/sbin/zfs create -o mountpoint=/var/db/containers zroot/containers 2>/dev/null');
+            log_msg("Creating ZFS dataset zroot/containers mounted at {$containersDir}");
+            exec('/sbin/zfs create -o mountpoint=' . escapeshellarg($containersDir) . ' zroot/containers 2>/dev/null');
         } else {
-            log_msg("Existing container storage detected in /var/db/containers/storage; skipping zroot/containers creation to avoid mount shadowing");
+            log_msg("Existing container storage detected in {$storageDir}; skipping zroot/containers creation to avoid mount shadowing");
         }
     }
 }
