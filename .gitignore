@@ -14,3 +14,9 @@ screenshots/
 # tree; the nightly update flow would otherwise sweep them into its PR.
 pkg-tool/build/
 pkg-tool/*.egg-info/
+node_modules/
+package.json
+package-lock.json
+*.apikey.txt
+*apikey*.txt
+
