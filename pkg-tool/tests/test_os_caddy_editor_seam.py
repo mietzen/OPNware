@@ -118,3 +118,20 @@ def test_seed_creates_example_caddy_on_port_8080():
     # Must be inside initial if (!is_file($caddyfile)) block to prevent recreating when deleted
     assert src.index("$exampleFile = $base . '/conf.d/example.caddy';") > src.index("if (!is_file($caddyfile)) {")
     assert src.index("$exampleFile = $base . '/conf.d/example.caddy';") < src.index("} else {")
+    assert "$envfile = $base . '/env';" in src
+
+
+def test_rc_script_ensures_envfile_in_precmd():
+    rc_script = Path("pkgs/os-caddy-advanced/src/usr/local/etc/rc.d/caddy").read_text()
+    assert "caddy_precmd()" in rc_script
+    assert "_envfile=" in rc_script
+    assert 'chmod 600' in rc_script or 'install -m 600' in rc_script
+
+
+def test_dockerproxy_syncs_polling_and_service_tasks():
+    dp_script = Path("pkgs/os-caddy-advanced/src/opnsense/scripts/OPNsense/CaddyAdvanced/dockerproxy.php").read_text()
+    assert "'CADDY_DOCKER_POLLING_INTERVAL'" in dp_script
+    assert "'CADDY_DOCKER_PROXY_SERVICE_TASKS'" in dp_script
+    assert "$rows['CADDY_DOCKER_POLLING_INTERVAL']" in dp_script
+    assert "$rows['CADDY_DOCKER_PROXY_SERVICE_TASKS']" in dp_script
+

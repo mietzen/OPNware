@@ -81,6 +81,19 @@
             <help>Path of the envfile caddy-docker-proxy passes to the virtual environments it generates. Delivered as CADDY_DOCKER_ENVFILE.</help>
         </field>
         <field>
+            <id>caddyadvanced.dockerproxy.polling_interval</id>
+            <label>Polling interval</label>
+            <type>text</type>
+            <hint>5s</hint>
+            <help>Polling interval for discovering container changes (e.g. 3s, 5s). Useful for engines without event stream support. Delivered as CADDY_DOCKER_POLLING_INTERVAL.</help>
+        </field>
+        <field>
+            <id>caddyadvanced.dockerproxy.proxy_service_tasks</id>
+            <label>Proxy service tasks</label>
+            <type>checkbox</type>
+            <help>Discover Swarm service tasks. Uncheck when connecting to standalone Docker or Podman engines. Delivered as CADDY_DOCKER_PROXY_SERVICE_TASKS.</help>
+        </field>
+        <field>
             <id>caddyadvanced.dockerproxy.docker_host</id>
             <label>Docker host</label>
             <type>text</type>

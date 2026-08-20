@@ -159,6 +159,11 @@ function editor_tree_seed($base = EDITOR_TREE_BASE)
             $exampleContent = "# Example site configuration on port 8080\n# Modify or delete this file in Services: Caddy Advanced: Editor\n\n:8080 {\n\trespond \"Hello from Caddy Advanced on OPNsense!\" 200\n}\n";
             file_put_contents($exampleFile, $exampleContent);
         }
+        $envfile = $base . '/env';
+        if (!is_file($envfile)) {
+            touch($envfile);
+            chmod($envfile, 0600);
+        }
     } else {
         $content = file_get_contents($caddyfile);
         if ($content !== false && strpos($content, 'import conf.d/*.caddy') === false) {
