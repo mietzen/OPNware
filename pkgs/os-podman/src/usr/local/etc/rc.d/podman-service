@@ -21,7 +21,9 @@ load_rc_config "${name}"
 : ${podman_service_tls_ca:=""}
 
 pidfile="/var/run/podman/podman_service.pid"
+suppidfile="/var/run/podman/podman_service_sup.pid"
 tcppidfile="/var/run/podman/podman_service_tcp.pid"
+tcpsuppidfile="/var/run/podman/podman_service_tcp_sup.pid"
 logfile="/var/log/podman/system-service.log"
 podman_bin="/usr/local/bin/podman"
 
@@ -66,7 +68,7 @@ podman_service_start()
     echo "$(date '+%Y-%m-%dT%H:%M:%S%z') [info] Starting Podman UNIX socket daemon..." >> "${logfile}"
     
     # 1. Primary UNIX socket service (always active for local CLI & WebUI)
-    /usr/sbin/daemon -f -p "${pidfile}" -o "${logfile}" "${podman_bin}" --log-level=info system service --time=0 unix:///var/run/podman/podman.sock </dev/null >/dev/null 2>&1
+    /usr/sbin/daemon -r -R 1 -f -P "${suppidfile}" -p "${pidfile}" -o "${logfile}" "${podman_bin}" --log-level=info system service --time=0 unix:///var/run/podman/podman.sock </dev/null >/dev/null 2>&1
     sleep 1
 
     if [ ! -f "${pidfile}" ] || ! /bin/kill -0 "$(/bin/cat "${pidfile}")" 2>/dev/null; then
@@ -79,7 +81,7 @@ podman_service_start()
     if [ "${podman_service_tcp_enable}" = "YES" ] || [ "${podman_service_tls_enable}" = "YES" ]; then
         tcp_endpoint="tcp://${podman_service_listen_address}:${podman_service_listen_port}"
         echo "$(date '+%Y-%m-%dT%H:%M:%S%z') [info] Starting Podman TCP service on ${tcp_endpoint}..." >> "${logfile}"
-        /usr/sbin/daemon -f -p "${tcppidfile}" -o "${logfile}" "${podman_bin}" --log-level=info system service --time=0 ${tls_flags} "${tcp_endpoint}" </dev/null >/dev/null 2>&1
+        /usr/sbin/daemon -r -R 1 -f -P "${tcpsuppidfile}" -p "${tcppidfile}" -o "${logfile}" "${podman_bin}" --log-level=info system service --time=0 ${tls_flags} "${tcp_endpoint}" </dev/null >/dev/null 2>&1
     fi
 
     echo "$(date '+%Y-%m-%dT%H:%M:%S%z') [info] Podman system service daemon started (pid $(/bin/cat "${pidfile}"))." >> "${logfile}"
@@ -91,7 +93,9 @@ podman_service_stop()
 {
     echo -n "Stopping ${name}... "
     echo "$(date '+%Y-%m-%dT%H:%M:%S%z') [info] Stopping Podman system service daemons..." >> "${logfile}"
+    _stop_pid "${tcpsuppidfile}"
     _stop_pid "${tcppidfile}"
+    _stop_pid "${suppidfile}"
     _stop_pid "${pidfile}"
     rm -f /var/run/podman/podman.sock
     echo "$(date '+%Y-%m-%dT%H:%M:%S%z') [info] Podman system service daemon stopped." >> "${logfile}"
