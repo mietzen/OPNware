@@ -110,5 +110,11 @@ def test_caddy_modules_status_separates_fingerprints():
     assert "Non-standard modules:" in status_php
 
 
-
-
+def test_seed_creates_example_caddy_on_port_8080():
+    src = EDITOR_TREE.read_text()
+    assert "$exampleFile = $base . '/conf.d/example.caddy';" in src
+    assert ":8080 {" in src
+    assert 'Hello from Caddy Advanced on OPNsense!' in src
+    # Must be inside initial if (!is_file($caddyfile)) block to prevent recreating when deleted
+    assert src.index("$exampleFile = $base . '/conf.d/example.caddy';") > src.index("if (!is_file($caddyfile)) {")
+    assert src.index("$exampleFile = $base . '/conf.d/example.caddy';") < src.index("} else {")
