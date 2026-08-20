@@ -44,7 +44,8 @@
                     return;
                 }
                 $status.find("#status-modules").text((data.modules && data.modules.length > 0) ? data.modules.join(", ") : "{{ lang._('Standard distribution') }}");
-                $status.find("#status-fingerprint").html(data.fingerprint ? '<code>' + $('<div>').text(data.fingerprint).html() + '</code>' : '--');
+                $status.find("#status-binary-fingerprint").html(data.binary_fingerprint ? '<code>' + $('<div>').text(data.binary_fingerprint).html() + '</code>' : '--');
+                $status.find("#status-moduleset-fingerprint").html(data.moduleset_fingerprint ? '<code>' + $('<div>').text(data.moduleset_fingerprint).html() + '</code>' : '--');
                 const last = data.last_result || {};
                 if (!busy) {
                     let lastBadge = '--';
@@ -251,8 +252,12 @@
                     <td id="status-modules">--</td>
                 </tr>
                 <tr>
-                    <td>{{ lang._('Build Fingerprint') }}</td>
-                    <td id="status-fingerprint">--</td>
+                    <td>{{ lang._('Binary Fingerprint') }}</td>
+                    <td id="status-binary-fingerprint">--</td>
+                </tr>
+                <tr>
+                    <td>{{ lang._('Module Set Fingerprint') }}</td>
+                    <td id="status-moduleset-fingerprint">--</td>
                 </tr>
                 <tr>
                     <td>{{ lang._('Last Build Result') }}</td>

@@ -200,9 +200,15 @@ class ModulesController extends ApiMutableModelControllerBase
             $data = ['running' => false, 'error' => trim($result)];
         }
 
+        $data['binary_fingerprint'] = '';
+        $data['moduleset_fingerprint'] = '';
         $data['fingerprint'] = '';
         if (is_file('/var/db/os-caddy-advanced/build.fingerprint')) {
-            $data['fingerprint'] = trim(file_get_contents('/var/db/os-caddy-advanced/build.fingerprint'));
+            $raw = trim(file_get_contents('/var/db/os-caddy-advanced/build.fingerprint'));
+            $data['fingerprint'] = $raw;
+            $parts = explode(' ', $raw, 2);
+            $data['binary_fingerprint'] = $parts[0] ?? '';
+            $data['moduleset_fingerprint'] = $parts[1] ?? '';
         }
 
         $data['last_result'] = null;
