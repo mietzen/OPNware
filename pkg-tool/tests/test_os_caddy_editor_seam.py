@@ -95,10 +95,20 @@ def test_caddy_modules_status_separates_fingerprints():
     modules_ctrl = Path("pkgs/os-caddy-advanced/src/opnsense/mvc/app/controllers/OPNsense/CaddyAdvanced/Api/ModulesController.php").read_text()
     assert "$data['binary_fingerprint']" in modules_ctrl
     assert "$data['moduleset_fingerprint']" in modules_ctrl
+    assert "caddy-docker-proxy" in modules_ctrl
 
     modules_volt = Path("pkgs/os-caddy-advanced/src/opnsense/mvc/app/views/OPNsense/CaddyAdvanced/modules.volt").read_text()
     assert "status-binary-fingerprint" in modules_volt
     assert "status-moduleset-fingerprint" in modules_volt
+    assert "Installed Modules" not in modules_volt
+
+    general_volt = Path("pkgs/os-caddy-advanced/src/opnsense/mvc/app/views/OPNsense/CaddyAdvanced/general.volt").read_text()
+    assert "data.modules.map" in general_volt
+    assert "'<code>' + $('<div>').text(m).html() + '</code>'" in general_volt
+
+    status_php = Path("pkgs/os-caddy-advanced/src/opnsense/scripts/OPNsense/CaddyAdvanced/status.php").read_text()
+    assert "Non-standard modules:" in status_php
+
 
 
 

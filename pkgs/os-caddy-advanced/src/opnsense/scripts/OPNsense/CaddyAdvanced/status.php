@@ -33,7 +33,15 @@ if (!empty($ver)) {
 }
 
 run_cmd("$caddy list-modules --skip-standard", $mods);
-$result['modules'] = array_values(array_filter(array_map('trim', $mods)));
+$cleanMods = array();
+foreach ($mods as $line) {
+    $line = trim($line);
+    if ($line === '' || stripos($line, 'Non-standard modules:') === 0 || stripos($line, 'Standard modules:') === 0) {
+        continue;
+    }
+    $cleanMods[] = $line;
+}
+$result['modules'] = array_values($cleanMods);
 
 if (is_file($config)) {
     $result['checksum'] = hash_file('sha256', $config);

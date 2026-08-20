@@ -58,7 +58,13 @@
                     : '<span class="label label-default">{{ lang._("stopped") }}</span>';
                 $status.find("#status-running").html(running);
                 $status.find("#status-version").text(data.version || "--");
-                $status.find("#status-modules").text((data.modules && data.modules.length > 0) ? data.modules.join(", ") : "{{ lang._('Standard distribution') }}");
+                let modHtml = '<em>{{ lang._("Standard distribution") }}</em>';
+                if (data.modules && data.modules.length > 0) {
+                    modHtml = data.modules.map(function(m) {
+                        return '<code>' + $('<div>').text(m).html() + '</code>';
+                    }).join(' ');
+                }
+                $status.find("#status-modules").html(modHtml);
 
                 let valHtml = '--';
                 if (data.validate === 'OK') {

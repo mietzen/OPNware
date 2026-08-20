@@ -44,7 +44,6 @@
                 if (!$status.length) {
                     return;
                 }
-                $status.find("#status-modules").text((data.modules && data.modules.length > 0) ? data.modules.join(", ") : "{{ lang._('Standard distribution') }}");
                 $status.find("#status-binary-fingerprint").html(data.binary_fingerprint ? '<code>' + $('<div>').text(data.binary_fingerprint).html() + '</code>' : '--');
                 $status.find("#status-moduleset-fingerprint").html(data.moduleset_fingerprint ? '<code>' + $('<div>').text(data.moduleset_fingerprint).html() + '</code>' : '--');
                 const last = data.last_result || {};
@@ -249,11 +248,7 @@
             </thead>
             <tbody>
                 <tr>
-                    <td style="width: 250px;">{{ lang._('Installed Modules') }}</td>
-                    <td id="status-modules">--</td>
-                </tr>
-                <tr>
-                    <td>{{ lang._('Binary Fingerprint') }}</td>
+                    <td style="width: 250px;">{{ lang._('Binary Fingerprint') }}</td>
                     <td id="status-binary-fingerprint">--</td>
                 </tr>
                 <tr>
