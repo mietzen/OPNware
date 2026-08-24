@@ -4,6 +4,6 @@ build_config:
 redistribute:
   name: containernetworking-plugins
   version:
-    FreeBSD-15-amd64: "0.6_16"
+    FreeBSD-15-amd64: "0.6_17"
   repo: http://pkg.freebsd.org
   path: quarterly/All
