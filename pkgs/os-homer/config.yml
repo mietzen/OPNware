@@ -4,14 +4,14 @@ build_config:
     node: '22'
 content:
   repo: https://github.com/bastienwirtz/homer
-  version: 26.08.2
+  version: 26.08.3
 plugin:
   opnsense_version: "26.7"
   tier: 3
 pkg_manifest:
   name: homer
   origin: opnware/os-homer
-  version: 0.5.9_1
+  version: 0.5.9_2
   comment: Homer dashboard served via its own isolated caddy instance
   www: https://homer-demo.netlify.app/
   maintainer: github.nstein@mailbox.org
