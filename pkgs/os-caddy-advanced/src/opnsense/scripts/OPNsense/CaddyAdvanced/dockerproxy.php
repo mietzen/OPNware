@@ -62,7 +62,9 @@ if ($envfile === '') {
 }
 
 $enabled = isset($dockerproxy->enabled) ? (string)$dockerproxy->enabled : '0';
-$hasPodman = isset($hasPodman) ? (bool)$hasPodman : (file_exists('/usr/local/opnsense/version/podman') || file_exists('/var/run/podman/podman.sock'));
+$podmanVersionPath = getenv('OPNSENSE_PODMAN_VERSION_PATH') ?: '/usr/local/opnsense/version/podman';
+$podmanSockPath = getenv('OPNSENSE_PODMAN_SOCK_PATH') ?: '/var/run/podman/podman.sock';
+$hasPodman = file_exists($podmanVersionPath) || file_exists($podmanSockPath);
 $localPodmanSocket = 'unix:///var/run/podman/podman.sock';
 
 $rows = array();
