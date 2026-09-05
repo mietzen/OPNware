@@ -61,38 +61,8 @@ if ($envfile === '') {
     exit(0);
 }
 
-function docker_proxy_module_installed()
-{
-    $cacheFile = '/var/db/os-caddy-advanced/modules_cache.json';
-    $ttl = 300;
-    if (is_file($cacheFile)) {
-        $cached = json_decode(file_get_contents($cacheFile), true);
-        if (is_array($cached) && isset($cached['fetched_at']) && (time() - $cached['fetched_at']) < $ttl) {
-            return !empty($cached['docker_proxy']);
-        }
-    }
-    exec('/usr/local/bin/caddy list-modules --skip-standard 2>/dev/null', $mods, $rc);
-    $found = false;
-    if ($rc === 0 && is_array($mods)) {
-        foreach ($mods as $mod) {
-            if (stripos($mod, 'docker_proxy') !== false) {
-                $found = true;
-                break;
-            }
-        }
-    }
-    if (!is_dir('/var/db/os-caddy-advanced')) {
-        @mkdir('/var/db/os-caddy-advanced', 0755, true);
-    }
-    @file_put_contents($cacheFile, json_encode(array(
-        'docker_proxy' => $found,
-        'fetched_at' => time(),
-    )));
-    return $found;
-}
-
 $enabled = isset($dockerproxy->enabled) ? (string)$dockerproxy->enabled : '0';
-$hasPodman = file_exists('/usr/local/opnsense/version/podman') || file_exists('/var/run/podman/podman.sock');
+$hasPodman = isset($hasPodman) ? (bool)$hasPodman : (file_exists('/usr/local/opnsense/version/podman') || file_exists('/var/run/podman/podman.sock'));
 $localPodmanSocket = 'unix:///var/run/podman/podman.sock';
 
 $rows = array();
@@ -106,12 +76,8 @@ if ($enabled === '1') {
         $configuredSockets = (string)$dockerproxy->docker_sockets;
     }
 
-    if ($hasPodman && docker_proxy_module_installed()) {
-        if ($configuredSockets === '' || $configuredSockets === 'tcp://docker-proxy-host:2375') {
-            $rows['CADDY_DOCKER_SOCKETS'] = $localPodmanSocket;
-        } elseif ($configuredSockets !== '') {
-            $rows['CADDY_DOCKER_SOCKETS'] = $configuredSockets;
-        }
+    if ($hasPodman && ($configuredSockets === '' || $configuredSockets === 'tcp://docker-proxy-host:2375')) {
+        $rows['CADDY_DOCKER_SOCKETS'] = $localPodmanSocket;
     } elseif ($configuredSockets !== '') {
         $rows['CADDY_DOCKER_SOCKETS'] = $configuredSockets;
     }

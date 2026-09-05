@@ -18,8 +18,18 @@ $result = array(
     'config_path' => $config,
     'checksum' => '',
     'validate' => '',
-    'podman_socket_active' => file_exists('/var/run/podman/podman.sock'),
+    'podman_socket_active' => false,
 );
+
+$podmanActive = file_exists('/var/run/podman/podman.sock');
+if ($podmanActive && file_exists('/var/run/podman/podman_service.pid')) {
+    $pid = trim((string)@file_get_contents('/var/run/podman/podman_service.pid'));
+    if (is_numeric($pid)) {
+        exec('kill -0 ' . (int)$pid . ' 2>/dev/null', $o, $code);
+        $podmanActive = ($code === 0);
+    }
+}
+$result['podman_socket_active'] = $podmanActive;
 
 function run_cmd($cmd, &$out)
 {

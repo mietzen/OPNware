@@ -10,7 +10,6 @@ def test_caddy_dockerproxy_detects_and_auto_adds_podman_socket():
     assert "unix:///var/run/podman/podman.sock" in dp_script
     assert "$hasPodman" in dp_script or "hasPodman" in dp_script
     assert "$rows['CADDY_DOCKER_SOCKETS']" in dp_script
-    assert "docker_proxy_module_installed" in dp_script
 
 
 def test_podman_setup_and_service_notifies_caddy_dockerproxy_sync():
@@ -69,16 +68,24 @@ set_include_path('{tmp_path}' . PATH_SEPARATOR . '{script_dir}');
 require '{script_dir}/dockerproxy.php';
 """)
 
+        # Test 1: With custom sockets
         env = os.environ.copy()
         env["TEST_ENVFILE"] = str(env_file)
-        env["TEST_SOCKETS"] = "tcp://docker-proxy-host:2375"
+        env["TEST_SOCKETS"] = "tcp://remote-host:2375"
         res = subprocess.run(["php", str(test_wrapper)], env=env, capture_output=True, text=True)
         assert res.returncode == 0
         assert "OK" in res.stdout
         assert "CUSTOM_VAR=hello" in env_file.read_text()
-
-        # Test with custom sockets
-        env["TEST_SOCKETS"] = "tcp://remote-host:2375"
-        res2 = subprocess.run(["php", str(test_wrapper)], env=env, capture_output=True, text=True)
-        assert res2.returncode == 0
         assert "CADDY_DOCKER_SOCKETS=tcp://remote-host:2375" in env_file.read_text()
+
+        # Test 2: Auto-injection when podman is present
+        podman_test_wrapper = tmp_path / "run_podman_test.php"
+        podman_test_wrapper.write_text(f"""<?php
+set_include_path('{tmp_path}' . PATH_SEPARATOR . '{script_dir}');
+$hasPodman = true;
+require '{script_dir}/dockerproxy.php';
+""")
+        env["TEST_SOCKETS"] = "tcp://docker-proxy-host:2375"
+        res2 = subprocess.run(["php", str(podman_test_wrapper)], env=env, capture_output=True, text=True)
+        assert res2.returncode == 0
+        assert "unix:///var/run/podman/podman.sock" in env_file.read_text()
