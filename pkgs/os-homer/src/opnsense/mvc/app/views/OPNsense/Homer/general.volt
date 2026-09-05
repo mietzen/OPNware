@@ -17,11 +17,23 @@
             return v !== undefined && v !== '' ? v : fallback;
         }
 
-        mapDataToFormUI({'frm_general': "/api/homer/general/get"}).done(function() {
+        mapDataToFormUI({'frm_general': "/api/homer/general/get"}).done(function(data) {
+            const formData = data ? (data['frm_general-settings'] || data.frm_general || data) : {};
+            const isManaged = Boolean(formData && formData.caddy_managed);
+
             $('.selectpicker').selectpicker('refresh');
             updateServiceControlUI('homer');
             updateStatus();
             updateEffectiveUrl();
+
+            if (isManaged) {
+                $('#alert-caddy-managed').show();
+                $form.find('input, select').prop('disabled', true);
+                $('.selectpicker').prop('disabled', true).selectpicker('refresh');
+                $('#save_general-settings').prop('disabled', true).hide();
+                $form.find('button').prop('disabled', true);
+            }
+
             window.scrollTo(0, 0);
         });
 
@@ -72,9 +84,16 @@
                     return;
                 }
                 const running = data.status === "running";
-                const badge = running
-                    ? '<span class="label label-success">{{ lang._("running") }}</span>'
-                    : '<span class="label label-default">{{ lang._("stopped") }}</span>';
+                let badge = '';
+                if (data && data.caddy_managed) {
+                    badge = running
+                        ? '<span class="label label-success">{{ lang._("running (Caddy Advanced)") }}</span>'
+                        : '<span class="label label-default">{{ lang._("stopped (Caddy Advanced)") }}</span>';
+                } else {
+                    badge = running
+                        ? '<span class="label label-success">{{ lang._("running") }}</span>'
+                        : '<span class="label label-default">{{ lang._("stopped") }}</span>';
+                }
                 $status.find("#status-running").html(badge);
             });
         }
@@ -149,6 +168,13 @@
             </tbody>
         </table>
     </div>
+</div>
+
+<div class="alert alert-info" id="alert-caddy-managed" style="display: none; margin-bottom: 20px;">
+    <i class="fa fa-info-circle"></i>
+    <b>{{ lang._('Managed by Caddy Advanced') }}</b><br>
+    {{ lang._('Caddy Advanced is active on this system. Homer is being served by the primary Caddy service using configuration file') }} <code>/usr/local/etc/caddy/conf.d/homer.caddy</code>.
+    {{ lang._('Settings below are synced from conf.d and displayed in read-only mode.') }}
 </div>
 
 <div class="content-box">

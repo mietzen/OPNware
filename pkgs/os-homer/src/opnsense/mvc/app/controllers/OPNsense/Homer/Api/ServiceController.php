@@ -5,10 +5,11 @@ namespace OPNsense\Homer\Api;
 use OPNsense\Base\ApiMutableServiceControllerBase;
 use OPNsense\Core\Backend;
 
+require_once 'plugins.inc.d/homer.inc';
+
 /**
- * Homer service orchestration. The base reconfigure flow stops the
- * instance, regenerates the plugin-owned Caddyfile via the configd
- * template and restarts the instance — matching the map ticket.
+ * Homer service orchestration. When Caddy Advanced is detected, status
+ * reflects the master Caddy service. Otherwise, Homer manages its own daemon.
  */
 class ServiceController extends ApiMutableServiceControllerBase
 {
@@ -17,29 +18,47 @@ class ServiceController extends ApiMutableServiceControllerBase
     protected static $internalServiceEnabled = 'general.enabled';
     protected static $internalServiceName = 'homer';
 
-    /**
-     * Report stopped (not disabled) when the service is down, so the start
-     * button is always available — the service can be run independently of
-     * the enabled checkbox, matching manual caddy control.
-     */
     public function statusAction()
     {
         $backend = new Backend();
-        $response = $backend->configdRun('homer status');
 
-        if (strpos($response, 'is running') !== false) {
-            $status = 'running';
-        } else {
-            $status = 'stopped';
+        if (homer_caddy_is_present()) {
+            $response = $backend->configdRun('caddyadvanced status');
+            $status = (strpos($response, 'is running') !== false) ? 'running' : 'stopped';
+
+            return [
+                'status' => $status,
+                'caddy_managed' => true,
+                'widget' => [
+                    'caption_restart' => gettext('Restart'),
+                    'caption_start' => gettext('Start'),
+                    'caption_stop' => gettext('Stop'),
+                ],
+            ];
         }
+
+        $response = $backend->configdRun('homer status');
+        $status = (strpos($response, 'is running') !== false) ? 'running' : 'stopped';
 
         return [
             'status' => $status,
+            'caddy_managed' => false,
             'widget' => [
                 'caption_restart' => gettext('Restart'),
                 'caption_start' => gettext('Start'),
                 'caption_stop' => gettext('Stop'),
             ],
         ];
+    }
+
+    public function reconfigureAction()
+    {
+        if (homer_caddy_is_present()) {
+            $backend = new Backend();
+            $backend->configdRun('homer sync-caddy');
+            return ['status' => 'ok'];
+        }
+
+        return parent::reconfigureAction();
     }
 }

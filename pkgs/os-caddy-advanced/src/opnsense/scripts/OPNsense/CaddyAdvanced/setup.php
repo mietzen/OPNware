@@ -47,5 +47,10 @@ if ($error !== null) {
     exit(1);
 }
 
+// If os-homer is installed, sync its site configuration into conf.d
+if (file_exists('/usr/local/opnsense/version/homer')) {
+    @shell_exec('/usr/local/bin/php /usr/local/opnsense/scripts/OPNsense/Homer/sync_caddy.php >/dev/null 2>&1 || true');
+}
+
 echo 'OK';
 exit(0);

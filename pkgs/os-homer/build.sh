@@ -87,6 +87,7 @@ chmod 0644 "${DIST_ROOT}/dist/pkg/usr/local/share/doc/homer/SOURCE"
 find "${DIST_ROOT}/dist/pkg/usr/local" -type d -exec chmod 0755 {} +
 find "${DIST_ROOT}/dist/pkg/usr/local" -type f -exec chmod 0644 {} +
 chmod 0755 "${DIST_ROOT}/dist/pkg/usr/local/etc/rc.d/homer"
+chmod 0755 "${DIST_ROOT}/dist/pkg/usr/local/opnsense/scripts/OPNsense/Homer/"*.php 2>/dev/null || true
 
 # Create BSD distribution pkg
 cd "${DIST_ROOT}/dist"

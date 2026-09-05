@@ -5,8 +5,18 @@
  * the XMLRPC sync and the core Diagnostics log viewer.
  */
 
+function homer_caddy_is_present()
+{
+    return file_exists('/usr/local/opnsense/version/caddy-advanced')
+        && is_dir('/usr/local/etc/caddy/conf.d');
+}
+
 function homer_services()
 {
+    if (homer_caddy_is_present()) {
+        return array();
+    }
+
     // Registered unconditionally so the service can be started from the UI
     // even before it is enabled in the settings (start button on the status
     // page); pluginctl needs the entry to report a run state at all.
