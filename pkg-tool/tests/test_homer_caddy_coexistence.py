@@ -105,6 +105,7 @@ namespace {{
         'ipv6_bracket' => "[2001:db8::1]:9443 {{\\n\\troot * /usr/local/www/homer\\n\\tfile_server\\n\\ttls internal\\n}}\\n",
         'lan_ip' => "192.168.1.1:8443 {{\\n\\troot * /usr/local/www/homer\\n\\tfile_server\\n}}\\n",
         'https_schema' => "https://homer.test.lan:8443 {{\\n\\troot * /usr/local/www/homer\\n\\tfile_server\\n}}\\n",
+        'domain_auto_https' => "homer.internal.lan {{\\n\\troot * /usr/local/www/homer\\n\\tfile_server\\n}}\\n",
     ];
     $results = [];
     foreach ($cases as $name => $content) {{
@@ -147,6 +148,11 @@ namespace {{
     assert parsed["https_schema"]["Interface"] == "all"
     assert parsed["https_schema"]["ServerName"] == "homer.test.lan"
     assert parsed["https_schema"]["TlsEnabled"] == "1"
+
+    assert parsed["domain_auto_https"]["Port"] == "443"
+    assert parsed["domain_auto_https"]["Interface"] == "all"
+    assert parsed["domain_auto_https"]["ServerName"] == "homer.internal.lan"
+    assert parsed["domain_auto_https"]["TlsEnabled"] == "1"
 
 
 CADDY_SERVICE_CTRL = Path("pkgs/os-caddy-advanced/src/opnsense/mvc/app/controllers/OPNsense/CaddyAdvanced/Api/ServiceController.php")
@@ -194,7 +200,9 @@ def test_caddy_homer_trigger_bidirectional():
 def test_homer_sync_caddy_preserves_existing():
     src = HOMER_SYNC.read_text()
     assert "if (!file_exists(CADDY_HOMER_FILE) && !file_exists(CADDY_HOMER_DISABLED))" in src
+    assert "$targetFile = $homerEnabled ? CADDY_HOMER_FILE : CADDY_HOMER_DISABLED;" in src
     assert "$managed = $mdl->getCaddyManagedConfig();" in src
+    assert "!file_exists('/usr/local/opnsense/version/caddy-advanced')" in src
 
 
 def test_homer_model_preserves_disabled_customizations(tmp_path):

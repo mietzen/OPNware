@@ -49,36 +49,39 @@ if ($caddyPresent) {
     // Only seed initial configuration if neither .caddy nor .disabled exists,
     // preserving any existing administrator choice across sync cycles.
     if (!file_exists(CADDY_HOMER_FILE) && !file_exists(CADDY_HOMER_DISABLED)) {
-        if ($homerEnabled) {
-            $port = (string)$mdl->general->Port ?: '9443';
-            $tls = (string)$mdl->general->TlsEnabled === '1';
-            $serverName = trim((string)$mdl->general->ServerName);
-            $interface = (string)$mdl->general->Interface ?: 'all';
+        $targetFile = $homerEnabled ? CADDY_HOMER_FILE : CADDY_HOMER_DISABLED;
 
-            $listen = ':' . $port;
-            if ($serverName !== '') {
-                $cleanHost = (strpos($serverName, ':') !== false && $serverName[0] !== '[') ? "[{$serverName}]" : $serverName;
-                $listen = $cleanHost . ':' . $port;
-            } elseif ($interface === 'localhost') {
-                $listen = '127.0.0.1:' . $port;
-            } elseif ($interface === 'lan') {
-                $configObj = Config::getInstance()->object();
-                $lanIp = isset($configObj->interfaces->lan->ipaddr) ? (string)$configObj->interfaces->lan->ipaddr : '';
-                if ($lanIp !== '') {
-                    $listen = (strpos($lanIp, ':') !== false ? '[' . $lanIp . ']' : $lanIp) . ':' . $port;
-                }
+        $port = (string)$mdl->general->Port ?: '9443';
+        $tls = (string)$mdl->general->TlsEnabled === '1';
+        $serverName = trim((string)$mdl->general->ServerName);
+        $interface = (string)$mdl->general->Interface ?: 'all';
+
+        $listen = ':' . $port;
+        if ($serverName !== '') {
+            $cleanHost = (strpos($serverName, ':') !== false && $serverName[0] !== '[') ? "[{$serverName}]" : $serverName;
+            $listen = $cleanHost . ':' . $port;
+        } elseif ($interface === 'localhost') {
+            $listen = '127.0.0.1:' . $port;
+        } elseif ($interface === 'lan') {
+            $configObj = Config::getInstance()->object();
+            $lanIp = isset($configObj->interfaces->lan->ipaddr) ? (string)$configObj->interfaces->lan->ipaddr : '';
+            if ($lanIp !== '') {
+                $listen = (strpos($lanIp, ':') !== false ? '[' . $lanIp . ']' : $lanIp) . ':' . $port;
             }
+        }
 
-            $tlsBlock = $tls ? "\ttls internal {\n\t\ton_demand\n\t}\n" : '';
-            $content = "# Homer dashboard served via Caddy Advanced\n"
-                . "{$listen} {\n"
-                . "\troot * /usr/local/www/homer\n"
-                . "\tfile_server\n"
-                . $tlsBlock
-                . "}\n";
+        $tlsBlock = $tls ? "\ttls internal {\n\t\ton_demand\n\t}\n" : '';
+        $content = "# Homer dashboard served via Caddy Advanced\n"
+            . "{$listen} {\n"
+            . "\troot * /usr/local/www/homer\n"
+            . "\tfile_server\n"
+            . $tlsBlock
+            . "}\n";
 
-            file_put_contents(CADDY_HOMER_FILE, $content);
-            @chmod(CADDY_HOMER_FILE, 0644);
+        file_put_contents($targetFile, $content);
+        @chmod($targetFile, 0644);
+
+        if ($targetFile === CADDY_HOMER_FILE) {
             @shell_exec('/usr/sbin/service caddy reload >/dev/null 2>&1');
         }
     }
@@ -86,7 +89,7 @@ if ($caddyPresent) {
     exit(0);
 }
 
-// Restore Homer config model from conf.d before cleaning up drop-in files
+// Restore Homer config model from conf.d when Caddy Advanced is absent or disabled
 if (file_exists(CADDY_HOMER_FILE) || file_exists(CADDY_HOMER_DISABLED)) {
     $managed = $mdl->getCaddyManagedConfig();
     if (!empty($managed)) {
@@ -108,11 +111,15 @@ if (file_exists(CADDY_HOMER_FILE) || file_exists(CADDY_HOMER_DISABLED)) {
         $mdl->serializeToConfig();
         Config::getInstance()->save();
     }
-    if (file_exists(CADDY_HOMER_FILE)) {
-        @unlink(CADDY_HOMER_FILE);
-    }
-    if (file_exists(CADDY_HOMER_DISABLED)) {
-        @unlink(CADDY_HOMER_DISABLED);
+
+    // Only clean up drop-in files if Caddy Advanced package is completely uninstalled
+    if (!file_exists('/usr/local/opnsense/version/caddy-advanced')) {
+        if (file_exists(CADDY_HOMER_FILE)) {
+            @unlink(CADDY_HOMER_FILE);
+        }
+        if (file_exists(CADDY_HOMER_DISABLED)) {
+            @unlink(CADDY_HOMER_DISABLED);
+        }
     }
 }
 

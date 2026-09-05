@@ -43,7 +43,7 @@ class Homer extends BaseModel
 
             $hasTls = (bool)preg_match('/tls\s+(internal|[^\s}]+)/', $content);
             $host = '';
-            $port = ($schema === 'https' || $hasTls) ? '443' : '80';
+            $port = '';
 
             if (preg_match('/^\[([a-fA-F0-9:]+)\](?::([0-9]+))?$/', $header, $ipv6Match)) {
                 $host = $ipv6Match[1];
@@ -56,6 +56,20 @@ class Homer extends BaseModel
                 $port = substr($header, $lastColon + 1);
             } else {
                 $host = $header;
+            }
+
+            $isExplicitHttp = ($schema === 'http');
+            $isExplicitHttps = ($schema === 'https' || $hasTls);
+
+            if ($port === '') {
+                if ($isExplicitHttp) {
+                    $port = '80';
+                } elseif ($isExplicitHttps || (!filter_var($host, FILTER_VALIDATE_IP) && $host !== 'localhost' && $host !== '')) {
+                    $port = '443';
+                    $isExplicitHttps = true;
+                } else {
+                    $port = '80';
+                }
             }
 
             $res['Port'] = $port;
@@ -73,9 +87,9 @@ class Homer extends BaseModel
                 $res['Interface'] = 'all';
                 $res['ServerName'] = $host;
             }
-        }
 
-        $res['TlsEnabled'] = ($schema === 'https' || $port === '443' || $hasTls) ? '1' : '0';
+            $res['TlsEnabled'] = ($isExplicitHttps || $port === '443') && !$isExplicitHttp ? '1' : '0';
+        }
 
         return $res;
     }
