@@ -17,7 +17,6 @@ import signal
 import struct
 import sys
 import termios
-import time
 from urllib.parse import parse_qs, urlparse
 
 WS_GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
@@ -34,6 +33,9 @@ DEFAULT_SHELL = "/bin/sh"
 DEFAULT_ROWS = 24
 DEFAULT_COLS = 80
 READ_CHUNK_SIZE = 4096
+
+CID_PATTERN = re.compile(r"^[a-zA-Z0-9_.-]+$")
+SHELL_PATTERN = re.compile(r"^(/[a-zA-Z0-9_.-]+)+$")
 SESSION_PATH_PATTERN = re.compile(r"^[a-zA-Z0-9,-]+$")
 
 
@@ -108,9 +110,7 @@ def set_winsize(fd: int, rows: int, cols: int):
 
 
 def is_authenticated_session(cookie_header: str) -> bool:
-    """Validate active OPNsense PHP session."""
-    if os.getenv("OPNSENSE_AUTH_BYPASS") == "1":
-        return True
+    """Validate active authenticated OPNsense PHP session."""
     if not cookie_header:
         return False
 
@@ -127,7 +127,13 @@ def is_authenticated_session(cookie_header: str) -> bool:
                 for sdir in session_dirs:
                     sfile = os.path.join(sdir, f"sess_{sid}")
                     if os.path.exists(sfile) and os.path.getsize(sfile) > 0:
-                        return True
+                        try:
+                            with open(sfile, "r", errors="ignore") as f:
+                                content = f.read()
+                                if any(marker in content for marker in ("user_name|", "Username|", "user|", "logged_in|")):
+                                    return True
+                        except OSError:
+                            pass
     return False
 
 
@@ -163,7 +169,7 @@ class TerminalSession:
             if slave_fd > 2:
                 os.close(slave_fd)
 
-            cmd = ["/usr/local/bin/podman", "exec", "-it", self.cid, self.shell]
+            cmd = ["/usr/local/bin/podman", "exec", "-it", "--", self.cid, self.shell]
             os.environ["TERM"] = "xterm-256color"
             try:
                 os.execv(cmd[0], cmd)
@@ -209,17 +215,13 @@ class TerminalSession:
                 pass
 
             try:
-                for _ in range(10):
-                    reaped_pid, _ = os.waitpid(self.pid, os.WNOHANG)
-                    if reaped_pid != 0:
-                        break
-                    time.sleep(0.02)
-                else:
+                reaped_pid, _ = os.waitpid(self.pid, os.WNOHANG)
+                if reaped_pid == 0:
                     try:
                         os.kill(self.pid, signal.SIGKILL)
-                        os.waitpid(self.pid, 0)
                     except (ProcessLookupError, OSError):
                         pass
+                    os.waitpid(self.pid, os.WNOHANG)
             except (ChildProcessError, OSError):
                 pass
 
@@ -230,10 +232,11 @@ async def handle_pty_read(session: TerminalSession, writer: asyncio.StreamWriter
     """Read ANSI binary output from master PTY and stream to WebSocket."""
     loop = asyncio.get_running_loop()
     queue = asyncio.Queue()
+    master_fd = session.master_fd
 
     def on_read():
         try:
-            chunk = os.read(session.master_fd, READ_CHUNK_SIZE)
+            chunk = os.read(master_fd, READ_CHUNK_SIZE)
             if chunk:
                 queue.put_nowait(chunk)
             else:
@@ -241,8 +244,8 @@ async def handle_pty_read(session: TerminalSession, writer: asyncio.StreamWriter
         except (OSError, ValueError):
             queue.put_nowait(None)
 
-    if session.master_fd is not None:
-        loop.add_reader(session.master_fd, on_read)
+    if master_fd is not None:
+        loop.add_reader(master_fd, on_read)
 
     try:
         while not session.closed:
@@ -256,8 +259,8 @@ async def handle_pty_read(session: TerminalSession, writer: asyncio.StreamWriter
         pass
     finally:
         try:
-            if session.master_fd is not None:
-                loop.remove_reader(session.master_fd)
+            if master_fd is not None:
+                loop.remove_reader(master_fd)
         except (ValueError, OSError):
             pass
 
@@ -323,8 +326,14 @@ async def handle_ws_conn(reader: asyncio.StreamReader, writer: asyncio.StreamWri
     cid = params.get("cid", [""])[0]
     shell = params.get("shell", [DEFAULT_SHELL])[0]
 
-    if not cid:
-        writer.write(b"HTTP/1.1 400 Missing container ID (cid)\r\n\r\n")
+    if not cid or not CID_PATTERN.match(cid):
+        writer.write(b"HTTP/1.1 400 Invalid or missing container ID\r\n\r\n")
+        await writer.drain()
+        writer.close()
+        return
+
+    if not SHELL_PATTERN.match(shell):
+        writer.write(b"HTTP/1.1 400 Invalid shell path\r\n\r\n")
         await writer.drain()
         writer.close()
         return
@@ -345,7 +354,6 @@ async def handle_ws_conn(reader: asyncio.StreamReader, writer: asyncio.StreamWri
     pty_task = asyncio.create_task(handle_pty_read(session, writer))
     ws_task = asyncio.create_task(handle_ws_input(session, reader, writer))
 
-    # Concurrently wait for either PTY to close (shell exited) or WS to close
     done, pending = await asyncio.wait(
         [pty_task, ws_task],
         return_when=asyncio.FIRST_COMPLETED

@@ -92,19 +92,26 @@ def test_terminal_daemon_websocket_helpers():
 
         # 4. Test auth session validation
         with tempfile.TemporaryDirectory() as sdir:
-            sess_file = Path(sdir) / "sess_validtoken123"
-            sess_file.write_text("user|s:5:\"admin\";")
+            sess_file_auth = Path(sdir) / "sess_validauth123"
+            sess_file_auth.write_text("user_name|s:5:\"admin\";")
+
+            sess_file_csrf_only = Path(sdir) / "sess_csrfonly456"
+            sess_file_csrf_only.write_text("csrf|s:32:\"random_token_here_not_logged_in\";")
+
             os.environ["OPNSENSE_SESSION_DIR"] = sdir
 
             # Unauthenticated without cookie
             assert terminal_daemon.is_authenticated_session("") is False
             assert terminal_daemon.is_authenticated_session("other=value") is False
 
-            # Invalid session token
-            assert terminal_daemon.is_authenticated_session("PHPSESSID=invalidtoken") is False
+            # Invalid session token (missing file)
+            assert terminal_daemon.is_authenticated_session("PHPSESSID=missingtoken") is False
 
-            # Valid session token
-            assert terminal_daemon.is_authenticated_session("PHPSESSID=validtoken123") is True
+            # Unauthenticated session with only CSRF token
+            assert terminal_daemon.is_authenticated_session("PHPSESSID=csrfonly456") is False
+
+            # Authenticated session token
+            assert terminal_daemon.is_authenticated_session("PHPSESSID=validauth123") is True
 
         # 5. Test TerminalSession close and reap logic
         session = terminal_daemon.TerminalSession("dummy-cid", "/bin/sh")
