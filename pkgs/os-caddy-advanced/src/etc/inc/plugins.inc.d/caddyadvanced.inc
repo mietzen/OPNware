@@ -65,4 +65,7 @@ function caddyadvanced_configure_do($verbose = false)
     $backend->configdRun('template reload OPNsense/CaddyAdvanced');
     $backend->configdRun('caddyadvanced setup');
     $backend->configdRun('caddyadvanced dockerproxy-sync');
+    if (file_exists('/usr/local/opnsense/version/homer')) {
+        $backend->configdRun('homer sync-caddy');
+    }
 }

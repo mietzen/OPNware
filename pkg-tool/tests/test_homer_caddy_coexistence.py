@@ -52,7 +52,9 @@ def test_homer_general_controller_caddy_sync_and_gate():
 def test_homer_service_controller_status_contract():
     src = HOMER_SERVICE_CTRL.read_text()
     assert "homer_caddy_is_present()" in src
-    assert "return ['status' => 'disabled'];" in src
+    assert "conf.d/homer.caddy" in src
+    assert "caddyadvanced status" in src
+    assert "'widget' => []" in src
 
 
 def test_homer_general_volt_read_only_and_alert():
@@ -60,7 +62,7 @@ def test_homer_general_volt_read_only_and_alert():
     assert 'id="alert-caddy-managed"' in src
     assert "Managed by Caddy Advanced" in src
     assert "caddyManaged" in src
-    assert "running (Caddy Advanced)" in src
+    assert "$.getJSON(\"/api/homer/service/status\"" in src
 
 
 def test_homer_action_sync_caddy_registered():

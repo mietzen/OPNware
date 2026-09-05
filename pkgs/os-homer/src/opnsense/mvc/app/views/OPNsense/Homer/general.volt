@@ -85,13 +85,6 @@
                 return;
             }
 
-            if (caddyManaged) {
-                $status.find("#status-running").html(
-                    '<span class="label label-success">{{ lang._("running (Caddy Advanced)") }}</span>'
-                );
-                return;
-            }
-
             $.getJSON("/api/homer/service/status", function (data) {
                 const running = data && data.status === "running";
                 const badge = running

@@ -38,6 +38,38 @@ class ServiceController extends ApiMutableServiceControllerBase
         ];
     }
 
+    public function startAction()
+    {
+        if (file_exists('/usr/local/opnsense/version/homer')) {
+            $backend = new Backend();
+            $backend->configdRun('homer sync-caddy');
+        }
+
+        return parent::startAction();
+    }
+
+    public function restartAction()
+    {
+        if (file_exists('/usr/local/opnsense/version/homer')) {
+            $backend = new Backend();
+            $backend->configdRun('homer sync-caddy');
+        }
+
+        return parent::restartAction();
+    }
+
+    public function stopAction()
+    {
+        $response = parent::stopAction();
+
+        if (file_exists('/usr/local/opnsense/version/homer')) {
+            $backend = new Backend();
+            $backend->configdRun('homer sync-caddy');
+        }
+
+        return $response;
+    }
+
     public function reconfigureAction()
     {
         $backend = new Backend();
@@ -69,16 +101,18 @@ class ServiceController extends ApiMutableServiceControllerBase
         // reconfigure logic (this controller overrides it to add the envfile
         // and docker-proxy sync steps above).
         if ($this->serviceEnabled()) {
+            if (file_exists('/usr/local/opnsense/version/homer')) {
+                $backend->configdRun('homer sync-caddy');
+            }
+
             if ($this->statusAction()['status'] != 'running') {
                 $backend->configdRun('caddyadvanced start');
             } else {
                 $backend->configdRun('caddyadvanced reload');
             }
-            if (file_exists('/usr/local/opnsense/version/homer')) {
-                $backend->configdRun('homer sync-caddy');
-            }
         } else {
             $backend->configdRun('caddyadvanced stop');
+
             if (file_exists('/usr/local/opnsense/version/homer')) {
                 $backend->configdRun('homer sync-caddy');
             }
