@@ -21,9 +21,6 @@ function homer_caddy_is_present(): bool
 
 function homer_services()
 {
-    if (homer_caddy_is_present()) {
-        return array();
-    }
 
     // Registered unconditionally so the service can be started from the UI
     // even before it is enabled in the settings (start button on the status

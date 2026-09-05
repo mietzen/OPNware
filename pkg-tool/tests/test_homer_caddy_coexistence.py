@@ -24,13 +24,13 @@ def test_homer_inc_presence_and_services_gate():
     assert "function homer_configure()" in src
     assert "'local' => ['homer_caddy_sync']" in src
     assert "configdRun('homer sync-caddy')" in src
-    assert "if (homer_caddy_is_present()) {" in src
+    assert "function homer_services()" in src
 
 
 def test_homer_rcd_skips_when_caddy_advanced_present():
     src = HOMER_RCD.read_text()
     assert "/usr/local/opnsense/version/caddy-advanced" in src
-    assert "Homer is managed by Caddy Advanced via conf.d/homer.caddy" in src
+    assert "Homer is managed by Caddy Advanced (isolated instance disabled)." in src
 
 
 def test_homer_sync_caddy_script():
@@ -40,7 +40,7 @@ def test_homer_sync_caddy_script():
     assert "/usr/local/etc/caddy/conf.d/homer.caddy" in src
     assert "service homer stop" in src
     assert "version/homer" in src
-    assert "caddyadvanced reload" in src
+    assert "service caddy reload" in src
 
 
 def test_homer_general_controller_caddy_sync_and_gate():
@@ -192,3 +192,34 @@ def test_homer_sync_caddy_preserves_existing():
     src = HOMER_SYNC.read_text()
     assert "if (!file_exists(CADDY_HOMER_FILE))" in src
     assert "if ($homerEnabled)" in src
+    assert "rename(CADDY_HOMER_FILE, CADDY_HOMER_DISABLED)" in src
+    assert "rename(CADDY_HOMER_DISABLED, CADDY_HOMER_FILE)" in src
+
+
+def test_homer_model_preserves_disabled_customizations(tmp_path):
+    import subprocess
+    import json
+
+    model_path = Path("pkgs/os-homer/src/opnsense/mvc/app/models/OPNsense/Homer/Homer.php").resolve()
+    test_script = tmp_path / "disabled_runner.php"
+
+    conf_disabled = tmp_path / "homer.caddy.disabled"
+    conf_disabled.write_text("homer.custom.lan:8085 {\n\troot * /usr/local/www/homer\n\tfile_server\n\ttls internal\n}\n")
+
+    test_script.write_text(f"""<?php
+namespace OPNsense\\Base {{ class BaseModel {{}} }}
+namespace {{
+    require_once '{model_path}';
+    $mdl = new OPNsense\\Homer\\Homer();
+    $res = $mdl->getCaddyManagedConfig('{tmp_path}/homer.caddy');
+    echo json_encode($res);
+}}
+""")
+
+    res = subprocess.run(["php", str(test_script)], capture_output=True, text=True, check=True)
+    parsed = json.loads(res.stdout)
+
+    assert parsed["enabled"] == "0"
+    assert parsed["Port"] == "8085"
+    assert parsed["ServerName"] == "homer.custom.lan"
+    assert parsed["TlsEnabled"] == "1"
