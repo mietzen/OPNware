@@ -24,12 +24,18 @@
  # POSSIBILITY OF SUCH DAMAGE.
  #}
 
+<link rel="stylesheet" href="{{ cache_safe('/ui/css/vendor/xterm/xterm.css') }}">
+<script src="{{ cache_safe('/ui/js/vendor/xterm/xterm.js') }}"></script>
+<script src="{{ cache_safe('/ui/js/vendor/xterm/addon-fit.js') }}"></script>
+
 <script>
     var autoRefreshInterval = null;
     var currentLogContainerId = null;
     var currentCliContainerId = null;
-    var cliHistory = [];
-    var cliHistoryIdx = -1;
+    var currentCliContainerName = null;
+    var currentTerm = null;
+    var currentFitAddon = null;
+    var currentWs = null;
 
     function ansiToHtml(str) {
         if (!str) return '';
@@ -406,78 +412,115 @@
         });
     }
 
-    var currentCliXhr = null;
+    function initTerminal() {
+        if (currentTerm) {
+            return;
+        }
 
-    function resetCliUi() {
-        $('#btn-cli-stop').hide();
-        $('#btn-cli-run').show();
-        var el = document.getElementById('modal-cli-console');
-        if (el) el.scrollTop = el.scrollHeight;
-        $('#cli-cmd-input').focus();
+        var TermClass = window.Terminal;
+        if (!TermClass) {
+            return;
+        }
+
+        currentTerm = new TermClass({
+            cursorBlink: true,
+            theme: {
+                background: '#000000',
+                foreground: '#f0f0f0',
+                cursor: '#5af78e',
+                selectionBackground: 'rgba(255, 255, 255, 0.3)'
+            },
+            fontFamily: 'Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
+            fontSize: 13,
+            lineHeight: 1.2
+        });
+
+        var FitClass = (window.FitAddon && window.FitAddon.FitAddon) ? window.FitAddon.FitAddon : window.FitAddon;
+        if (FitClass) {
+            currentFitAddon = new FitClass();
+            currentTerm.loadAddon(currentFitAddon);
+        }
+
+        var container = document.getElementById('xterm-terminal-container');
+        if (container) {
+            currentTerm.open(container);
+            if (currentFitAddon) {
+                currentFitAddon.fit();
+            }
+        }
+
+        currentTerm.onData(function (data) {
+            if (currentWs && currentWs.readyState === WebSocket.OPEN) {
+                currentWs.send(data);
+            }
+        });
+    }
+
+    function connectTerminalWs(cid, shell) {
+        if (currentWs) {
+            try {
+                currentWs.close();
+            } catch (e) {}
+            currentWs = null;
+        }
+
+        initTerminal();
+        if (!currentTerm) {
+            return;
+        }
+
+        currentTerm.reset();
+        currentTerm.write('\x1b[33m{{ lang._("Connecting to container") }} ' + cid + ' (' + shell + ')...\x1b[0m\r\n');
+
+        var protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        var wsUrl = protocol + '//' + window.location.host + '/api/podman/terminal/ws?cid=' + encodeURIComponent(cid) + '&shell=' + encodeURIComponent(shell);
+
+        try {
+            currentWs = new WebSocket(wsUrl);
+        } catch (err) {
+            currentTerm.write('\r\n\x1b[31m[{{ lang._("WebSocket connection error") }}: ' + err.message + ']\x1b[0m\r\n');
+            return;
+        }
+
+        currentWs.onopen = function () {
+            currentTerm.write('\x1b[32m[{{ lang._("Connected") }}]\x1b[0m\r\n\r\n');
+            if (currentFitAddon) {
+                currentFitAddon.fit();
+                currentWs.send(JSON.stringify({
+                    type: 'resize',
+                    cols: currentTerm.cols,
+                    rows: currentTerm.rows
+                }));
+            }
+            currentTerm.focus();
+        };
+
+        currentWs.onmessage = function (event) {
+            if (typeof event.data === 'string') {
+                currentTerm.write(event.data);
+            } else if (event.data instanceof Blob) {
+                var reader = new FileReader();
+                reader.onload = function () {
+                    currentTerm.write(reader.result);
+                };
+                reader.readAsText(event.data);
+            }
+        };
+
+        currentWs.onclose = function () {
+            currentTerm.write('\r\n\x1b[31m[{{ lang._("Session disconnected") }}]\x1b[0m\r\n');
+        };
+
+        currentWs.onerror = function () {
+            currentTerm.write('\r\n\x1b[31m[{{ lang._("WebSocket error") }}]\x1b[0m\r\n');
+        };
     }
 
     function showContainerCli(cid, name) {
         currentCliContainerId = cid;
-        cliHistoryIdx = -1;
-        $('#modal-cli-title').text('{{ lang._("Container CLI") }}: ' + (name || cid));
-        $('#modal-cli-console').html('<span style="color: #767676;">{{ lang._("Connected to container") }} ' + cid + '. {{ lang._("Enter commands below.") }}\n</span>');
-        $('#cli-cmd-input').val('');
-        resetCliUi();
+        currentCliContainerName = name;
+        $('#modal-cli-title').html('<i class="fa fa-terminal text-warning"></i> {{ lang._("Container Terminal") }}: ' + $('<div>').text(name || cid).html());
         $('#modal-cli').modal('show');
-        setTimeout(function() { $('#cli-cmd-input').focus(); }, 500);
-    }
-
-    function stopContainerCli() {
-        if (currentCliXhr) {
-            currentCliXhr.abort();
-            currentCliXhr = null;
-        }
-        var $console = $('#modal-cli-console');
-        $console.append('<span style="color: #ff6b68;">^C ({{ lang._("command aborted") }})\n</span>');
-        resetCliUi();
-    }
-
-    function runContainerCli() {
-        var cmd = $('#cli-cmd-input').val().trim();
-        if (!cmd || !currentCliContainerId) return;
-        var shell = $('#cli-shell').val().trim() || '/bin/sh';
-
-        cliHistory.push(cmd);
-        cliHistoryIdx = -1;
-        $('#cli-cmd-input').val('');
-
-        var $console = $('#modal-cli-console');
-        $console.append('<span style="color: #57c7ff;">$ ' + $('<div>').text(cmd).html() + '\n</span>');
-
-        $('#btn-cli-run').hide();
-        $('#btn-cli-stop').show();
-
-        currentCliXhr = $.ajax({
-            url: '/api/podman/containers/exec/' + currentCliContainerId,
-            type: 'POST',
-            dataType: 'json',
-            data: {cmd: cmd, shell: shell},
-            success: function (data) {
-                currentCliXhr = null;
-                var out = '';
-                if (data && data.output) {
-                    out = data.output;
-                } else if (data && data.message) {
-                    out = data.message;
-                } else {
-                    out = '(no output)';
-                }
-                $console.append(ansiToHtml(out) + '\n');
-                resetCliUi();
-            },
-            error: function (xhr, status, error) {
-                currentCliXhr = null;
-                if (status !== 'abort') {
-                    $console.append('<span style="color: #ff6b68;">{{ lang._("Execution error") }}: ' + $('<div>').text(error || status).html() + '\n</span>');
-                }
-                resetCliUi();
-            }
-        });
     }
 
     function confirmDelete(title, message, endpoint) {
@@ -551,56 +594,54 @@
             fetchLogsContent();
         });
 
-        $('#btn_clear_cli').click(function () {
-            $('#modal-cli-console').html('<span style="color: #767676;">{{ lang._("Console cleared.") }}\n</span>');
-        });
-
-        $('#btn-cli-run').click(function () {
-            runContainerCli();
-        });
-
-        $('#btn-cli-stop').click(function () {
-            stopContainerCli();
-        });
-
-        $('#cli-cmd-input').keydown(function (e) {
-            if (e.which === 13) { // Enter
-                e.preventDefault();
-                runContainerCli();
-            } else if (e.ctrlKey && e.which === 67) { // Ctrl+C
-                e.preventDefault();
-                stopContainerCli();
-            } else if (e.which === 38) { // Arrow Up (history back)
-                e.preventDefault();
-                if (cliHistory.length > 0) {
-                    if (cliHistoryIdx === -1) {
-                        cliHistoryIdx = cliHistory.length - 1;
-                    } else if (cliHistoryIdx > 0) {
-                        cliHistoryIdx--;
-                    }
-                    $('#cli-cmd-input').val(cliHistory[cliHistoryIdx]);
-                }
-            } else if (e.which === 40) { // Arrow Down (history forward)
-                e.preventDefault();
-                if (cliHistoryIdx !== -1) {
-                    if (cliHistoryIdx < cliHistory.length - 1) {
-                        cliHistoryIdx++;
-                        $('#cli-cmd-input').val(cliHistory[cliHistoryIdx]);
-                    } else {
-                        cliHistoryIdx = -1;
-                        $('#cli-cmd-input').val('');
-                    }
-                }
+        $('#modal-cli').on('shown.bs.modal', function () {
+            var shell = $('#cli-shell-select').val() || '/bin/sh';
+            if (currentCliContainerId) {
+                connectTerminalWs(currentCliContainerId, shell);
             }
+            $(window).on('resize.terminal', function () {
+                if (currentFitAddon && currentTerm) {
+                    currentFitAddon.fit();
+                    if (currentWs && currentWs.readyState === WebSocket.OPEN) {
+                        currentWs.send(JSON.stringify({
+                            type: 'resize',
+                            cols: currentTerm.cols,
+                            rows: currentTerm.rows
+                        }));
+                    }
+                }
+            });
         });
 
         $('#modal-cli').on('hidden.bs.modal', function () {
-            if (currentCliXhr) {
-                currentCliXhr.abort();
-                currentCliXhr = null;
+            $(window).off('resize.terminal');
+            if (currentWs) {
+                try {
+                    currentWs.close();
+                } catch (e) {}
+                currentWs = null;
             }
-            $('#btn-cli-stop').hide();
-            $('#btn-cli-run').show();
+        });
+
+        $('#btn_reconnect_cli').click(function () {
+            var shell = $('#cli-shell-select').val() || '/bin/sh';
+            if (currentCliContainerId) {
+                connectTerminalWs(currentCliContainerId, shell);
+            }
+        });
+
+        $('#cli-shell-select').change(function () {
+            var shell = $(this).val() || '/bin/sh';
+            if (currentCliContainerId) {
+                connectTerminalWs(currentCliContainerId, shell);
+            }
+        });
+
+        $('#btn_clear_cli').click(function () {
+            if (currentTerm) {
+                currentTerm.clear();
+                currentTerm.focus();
+            }
         });
 
         // Deletion
@@ -834,37 +875,29 @@
     </div>
 </div>
 
-<!-- Container CLI Modal -->
+<!-- Container Terminal Modal -->
 <div class="modal fade" id="modal-cli" tabindex="-1" role="dialog" aria-labelledby="modal-cli-title" aria-hidden="true">
-    <div class="modal-dialog modal-lg" role="document">
-        <div class="modal-content">
-            <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center;">
-                <h4 class="modal-title" id="modal-cli-title" style="margin: 0;">{{ lang._('Container CLI') }}</h4>
-                <div style="display: flex; align-items: center; gap: 10px;">
+    <div class="modal-dialog modal-lg" style="width: 85%; max-width: 1100px;" role="document">
+        <div class="modal-content" style="background: #181818; color: #fff; border-radius: 6px;">
+            <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333; padding: 10px 15px;">
+                <h4 class="modal-title" id="modal-cli-title" style="margin: 0; font-size: 15px; font-weight: bold;">
+                    <i class="fa fa-terminal text-warning"></i> {{ lang._('Container Terminal') }}
+                </h4>
+                <div style="display: flex; align-items: center; gap: 8px;">
                     <div style="display: inline-flex; align-items: center; gap: 5px;">
-                        <label for="cli-shell" style="margin: 0; font-size: 12px; font-weight: normal;">{{ lang._('Shell') }}:</label>
-                        <input type="text" class="form-control input-sm" id="cli-shell" value="/bin/sh" style="width: 100px; display: inline-block; height: 26px;" />
+                        <label for="cli-shell-select" style="margin: 0; font-size: 12px; font-weight: normal; color: #aaa;">{{ lang._('Shell') }}:</label>
+                        <select id="cli-shell-select" class="form-control input-sm" style="width: 110px; height: 26px; padding: 2px 8px; background: #2a2a2a; color: #fff; border-color: #444;">
+                            <option value="/bin/sh">/bin/sh</option>
+                            <option value="/bin/bash">/bin/bash</option>
+                        </select>
                     </div>
-                    <button type="button" class="btn btn-xs btn-default" id="btn_clear_cli" title="{{ lang._('Clear Console') }}"><i class="fa fa-eraser"></i> {{ lang._('Clear') }}</button>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close" style="margin-left: 10px;"><span aria-hidden="true">&times;</span></button>
+                    <button type="button" class="btn btn-xs btn-default" id="btn_reconnect_cli" title="{{ lang._('Reconnect') }}"><i class="fa fa-refresh"></i> {{ lang._('Reconnect') }}</button>
+                    <button type="button" class="btn btn-xs btn-default" id="btn_clear_cli" title="{{ lang._('Clear Terminal') }}"><i class="fa fa-eraser"></i> {{ lang._('Clear') }}</button>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close" style="color: #fff; opacity: 0.8; margin-left: 10px;"><span aria-hidden="true">&times;</span></button>
                 </div>
             </div>
-            <div class="modal-body" style="padding: 0; background: #121212; border-radius: 0 0 6px 6px;">
-                <pre id="modal-cli-console" style="background: #121212; color: #5af78e; font-family: monospace; font-size: 13px; max-height: 420px; min-height: 280px; overflow-y: auto; padding: 15px; border-radius: 0; margin-bottom: 0; border: none; white-space: pre-wrap;"></pre>
-                <div style="padding: 10px; background: #1a1a1a; border-top: 1px solid #333; border-radius: 0 0 6px 6px;">
-                    <div class="input-group">
-                        <span class="input-group-addon" style="background: #222; color: #5af78e; border-color: #444; font-family: monospace;"><b>$</b></span>
-                        <input type="text" class="form-control" id="cli-cmd-input" placeholder="{{ lang._('Type command (e.g. ping 1.1.1.1, ls -la, ps aux) and press Enter...') }}" style="background: #2a2a2a; color: #fff; border-color: #444; font-family: monospace;" />
-                        <span class="input-group-btn">
-                            <button class="btn btn-success" type="button" id="btn-cli-run">
-                                <i class="fa fa-play" id="btn-cli-run-icon"></i> {{ lang._('Run') }}
-                            </button>
-                            <button class="btn btn-danger" type="button" id="btn-cli-stop" style="display: none;">
-                                <i class="fa fa-stop"></i> {{ lang._('Stop') }}
-                            </button>
-                        </span>
-                    </div>
-                </div>
+            <div class="modal-body" style="padding: 10px; background: #000; border-radius: 0 0 6px 6px;">
+                <div id="xterm-terminal-container" style="height: 480px; width: 100%;"></div>
             </div>
         </div>
     </div>
