@@ -26,7 +26,7 @@ def test_caddy_status_and_ui_expose_podman_integration():
     assert "podman_socket_active" in status_script
 
     volt_view = Path("pkgs/os-caddy-advanced/src/opnsense/mvc/app/views/OPNsense/CaddyAdvanced/general.volt").read_text()
-    assert "status-podman-socket" in volt_view
+    assert "podman-dockerproxy-indicator" in volt_view
     assert "podman_socket_active" in volt_view
     assert "unix:///var/run/podman/podman.sock" in volt_view
 
@@ -45,29 +45,49 @@ def test_php_dockerproxy_sync_logic_execution():
         $hasPodman = true;
         $configuredSockets = 'tcp://docker-proxy-host:2375';
         $rows = [];
-        if ($hasPodman && ($configuredSockets === '' || $configuredSockets === 'tcp://docker-proxy-host:2375')) {{
-            $rows['CADDY_DOCKER_SOCKETS'] = $localPodmanSocket;
-        }} elseif ($configuredSockets !== '') {{
-            $rows['CADDY_DOCKER_SOCKETS'] = $configuredSockets;
+        if ($hasPodman) {{
+            if ($configuredSockets === '' || $configuredSockets === 'tcp://docker-proxy-host:2375') {{
+                $rows['CADDY_DOCKER_SOCKETS'] = $localPodmanSocket;
+            }} else {{
+                $sockets = array_filter(array_map('trim', explode(',', $configuredSockets)));
+                if (!in_array($localPodmanSocket, $sockets, true)) {{
+                    $sockets[] = $localPodmanSocket;
+                }}
+                $rows['CADDY_DOCKER_SOCKETS'] = implode(',', $sockets);
+            }}
         }}
         assert($rows['CADDY_DOCKER_SOCKETS'] === 'unix:///var/run/podman/podman.sock');
 
-        // 2. When podman is present and user specified a custom socket
+        // 2. When podman is present and user specified a custom socket -> auto includes podman socket
         $configuredSockets = 'tcp://custom-remote:2375';
         $rows = [];
-        if ($hasPodman && ($configuredSockets === '' || $configuredSockets === 'tcp://docker-proxy-host:2375')) {{
-            $rows['CADDY_DOCKER_SOCKETS'] = $localPodmanSocket;
-        }} elseif ($configuredSockets !== '') {{
-            $rows['CADDY_DOCKER_SOCKETS'] = $configuredSockets;
+        if ($hasPodman) {{
+            if ($configuredSockets === '' || $configuredSockets === 'tcp://docker-proxy-host:2375') {{
+                $rows['CADDY_DOCKER_SOCKETS'] = $localPodmanSocket;
+            }} else {{
+                $sockets = array_filter(array_map('trim', explode(',', $configuredSockets)));
+                if (!in_array($localPodmanSocket, $sockets, true)) {{
+                    $sockets[] = $localPodmanSocket;
+                }}
+                $rows['CADDY_DOCKER_SOCKETS'] = implode(',', $sockets);
+            }}
         }}
-        assert($rows['CADDY_DOCKER_SOCKETS'] === 'tcp://custom-remote:2375');
+        assert($rows['CADDY_DOCKER_SOCKETS'] === 'tcp://custom-remote:2375,unix:///var/run/podman/podman.sock');
 
         // 3. When podman is absent and default placeholder is used
         $hasPodman = false;
         $configuredSockets = 'tcp://docker-proxy-host:2375';
         $rows = [];
-        if ($hasPodman && ($configuredSockets === '' || $configuredSockets === 'tcp://docker-proxy-host:2375')) {{
-            $rows['CADDY_DOCKER_SOCKETS'] = $localPodmanSocket;
+        if ($hasPodman) {{
+            if ($configuredSockets === '' || $configuredSockets === 'tcp://docker-proxy-host:2375') {{
+                $rows['CADDY_DOCKER_SOCKETS'] = $localPodmanSocket;
+            }} else {{
+                $sockets = array_filter(array_map('trim', explode(',', $configuredSockets)));
+                if (!in_array($localPodmanSocket, $sockets, true)) {{
+                    $sockets[] = $localPodmanSocket;
+                }}
+                $rows['CADDY_DOCKER_SOCKETS'] = implode(',', $sockets);
+            }}
         }} elseif ($configuredSockets !== '') {{
             $rows['CADDY_DOCKER_SOCKETS'] = $configuredSockets;
         }}

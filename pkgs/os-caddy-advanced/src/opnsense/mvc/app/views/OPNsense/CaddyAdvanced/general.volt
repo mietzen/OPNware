@@ -74,21 +74,19 @@
                 }
                 $status.find("#status-validate").html(valHtml);
 
-                const podmanHtml = data.podman_socket_active
-                    ? '<span class="label label-success">{{ lang._("active") }}</span> <code>unix:///var/run/podman/podman.sock</code>'
-                    : '<span class="label label-default">{{ lang._("not active") }}</span>';
-                $status.find("#status-podman-socket").html(podmanHtml);
-
-                if (data.podman_socket_active) {
-                    if (!$('#podman-dockerproxy-alert').length) {
-                        const alertHtml = '<div class="alert alert-info" id="podman-dockerproxy-alert" style="margin-bottom: 15px;">' +
-                            '<i class="fa fa-info-circle"></i> <strong>{{ lang._("Podman Integration") }}:</strong> ' +
-                            '{{ lang._("Local socket unix:///var/run/podman/podman.sock detected and active.") }}' +
+                if ($('#tab_general-dockerproxy').length) {
+                    let $badge = $('#podman-dockerproxy-indicator');
+                    if (!$badge.length) {
+                        const indicatorHtml = '<div id="podman-dockerproxy-indicator" style="margin-bottom: 15px;">' +
+                            '<b>{{ lang._("Podman Socket Status") }}:</b> <span id="podman-socket-badge"></span>' +
                             '</div>';
-                        $('#tab_general-dockerproxy').prepend(alertHtml);
+                        $('#tab_general-dockerproxy').prepend(indicatorHtml);
+                        $badge = $('#podman-dockerproxy-indicator');
                     }
-                } else {
-                    $('#podman-dockerproxy-alert').remove();
+                    const badgeHtml = data.podman_socket_active
+                        ? '<span class="label label-success">{{ lang._("active") }}</span> <code>unix:///var/run/podman/podman.sock</code>'
+                        : '<span class="label label-default">{{ lang._("inactive") }}</span>';
+                    $badge.find('#podman-socket-badge').html(badgeHtml);
                 }
             });
         }
@@ -120,10 +118,6 @@
                 <tr>
                     <td>{{ lang._('Configuration State') }}</td>
                     <td id="status-validate">--</td>
-                </tr>
-                <tr>
-                    <td>{{ lang._('Podman Socket') }}</td>
-                    <td id="status-podman-socket">--</td>
                 </tr>
             </tbody>
         </table>

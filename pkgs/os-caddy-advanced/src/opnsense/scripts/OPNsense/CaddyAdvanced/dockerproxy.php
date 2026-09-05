@@ -76,8 +76,16 @@ if ($enabled === '1') {
         $configuredSockets = (string)$dockerproxy->docker_sockets;
     }
 
-    if ($hasPodman && ($configuredSockets === '' || $configuredSockets === 'tcp://docker-proxy-host:2375')) {
-        $rows['CADDY_DOCKER_SOCKETS'] = $localPodmanSocket;
+    if ($hasPodman) {
+        if ($configuredSockets === '' || $configuredSockets === 'tcp://docker-proxy-host:2375') {
+            $rows['CADDY_DOCKER_SOCKETS'] = $localPodmanSocket;
+        } else {
+            $sockets = array_filter(array_map('trim', explode(',', $configuredSockets)));
+            if (!in_array($localPodmanSocket, $sockets, true)) {
+                $sockets[] = $localPodmanSocket;
+            }
+            $rows['CADDY_DOCKER_SOCKETS'] = implode(',', $sockets);
+        }
     } elseif ($configuredSockets !== '') {
         $rows['CADDY_DOCKER_SOCKETS'] = $configuredSockets;
     }
