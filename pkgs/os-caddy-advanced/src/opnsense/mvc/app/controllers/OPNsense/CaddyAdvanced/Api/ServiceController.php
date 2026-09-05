@@ -74,8 +74,14 @@ class ServiceController extends ApiMutableServiceControllerBase
             } else {
                 $backend->configdRun('caddyadvanced reload');
             }
+            if (file_exists('/usr/local/opnsense/version/homer')) {
+                $backend->configdRun('homer sync-caddy');
+            }
         } else {
             $backend->configdRun('caddyadvanced stop');
+            if (file_exists('/usr/local/opnsense/version/homer')) {
+                $backend->configdRun('homer sync-caddy');
+            }
         }
 
         return ['status' => 'ok'];

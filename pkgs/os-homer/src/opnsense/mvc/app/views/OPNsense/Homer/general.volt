@@ -85,18 +85,18 @@
                 return;
             }
 
+            if (caddyManaged) {
+                $status.find("#status-running").html(
+                    '<span class="label label-success">{{ lang._("running (Caddy Advanced)") }}</span>'
+                );
+                return;
+            }
+
             $.getJSON("/api/homer/service/status", function (data) {
                 const running = data && data.status === "running";
-                let badge = '';
-                if (caddyManaged) {
-                    badge = running
-                        ? '<span class="label label-success">{{ lang._("running (Caddy Advanced)") }}</span>'
-                        : '<span class="label label-default">{{ lang._("stopped (Caddy Advanced)") }}</span>';
-                } else {
-                    badge = running
-                        ? '<span class="label label-success">{{ lang._("running") }}</span>'
-                        : '<span class="label label-default">{{ lang._("stopped") }}</span>';
-                }
+                const badge = running
+                    ? '<span class="label label-success">{{ lang._("running") }}</span>'
+                    : '<span class="label label-default">{{ lang._("stopped") }}</span>';
                 $status.find("#status-running").html(badge);
             });
         }

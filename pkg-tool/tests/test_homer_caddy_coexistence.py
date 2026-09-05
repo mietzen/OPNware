@@ -21,6 +21,7 @@ def test_homer_inc_presence_and_services_gate():
     src = HOMER_INC.read_text()
     assert "function homer_caddy_is_present()" in src
     assert "file_exists('/usr/local/opnsense/version/caddy-advanced')" in src
+    assert "function homer_configure()" in src
     assert "if (homer_caddy_is_present()) {" in src
 
 
@@ -36,6 +37,7 @@ def test_homer_sync_caddy_script():
     assert "homer_caddy_is_present" in src
     assert "/usr/local/etc/caddy/conf.d/homer.caddy" in src
     assert "service homer stop" in src
+    assert "version/homer" in src
     assert "configctl caddyadvanced reload" in src
 
 
@@ -50,9 +52,7 @@ def test_homer_general_controller_caddy_sync_and_gate():
 def test_homer_service_controller_status_contract():
     src = HOMER_SERVICE_CTRL.read_text()
     assert "homer_caddy_is_present()" in src
-    assert "caddy.pid" in src
-    assert "caption_start" in src
-    assert "homer sync-caddy" in src
+    assert "return ['status' => 'disabled'];" in src
 
 
 def test_homer_general_volt_read_only_and_alert():
@@ -136,9 +136,12 @@ namespace {{
     assert parsed["lan_ip"]["ServerName"] == ""
 
 
-def test_caddy_setup_triggers_homer_sync():
-    setup_src = CADDY_SETUP.read_text()
-    assert "configctl homer sync-caddy" in setup_src
+CADDY_SERVICE_CTRL = Path("pkgs/os-caddy-advanced/src/opnsense/mvc/app/controllers/OPNsense/CaddyAdvanced/Api/ServiceController.php")
+
+
+def test_caddy_reconfigure_triggers_homer_sync():
+    src = CADDY_SERVICE_CTRL.read_text()
+    assert "homer sync-caddy" in src
 
 
 def test_homer_rcd_checks_caddy_enable():

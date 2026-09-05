@@ -19,7 +19,23 @@ use OPNsense\Homer\Homer;
 const CADDY_CONF_DIR = '/usr/local/etc/caddy/conf.d';
 const CADDY_HOMER_FILE = CADDY_CONF_DIR . '/homer.caddy';
 
+// If os-homer is being deinstalled, clean up conf.d and exit
+if (!file_exists('/usr/local/opnsense/version/homer')) {
+    if (file_exists(CADDY_HOMER_FILE)) {
+        @unlink(CADDY_HOMER_FILE);
+        if (homer_caddy_is_present()) {
+            @shell_exec('/usr/local/sbin/configctl caddyadvanced reload >/dev/null 2>&1');
+        }
+    }
+    exit(0);
+}
+
 $caddyPresent = homer_caddy_is_present();
+if ($caddyPresent) {
+    // When Caddy Advanced is present, Homer must never run standalone
+    @shell_exec('/usr/sbin/service homer stop >/dev/null 2>&1');
+}
+
 $mdl = new Homer();
 $homerEnabled = (string)$mdl->general->enabled === '1';
 
@@ -27,9 +43,6 @@ if ($caddyPresent && $homerEnabled) {
     if (!is_dir(CADDY_CONF_DIR)) {
         @mkdir(CADDY_CONF_DIR, 0755, true);
     }
-
-    // Stop isolated Homer daemon if active
-    @shell_exec('/usr/sbin/service homer stop >/dev/null 2>&1');
 
     // Generate / update conf.d/homer.caddy
     $port = (string)$mdl->general->Port ?: '9443';

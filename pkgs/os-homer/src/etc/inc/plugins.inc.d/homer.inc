@@ -61,3 +61,16 @@ function homer_syslog()
 {
     return ['homer' => ['facility' => ['homer']]];
 }
+
+function homer_configure(): array
+{
+    return [
+        'bootup' => ['homer_caddy_sync:1'],
+    ];
+}
+
+function homer_caddy_sync()
+{
+    require_once 'config.inc';
+    @shell_exec('/usr/local/bin/php /usr/local/opnsense/scripts/OPNsense/Homer/sync_caddy.php >/dev/null 2>&1');
+}
