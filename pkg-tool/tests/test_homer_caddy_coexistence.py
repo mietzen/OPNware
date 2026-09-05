@@ -191,8 +191,10 @@ def test_caddy_homer_trigger_bidirectional():
 
 def test_homer_sync_caddy_preserves_existing():
     src = HOMER_SYNC.read_text()
-    assert "if (!file_exists(CADDY_HOMER_FILE) && !file_exists(CADDY_HOMER_DISABLED))" in src
-    assert "$targetFile = $homerEnabled ? CADDY_HOMER_FILE : CADDY_HOMER_DISABLED;" in src
+    assert "if (file_exists(CADDY_HOMER_DISABLED) && !file_exists(CADDY_HOMER_FILE))" in src
+    assert "rename(CADDY_HOMER_DISABLED, CADDY_HOMER_FILE)" in src
+    assert "rename(CADDY_HOMER_FILE, CADDY_HOMER_DISABLED)" in src
+    assert "$managed = $mdl->getCaddyManagedConfig();" in src
 
 
 def test_homer_model_preserves_disabled_customizations(tmp_path):
