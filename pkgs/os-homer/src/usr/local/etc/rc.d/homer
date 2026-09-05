@@ -51,11 +51,6 @@ homer_flags="--config ${homer_config} --adapter ${homer_adapter}"
 
 homer_prestart()
 {
-    if /usr/bin/pgrep -q -f "/usr/local/bin/caddy.*--config /usr/local/etc/caddy/Caddyfile"; then
-        echo "Homer is managed by Caddy Advanced (caddy process already running)."
-        return 1
-    fi
-
     if [ -f /usr/local/opnsense/version/caddy-advanced ]; then
         if [ -f /etc/rc.conf.d/caddy ]; then
             . /etc/rc.conf.d/caddy
@@ -64,7 +59,22 @@ homer_prestart()
             echo "Homer is managed by Caddy Advanced via conf.d/homer.caddy (isolated instance disabled)."
             return 1
         fi
+    fi
+
+    # When Caddy Advanced is disabled or absent, stop master Caddy if still running
+    if [ -f "/usr/local/etc/rc.d/caddy" ]; then
         /usr/sbin/service caddy onestop >/dev/null 2>&1
+        for _i in 1 2 3 4 5; do
+            if ! /usr/bin/pgrep -q -f "/usr/local/bin/caddy.*--config /usr/local/etc/caddy/Caddyfile"; then
+                break
+            fi
+            sleep 0.1
+        done
+    fi
+
+    if /usr/bin/pgrep -q -f "/usr/local/bin/caddy.*--config /usr/local/etc/caddy/Caddyfile"; then
+        echo "Homer cannot start (conflicting Caddy process already running)."
+        return 1
     fi
 
     /usr/bin/install -d -m 755 -o "${homer_user}" -g "${homer_group}" "${homer_directory}"

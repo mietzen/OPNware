@@ -46,46 +46,37 @@ if ($caddyPresent) {
         @mkdir(CADDY_CONF_DIR, 0755, true);
     }
 
-    if ($homerEnabled && !file_exists(CADDY_HOMER_FILE) && file_exists(CADDY_HOMER_DISABLED)) {
-        @rename(CADDY_HOMER_DISABLED, CADDY_HOMER_FILE);
-        @shell_exec('/usr/sbin/service caddy reload >/dev/null 2>&1');
-    } elseif (!$homerEnabled && file_exists(CADDY_HOMER_FILE)) {
-        @rename(CADDY_HOMER_FILE, CADDY_HOMER_DISABLED);
-        @shell_exec('/usr/sbin/service caddy reload >/dev/null 2>&1');
-    } elseif (!file_exists(CADDY_HOMER_FILE) && !file_exists(CADDY_HOMER_DISABLED)) {
-        $targetFile = $homerEnabled ? CADDY_HOMER_FILE : CADDY_HOMER_DISABLED;
+    if (!file_exists(CADDY_HOMER_FILE) && !file_exists(CADDY_HOMER_DISABLED)) {
+        if ($homerEnabled) {
+            $port = (string)$mdl->general->Port ?: '9443';
+            $tls = (string)$mdl->general->TlsEnabled === '1';
+            $serverName = trim((string)$mdl->general->ServerName);
+            $interface = (string)$mdl->general->Interface ?: 'all';
 
-        $port = (string)$mdl->general->Port ?: '9443';
-        $tls = (string)$mdl->general->TlsEnabled === '1';
-        $serverName = trim((string)$mdl->general->ServerName);
-        $interface = (string)$mdl->general->Interface ?: 'all';
-
-        $listen = ':' . $port;
-        if ($serverName !== '') {
-            $cleanHost = (strpos($serverName, ':') !== false && $serverName[0] !== '[') ? "[{$serverName}]" : $serverName;
-            $listen = $cleanHost . ':' . $port;
-        } elseif ($interface === 'localhost') {
-            $listen = '127.0.0.1:' . $port;
-        } elseif ($interface === 'lan') {
-            $configObj = Config::getInstance()->object();
-            $lanIp = isset($configObj->interfaces->lan->ipaddr) ? (string)$configObj->interfaces->lan->ipaddr : '';
-            if ($lanIp !== '') {
-                $listen = (strpos($lanIp, ':') !== false ? '[' . $lanIp . ']' : $lanIp) . ':' . $port;
+            $listen = ':' . $port;
+            if ($serverName !== '') {
+                $cleanHost = (strpos($serverName, ':') !== false && $serverName[0] !== '[') ? "[{$serverName}]" : $serverName;
+                $listen = $cleanHost . ':' . $port;
+            } elseif ($interface === 'localhost') {
+                $listen = '127.0.0.1:' . $port;
+            } elseif ($interface === 'lan') {
+                $configObj = Config::getInstance()->object();
+                $lanIp = isset($configObj->interfaces->lan->ipaddr) ? (string)$configObj->interfaces->lan->ipaddr : '';
+                if ($lanIp !== '') {
+                    $listen = (strpos($lanIp, ':') !== false ? '[' . $lanIp . ']' : $lanIp) . ':' . $port;
+                }
             }
-        }
 
-        $tlsBlock = $tls ? "\ttls internal {\n\t\ton_demand\n\t}\n" : '';
-        $content = "# Homer dashboard served via Caddy Advanced\n"
-            . "{$listen} {\n"
-            . "\troot * /usr/local/www/homer\n"
-            . "\tfile_server\n"
-            . $tlsBlock
-            . "}\n";
+            $tlsBlock = $tls ? "\ttls internal {\n\t\ton_demand\n\t}\n" : '';
+            $content = "# Homer dashboard served via Caddy Advanced\n"
+                . "{$listen} {\n"
+                . "\troot * /usr/local/www/homer\n"
+                . "\tfile_server\n"
+                . $tlsBlock
+                . "}\n";
 
-        file_put_contents($targetFile, $content);
-        @chmod($targetFile, 0644);
-
-        if ($targetFile === CADDY_HOMER_FILE) {
+            file_put_contents(CADDY_HOMER_FILE, $content);
+            @chmod(CADDY_HOMER_FILE, 0644);
             @shell_exec('/usr/sbin/service caddy reload >/dev/null 2>&1');
         }
     }
