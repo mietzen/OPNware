@@ -24,11 +24,15 @@ $result = array(
 $podmanSock = getenv('OPNSENSE_PODMAN_SOCK_PATH') ?: '/var/run/podman/podman.sock';
 $podmanPidFile = getenv('OPNSENSE_PODMAN_PID_PATH') ?: '/var/run/podman/podman_service.pid';
 $podmanActive = false;
-if (file_exists($podmanSock) && file_exists($podmanPidFile)) {
-    $pid = trim((string)@file_get_contents($podmanPidFile));
-    if (is_numeric($pid)) {
-        exec('kill -0 ' . (int)$pid . ' 2>/dev/null', $o, $code);
-        $podmanActive = ($code === 0);
+if (file_exists($podmanSock)) {
+    if (file_exists($podmanPidFile)) {
+        $pid = trim((string)@file_get_contents($podmanPidFile));
+        if (is_numeric($pid)) {
+            exec('kill -0 ' . (int)$pid . ' 2>/dev/null', $o, $code);
+            $podmanActive = ($code === 0);
+        }
+    } else {
+        $podmanActive = true;
     }
 }
 $result['podman_socket_active'] = $podmanActive;

@@ -44,8 +44,9 @@ def test_caddy_status_and_ui_expose_podman_integration():
         data = json.loads(res.stdout)
         assert data["podman_socket_active"] is False
 
-        # Case 2: Socket exists but pidfile missing -> false (not active)
+        # Case 2: Socket exists but pid is dead -> false
         mock_sock.touch()
+        mock_pid.write_text("99999999\n")
         env = os.environ.copy()
         env["OPNSENSE_PODMAN_SOCK_PATH"] = str(mock_sock)
         env["OPNSENSE_PODMAN_PID_PATH"] = str(mock_pid)
