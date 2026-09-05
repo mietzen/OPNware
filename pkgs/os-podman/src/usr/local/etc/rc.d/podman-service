@@ -24,8 +24,11 @@ pidfile="/var/run/podman/podman_service.pid"
 suppidfile="/var/run/podman/podman_service_sup.pid"
 tcppidfile="/var/run/podman/podman_service_tcp.pid"
 tcpsuppidfile="/var/run/podman/podman_service_tcp_sup.pid"
+termpidfile="/var/run/podman/terminal.pid"
+termsuppidfile="/var/run/podman/terminal_sup.pid"
 logfile="/var/log/podman/system-service.log"
 podman_bin="/usr/local/bin/podman"
+terminal_daemon="/usr/local/opnsense/scripts/OPNsense/Podman/terminal_daemon.py"
 
 # Construct TLS flags for TCP service
 tls_flags=""
@@ -84,6 +87,12 @@ podman_service_start()
         /usr/sbin/daemon -r -R 1 -f -P "${tcpsuppidfile}" -p "${tcppidfile}" -o "${logfile}" "${podman_bin}" --log-level=info system service --time=0 ${tls_flags} "${tcp_endpoint}" </dev/null >/dev/null 2>&1
     fi
 
+    # 3. Start interactive XTerm container terminal bridge daemon
+    if [ -f "${terminal_daemon}" ]; then
+        echo "$(date '+%Y-%m-%dT%H:%M:%S%z') [info] Starting Podman terminal daemon on 127.0.0.1:7681..." >> "${logfile}"
+        /usr/sbin/daemon -r -R 1 -f -P "${termsuppidfile}" -p "${termpidfile}" -o "${logfile}" /usr/local/bin/python3 "${terminal_daemon}" --host 127.0.0.1 --port 7681 </dev/null >/dev/null 2>&1
+    fi
+
     echo "$(date '+%Y-%m-%dT%H:%M:%S%z') [info] Podman system service daemon started (pid $(/bin/cat "${pidfile}"))." >> "${logfile}"
 
     # Notify Caddy Advanced if installed
@@ -99,6 +108,8 @@ podman_service_stop()
 {
     echo -n "Stopping ${name}... "
     echo "$(date '+%Y-%m-%dT%H:%M:%S%z') [info] Stopping Podman system service daemons..." >> "${logfile}"
+    _stop_pid "${termsuppidfile}"
+    _stop_pid "${termpidfile}"
     _stop_pid "${tcpsuppidfile}"
     _stop_pid "${tcppidfile}"
     _stop_pid "${suppidfile}"
@@ -113,14 +124,20 @@ podman_service_status()
     if [ -f "${pidfile}" ]; then
         pid=$(cat "${pidfile}" 2>/dev/null)
         if [ -n "${pid}" ] && kill -0 "${pid}" 2>/dev/null; then
+            msg="${name} is running as pid ${pid}"
             if [ -f "${tcppidfile}" ]; then
                 tcppid=$(cat "${tcppidfile}" 2>/dev/null)
                 if [ -n "${tcppid}" ] && kill -0 "${tcppid}" 2>/dev/null; then
-                    echo "${name} is running as pid ${pid} (UNIX socket) and pid ${tcppid} (TCP)."
-                    return 0
+                    msg="${msg} (TCP pid ${tcppid})"
                 fi
             fi
-            echo "${name} is running as pid ${pid}."
+            if [ -f "${termpidfile}" ]; then
+                termpid=$(cat "${termpidfile}" 2>/dev/null)
+                if [ -n "${termpid}" ] && kill -0 "${termpid}" 2>/dev/null; then
+                    msg="${msg} (terminal daemon pid ${termpid})"
+                fi
+            fi
+            echo "${msg}."
             return 0
         fi
     fi
