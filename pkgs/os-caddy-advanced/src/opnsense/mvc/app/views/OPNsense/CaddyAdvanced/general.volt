@@ -73,6 +73,21 @@
                     valHtml = '<span class="label label-danger">' + $('<div>').text(data.validate).html() + '</span>';
                 }
                 $status.find("#status-validate").html(valHtml);
+
+                if ($('#tab_general-dockerproxy').length) {
+                    let $badge = $('#podman-dockerproxy-indicator');
+                    if (!$badge.length) {
+                        const indicatorHtml = '<div id="podman-dockerproxy-indicator" style="margin-bottom: 15px;">' +
+                            '<b>{{ lang._("Podman Socket Status") }}:</b> <span id="podman-socket-badge"></span>' +
+                            '</div>';
+                        $('#tab_general-dockerproxy').prepend(indicatorHtml);
+                        $badge = $('#podman-dockerproxy-indicator');
+                    }
+                    const badgeHtml = data.podman_socket_active
+                        ? '<span class="label label-success">{{ lang._("active") }}</span> <code>unix:///var/run/podman/podman.sock</code>'
+                        : '<span class="label label-default">{{ lang._("inactive") }}</span>';
+                    $badge.find('#podman-socket-badge').html(badgeHtml);
+                }
             });
         }
     });

@@ -62,15 +62,28 @@ if ($envfile === '') {
 }
 
 $enabled = isset($dockerproxy->enabled) ? (string)$dockerproxy->enabled : '0';
+$podmanVersionPath = getenv('OPNSENSE_PODMAN_VERSION_PATH') ?: '/usr/local/opnsense/version/podman';
+$podmanSockPath = getenv('OPNSENSE_PODMAN_SOCK_PATH') ?: '/var/run/podman/podman.sock';
+$hasPodman = file_exists($podmanVersionPath) || file_exists($podmanSockPath);
+$localPodmanSocket = 'unix:///var/run/podman/podman.sock';
 
 $rows = array();
 if ($enabled === '1') {
     if (isset($dockerproxy->mode) && (string)$dockerproxy->mode !== '') {
         $rows['CADDY_DOCKER_PROXY_MODE'] = (string)$dockerproxy->mode;
     }
+
+    $configuredSockets = '';
     if (isset($dockerproxy->docker_sockets) && (string)$dockerproxy->docker_sockets !== '') {
-        $rows['CADDY_DOCKER_SOCKETS'] = (string)$dockerproxy->docker_sockets;
+        $configuredSockets = (string)$dockerproxy->docker_sockets;
     }
+
+    if ($hasPodman && ($configuredSockets === '' || $configuredSockets === 'tcp://docker-proxy-host:2375')) {
+        $rows['CADDY_DOCKER_SOCKETS'] = $localPodmanSocket;
+    } elseif ($configuredSockets !== '') {
+        $rows['CADDY_DOCKER_SOCKETS'] = $configuredSockets;
+    }
+
     if (isset($dockerproxy->docker_certs_path) && (string)$dockerproxy->docker_certs_path !== '') {
         $rows['CADDY_DOCKER_CERTS_PATH'] = (string)$dockerproxy->docker_certs_path;
     }

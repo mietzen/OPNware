@@ -85,6 +85,12 @@ podman_service_start()
     fi
 
     echo "$(date '+%Y-%m-%dT%H:%M:%S%z') [info] Podman system service daemon started (pid $(/bin/cat "${pidfile}"))." >> "${logfile}"
+
+    # Notify Caddy Advanced if installed
+    if [ -f /usr/local/opnsense/version/caddy-advanced ]; then
+        /usr/local/sbin/configctl caddyadvanced dockerproxy-sync >/dev/null 2>&1 || true
+    fi
+
     echo "done."
     return 0
 }
