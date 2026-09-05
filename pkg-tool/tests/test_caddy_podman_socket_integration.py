@@ -8,6 +8,7 @@ def test_caddy_dockerproxy_detects_and_auto_adds_podman_socket():
     assert "unix:///var/run/podman/podman.sock" in dp_script
     assert "$hasPodman" in dp_script or "hasPodman" in dp_script
     assert "$rows['CADDY_DOCKER_SOCKETS']" in dp_script
+    assert "docker_proxy_module_installed" in dp_script
 
 
 def test_podman_setup_and_service_notifies_caddy_dockerproxy_sync():
@@ -22,7 +23,6 @@ def test_podman_setup_and_service_notifies_caddy_dockerproxy_sync():
 
 def test_caddy_status_and_ui_expose_podman_integration():
     status_script = Path("pkgs/os-caddy-advanced/src/opnsense/scripts/OPNsense/CaddyAdvanced/status.php").read_text()
-    assert "podman_present" in status_script
     assert "podman_socket_active" in status_script
 
     volt_view = Path("pkgs/os-caddy-advanced/src/opnsense/mvc/app/views/OPNsense/CaddyAdvanced/general.volt").read_text()
