@@ -477,6 +477,7 @@
 
         try {
             currentWs = new WebSocket(wsUrl);
+            currentWs.binaryType = 'arraybuffer';
         } catch (err) {
             currentTerm.write('\r\n\x1b[31m[{{ lang._("WebSocket connection error") }}: ' + err.message + ']\x1b[0m\r\n');
             return;
@@ -486,7 +487,7 @@
             currentTerm.write('\x1b[32m[{{ lang._("Connected") }}]\x1b[0m\r\n\r\n');
             if (currentFitAddon) {
                 currentFitAddon.fit();
-                currentWs.send(JSON.stringify({
+                currentWs.send('\x00' + JSON.stringify({
                     type: 'resize',
                     cols: currentTerm.cols,
                     rows: currentTerm.rows
@@ -496,14 +497,16 @@
         };
 
         currentWs.onmessage = function (event) {
-            if (typeof event.data === 'string') {
+            if (event.data instanceof ArrayBuffer) {
+                currentTerm.write(new Uint8Array(event.data));
+            } else if (typeof event.data === 'string') {
                 currentTerm.write(event.data);
             } else if (event.data instanceof Blob) {
                 var reader = new FileReader();
                 reader.onload = function () {
-                    currentTerm.write(reader.result);
+                    currentTerm.write(new Uint8Array(reader.result));
                 };
-                reader.readAsText(event.data);
+                reader.readAsArrayBuffer(event.data);
             }
         };
 
@@ -595,7 +598,7 @@
         });
 
         $('#modal-cli').on('shown.bs.modal', function () {
-            var shell = $('#cli-shell-select').val() || '/bin/sh';
+            var shell = $('#cli-shell').val() || '/bin/sh';
             if (currentCliContainerId) {
                 connectTerminalWs(currentCliContainerId, shell);
             }
@@ -603,7 +606,7 @@
                 if (currentFitAddon && currentTerm) {
                     currentFitAddon.fit();
                     if (currentWs && currentWs.readyState === WebSocket.OPEN) {
-                        currentWs.send(JSON.stringify({
+                        currentWs.send('\x00' + JSON.stringify({
                             type: 'resize',
                             cols: currentTerm.cols,
                             rows: currentTerm.rows
@@ -623,14 +626,7 @@
             }
         });
 
-        $('#btn_reconnect_cli').click(function () {
-            var shell = $('#cli-shell-select').val() || '/bin/sh';
-            if (currentCliContainerId) {
-                connectTerminalWs(currentCliContainerId, shell);
-            }
-        });
-
-        $('#cli-shell-select').change(function () {
+        $('#cli-shell').change(function () {
             var shell = $(this).val() || '/bin/sh';
             if (currentCliContainerId) {
                 connectTerminalWs(currentCliContainerId, shell);
@@ -885,13 +881,16 @@
                 </h4>
                 <div style="display: flex; align-items: center; gap: 8px;">
                     <div style="display: inline-flex; align-items: center; gap: 5px;">
-                        <label for="cli-shell-select" style="margin: 0; font-size: 12px; font-weight: normal; color: #aaa;">{{ lang._('Shell') }}:</label>
-                        <select id="cli-shell-select" class="form-control input-sm" style="width: 110px; height: 26px; padding: 2px 8px; background: #2a2a2a; color: #fff; border-color: #444;">
-                            <option value="/bin/sh">/bin/sh</option>
-                            <option value="/bin/bash">/bin/bash</option>
-                        </select>
+                        <label for="cli-shell" style="margin: 0; font-size: 12px; font-weight: normal; color: #aaa;">{{ lang._('Shell') }}:</label>
+                        <input type="text" class="form-control input-sm" id="cli-shell" list="cli-shell-list" value="/bin/sh" style="width: 100px; height: 26px; padding: 2px 8px; background: #2a2a2a; color: #fff; border-color: #444;" />
+                        <datalist id="cli-shell-list">
+                            <option value="/bin/sh">
+                            <option value="/bin/bash">
+                            <option value="/bin/csh">
+                            <option value="/bin/zsh">
+                            <option value="/bin/ash">
+                        </datalist>
                     </div>
-                    <button type="button" class="btn btn-xs btn-default" id="btn_reconnect_cli" title="{{ lang._('Reconnect') }}"><i class="fa fa-refresh"></i> {{ lang._('Reconnect') }}</button>
                     <button type="button" class="btn btn-xs btn-default" id="btn_clear_cli" title="{{ lang._('Clear Terminal') }}"><i class="fa fa-eraser"></i> {{ lang._('Clear') }}</button>
                     <button type="button" class="close" data-dismiss="modal" aria-label="Close" style="color: #fff; opacity: 0.8; margin-left: 10px;"><span aria-hidden="true">&times;</span></button>
                 </div>

@@ -68,24 +68,49 @@ def test_terminal_daemon_websocket_helpers():
     sys.path.insert(0, str(PODMAN_SRC / "opnsense" / "scripts" / "OPNsense" / "Podman"))
     try:
         import terminal_daemon
+        import tempfile
+        import os
 
         # 1. Test accept key computation
         test_key = "dGhlIHNhbXBsZSBub25jZQ=="
         expected_accept = "s3pPLMBiTxaQ9kYGzzhZRbK+xOo="
         assert terminal_daemon.compute_ws_accept(test_key) == expected_accept
 
-        # 2. Test frame encoding
+        # 2. Test frame encoding (binary default)
         payload = b"hello world"
-        frame = terminal_daemon.encode_ws_frame(payload, opcode=terminal_daemon.OPCODE_TEXT)
-        assert frame[0] == 0x81  # FIN + text opcode
+        frame = terminal_daemon.encode_ws_frame(payload, opcode=terminal_daemon.OPCODE_BIN)
+        assert frame[0] == 0x82  # FIN + binary opcode
         assert frame[1] == len(payload)
         assert frame[2:] == payload
 
         # 3. Test large frame encoding (126 extended length)
         large_payload = b"A" * 300
         large_frame = terminal_daemon.encode_ws_frame(large_payload, opcode=terminal_daemon.OPCODE_BIN)
-        assert large_frame[0] == 0x82  # FIN + binary opcode
+        assert large_frame[0] == 0x82
         assert large_frame[1] == 126
         assert len(large_frame) == 2 + 2 + 300
+
+        # 4. Test auth session validation
+        with tempfile.TemporaryDirectory() as sdir:
+            sess_file = Path(sdir) / "sess_validtoken123"
+            sess_file.write_text("user|s:5:\"admin\";")
+            os.environ["OPNSENSE_SESSION_DIR"] = sdir
+
+            # Unauthenticated without cookie
+            assert terminal_daemon.is_authenticated_session("") is False
+            assert terminal_daemon.is_authenticated_session("other=value") is False
+
+            # Invalid session token
+            assert terminal_daemon.is_authenticated_session("PHPSESSID=invalidtoken") is False
+
+            # Valid session token
+            assert terminal_daemon.is_authenticated_session("PHPSESSID=validtoken123") is True
+
+        # 5. Test TerminalSession close and reap logic
+        session = terminal_daemon.TerminalSession("dummy-cid", "/bin/sh")
+        session.master_fd = None
+        session.pid = None
+        session.close()
+        assert session.closed is True
     finally:
         sys.path.pop(0)

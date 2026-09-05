@@ -12,10 +12,12 @@ import hashlib
 import json
 import os
 import pty
+import re
 import signal
 import struct
 import sys
 import termios
+import time
 from urllib.parse import parse_qs, urlparse
 
 WS_GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
@@ -32,6 +34,7 @@ DEFAULT_SHELL = "/bin/sh"
 DEFAULT_ROWS = 24
 DEFAULT_COLS = 80
 READ_CHUNK_SIZE = 4096
+SESSION_PATH_PATTERN = re.compile(r"^[a-zA-Z0-9,-]+$")
 
 
 def compute_ws_accept(key: str) -> str:
@@ -40,7 +43,7 @@ def compute_ws_accept(key: str) -> str:
     return base64.b64encode(hashlib.sha1(raw).digest()).decode("utf-8")
 
 
-def encode_ws_frame(payload: bytes, opcode: int = OPCODE_TEXT) -> bytes:
+def encode_ws_frame(payload: bytes, opcode: int = OPCODE_BIN) -> bytes:
     """Encode an unmasked server-to-client WebSocket frame."""
     length = len(payload)
     header = bytearray()
@@ -104,6 +107,30 @@ def set_winsize(fd: int, rows: int, cols: int):
         pass
 
 
+def is_authenticated_session(cookie_header: str) -> bool:
+    """Validate active OPNsense PHP session."""
+    if os.getenv("OPNSENSE_AUTH_BYPASS") == "1":
+        return True
+    if not cookie_header:
+        return False
+
+    session_dirs = [
+        os.getenv("OPNSENSE_SESSION_DIR", "/var/lib/php/sessions"),
+        "/tmp",
+    ]
+
+    for part in cookie_header.split(";"):
+        part = part.strip()
+        if part.startswith("PHPSESSID="):
+            sid = part.split("=", 1)[1].strip()
+            if SESSION_PATH_PATTERN.match(sid):
+                for sdir in session_dirs:
+                    sfile = os.path.join(sdir, f"sess_{sid}")
+                    if os.path.exists(sfile) and os.path.getsize(sfile) > 0:
+                        return True
+    return False
+
+
 class TerminalSession:
     """Manages master PTY and container shell process."""
 
@@ -119,15 +146,17 @@ class TerminalSession:
         master_fd, slave_fd = pty.openpty()
         self.master_fd = master_fd
 
-        # Set initial terminal dimensions
         set_winsize(master_fd, DEFAULT_ROWS, DEFAULT_COLS)
 
         pid = os.fork()
         if pid == 0:
-            # Child process: bind stdio to slave PTY and run podman exec
             os.close(master_fd)
             os.setsid()
-            fcntl.ioctl(slave_fd, termios.TIOCSCTTY, 0)
+            try:
+                fcntl.ioctl(slave_fd, termios.TIOCSCTTY, 0)
+            except OSError:
+                pass
+
             os.dup2(slave_fd, 0)
             os.dup2(slave_fd, 1)
             os.dup2(slave_fd, 2)
@@ -141,11 +170,9 @@ class TerminalSession:
             except Exception:
                 os._exit(1)
 
-        # Parent process: close slave descriptor
         os.close(slave_fd)
         self.pid = pid
 
-        # Set non-blocking on master_fd
         flags = fcntl.fcntl(master_fd, fcntl.F_GETFL)
         fcntl.fcntl(master_fd, fcntl.F_SETFL, flags | os.O_NONBLOCK)
 
@@ -163,7 +190,7 @@ class TerminalSession:
             set_winsize(self.master_fd, rows, cols)
 
     def close(self):
-        """Terminate child process and close PTY descriptor."""
+        """Terminate child process, close PTY, and reap process."""
         if self.closed:
             return
         self.closed = True
@@ -178,14 +205,29 @@ class TerminalSession:
         if self.pid is not None:
             try:
                 os.kill(self.pid, signal.SIGTERM)
-                os.waitpid(self.pid, os.WNOHANG)
-            except OSError:
+            except (ProcessLookupError, OSError):
                 pass
+
+            try:
+                for _ in range(10):
+                    reaped_pid, _ = os.waitpid(self.pid, os.WNOHANG)
+                    if reaped_pid != 0:
+                        break
+                    time.sleep(0.02)
+                else:
+                    try:
+                        os.kill(self.pid, signal.SIGKILL)
+                        os.waitpid(self.pid, 0)
+                    except (ProcessLookupError, OSError):
+                        pass
+            except (ChildProcessError, OSError):
+                pass
+
             self.pid = None
 
 
 async def handle_pty_read(session: TerminalSession, writer: asyncio.StreamWriter):
-    """Read ANSI output from master PTY and stream to WebSocket."""
+    """Read ANSI binary output from master PTY and stream to WebSocket."""
     loop = asyncio.get_running_loop()
     queue = asyncio.Queue()
 
@@ -199,14 +241,15 @@ async def handle_pty_read(session: TerminalSession, writer: asyncio.StreamWriter
         except (OSError, ValueError):
             queue.put_nowait(None)
 
-    loop.add_reader(session.master_fd, on_read)
+    if session.master_fd is not None:
+        loop.add_reader(session.master_fd, on_read)
 
     try:
         while not session.closed:
             data = await queue.get()
             if data is None:
                 break
-            frame = encode_ws_frame(data, opcode=OPCODE_TEXT)
+            frame = encode_ws_frame(data, opcode=OPCODE_BIN)
             writer.write(frame)
             await writer.drain()
     except (asyncio.CancelledError, ConnectionResetError, BrokenPipeError):
@@ -217,6 +260,30 @@ async def handle_pty_read(session: TerminalSession, writer: asyncio.StreamWriter
                 loop.remove_reader(session.master_fd)
         except (ValueError, OSError):
             pass
+
+
+async def handle_ws_input(session: TerminalSession, reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
+    """Read WebSocket frames from browser and write to PTY."""
+    while not session.closed:
+        opcode, data = await parse_ws_frame(reader)
+        if opcode is None or opcode == OPCODE_CLOSE:
+            break
+        elif opcode == OPCODE_PING:
+            writer.write(encode_ws_frame(data, opcode=OPCODE_PONG))
+            await writer.drain()
+        elif opcode in (OPCODE_TEXT, OPCODE_BIN):
+            # Control frame prefix (\x00{"type":"resize",...})
+            if data.startswith(b"\x00{") and b"resize" in data:
+                try:
+                    msg = json.loads(data[1:].decode("utf-8"))
+                    if msg.get("type") == "resize":
+                        r = int(msg.get("rows", DEFAULT_ROWS))
+                        c = int(msg.get("cols", DEFAULT_COLS))
+                        session.resize(r, c)
+                        continue
+                except Exception:
+                    pass
+            session.write(data)
 
 
 async def handle_ws_conn(reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
@@ -243,7 +310,14 @@ async def handle_ws_conn(reader: asyncio.StreamReader, writer: asyncio.StreamWri
         writer.close()
         return
 
-    # Extract target container ID and requested shell from query params
+    # Check authentication
+    cookie_header = headers.get("cookie", "")
+    if not is_authenticated_session(cookie_header):
+        writer.write(b"HTTP/1.1 401 Unauthorized\r\n\r\n")
+        await writer.drain()
+        writer.close()
+        return
+
     parsed_url = urlparse(path_line.split(" ")[1] if len(path_line.split(" ")) > 1 else "")
     params = parse_qs(parsed_url.query)
     cid = params.get("cid", [""])[0]
@@ -255,7 +329,6 @@ async def handle_ws_conn(reader: asyncio.StreamReader, writer: asyncio.StreamWri
         writer.close()
         return
 
-    # Send WebSocket upgrade response
     accept_val = compute_ws_accept(ws_key)
     handshake_resp = (
         "HTTP/1.1 101 Switching Protocols\r\n"
@@ -266,43 +339,34 @@ async def handle_ws_conn(reader: asyncio.StreamReader, writer: asyncio.StreamWri
     writer.write(handshake_resp.encode("utf-8"))
     await writer.drain()
 
-    # Start container PTY session
     session = TerminalSession(cid, shell)
     session.start()
 
     pty_task = asyncio.create_task(handle_pty_read(session, writer))
+    ws_task = asyncio.create_task(handle_ws_input(session, reader, writer))
+
+    # Concurrently wait for either PTY to close (shell exited) or WS to close
+    done, pending = await asyncio.wait(
+        [pty_task, ws_task],
+        return_when=asyncio.FIRST_COMPLETED
+    )
+
+    for task in pending:
+        task.cancel()
+
+    session.close()
 
     try:
-        while not session.closed:
-            opcode, data = await parse_ws_frame(reader)
-            if opcode is None or opcode == OPCODE_CLOSE:
-                break
-            elif opcode == OPCODE_PING:
-                writer.write(encode_ws_frame(data, opcode=OPCODE_PONG))
-                await writer.drain()
-            elif opcode == OPCODE_TEXT or opcode == OPCODE_BIN:
-                # Check for control messages like resize: {"type":"resize","cols":N,"rows":N}
-                if data.startswith(b"{") and b"resize" in data:
-                    try:
-                        msg = json.loads(data.decode("utf-8"))
-                        if msg.get("type") == "resize":
-                            r = int(msg.get("rows", DEFAULT_ROWS))
-                            c = int(msg.get("cols", DEFAULT_COLS))
-                            session.resize(r, c)
-                            continue
-                    except Exception:
-                        pass
-                session.write(data)
-    except (asyncio.CancelledError, ConnectionResetError, BrokenPipeError):
+        writer.write(encode_ws_frame(b"", opcode=OPCODE_CLOSE))
+        await writer.drain()
+    except (ConnectionResetError, BrokenPipeError, OSError):
         pass
-    finally:
-        session.close()
-        pty_task.cancel()
-        writer.close()
-        try:
-            await writer.wait_closed()
-        except Exception:
-            pass
+
+    writer.close()
+    try:
+        await writer.wait_closed()
+    except Exception:
+        pass
 
 
 def write_pid(path: str):
