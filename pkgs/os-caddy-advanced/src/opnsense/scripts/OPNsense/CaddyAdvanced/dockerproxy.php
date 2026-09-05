@@ -110,8 +110,6 @@ if ($enabled === '1') {
     }
     if (isset($dockerproxy->no_scope)) {
         $rows['CADDY_DOCKER_NO_SCOPE'] = ((string)$dockerproxy->no_scope === '1') ? 'true' : 'false';
-    } elseif ($hasPodman) {
-        $rows['CADDY_DOCKER_NO_SCOPE'] = 'true';
     }
     if (isset($dockerproxy->docker_host) && (string)$dockerproxy->docker_host !== '') {
         $rows['DOCKER_HOST'] = (string)$dockerproxy->docker_host;

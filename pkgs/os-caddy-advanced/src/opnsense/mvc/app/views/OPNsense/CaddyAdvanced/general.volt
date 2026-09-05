@@ -74,7 +74,7 @@
                 }
                 $status.find("#status-validate").html(valHtml);
 
-                if (data.podman_present) {
+                if (data.podman_socket_active) {
                     if (!$('#podman-dockerproxy-alert').length) {
                         const alertHtml = '<div class="alert alert-info" id="podman-dockerproxy-alert" style="margin-bottom: 15px;">' +
                             '<i class="fa fa-info-circle"></i> <strong>{{ lang._("Podman Integration") }}:</strong> ' +
