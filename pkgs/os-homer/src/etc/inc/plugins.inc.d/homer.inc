@@ -7,8 +7,7 @@
 
 function homer_caddy_is_present()
 {
-    return file_exists('/usr/local/opnsense/version/caddy-advanced')
-        && is_dir('/usr/local/etc/caddy/conf.d');
+    return file_exists('/usr/local/opnsense/version/caddy-advanced');
 }
 
 function homer_services()

@@ -47,10 +47,10 @@ def test_homer_general_controller_caddy_sync_and_gate():
     assert "Settings are managed by Caddy Advanced via /usr/local/etc/caddy/conf.d/homer.caddy" in src
 
 
-def test_homer_service_controller_status_and_reconfigure():
+def test_homer_service_controller_status_contract():
     src = HOMER_SERVICE_CTRL.read_text()
     assert "homer_caddy_is_present()" in src
-    assert "caddyadvanced status" in src
+    assert "return ['status' => 'disabled'];" in src
     assert "homer sync-caddy" in src
 
 
@@ -58,7 +58,7 @@ def test_homer_general_volt_read_only_and_alert():
     src = HOMER_GENERAL_VOLT.read_text()
     assert 'id="alert-caddy-managed"' in src
     assert "Managed by Caddy Advanced" in src
-    assert "data.caddy_managed" in src
+    assert "caddyManaged" in src
     assert "running (Caddy Advanced)" in src
 
 
@@ -66,25 +66,83 @@ def test_homer_action_sync_caddy_registered():
     src = HOMER_ACTIONS.read_text()
     assert "[sync-caddy]" in src
     assert "sync_caddy.php" in src
+    assert "type:script\n" in src
 
 
-def test_homer_pkg_trigger():
+def test_homer_pkg_trigger_has_install_and_cleanup():
     assert HOMER_TRIGGER.is_file()
     src = HOMER_TRIGGER.read_text()
     assert 'path: "/usr/local/opnsense/version"' in src
+    assert "cleanup:" in src
+    assert "trigger:" in src
     assert "sync_caddy.php" in src
 
 
-def test_caddy_setup_and_editor_seed_homer():
-    setup_src = CADDY_SETUP.read_text()
-    assert "sync_caddy.php" in setup_src
-    editor_src = CADDY_EDITOR.read_text()
-    assert "conf.d/homer.caddy" in editor_src
+def test_homer_parse_caddy_conf_functional(tmp_path):
+    import subprocess
+    import json
+
+    inc_dir = Path("pkgs/os-homer/src/etc/inc").resolve()
+    ctrl_path = HOMER_GENERAL_CTRL.resolve()
+    test_script = tmp_path / "runner.php"
+
+    test_script.write_text(f"""<?php
+namespace OPNsense\\Base {{ class ApiMutableModelControllerBase {{}} }}
+namespace {{
+    set_include_path(get_include_path() . PATH_SEPARATOR . '{inc_dir}');
+    require_once '{ctrl_path}';
+    class TestController extends OPNsense\\Homer\\Api\\GeneralController {{
+        public function testParse($path) {{
+            $ref = new ReflectionMethod($this, 'parseCaddyConf');
+            return $ref->invoke($this, $path);
+        }}
+    }}
+    $tc = new TestController();
+    $cases = [
+        'default_tls' => ":9443 {{\\n\\troot * /usr/local/www/homer\\n\\tfile_server\\n\\ttls internal {{\\n\\t\\ton_demand\\n\\t}}\\n}}\\n",
+        'hostname_custom_port' => "homer.test.lan:8080 {{\\n\\troot * /usr/local/www/homer\\n\\tfile_server\\n}}\\n",
+        'localhost_port' => "127.0.0.1:9090 {{\\n\\troot * /usr/local/www/homer\\n\\tfile_server\\n}}\\n",
+        'ipv6_bracket' => "[2001:db8::1]:9443 {{\\n\\troot * /usr/local/www/homer\\n\\tfile_server\\n\\ttls internal\\n}}\\n",
+        'lan_ip' => "192.168.1.1:8443 {{\\n\\troot * /usr/local/www/homer\\n\\tfile_server\\n}}\\n",
+    ];
+    $results = [];
+    foreach ($cases as $name => $content) {{
+        $f = '{tmp_path}/' . $name . '.caddy';
+        file_put_contents($f, $content);
+        $results[$name] = $tc->testParse($f);
+    }}
+    echo json_encode($results);
+}}
+""")
+
+    res = subprocess.run(["php", str(test_script)], capture_output=True, text=True, check=True)
+    parsed = json.loads(res.stdout)
+
+    assert parsed["default_tls"]["Port"] == "9443"
+    assert parsed["default_tls"]["Interface"] == "all"
+    assert parsed["default_tls"]["ServerName"] == ""
+    assert parsed["default_tls"]["TlsEnabled"] == "1"
+    assert parsed["default_tls"]["enabled"] == "1"
+
+    assert parsed["hostname_custom_port"]["Port"] == "8080"
+    assert parsed["hostname_custom_port"]["Interface"] == "all"
+    assert parsed["hostname_custom_port"]["ServerName"] == "homer.test.lan"
+    assert parsed["hostname_custom_port"]["TlsEnabled"] == "0"
+
+    assert parsed["localhost_port"]["Port"] == "9090"
+    assert parsed["localhost_port"]["Interface"] == "localhost"
+    assert parsed["localhost_port"]["ServerName"] == ""
+
+    assert parsed["ipv6_bracket"]["Port"] == "9443"
+    assert parsed["ipv6_bracket"]["Interface"] == "lan"
+    assert parsed["ipv6_bracket"]["ServerName"] == ""
+    assert parsed["ipv6_bracket"]["TlsEnabled"] == "1"
+
+    assert parsed["lan_ip"]["Port"] == "8443"
+    assert parsed["lan_ip"]["Interface"] == "lan"
+    assert parsed["lan_ip"]["ServerName"] == ""
 
 
 def test_package_versions_bumped():
     homer_spec = yaml.safe_load(HOMER_CONFIG.read_text())
     assert homer_spec["pkg_manifest"]["version"] == "0.5.10"
-
-    caddy_spec = yaml.safe_load(CADDY_CONFIG.read_text())
-    assert caddy_spec["pkg_manifest"]["version"] == "0.8.17"

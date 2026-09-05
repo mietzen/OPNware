@@ -17,16 +17,18 @@
             return v !== undefined && v !== '' ? v : fallback;
         }
 
+        let caddyManaged = false;
+
         mapDataToFormUI({'frm_general': "/api/homer/general/get"}).done(function(data) {
             const formData = data ? (data['frm_general-settings'] || data.frm_general || data) : {};
-            const isManaged = Boolean(formData && formData.caddy_managed);
+            caddyManaged = Boolean(formData && formData.caddy_managed);
 
             $('.selectpicker').selectpicker('refresh');
             updateServiceControlUI('homer');
             updateStatus();
             updateEffectiveUrl();
 
-            if (isManaged) {
+            if (caddyManaged) {
                 $('#alert-caddy-managed').show();
                 $form.find('input, select').prop('disabled', true);
                 $('.selectpicker').prop('disabled', true).selectpicker('refresh');
@@ -78,22 +80,23 @@
         });
 
         function updateStatus() {
+            const $status = $("#tbl_homer_status");
+            if (!$status.length) {
+                return;
+            }
+
+            if (caddyManaged) {
+                $status.find("#status-running").html(
+                    '<span class="label label-success">{{ lang._("running (Caddy Advanced)") }}</span>'
+                );
+                return;
+            }
+
             $.getJSON("/api/homer/service/status", function (data) {
-                const $status = $("#tbl_homer_status");
-                if (!$status.length) {
-                    return;
-                }
-                const running = data.status === "running";
-                let badge = '';
-                if (data && data.caddy_managed) {
-                    badge = running
-                        ? '<span class="label label-success">{{ lang._("running (Caddy Advanced)") }}</span>'
-                        : '<span class="label label-default">{{ lang._("stopped (Caddy Advanced)") }}</span>';
-                } else {
-                    badge = running
-                        ? '<span class="label label-success">{{ lang._("running") }}</span>'
-                        : '<span class="label label-default">{{ lang._("stopped") }}</span>';
-                }
+                const running = data && data.status === "running";
+                const badge = running
+                    ? '<span class="label label-success">{{ lang._("running") }}</span>'
+                    : '<span class="label label-default">{{ lang._("stopped") }}</span>';
                 $status.find("#status-running").html(badge);
             });
         }

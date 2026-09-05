@@ -32,14 +32,15 @@ if ($caddyPresent) {
     // Generate conf.d/homer.caddy if not present
     if (!file_exists(CADDY_HOMER_FILE)) {
         $mdl = new Homer();
-        $port = (string)$mdl->general->Port ?: '8085';
+        $port = (string)$mdl->general->Port ?: '9443';
         $tls = (string)$mdl->general->TlsEnabled === '1';
         $serverName = trim((string)$mdl->general->ServerName);
         $interface = (string)$mdl->general->Interface ?: 'all';
 
         $listen = ':' . $port;
         if ($serverName !== '') {
-            $listen = $serverName . ':' . $port;
+            $cleanHost = (strpos($serverName, ':') !== false && $serverName[0] !== '[') ? "[{$serverName}]" : $serverName;
+            $listen = $cleanHost . ':' . $port;
         } elseif ($interface === 'localhost') {
             $listen = '127.0.0.1:' . $port;
         } elseif ($interface === 'lan') {
@@ -64,7 +65,6 @@ if ($caddyPresent) {
 
     // Reload master Caddy service
     @shell_exec('/usr/local/sbin/configctl caddyadvanced reload >/dev/null 2>&1');
-    echo "OK: Homer synced with Caddy Advanced\n";
     exit(0);
 }
 
@@ -80,5 +80,4 @@ if ((string)$mdl->general->enabled === '1') {
     @shell_exec('/usr/sbin/service homer start >/dev/null 2>&1');
 }
 
-echo "OK: Homer standalone service restored\n";
 exit(0);

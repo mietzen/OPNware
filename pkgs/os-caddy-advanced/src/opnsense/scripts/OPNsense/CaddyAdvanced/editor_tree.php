@@ -182,10 +182,5 @@ function editor_tree_seed($base = EDITOR_TREE_BASE)
             }
         }
     }
-
-    if (file_exists('/usr/local/opnsense/version/homer') && !is_file($base . '/conf.d/homer.caddy')) {
-        @shell_exec('/usr/local/bin/php /usr/local/opnsense/scripts/OPNsense/Homer/sync_caddy.php >/dev/null 2>&1 || true');
-    }
-
     return null;
 }
