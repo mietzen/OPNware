@@ -174,13 +174,19 @@ if (!file_exists('/usr/local/bin/docker') && file_exists('/usr/local/bin/podman'
     log_msg("Created /usr/local/bin/docker compatibility symlink -> /usr/local/bin/podman");
 }
 
+// 5. Notify Caddy Advanced if installed
+if (file_exists('/usr/local/opnsense/version/caddy-advanced')) {
+    $backend = new \OPNsense\Core\Backend();
+    $backend->configdRun('caddyadvanced dockerproxy-sync');
+}
+
 $podmanVersion = '5.8.4';
 $verOut = trim(shell_exec('/usr/local/bin/podman --version 2>/dev/null') ?: '');
 if (!empty($verOut) && preg_match('/version\s+([^\s]+)/i', $verOut, $m)) {
     $podmanVersion = $m[1];
 }
 
-// 5. Record status
+// 6. Record status
 $status = [
     'status' => 'ok',
     'version' => $podmanVersion,

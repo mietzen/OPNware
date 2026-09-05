@@ -20,7 +20,7 @@ Always consult and apply the `opnsense-plugin-dev` skill (`.agents/skills/opnsen
 
 ## Review convention
 
-Final reviews of implemented issues use the `oracle` sub-agent.
+Final reviews of implemented issues use a Gemini 3.8 Flash sub-agent.
 
 ## Development workflow (branch/PR per issue — mandatory)
 
@@ -38,11 +38,9 @@ never deploy from a local build.
    and exercise the change end-to-end before merging.
 4. **PR**: open a PR (gh CLI) from the branch to `main`; CI runs the build
    matrix + assembly check on the PR. Iterate until green.
-5. **AI review**: before merging, run the `/code-review` skill on the branch
-   (two parallel sub-agents — Standards vs the issue spec, see "Review
-   convention"). Address blocking findings with follow-up commits on the
-   branch; re-run CI until green. Final review of implemented issues uses the
-   `oracle` sub-agent.
+5. **AI review**: before merging, run the `/code-review` skill on the branch.
+   Address blocking findings with follow-up commits on the
+   branch; re-run CI until green. Final review of implemented issues
 6. **Merge**: merge the PR to `main` only after CI is green AND the AI review
    passed.
 7. **Deploy**: pushing to `main` triggers the CI deploy to GitHub Pages — this
@@ -126,12 +124,10 @@ plugin `.inc` hooks (`<name>_services()`, `<name>_configure()`,
   modules), with the periodic hook kept as a fallback.
 - **Testing on hardware**: VMs `opnsense-test` (OPNsense 26.7) and
   `debian-test`; WebUI at `https://127.0.0.1:8443` via SSH tunnel
-  (user `opencode`/`opencode`, self-signed). Deploy: `pkg update` then
+  (user `test-user`/`password`, self-signed). Deploy: `pkg update` then
   `pkg install -fy opnware/<plugin>` (explicit origin — name lookup hits the
   official plugin), then `sudo configctl webgui restart`. Screenshots via
-  playwright capture script in `/var/folders/.../T/uipass/capture.js`; this
-  model has no image input, so visual checks go through a multimodal-looker
-  subagent. Restore both VM snapshots after testing.
+  playwright capture script in `/var/folders/.../T/uipass/capture.js`
 
 ## FreeBSD Podman & OCI jail mechanics (learned on hardware, os-podman)
 

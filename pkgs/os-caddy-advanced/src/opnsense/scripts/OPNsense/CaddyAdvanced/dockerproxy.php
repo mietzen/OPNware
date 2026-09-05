@@ -62,15 +62,34 @@ if ($envfile === '') {
 }
 
 $enabled = isset($dockerproxy->enabled) ? (string)$dockerproxy->enabled : '0';
+$hasPodman = file_exists('/usr/local/opnsense/version/podman') || file_exists('/var/run/podman/podman.sock');
+$localPodmanSocket = 'unix:///var/run/podman/podman.sock';
 
 $rows = array();
 if ($enabled === '1') {
     if (isset($dockerproxy->mode) && (string)$dockerproxy->mode !== '') {
         $rows['CADDY_DOCKER_PROXY_MODE'] = (string)$dockerproxy->mode;
     }
+
+    $configuredSockets = '';
     if (isset($dockerproxy->docker_sockets) && (string)$dockerproxy->docker_sockets !== '') {
-        $rows['CADDY_DOCKER_SOCKETS'] = (string)$dockerproxy->docker_sockets;
+        $configuredSockets = (string)$dockerproxy->docker_sockets;
     }
+
+    if ($hasPodman) {
+        if ($configuredSockets === '') {
+            $rows['CADDY_DOCKER_SOCKETS'] = $localPodmanSocket;
+        } else {
+            $sockets = array_filter(array_map('trim', explode(',', $configuredSockets)));
+            if (!in_array($localPodmanSocket, $sockets, true)) {
+                $sockets[] = $localPodmanSocket;
+            }
+            $rows['CADDY_DOCKER_SOCKETS'] = implode(',', $sockets);
+        }
+    } elseif ($configuredSockets !== '') {
+        $rows['CADDY_DOCKER_SOCKETS'] = $configuredSockets;
+    }
+
     if (isset($dockerproxy->docker_certs_path) && (string)$dockerproxy->docker_certs_path !== '') {
         $rows['CADDY_DOCKER_CERTS_PATH'] = (string)$dockerproxy->docker_certs_path;
     }
@@ -91,6 +110,8 @@ if ($enabled === '1') {
     }
     if (isset($dockerproxy->no_scope)) {
         $rows['CADDY_DOCKER_NO_SCOPE'] = ((string)$dockerproxy->no_scope === '1') ? 'true' : 'false';
+    } elseif ($hasPodman) {
+        $rows['CADDY_DOCKER_NO_SCOPE'] = 'true';
     }
     if (isset($dockerproxy->docker_host) && (string)$dockerproxy->docker_host !== '') {
         $rows['DOCKER_HOST'] = (string)$dockerproxy->docker_host;

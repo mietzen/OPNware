@@ -18,6 +18,8 @@ $result = array(
     'config_path' => $config,
     'checksum' => '',
     'validate' => '',
+    'podman_present' => file_exists('/usr/local/opnsense/version/podman') || file_exists('/var/run/podman/podman.sock'),
+    'podman_socket_active' => file_exists('/var/run/podman/podman.sock'),
 );
 
 function run_cmd($cmd, &$out)
