@@ -53,4 +53,15 @@ class ServiceController extends ApiMutableServiceControllerBase
             ],
         ];
     }
+
+    public function reconfigureAction()
+    {
+        if (homer_caddy_is_present()) {
+            $backend = new Backend();
+            $backend->configdRun('homer sync-caddy');
+            return ['status' => 'ok'];
+        }
+
+        return parent::reconfigureAction();
+    }
 }

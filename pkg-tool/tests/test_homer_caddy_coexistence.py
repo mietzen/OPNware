@@ -58,6 +58,8 @@ def test_homer_service_controller_status_contract():
     assert "caddyadvanced status" in src
     assert "'status' => 'disabled'" in src
     assert "'running' => $homerRunning" in src
+    assert "function reconfigureAction" in src
+    assert "homer sync-caddy" in src
 
 
 def test_homer_general_volt_read_only_and_alert():
