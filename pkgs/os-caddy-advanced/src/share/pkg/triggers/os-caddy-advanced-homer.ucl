@@ -1,0 +1,23 @@
+# pkg trigger: reload Caddy configuration when Homer changes
+path: "/usr/local/opnsense/version"
+cleanup: {
+    type: lua
+    sandbox: false
+    script: <<EOS
+if pkg.stat("/usr/local/opnsense/scripts/OPNsense/Homer/sync_caddy.php") then
+    pkg.exec({"/usr/local/bin/php", "/usr/local/opnsense/scripts/OPNsense/Homer/sync_caddy.php"})
+elseif pkg.stat("/usr/local/etc/caddy/conf.d/homer.caddy") then
+    os.remove("/usr/local/etc/caddy/conf.d/homer.caddy")
+    pkg.exec({"/usr/local/sbin/configctl", "caddyadvanced", "reload"})
+end
+EOS
+}
+trigger: {
+    type: lua
+    sandbox: false
+    script: <<EOS
+if pkg.stat("/usr/local/opnsense/scripts/OPNsense/Homer/sync_caddy.php") then
+    pkg.exec({"/usr/local/bin/php", "/usr/local/opnsense/scripts/OPNsense/Homer/sync_caddy.php"})
+end
+EOS
+}

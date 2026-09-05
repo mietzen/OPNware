@@ -37,61 +37,76 @@ if (!file_exists('/usr/local/opnsense/version/homer')) {
 }
 
 $caddyPresent = homer_caddy_is_present();
+$mdl = new Homer();
+$homerEnabled = ((string)$mdl->general->enabled === '1');
+
 if ($caddyPresent) {
     // When Caddy Advanced is present, Homer must never run standalone
     @shell_exec('/usr/sbin/service homer stop >/dev/null 2>&1');
 
-    if (!is_dir(CADDY_CONF_DIR)) {
-        @mkdir(CADDY_CONF_DIR, 0755, true);
-    }
-
-    // Only generate initial conf.d/homer.caddy if it does not already exist,
-    // preserving any user customizations made directly or via Caddyfile editor.
-    if (!file_exists(CADDY_HOMER_FILE)) {
-        $mdl = new Homer();
-        $port = (string)$mdl->general->Port ?: '9443';
-        $tls = (string)$mdl->general->TlsEnabled === '1';
-        $serverName = trim((string)$mdl->general->ServerName);
-        $interface = (string)$mdl->general->Interface ?: 'all';
-
-        $listen = ':' . $port;
-        if ($serverName !== '') {
-            $cleanHost = (strpos($serverName, ':') !== false && $serverName[0] !== '[') ? "[{$serverName}]" : $serverName;
-            $listen = $cleanHost . ':' . $port;
-        } elseif ($interface === 'localhost') {
-            $listen = '127.0.0.1:' . $port;
-        } elseif ($interface === 'lan') {
-            $configObj = Config::getInstance()->object();
-            $lanIp = isset($configObj->interfaces->lan->ipaddr) ? (string)$configObj->interfaces->lan->ipaddr : '';
-            if ($lanIp !== '') {
-                $listen = (strpos($lanIp, ':') !== false ? '[' . $lanIp . ']' : $lanIp) . ':' . $port;
-            }
+    if ($homerEnabled) {
+        if (!is_dir(CADDY_CONF_DIR)) {
+            @mkdir(CADDY_CONF_DIR, 0755, true);
         }
 
-        $tlsBlock = $tls ? "\ttls internal {\n\t\ton_demand\n\t}\n" : '';
-        $content = "# Homer dashboard served via Caddy Advanced\n"
-            . "{$listen} {\n"
-            . "\troot * /usr/local/www/homer\n"
-            . "\tfile_server\n"
-            . $tlsBlock
-            . "}\n";
+        // Only generate initial conf.d/homer.caddy if it does not already exist,
+        // preserving any user customizations made directly or via Caddyfile editor.
+        if (!file_exists(CADDY_HOMER_FILE)) {
+            $port = (string)$mdl->general->Port ?: '9443';
+            $tls = (string)$mdl->general->TlsEnabled === '1';
+            $serverName = trim((string)$mdl->general->ServerName);
+            $interface = (string)$mdl->general->Interface ?: 'all';
 
-        file_put_contents(CADDY_HOMER_FILE, $content);
-        @chmod(CADDY_HOMER_FILE, 0644);
+            $listen = ':' . $port;
+            if ($serverName !== '') {
+                $cleanHost = (strpos($serverName, ':') !== false && $serverName[0] !== '[') ? "[{$serverName}]" : $serverName;
+                $listen = $cleanHost . ':' . $port;
+            } elseif ($interface === 'localhost') {
+                $listen = '127.0.0.1:' . $port;
+            } elseif ($interface === 'lan') {
+                $configObj = Config::getInstance()->object();
+                $lanIp = isset($configObj->interfaces->lan->ipaddr) ? (string)$configObj->interfaces->lan->ipaddr : '';
+                if ($lanIp !== '') {
+                    $listen = (strpos($lanIp, ':') !== false ? '[' . $lanIp . ']' : $lanIp) . ':' . $port;
+                }
+            }
 
-        // Reload master Caddy service only if running
-        $status = $backend->configdRun('caddyadvanced status');
-        if (strpos($status, 'is running') !== false) {
-            $backend->configdRun('caddyadvanced reload');
+            $tlsBlock = $tls ? "\ttls internal {\n\t\ton_demand\n\t}\n" : '';
+            $content = "# Homer dashboard served via Caddy Advanced\n"
+                . "{$listen} {\n"
+                . "\troot * /usr/local/www/homer\n"
+                . "\tfile_server\n"
+                . $tlsBlock
+                . "}\n";
+
+            file_put_contents(CADDY_HOMER_FILE, $content);
+            @chmod(CADDY_HOMER_FILE, 0644);
+
+            // Reload master Caddy service only if running
+            $status = $backend->configdRun('caddyadvanced status');
+            if (strpos($status, 'is running') !== false) {
+                $backend->configdRun('caddyadvanced reload');
+            }
+        }
+    } else {
+        if (file_exists(CADDY_HOMER_FILE)) {
+            @unlink(CADDY_HOMER_FILE);
+            $status = $backend->configdRun('caddyadvanced status');
+            if (strpos($status, 'is running') !== false) {
+                $backend->configdRun('caddyadvanced reload');
+            }
         }
     }
 
     exit(0);
 }
 
+// Caddy Advanced is absent or disabled: clean up conf.d/homer.caddy to avoid orphans
+if (file_exists(CADDY_HOMER_FILE)) {
+    @unlink(CADDY_HOMER_FILE);
+}
+
 // Restore standalone Homer
-$mdl = new Homer();
-$homerEnabled = (string)$mdl->general->enabled === '1';
 @shell_exec('/usr/local/sbin/configctl template reload OPNsense/Homer >/dev/null 2>&1');
 if ($homerEnabled) {
     @shell_exec('/usr/sbin/service homer start >/dev/null 2>&1');

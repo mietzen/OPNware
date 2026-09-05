@@ -159,6 +159,7 @@ def test_homer_rcd_checks_caddy_enable():
     src = HOMER_RCD.read_text()
     assert ". /etc/rc.conf.d/caddy" in src
     assert '[ "${caddy_enable}" = "YES" ]' in src
+    assert 'start_precmd="homer_prestart"' in src
 
 
 def test_package_versions_bumped():
@@ -170,6 +171,7 @@ def test_package_versions_bumped():
 
 
 CADDY_RCD = Path("pkgs/os-caddy-advanced/src/usr/local/etc/rc.d/caddy")
+CADDY_HOMER_TRIGGER = Path("pkgs/os-caddy-advanced/src/share/pkg/triggers/os-caddy-advanced-homer.ucl")
 
 
 def test_caddy_rcd_precmd_stops_homer():
@@ -178,6 +180,15 @@ def test_caddy_rcd_precmd_stops_homer():
     assert "service homer stop" in src
 
 
+def test_caddy_homer_trigger_bidirectional():
+    assert CADDY_HOMER_TRIGGER.is_file()
+    src = CADDY_HOMER_TRIGGER.read_text()
+    assert 'path: "/usr/local/opnsense/version"' in src
+    assert "sync_caddy.php" in src
+    assert "caddyadvanced" in src
+
+
 def test_homer_sync_caddy_preserves_existing():
     src = HOMER_SYNC.read_text()
     assert "if (!file_exists(CADDY_HOMER_FILE))" in src
+    assert "if ($homerEnabled)" in src
