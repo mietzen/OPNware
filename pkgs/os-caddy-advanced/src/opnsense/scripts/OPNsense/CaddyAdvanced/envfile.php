@@ -34,10 +34,11 @@ function envfile_path()
  */
 function envfile_acquire()
 {
-    if (!is_dir('/var/run/os-caddy-advanced')) {
-        @mkdir('/var/run/os-caddy-advanced', 0755, true);
+    $lockDir = (is_writable('/var/run') || is_dir('/var/run/os-caddy-advanced')) ? '/var/run/os-caddy-advanced' : sys_get_temp_dir() . '/os-caddy-advanced';
+    if (!is_dir($lockDir)) {
+        @mkdir($lockDir, 0755, true);
     }
-    $lock = fopen('/var/run/os-caddy-advanced/env.lock', 'c');
+    $lock = @fopen($lockDir . '/env.lock', 'c');
     if ($lock === false || !flock($lock, LOCK_EX)) {
         if ($lock !== false) {
             fclose($lock);

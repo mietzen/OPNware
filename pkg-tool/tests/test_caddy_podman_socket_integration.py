@@ -1,3 +1,4 @@
+import os
 import subprocess
 import tempfile
 from pathlib import Path
@@ -32,59 +33,52 @@ def test_caddy_status_and_ui_expose_podman_integration():
     assert "unix:///var/run/podman/podman.sock" in volt_view
 
 
-def test_php_dockerproxy_sync_logic_execution():
+def test_dockerproxy_script_direct_execution():
     with tempfile.TemporaryDirectory() as tmpdir:
         tmp_path = Path(tmpdir)
         env_file = tmp_path / "env"
         env_file.write_text("CUSTOM_VAR=hello\n")
 
-        php_test = f"""
-        $envFile = '{env_file}';
-        $localPodmanSocket = 'unix:///var/run/podman/podman.sock';
+        mock_config_inc = tmp_path / "config.inc"
+        mock_config_inc.write_text("""<?php
+namespace OPNsense\\Core;
+class Config {
+    private static $instance;
+    public static function getInstance() {
+        if (!self::$instance) { self::$instance = new self(); }
+        return self::$instance;
+    }
+    public function object() {
+        $obj = new \\stdClass();
+        $obj->OPNsense = new \\stdClass();
+        $obj->OPNsense->caddyadvanced = new \\stdClass();
+        $obj->OPNsense->caddyadvanced->general = new \\stdClass();
+        $obj->OPNsense->caddyadvanced->general->EnvFile = getenv('TEST_ENVFILE');
+        $obj->OPNsense->caddyadvanced->dockerproxy = new \\stdClass();
+        $obj->OPNsense->caddyadvanced->dockerproxy->enabled = '1';
+        $obj->OPNsense->caddyadvanced->dockerproxy->docker_sockets = getenv('TEST_SOCKETS') ?: '';
+        return $obj;
+    }
+}
+""")
 
-        // 1. When podman is present, module installed, and sockets is empty / default placeholder
-        $hasPodman = true;
-        $moduleInstalled = true;
-        $configuredSockets = 'tcp://docker-proxy-host:2375';
-        $rows = [];
-        if ($hasPodman && $moduleInstalled) {{
-            if ($configuredSockets === '' || $configuredSockets === 'tcp://docker-proxy-host:2375') {{
-                $rows['CADDY_DOCKER_SOCKETS'] = $localPodmanSocket;
-            }} elseif ($configuredSockets !== '') {{
-                $rows['CADDY_DOCKER_SOCKETS'] = $configuredSockets;
-            }}
-        }}
-        assert($rows['CADDY_DOCKER_SOCKETS'] === 'unix:///var/run/podman/podman.sock');
+        script_dir = Path("pkgs/os-caddy-advanced/src/opnsense/scripts/OPNsense/CaddyAdvanced").resolve()
+        test_wrapper = tmp_path / "run_test.php"
+        test_wrapper.write_text(f"""<?php
+set_include_path('{tmp_path}' . PATH_SEPARATOR . '{script_dir}');
+require '{script_dir}/dockerproxy.php';
+""")
 
-        // 2. When podman is present and user explicitly specified a custom socket
-        $configuredSockets = 'tcp://custom-remote:2375';
-        $rows = [];
-        if ($hasPodman && $moduleInstalled) {{
-            if ($configuredSockets === '' || $configuredSockets === 'tcp://docker-proxy-host:2375') {{
-                $rows['CADDY_DOCKER_SOCKETS'] = $localPodmanSocket;
-            }} elseif ($configuredSockets !== '') {{
-                $rows['CADDY_DOCKER_SOCKETS'] = $configuredSockets;
-            }}
-        }}
-        assert($rows['CADDY_DOCKER_SOCKETS'] === 'tcp://custom-remote:2375');
-
-        // 3. When podman is absent and default placeholder is used
-        $hasPodman = false;
-        $configuredSockets = 'tcp://docker-proxy-host:2375';
-        $rows = [];
-        if ($hasPodman && $moduleInstalled) {{
-            if ($configuredSockets === '' || $configuredSockets === 'tcp://docker-proxy-host:2375') {{
-                $rows['CADDY_DOCKER_SOCKETS'] = $localPodmanSocket;
-            }} elseif ($configuredSockets !== '') {{
-                $rows['CADDY_DOCKER_SOCKETS'] = $configuredSockets;
-            }}
-        }} elseif ($configuredSockets !== '') {{
-            $rows['CADDY_DOCKER_SOCKETS'] = $configuredSockets;
-        }}
-        assert($rows['CADDY_DOCKER_SOCKETS'] === 'tcp://docker-proxy-host:2375');
-
-        echo 'SYNC_LOGIC_PASSED';
-        """
-        res = subprocess.run(["php", "-r", php_test], capture_output=True, text=True)
+        env = os.environ.copy()
+        env["TEST_ENVFILE"] = str(env_file)
+        env["TEST_SOCKETS"] = "tcp://docker-proxy-host:2375"
+        res = subprocess.run(["php", str(test_wrapper)], env=env, capture_output=True, text=True)
         assert res.returncode == 0
-        assert "SYNC_LOGIC_PASSED" in res.stdout
+        assert "OK" in res.stdout
+        assert "CUSTOM_VAR=hello" in env_file.read_text()
+
+        # Test with custom sockets
+        env["TEST_SOCKETS"] = "tcp://remote-host:2375"
+        res2 = subprocess.run(["php", str(test_wrapper)], env=env, capture_output=True, text=True)
+        assert res2.returncode == 0
+        assert "CADDY_DOCKER_SOCKETS=tcp://remote-host:2375" in env_file.read_text()
