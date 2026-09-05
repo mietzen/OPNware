@@ -38,7 +38,7 @@ def test_homer_sync_caddy_script():
     src = HOMER_SYNC.read_text()
     assert "homer_caddy_is_present" in src
     assert "/usr/local/etc/caddy/conf.d/homer.caddy" in src
-    assert "service homer stop" in src
+    assert "service homer onestop" in src
     assert "version/homer" in src
     assert "service caddy reload" in src
 
@@ -186,6 +186,7 @@ def test_caddy_rcd_precmd_stops_homer():
     src = CADDY_RCD.read_text()
     assert "/usr/local/etc/rc.d/homer" in src
     assert "service homer onestop" in src
+    assert "/usr/local/etc/os-homer/Caddyfile" in src
 
 
 def test_caddy_homer_trigger_bidirectional():

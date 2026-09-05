@@ -40,7 +40,7 @@ $homerEnabled = ((string)$mdl->general->enabled === '1');
 
 if ($caddyPresent) {
     // When Caddy Advanced is present, Homer must never run standalone
-    @shell_exec('/usr/sbin/service homer stop >/dev/null 2>&1');
+    @shell_exec('/usr/sbin/service homer onestop >/dev/null 2>&1');
 
     if (!is_dir(CADDY_CONF_DIR)) {
         @mkdir(CADDY_CONF_DIR, 0755, true);

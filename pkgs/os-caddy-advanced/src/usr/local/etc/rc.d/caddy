@@ -122,7 +122,7 @@ caddy_precmd()
     if [ -f "/usr/local/etc/rc.d/homer" ]; then
         /usr/sbin/service homer onestop >/dev/null 2>&1
         for _i in 1 2 3 4 5; do
-            if ! /usr/bin/pgrep -q -f "/usr/local/bin/caddy.*--config /usr/local/etc/homer/Caddyfile"; then
+            if ! /usr/bin/pgrep -q -f "/usr/local/bin/caddy.*--config /usr/local/etc/os-homer/Caddyfile"; then
                 break
             fi
             sleep 0.1
