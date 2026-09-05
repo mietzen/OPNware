@@ -25,13 +25,14 @@ def test_xterm_assets_packaged():
     assert "FitAddon" in fit_js
 
 
-def test_lighttpd_wstunnel_fragment():
+def test_lighttpd_terminal_fragment():
     conf_file = PODMAN_SRC / "etc" / "lighttpd_webgui" / "conf.d" / "50-podman-terminal.conf"
     assert conf_file.exists()
 
     content = conf_file.read_text()
-    assert 'server.modules += ( "mod_wstunnel" )' in content
-    assert '"/api/podman/terminal/ws"' in content
+    assert 'server.modules += ( "mod_proxy" )' in content
+    assert '"^/api/podman/terminal/ws"' in content
+    assert '"upgrade" => "enable"' in content
     assert '"host" => "127.0.0.1"' in content
     assert '"port" => 7681' in content
 

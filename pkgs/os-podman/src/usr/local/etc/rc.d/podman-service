@@ -90,7 +90,7 @@ podman_service_start()
     # 3. Start interactive XTerm container terminal bridge daemon
     if [ -f "${terminal_daemon}" ]; then
         echo "$(date '+%Y-%m-%dT%H:%M:%S%z') [info] Starting Podman terminal daemon on 127.0.0.1:7681..." >> "${logfile}"
-        /usr/sbin/daemon -r -R 1 -f -P "${termsuppidfile}" -p "${termpidfile}" -o "${logfile}" /usr/local/bin/python3 "${terminal_daemon}" --host 127.0.0.1 --port 7681 --pidfile "${termpidfile}" </dev/null >/dev/null 2>&1
+        /usr/sbin/daemon -r -R 1 -f -P "${termsuppidfile}" -p "${termpidfile}" -o "${logfile}" /usr/local/bin/python3 "${terminal_daemon}" --host 127.0.0.1 --port 7681 </dev/null >/dev/null 2>&1
     fi
 
     echo "$(date '+%Y-%m-%dT%H:%M:%S%z') [info] Podman system service daemon started (pid $(/bin/cat "${pidfile}"))." >> "${logfile}"

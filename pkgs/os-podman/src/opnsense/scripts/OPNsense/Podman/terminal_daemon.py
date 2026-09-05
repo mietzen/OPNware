@@ -117,6 +117,7 @@ def is_authenticated_session(cookie_header: str) -> bool:
     session_dirs = [
         os.getenv("OPNSENSE_SESSION_DIR", "/var/lib/php/sessions"),
         "/tmp",
+        "/var/tmp",
     ]
 
     for part in cookie_header.split(";"):
@@ -400,10 +401,11 @@ async def main():
     parser = argparse.ArgumentParser(description="Podman XTerm PTY WebSocket Bridge Daemon")
     parser.add_argument("--host", default=DEFAULT_HOST, help="Bind host")
     parser.add_argument("--port", type=int, default=DEFAULT_PORT, help="Bind port")
-    parser.add_argument("--pidfile", default="/var/run/podman/terminal.pid", help="PID file path")
+    parser.add_argument("--pidfile", default=None, help="PID file path")
     args = parser.parse_args()
 
-    write_pid(args.pidfile)
+    if args.pidfile:
+        write_pid(args.pidfile)
 
     server = await asyncio.start_server(handle_ws_conn, args.host, args.port)
 
@@ -423,7 +425,8 @@ async def main():
     finally:
         server.close()
         await server.wait_closed()
-        remove_pid(args.pidfile)
+        if args.pidfile:
+            remove_pid(args.pidfile)
 
 
 if __name__ == "__main__":
