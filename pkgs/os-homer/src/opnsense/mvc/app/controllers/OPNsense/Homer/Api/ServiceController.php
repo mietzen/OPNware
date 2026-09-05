@@ -23,19 +23,20 @@ class ServiceController extends ApiMutableServiceControllerBase
         $status = 'stopped';
 
         if (homer_caddy_is_present()) {
+            $homerRunning = false;
             $homerCaddyFile = '/usr/local/etc/caddy/conf.d/homer.caddy';
 
             if (file_exists($homerCaddyFile)) {
                 $backend = new Backend();
                 $response = $backend->configdRun('caddyadvanced status');
                 if (strpos($response, 'is running') !== false) {
-                    $status = 'running';
+                    $homerRunning = true;
                 }
             }
 
             return [
-                'status' => $status,
-                'widget' => [],
+                'status' => 'disabled',
+                'running' => $homerRunning,
             ];
         }
 

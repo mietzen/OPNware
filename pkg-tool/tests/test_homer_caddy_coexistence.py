@@ -56,7 +56,8 @@ def test_homer_service_controller_status_contract():
     assert "homer_caddy_is_present()" in src
     assert "conf.d/homer.caddy" in src
     assert "caddyadvanced status" in src
-    assert "'widget' => []" in src
+    assert "'status' => 'disabled'" in src
+    assert "'running' => $homerRunning" in src
 
 
 def test_homer_general_volt_read_only_and_alert():
@@ -101,6 +102,7 @@ namespace {{
         'localhost_port' => "127.0.0.1:9090 {{\\n\\troot * /usr/local/www/homer\\n\\tfile_server\\n}}\\n",
         'ipv6_bracket' => "[2001:db8::1]:9443 {{\\n\\troot * /usr/local/www/homer\\n\\tfile_server\\n\\ttls internal\\n}}\\n",
         'lan_ip' => "192.168.1.1:8443 {{\\n\\troot * /usr/local/www/homer\\n\\tfile_server\\n}}\\n",
+        'https_schema' => "https://homer.test.lan:8443 {{\\n\\troot * /usr/local/www/homer\\n\\tfile_server\\n}}\\n",
     ];
     $results = [];
     foreach ($cases as $name => $content) {{
@@ -139,6 +141,11 @@ namespace {{
     assert parsed["lan_ip"]["Interface"] == "lan"
     assert parsed["lan_ip"]["ServerName"] == ""
 
+    assert parsed["https_schema"]["Port"] == "8443"
+    assert parsed["https_schema"]["Interface"] == "all"
+    assert parsed["https_schema"]["ServerName"] == "homer.test.lan"
+    assert parsed["https_schema"]["TlsEnabled"] == "1"
+
 
 CADDY_SERVICE_CTRL = Path("pkgs/os-caddy-advanced/src/opnsense/mvc/app/controllers/OPNsense/CaddyAdvanced/Api/ServiceController.php")
 
@@ -162,16 +169,13 @@ def test_package_versions_bumped():
     assert caddy_spec["pkg_manifest"]["version"] == "0.8.17"
 
 
-CADDY_HOMER_TRIGGER = Path("pkgs/os-caddy-advanced/src/share/pkg/triggers/os-caddy-advanced-homer.ucl")
+CADDY_RCD = Path("pkgs/os-caddy-advanced/src/usr/local/etc/rc.d/caddy")
 
 
-def test_caddy_homer_trigger_bidirectional():
-    assert CADDY_HOMER_TRIGGER.is_file()
-    src = CADDY_HOMER_TRIGGER.read_text()
-    assert 'path: "/usr/local/opnsense/version"' in src
-    assert "cleanup:" in src
-    assert "trigger:" in src
-    assert "sync_caddy.php" in src
+def test_caddy_rcd_precmd_stops_homer():
+    src = CADDY_RCD.read_text()
+    assert "/usr/local/etc/rc.d/homer" in src
+    assert "service homer stop" in src
 
 
 def test_homer_sync_caddy_preserves_existing():

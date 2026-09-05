@@ -64,7 +64,7 @@ class Homer extends BaseModel
             }
         }
 
-        $res['TlsEnabled'] = preg_match('/tls\s+(internal|[^\s}]+)/', $content) ? '1' : '0';
+        $res['TlsEnabled'] = ($schema === 'https' || $port === '443' || $hasTls) ? '1' : '0';
 
         return $res;
     }

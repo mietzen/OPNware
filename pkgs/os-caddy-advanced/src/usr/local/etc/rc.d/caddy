@@ -118,6 +118,11 @@ caddy_execute()
 
 caddy_precmd()
 {
+    # Coexistence: stop standalone Homer daemon if present to enforce single caddy instance
+    if [ -f "/usr/local/etc/rc.d/homer" ]; then
+        /usr/sbin/service homer stop >/dev/null 2>&1
+    fi
+
     # Create required directories and set permissions
     /usr/bin/install -d -m 755 -o "${caddy_user}" -g "${caddy_group}" ${caddy_directory}
     /usr/bin/install -d -m 700 -o "${caddy_user}" -g "${caddy_group}" ${caddy_directory}/config

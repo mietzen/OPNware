@@ -86,7 +86,7 @@
             }
 
             $.getJSON("/api/homer/service/status", function (data) {
-                const running = data && data.status === "running";
+                const running = data && (data.status === "running" || data.running === true);
                 const badge = running
                     ? '<span class="label label-success">{{ lang._("running") }}</span>'
                     : '<span class="label label-default">{{ lang._("stopped") }}</span>';
