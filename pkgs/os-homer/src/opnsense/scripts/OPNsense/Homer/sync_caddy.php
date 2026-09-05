@@ -46,9 +46,13 @@ if ($caddyPresent) {
         @mkdir(CADDY_CONF_DIR, 0755, true);
     }
 
-    // Only seed initial configuration if neither .caddy nor .disabled exists,
-    // preserving any existing administrator choice across sync cycles.
-    if (!file_exists(CADDY_HOMER_FILE) && !file_exists(CADDY_HOMER_DISABLED)) {
+    if ($homerEnabled && !file_exists(CADDY_HOMER_FILE) && file_exists(CADDY_HOMER_DISABLED)) {
+        @rename(CADDY_HOMER_DISABLED, CADDY_HOMER_FILE);
+        @shell_exec('/usr/sbin/service caddy reload >/dev/null 2>&1');
+    } elseif (!$homerEnabled && file_exists(CADDY_HOMER_FILE)) {
+        @rename(CADDY_HOMER_FILE, CADDY_HOMER_DISABLED);
+        @shell_exec('/usr/sbin/service caddy reload >/dev/null 2>&1');
+    } elseif (!file_exists(CADDY_HOMER_FILE) && !file_exists(CADDY_HOMER_DISABLED)) {
         $targetFile = $homerEnabled ? CADDY_HOMER_FILE : CADDY_HOMER_DISABLED;
 
         $port = (string)$mdl->general->Port ?: '9443';

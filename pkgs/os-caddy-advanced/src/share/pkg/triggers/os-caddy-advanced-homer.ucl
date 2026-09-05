@@ -6,6 +6,18 @@ cleanup: {
     script: <<EOS
 if pkg.stat("/usr/local/opnsense/scripts/OPNsense/Homer/sync_caddy.php") then
     pkg.exec({"/usr/local/bin/php", "/usr/local/opnsense/scripts/OPNsense/Homer/sync_caddy.php"})
+else
+    local reload = false
+    if pkg.stat("/usr/local/etc/caddy/conf.d/homer.caddy") then
+        os.remove("/usr/local/etc/caddy/conf.d/homer.caddy")
+        reload = true
+    end
+    if pkg.stat("/usr/local/etc/caddy/conf.d/homer.caddy.disabled") then
+        os.remove("/usr/local/etc/caddy/conf.d/homer.caddy.disabled")
+    end
+    if reload then
+        pkg.exec({"/usr/sbin/service", "caddy", "reload"})
+    end
 end
 EOS
 }

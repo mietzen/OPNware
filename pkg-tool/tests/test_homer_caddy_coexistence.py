@@ -193,14 +193,17 @@ def test_caddy_homer_trigger_bidirectional():
     assert CADDY_HOMER_TRIGGER.is_file()
     src = CADDY_HOMER_TRIGGER.read_text()
     assert 'path: "/usr/local/opnsense/version"' in src
+    assert "cleanup: {" in src
+    assert "trigger: {" in src
     assert "sync_caddy.php" in src
-    assert "service" in src
-    assert "caddy" in src
+    assert "conf.d/homer.caddy" in src
+    assert '"/usr/sbin/service", "caddy", "reload"' in src
 
 
 def test_homer_sync_caddy_preserves_existing():
     src = HOMER_SYNC.read_text()
-    assert "if (!file_exists(CADDY_HOMER_FILE) && !file_exists(CADDY_HOMER_DISABLED))" in src
+    assert "rename(CADDY_HOMER_DISABLED, CADDY_HOMER_FILE)" in src
+    assert "rename(CADDY_HOMER_FILE, CADDY_HOMER_DISABLED)" in src
     assert "$targetFile = $homerEnabled ? CADDY_HOMER_FILE : CADDY_HOMER_DISABLED;" in src
     assert "$managed = $mdl->getCaddyManagedConfig();" in src
     assert "!file_exists('/usr/local/opnsense/version/caddy-advanced')" in src
