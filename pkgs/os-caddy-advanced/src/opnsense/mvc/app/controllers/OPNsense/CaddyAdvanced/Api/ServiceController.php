@@ -38,26 +38,6 @@ class ServiceController extends ApiMutableServiceControllerBase
         ];
     }
 
-    public function startAction()
-    {
-        if (file_exists('/usr/local/opnsense/version/homer')) {
-            $backend = new Backend();
-            $backend->configdRun('homer sync-caddy');
-        }
-
-        return parent::startAction();
-    }
-
-    public function restartAction()
-    {
-        if (file_exists('/usr/local/opnsense/version/homer')) {
-            $backend = new Backend();
-            $backend->configdRun('homer sync-caddy');
-        }
-
-        return parent::restartAction();
-    }
-
     public function reconfigureAction()
     {
         $backend = new Backend();

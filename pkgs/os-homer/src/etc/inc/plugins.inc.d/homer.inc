@@ -65,12 +65,13 @@ function homer_syslog()
 function homer_configure(): array
 {
     return [
-        'bootup' => ['homer_caddy_sync:1'],
+        'bootup' => ['homer_caddy_sync'],
+        'local' => ['homer_caddy_sync'],
     ];
 }
 
 function homer_caddy_sync()
 {
-    require_once 'config.inc';
-    @shell_exec('/usr/local/bin/php /usr/local/opnsense/scripts/OPNsense/Homer/sync_caddy.php >/dev/null 2>&1');
+    $backend = new \OPNsense\Core\Backend();
+    $backend->configdRun('homer sync-caddy');
 }

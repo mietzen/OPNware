@@ -22,6 +22,8 @@ def test_homer_inc_presence_and_services_gate():
     assert "function homer_caddy_is_present()" in src
     assert "file_exists('/usr/local/opnsense/version/caddy-advanced')" in src
     assert "function homer_configure()" in src
+    assert "'local' => ['homer_caddy_sync']" in src
+    assert "configdRun('homer sync-caddy')" in src
     assert "if (homer_caddy_is_present()) {" in src
 
 

@@ -89,11 +89,6 @@ if ($caddyPresent) {
     exit(0);
 }
 
-// Caddy Advanced is absent or disabled: clean up conf.d/homer.caddy
-if (file_exists(CADDY_HOMER_FILE)) {
-    @unlink(CADDY_HOMER_FILE);
-}
-
 // Restore standalone Homer
 $mdl = new Homer();
 $homerEnabled = (string)$mdl->general->enabled === '1';
