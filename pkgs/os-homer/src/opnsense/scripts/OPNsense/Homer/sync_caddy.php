@@ -46,12 +46,10 @@ if ($caddyPresent) {
         @mkdir(CADDY_CONF_DIR, 0755, true);
     }
 
-    if ($homerEnabled) {
-        // Restore from preserved .disabled if present, else seed if absent
-        if (file_exists(CADDY_HOMER_DISABLED) && !file_exists(CADDY_HOMER_FILE)) {
-            @rename(CADDY_HOMER_DISABLED, CADDY_HOMER_FILE);
-            @shell_exec('/usr/sbin/service caddy reload >/dev/null 2>&1');
-        } elseif (!file_exists(CADDY_HOMER_FILE)) {
+    // Only seed initial configuration if neither .caddy nor .disabled exists,
+    // preserving any existing administrator choice across sync cycles.
+    if (!file_exists(CADDY_HOMER_FILE) && !file_exists(CADDY_HOMER_DISABLED)) {
+        if ($homerEnabled) {
             $port = (string)$mdl->general->Port ?: '9443';
             $tls = (string)$mdl->general->TlsEnabled === '1';
             $serverName = trim((string)$mdl->general->ServerName);
@@ -81,12 +79,6 @@ if ($caddyPresent) {
 
             file_put_contents(CADDY_HOMER_FILE, $content);
             @chmod(CADDY_HOMER_FILE, 0644);
-            @shell_exec('/usr/sbin/service caddy reload >/dev/null 2>&1');
-        }
-    } else {
-        // Preserve user customizations by renaming rather than deleting
-        if (file_exists(CADDY_HOMER_FILE)) {
-            @rename(CADDY_HOMER_FILE, CADDY_HOMER_DISABLED);
             @shell_exec('/usr/sbin/service caddy reload >/dev/null 2>&1');
         }
     }

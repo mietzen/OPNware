@@ -179,7 +179,7 @@ CADDY_HOMER_TRIGGER = Path("pkgs/os-caddy-advanced/src/share/pkg/triggers/os-cad
 def test_caddy_rcd_precmd_stops_homer():
     src = CADDY_RCD.read_text()
     assert "/usr/local/etc/rc.d/homer" in src
-    assert "service homer stop" in src
+    assert "service homer onestop" in src
 
 
 def test_caddy_homer_trigger_bidirectional():
@@ -193,9 +193,7 @@ def test_caddy_homer_trigger_bidirectional():
 
 def test_homer_sync_caddy_preserves_existing():
     src = HOMER_SYNC.read_text()
-    assert "if (file_exists(CADDY_HOMER_DISABLED) && !file_exists(CADDY_HOMER_FILE))" in src
-    assert "rename(CADDY_HOMER_DISABLED, CADDY_HOMER_FILE)" in src
-    assert "rename(CADDY_HOMER_FILE, CADDY_HOMER_DISABLED)" in src
+    assert "if (!file_exists(CADDY_HOMER_FILE) && !file_exists(CADDY_HOMER_DISABLED))" in src
     assert "$managed = $mdl->getCaddyManagedConfig();" in src
 
 
