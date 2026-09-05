@@ -118,6 +118,22 @@ caddy_execute()
 
 caddy_precmd()
 {
+    # Coexistence: stop standalone Homer daemon if present to enforce single caddy instance
+    if [ -f "/usr/local/etc/rc.d/homer" ]; then
+        /usr/sbin/service homer onestop >/dev/null 2>&1
+        for _i in 1 2 3 4 5; do
+            if ! /usr/bin/pgrep -q -f "/usr/local/bin/caddy.*--config /usr/local/etc/os-homer/Caddyfile"; then
+                break
+            fi
+            sleep 0.1
+        done
+    fi
+
+    if /usr/bin/pgrep -q -f "/usr/local/bin/caddy.*--config /usr/local/etc/os-homer/Caddyfile"; then
+        echo "Caddy cannot start (conflicting Homer Caddy process already running)."
+        return 1
+    fi
+
     # Create required directories and set permissions
     /usr/bin/install -d -m 755 -o "${caddy_user}" -g "${caddy_group}" ${caddy_directory}
     /usr/bin/install -d -m 700 -o "${caddy_user}" -g "${caddy_group}" ${caddy_directory}/config

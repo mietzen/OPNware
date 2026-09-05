@@ -5,8 +5,23 @@
  * the XMLRPC sync and the core Diagnostics log viewer.
  */
 
+function homer_caddy_is_present(): bool
+{
+    if (!file_exists('/usr/local/opnsense/version/caddy-advanced')) {
+        return false;
+    }
+
+    $configObj = \OPNsense\Core\Config::getInstance()->object();
+    if (isset($configObj->OPNsense->caddyadvanced->general->enabled)) {
+        return (string)$configObj->OPNsense->caddyadvanced->general->enabled === '1';
+    }
+
+    return false;
+}
+
 function homer_services()
 {
+
     // Registered unconditionally so the service can be started from the UI
     // even before it is enabled in the settings (start button on the status
     // page); pluginctl needs the entry to report a run state at all.
@@ -42,4 +57,18 @@ function homer_xmlrpc_sync()
 function homer_syslog()
 {
     return ['homer' => ['facility' => ['homer']]];
+}
+
+function homer_configure(): array
+{
+    return [
+        'bootup' => ['homer_caddy_sync'],
+        'local' => ['homer_caddy_sync'],
+    ];
+}
+
+function homer_caddy_sync()
+{
+    $backend = new \OPNsense\Core\Backend();
+    $backend->configdRun('homer sync-caddy');
 }

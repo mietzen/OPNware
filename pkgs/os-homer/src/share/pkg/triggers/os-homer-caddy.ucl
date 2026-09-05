@@ -1,0 +1,20 @@
+# pkg trigger: react when packages under /usr/local/opnsense/version change (e.g. os-caddy-advanced installed/removed).
+path: "/usr/local/opnsense/version"
+cleanup: {
+    type: lua
+    sandbox: false
+    script: <<EOS
+if pkg.stat("/usr/local/opnsense/scripts/OPNsense/Homer/sync_caddy.php") then
+    pkg.exec({"/usr/local/bin/php", "/usr/local/opnsense/scripts/OPNsense/Homer/sync_caddy.php"})
+end
+EOS
+}
+trigger: {
+    type: lua
+    sandbox: false
+    script: <<EOS
+if pkg.stat("/usr/local/opnsense/scripts/OPNsense/Homer/sync_caddy.php") then
+    pkg.exec({"/usr/local/bin/php", "/usr/local/opnsense/scripts/OPNsense/Homer/sync_caddy.php"})
+end
+EOS
+}

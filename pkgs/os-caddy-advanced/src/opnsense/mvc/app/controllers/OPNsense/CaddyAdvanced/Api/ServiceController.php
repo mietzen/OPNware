@@ -69,6 +69,10 @@ class ServiceController extends ApiMutableServiceControllerBase
         // reconfigure logic (this controller overrides it to add the envfile
         // and docker-proxy sync steps above).
         if ($this->serviceEnabled()) {
+            if (file_exists('/usr/local/opnsense/version/homer')) {
+                $backend->configdRun('homer sync-caddy');
+            }
+
             if ($this->statusAction()['status'] != 'running') {
                 $backend->configdRun('caddyadvanced start');
             } else {
@@ -76,6 +80,10 @@ class ServiceController extends ApiMutableServiceControllerBase
             }
         } else {
             $backend->configdRun('caddyadvanced stop');
+
+            if (file_exists('/usr/local/opnsense/version/homer')) {
+                $backend->configdRun('homer sync-caddy');
+            }
         }
 
         return ['status' => 'ok'];

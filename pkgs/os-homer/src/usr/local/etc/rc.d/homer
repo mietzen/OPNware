@@ -51,6 +51,32 @@ homer_flags="--config ${homer_config} --adapter ${homer_adapter}"
 
 homer_prestart()
 {
+    if [ -f /usr/local/opnsense/version/caddy-advanced ]; then
+        if [ -f /etc/rc.conf.d/caddy ]; then
+            . /etc/rc.conf.d/caddy
+        fi
+        if [ "${caddy_enable}" = "YES" ]; then
+            echo "Homer is managed by Caddy Advanced via conf.d/homer.caddy (isolated instance disabled)."
+            return 1
+        fi
+    fi
+
+    # When Caddy Advanced is disabled or absent, stop master Caddy if still running
+    if [ -f "/usr/local/etc/rc.d/caddy" ]; then
+        /usr/sbin/service caddy onestop >/dev/null 2>&1
+        for _i in 1 2 3 4 5; do
+            if ! /usr/bin/pgrep -q -f "/usr/local/bin/caddy.*--config /usr/local/etc/caddy/Caddyfile"; then
+                break
+            fi
+            sleep 0.1
+        done
+    fi
+
+    if /usr/bin/pgrep -q -f "/usr/local/bin/caddy.*--config /usr/local/etc/caddy/Caddyfile"; then
+        echo "Homer cannot start (conflicting Caddy process already running)."
+        return 1
+    fi
+
     /usr/bin/install -d -m 755 -o "${homer_user}" -g "${homer_group}" "${homer_directory}"
     /usr/bin/install -d -m 755 -o "${homer_user}" -g "${homer_group}" "${homer_logdir}"
     /usr/bin/install -d -m 755 -o "${homer_user}" -g "${homer_group}" /var/run/os-homer
@@ -69,7 +95,6 @@ homer_prestart()
 
 homer_start()
 {
-    homer_prestart
     echo -n "Starting ${name}... "
     /usr/bin/su -m "${homer_user}" -c \
         "export NO_COLOR=1 TERM=dumb; ${homer_caddy} start ${homer_flags} --pidfile ${homer_pidfile}" \
@@ -90,6 +115,7 @@ homer_reload()
     run_rc_command start
 }
 
+start_precmd="homer_prestart"
 start_cmd="homer_start"
 reload_cmd="homer_reload"
 extra_commands="reload"
