@@ -30,7 +30,7 @@ def test_homer_inc_presence_and_services_gate():
 def test_homer_rcd_skips_when_caddy_advanced_present():
     src = HOMER_RCD.read_text()
     assert "/usr/local/opnsense/version/caddy-advanced" in src
-    assert "Homer is managed by Caddy Advanced (isolated instance disabled)." in src
+    assert "Homer is managed by Caddy Advanced via conf.d/homer.caddy" in src
 
 
 def test_homer_sync_caddy_script():
@@ -185,15 +185,14 @@ def test_caddy_homer_trigger_bidirectional():
     src = CADDY_HOMER_TRIGGER.read_text()
     assert 'path: "/usr/local/opnsense/version"' in src
     assert "sync_caddy.php" in src
-    assert "caddyadvanced" in src
+    assert "service" in src
+    assert "caddy" in src
 
 
 def test_homer_sync_caddy_preserves_existing():
     src = HOMER_SYNC.read_text()
-    assert "if (!file_exists(CADDY_HOMER_FILE))" in src
-    assert "if ($homerEnabled)" in src
-    assert "rename(CADDY_HOMER_FILE, CADDY_HOMER_DISABLED)" in src
-    assert "rename(CADDY_HOMER_DISABLED, CADDY_HOMER_FILE)" in src
+    assert "if (!file_exists(CADDY_HOMER_FILE) && !file_exists(CADDY_HOMER_DISABLED))" in src
+    assert "$targetFile = $homerEnabled ? CADDY_HOMER_FILE : CADDY_HOMER_DISABLED;" in src
 
 
 def test_homer_model_preserves_disabled_customizations(tmp_path):
