@@ -38,7 +38,7 @@ def test_homer_sync_caddy_script():
     assert "/usr/local/etc/caddy/conf.d/homer.caddy" in src
     assert "service homer stop" in src
     assert "version/homer" in src
-    assert "configctl caddyadvanced reload" in src
+    assert "caddyadvanced reload" in src
 
 
 def test_homer_general_controller_caddy_sync_and_gate():
@@ -158,3 +158,20 @@ def test_package_versions_bumped():
 
     caddy_spec = yaml.safe_load(CADDY_CONFIG.read_text())
     assert caddy_spec["pkg_manifest"]["version"] == "0.8.17"
+
+
+CADDY_HOMER_TRIGGER = Path("pkgs/os-caddy-advanced/src/share/pkg/triggers/os-caddy-advanced-homer.ucl")
+
+
+def test_caddy_homer_trigger_bidirectional():
+    assert CADDY_HOMER_TRIGGER.is_file()
+    src = CADDY_HOMER_TRIGGER.read_text()
+    assert 'path: "/usr/local/opnsense/version"' in src
+    assert "cleanup:" in src
+    assert "trigger:" in src
+    assert "sync_caddy.php" in src
+
+
+def test_homer_sync_caddy_preserves_existing():
+    src = HOMER_SYNC.read_text()
+    assert "if (!file_exists(CADDY_HOMER_FILE))" in src
