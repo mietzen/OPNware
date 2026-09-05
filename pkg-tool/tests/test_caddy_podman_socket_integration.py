@@ -1,4 +1,5 @@
 import subprocess
+import tempfile
 from pathlib import Path
 
 
@@ -8,7 +9,6 @@ def test_caddy_dockerproxy_detects_and_auto_adds_podman_socket():
     assert "unix:///var/run/podman/podman.sock" in dp_script
     assert "$hasPodman" in dp_script or "hasPodman" in dp_script
     assert "$rows['CADDY_DOCKER_SOCKETS']" in dp_script
-    assert "docker_proxy_module_installed" in dp_script
 
 
 def test_podman_setup_and_service_notifies_caddy_dockerproxy_sync():
@@ -26,49 +26,55 @@ def test_caddy_status_and_ui_expose_podman_integration():
     assert "podman_socket_active" in status_script
 
     volt_view = Path("pkgs/os-caddy-advanced/src/opnsense/mvc/app/views/OPNsense/CaddyAdvanced/general.volt").read_text()
-    assert "podman" in volt_view.lower()
+    assert "status-podman-socket" in volt_view
     assert "podman_socket_active" in volt_view
     assert "unix:///var/run/podman/podman.sock" in volt_view
 
 
-def test_php_socket_formatting_execution():
-    php_code = """
-    $localPodmanSocket = 'unix:///var/run/podman/podman.sock';
-    $hasPodman = true;
+def test_php_dockerproxy_sync_logic_execution():
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmp_path = Path(tmpdir)
+        env_file = tmp_path / "env"
+        env_file.write_text("CUSTOM_VAR=hello\n")
 
-    // Test 1: Empty configured sockets
-    $configuredSockets = '';
-    $rows = [];
-    if ($hasPodman) {
-        if ($configuredSockets === '') {
-            $rows['CADDY_DOCKER_SOCKETS'] = $localPodmanSocket;
-        } else {
-            $sockets = array_filter(array_map('trim', explode(',', $configuredSockets)));
-            if (!in_array($localPodmanSocket, $sockets, true)) {
-                $sockets[] = $localPodmanSocket;
-            }
-            $rows['CADDY_DOCKER_SOCKETS'] = implode(',', $sockets);
-        }
-    }
-    assert($rows['CADDY_DOCKER_SOCKETS'] === 'unix:///var/run/podman/podman.sock');
+        php_test = f"""
+        $envFile = '{env_file}';
+        $localPodmanSocket = 'unix:///var/run/podman/podman.sock';
 
-    // Test 2: Existing remote socket
-    $configuredSockets = 'tcp://debian-test:2375';
-    $rows = [];
-    if ($hasPodman) {
-        if ($configuredSockets === '') {
+        // 1. When podman is present and sockets is empty / default placeholder
+        $hasPodman = true;
+        $configuredSockets = 'tcp://docker-proxy-host:2375';
+        $rows = [];
+        if ($hasPodman && ($configuredSockets === '' || $configuredSockets === 'tcp://docker-proxy-host:2375')) {{
             $rows['CADDY_DOCKER_SOCKETS'] = $localPodmanSocket;
-        } else {
-            $sockets = array_filter(array_map('trim', explode(',', $configuredSockets)));
-            if (!in_array($localPodmanSocket, $sockets, true)) {
-                $sockets[] = $localPodmanSocket;
-            }
-            $rows['CADDY_DOCKER_SOCKETS'] = implode(',', $sockets);
-        }
-    }
-    assert($rows['CADDY_DOCKER_SOCKETS'] === 'tcp://debian-test:2375,unix:///var/run/podman/podman.sock');
-    echo 'PHP_ASSERT_OK';
-    """
-    res = subprocess.run(["php", "-r", php_code], capture_output=True, text=True)
-    assert res.returncode == 0
-    assert "PHP_ASSERT_OK" in res.stdout
+        }} elseif ($configuredSockets !== '') {{
+            $rows['CADDY_DOCKER_SOCKETS'] = $configuredSockets;
+        }}
+        assert($rows['CADDY_DOCKER_SOCKETS'] === 'unix:///var/run/podman/podman.sock');
+
+        // 2. When podman is present and user specified a custom socket
+        $configuredSockets = 'tcp://custom-remote:2375';
+        $rows = [];
+        if ($hasPodman && ($configuredSockets === '' || $configuredSockets === 'tcp://docker-proxy-host:2375')) {{
+            $rows['CADDY_DOCKER_SOCKETS'] = $localPodmanSocket;
+        }} elseif ($configuredSockets !== '') {{
+            $rows['CADDY_DOCKER_SOCKETS'] = $configuredSockets;
+        }}
+        assert($rows['CADDY_DOCKER_SOCKETS'] === 'tcp://custom-remote:2375');
+
+        // 3. When podman is absent and default placeholder is used
+        $hasPodman = false;
+        $configuredSockets = 'tcp://docker-proxy-host:2375';
+        $rows = [];
+        if ($hasPodman && ($configuredSockets === '' || $configuredSockets === 'tcp://docker-proxy-host:2375')) {{
+            $rows['CADDY_DOCKER_SOCKETS'] = $localPodmanSocket;
+        }} elseif ($configuredSockets !== '') {{
+            $rows['CADDY_DOCKER_SOCKETS'] = $configuredSockets;
+        }}
+        assert($rows['CADDY_DOCKER_SOCKETS'] === 'tcp://docker-proxy-host:2375');
+
+        echo 'SYNC_LOGIC_PASSED';
+        """
+        res = subprocess.run(["php", "-r", php_test], capture_output=True, text=True)
+        assert res.returncode == 0
+        assert "SYNC_LOGIC_PASSED" in res.stdout

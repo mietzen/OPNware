@@ -61,32 +61,12 @@ if ($envfile === '') {
     exit(0);
 }
 
-function docker_proxy_module_installed()
-{
-    $cacheFile = '/var/db/os-caddy-advanced/modules_cache.json';
-    if (is_file($cacheFile)) {
-        $cached = json_decode(file_get_contents($cacheFile), true);
-        if (is_array($cached) && isset($cached['docker_proxy'])) {
-            return (bool)$cached['docker_proxy'];
-        }
-    }
-    exec('/usr/local/bin/caddy list-modules --skip-standard 2>/dev/null', $mods, $rc);
-    if ($rc === 0 && is_array($mods)) {
-        foreach ($mods as $mod) {
-            if (stripos($mod, 'docker_proxy') !== false) {
-                return true;
-            }
-        }
-    }
-    return false;
-}
-
 $enabled = isset($dockerproxy->enabled) ? (string)$dockerproxy->enabled : '0';
 $hasPodman = file_exists('/usr/local/opnsense/version/podman') || file_exists('/var/run/podman/podman.sock');
 $localPodmanSocket = 'unix:///var/run/podman/podman.sock';
 
 $rows = array();
-if ($enabled === '1' && docker_proxy_module_installed()) {
+if ($enabled === '1') {
     if (isset($dockerproxy->mode) && (string)$dockerproxy->mode !== '') {
         $rows['CADDY_DOCKER_PROXY_MODE'] = (string)$dockerproxy->mode;
     }
@@ -96,16 +76,8 @@ if ($enabled === '1' && docker_proxy_module_installed()) {
         $configuredSockets = (string)$dockerproxy->docker_sockets;
     }
 
-    if ($hasPodman) {
-        if ($configuredSockets === '') {
-            $rows['CADDY_DOCKER_SOCKETS'] = $localPodmanSocket;
-        } else {
-            $sockets = array_filter(array_map('trim', explode(',', $configuredSockets)));
-            if (!in_array($localPodmanSocket, $sockets, true)) {
-                $sockets[] = $localPodmanSocket;
-            }
-            $rows['CADDY_DOCKER_SOCKETS'] = implode(',', $sockets);
-        }
+    if ($hasPodman && ($configuredSockets === '' || $configuredSockets === 'tcp://docker-proxy-host:2375')) {
+        $rows['CADDY_DOCKER_SOCKETS'] = $localPodmanSocket;
     } elseif ($configuredSockets !== '') {
         $rows['CADDY_DOCKER_SOCKETS'] = $configuredSockets;
     }

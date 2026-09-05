@@ -74,6 +74,11 @@
                 }
                 $status.find("#status-validate").html(valHtml);
 
+                const podmanHtml = data.podman_socket_active
+                    ? '<span class="label label-success">{{ lang._("active") }}</span> <code>unix:///var/run/podman/podman.sock</code>'
+                    : '<span class="label label-default">{{ lang._("not active") }}</span>';
+                $status.find("#status-podman-socket").html(podmanHtml);
+
                 if (data.podman_socket_active) {
                     if (!$('#podman-dockerproxy-alert').length) {
                         const alertHtml = '<div class="alert alert-info" id="podman-dockerproxy-alert" style="margin-bottom: 15px;">' +
@@ -115,6 +120,10 @@
                 <tr>
                     <td>{{ lang._('Configuration State') }}</td>
                     <td id="status-validate">--</td>
+                </tr>
+                <tr>
+                    <td>{{ lang._('Podman Socket') }}</td>
+                    <td id="status-podman-socket">--</td>
                 </tr>
             </tbody>
         </table>
