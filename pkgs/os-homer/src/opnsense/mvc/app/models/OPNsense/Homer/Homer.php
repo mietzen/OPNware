@@ -16,6 +16,7 @@ class Homer extends BaseModel
         $content = @file_get_contents($path);
 
         if ($content === false || trim($content) === '') {
+            $res['enabled'] = '0';
             return $res;
         }
 

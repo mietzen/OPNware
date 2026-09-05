@@ -20,8 +20,10 @@ const CADDY_CONF_DIR = '/usr/local/etc/caddy/conf.d';
 const CADDY_HOMER_FILE = CADDY_CONF_DIR . '/homer.caddy';
 
 $caddyPresent = homer_caddy_is_present();
+$mdl = new Homer();
+$homerEnabled = (string)$mdl->general->enabled === '1';
 
-if ($caddyPresent) {
+if ($caddyPresent && $homerEnabled) {
     if (!is_dir(CADDY_CONF_DIR)) {
         @mkdir(CADDY_CONF_DIR, 0755, true);
     }
@@ -30,7 +32,6 @@ if ($caddyPresent) {
     @shell_exec('/usr/sbin/service homer stop >/dev/null 2>&1');
 
     // Generate / update conf.d/homer.caddy
-    $mdl = new Homer();
     $port = (string)$mdl->general->Port ?: '9443';
     $tls = (string)$mdl->general->TlsEnabled === '1';
     $serverName = trim((string)$mdl->general->ServerName);
@@ -61,35 +62,26 @@ if ($caddyPresent) {
     file_put_contents(CADDY_HOMER_FILE, $content);
     @chmod(CADDY_HOMER_FILE, 0644);
 
-    @mkdir('/var/db/os-homer', 0755, true);
-    @file_put_contents('/var/db/os-homer/caddy_sync.json', json_encode([
-        'timestamp' => time(),
-        'status' => 'ok',
-        'managed' => true,
-    ]));
-
     // Reload master Caddy service
     @shell_exec('/usr/local/sbin/configctl caddyadvanced reload >/dev/null 2>&1');
     exit(0);
 }
 
-// Caddy Advanced is absent: clean up conf.d/homer.caddy and restore Homer
+// Either Caddy Advanced is absent/disabled, or Homer itself is disabled:
+// clean up conf.d/homer.caddy if it was present.
 if (file_exists(CADDY_HOMER_FILE)) {
     @unlink(CADDY_HOMER_FILE);
+    if ($caddyPresent) {
+        @shell_exec('/usr/local/sbin/configctl caddyadvanced reload >/dev/null 2>&1');
+    }
 }
 
-@shell_exec('/usr/local/sbin/configctl template reload OPNsense/Homer >/dev/null 2>&1');
-
-$mdl = new Homer();
-if ((string)$mdl->general->enabled === '1') {
-    @shell_exec('/usr/sbin/service homer start >/dev/null 2>&1');
+// If Caddy Advanced is absent/disabled and Homer is enabled, restore standalone Homer
+if (!$caddyPresent) {
+    @shell_exec('/usr/local/sbin/configctl template reload OPNsense/Homer >/dev/null 2>&1');
+    if ($homerEnabled) {
+        @shell_exec('/usr/sbin/service homer start >/dev/null 2>&1');
+    }
 }
-
-@mkdir('/var/db/os-homer', 0755, true);
-@file_put_contents('/var/db/os-homer/caddy_sync.json', json_encode([
-    'timestamp' => time(),
-    'status' => 'ok',
-    'managed' => false,
-]));
 
 exit(0);

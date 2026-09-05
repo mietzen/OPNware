@@ -16,7 +16,7 @@ function homer_caddy_is_present(): bool
         return (string)$configObj->OPNsense->caddyadvanced->general->enabled === '1';
     }
 
-    return true;
+    return false;
 }
 
 function homer_services()

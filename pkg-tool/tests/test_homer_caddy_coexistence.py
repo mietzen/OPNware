@@ -136,11 +136,15 @@ namespace {{
     assert parsed["lan_ip"]["ServerName"] == ""
 
 
-def test_caddy_setup_and_editor_seed_homer():
+def test_caddy_setup_triggers_homer_sync():
     setup_src = CADDY_SETUP.read_text()
     assert "configctl homer sync-caddy" in setup_src
-    editor_src = CADDY_EDITOR.read_text()
-    assert "configctl homer sync-caddy" in editor_src
+
+
+def test_homer_rcd_checks_caddy_enable():
+    src = HOMER_RCD.read_text()
+    assert ". /etc/rc.conf.d/caddy" in src
+    assert '[ "${caddy_enable}" = "YES" ]' in src
 
 
 def test_package_versions_bumped():
