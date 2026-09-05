@@ -129,6 +129,11 @@ caddy_precmd()
         done
     fi
 
+    if /usr/bin/pgrep -q -f "/usr/local/bin/caddy.*--config /usr/local/etc/os-homer/Caddyfile"; then
+        echo "Caddy cannot start (conflicting Homer Caddy process already running)."
+        return 1
+    fi
+
     # Create required directories and set permissions
     /usr/bin/install -d -m 755 -o "${caddy_user}" -g "${caddy_group}" ${caddy_directory}
     /usr/bin/install -d -m 700 -o "${caddy_user}" -g "${caddy_group}" ${caddy_directory}/config

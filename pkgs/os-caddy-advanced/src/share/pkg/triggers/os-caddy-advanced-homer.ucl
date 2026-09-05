@@ -12,9 +12,6 @@ else
         os.remove("/usr/local/etc/caddy/conf.d/homer.caddy")
         reload = true
     end
-    if pkg.stat("/usr/local/etc/caddy/conf.d/homer.caddy.disabled") then
-        os.remove("/usr/local/etc/caddy/conf.d/homer.caddy.disabled")
-    end
     if reload then
         pkg.exec({"/usr/sbin/service", "caddy", "reload"})
     end
@@ -32,9 +29,6 @@ else
     if pkg.stat("/usr/local/etc/caddy/conf.d/homer.caddy") then
         os.remove("/usr/local/etc/caddy/conf.d/homer.caddy")
         reload = true
-    end
-    if pkg.stat("/usr/local/etc/caddy/conf.d/homer.caddy.disabled") then
-        os.remove("/usr/local/etc/caddy/conf.d/homer.caddy.disabled")
     end
     if reload then
         pkg.exec({"/usr/sbin/service", "caddy", "reload"})

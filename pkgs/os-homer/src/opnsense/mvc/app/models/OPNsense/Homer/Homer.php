@@ -16,12 +16,6 @@ class Homer extends BaseModel
         $content = @file_get_contents($path);
 
         if ($content === false || trim($content) === '') {
-            if (file_exists($path . '.disabled')) {
-                $disabledConfig = $this->getCaddyManagedConfig($path . '.disabled');
-                $disabledConfig['enabled'] = '0';
-                return $disabledConfig;
-            }
-
             return [
                 'enabled' => '0',
                 'Port' => '9443',

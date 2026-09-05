@@ -202,21 +202,21 @@ def test_caddy_homer_trigger_bidirectional():
 
 def test_homer_sync_caddy_preserves_existing():
     src = HOMER_SYNC.read_text()
-    assert "!file_exists(CADDY_HOMER_FILE) && !file_exists(CADDY_HOMER_DISABLED)" in src
+    assert "!file_exists(CADDY_HOMER_FILE)" in src
     assert "file_put_contents(CADDY_HOMER_FILE, $content)" in src
     assert "$managed = $mdl->getCaddyManagedConfig();" in src
     assert "unlink(CADDY_HOMER_FILE)" in src
 
 
-def test_homer_model_preserves_disabled_customizations(tmp_path):
+def test_homer_model_parses_custom_caddyfile(tmp_path):
     import subprocess
     import json
 
     model_path = Path("pkgs/os-homer/src/opnsense/mvc/app/models/OPNsense/Homer/Homer.php").resolve()
-    test_script = tmp_path / "disabled_runner.php"
+    test_script = tmp_path / "custom_runner.php"
 
-    conf_disabled = tmp_path / "homer.caddy.disabled"
-    conf_disabled.write_text("homer.custom.lan:8085 {\n\troot * /usr/local/www/homer\n\tfile_server\n\ttls internal\n}\n")
+    conf_custom = tmp_path / "homer.caddy"
+    conf_custom.write_text("homer.custom.lan:8085 {\n\troot * /usr/local/www/homer\n\tfile_server\n\ttls internal\n}\n")
 
     test_script.write_text(f"""<?php
 namespace OPNsense\\Base {{ class BaseModel {{}} }}
@@ -231,7 +231,7 @@ namespace {{
     res = subprocess.run(["php", str(test_script)], capture_output=True, text=True, check=True)
     parsed = json.loads(res.stdout)
 
-    assert parsed["enabled"] == "0"
+    assert parsed["enabled"] == "1"
     assert parsed["Port"] == "8085"
     assert parsed["ServerName"] == "homer.custom.lan"
     assert parsed["TlsEnabled"] == "1"
