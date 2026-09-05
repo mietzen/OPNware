@@ -5,9 +5,18 @@
  * the XMLRPC sync and the core Diagnostics log viewer.
  */
 
-function homer_caddy_is_present()
+function homer_caddy_is_present(): bool
 {
-    return file_exists('/usr/local/opnsense/version/caddy-advanced');
+    if (!file_exists('/usr/local/opnsense/version/caddy-advanced')) {
+        return false;
+    }
+
+    $configObj = \OPNsense\Core\Config::getInstance()->object();
+    if (isset($configObj->OPNsense->caddyadvanced->general->enabled)) {
+        return (string)$configObj->OPNsense->caddyadvanced->general->enabled === '1';
+    }
+
+    return true;
 }
 
 function homer_services()

@@ -41,7 +41,7 @@ def test_homer_sync_caddy_script():
 
 def test_homer_general_controller_caddy_sync_and_gate():
     src = HOMER_GENERAL_CTRL.read_text()
-    assert "parseCaddyConf" in src
+    assert "getCaddyManagedConfig" in src
     assert "caddy_managed" in src
     assert "homer_caddy_is_present()" in src
     assert "Settings are managed by Caddy Advanced via /usr/local/etc/caddy/conf.d/homer.caddy" in src
@@ -50,7 +50,8 @@ def test_homer_general_controller_caddy_sync_and_gate():
 def test_homer_service_controller_status_contract():
     src = HOMER_SERVICE_CTRL.read_text()
     assert "homer_caddy_is_present()" in src
-    assert "return ['status' => 'disabled'];" in src
+    assert "caddy.pid" in src
+    assert "caption_start" in src
     assert "homer sync-caddy" in src
 
 
@@ -78,26 +79,18 @@ def test_homer_pkg_trigger_has_install_and_cleanup():
     assert "sync_caddy.php" in src
 
 
-def test_homer_parse_caddy_conf_functional(tmp_path):
+def test_homer_model_caddy_managed_config_functional(tmp_path):
     import subprocess
     import json
 
-    inc_dir = Path("pkgs/os-homer/src/etc/inc").resolve()
-    ctrl_path = HOMER_GENERAL_CTRL.resolve()
+    model_path = Path("pkgs/os-homer/src/opnsense/mvc/app/models/OPNsense/Homer/Homer.php").resolve()
     test_script = tmp_path / "runner.php"
 
     test_script.write_text(f"""<?php
-namespace OPNsense\\Base {{ class ApiMutableModelControllerBase {{}} }}
+namespace OPNsense\\Base {{ class BaseModel {{}} }}
 namespace {{
-    set_include_path(get_include_path() . PATH_SEPARATOR . '{inc_dir}');
-    require_once '{ctrl_path}';
-    class TestController extends OPNsense\\Homer\\Api\\GeneralController {{
-        public function testParse($path) {{
-            $ref = new ReflectionMethod($this, 'parseCaddyConf');
-            return $ref->invoke($this, $path);
-        }}
-    }}
-    $tc = new TestController();
+    require_once '{model_path}';
+    $mdl = new OPNsense\\Homer\\Homer();
     $cases = [
         'default_tls' => ":9443 {{\\n\\troot * /usr/local/www/homer\\n\\tfile_server\\n\\ttls internal {{\\n\\t\\ton_demand\\n\\t}}\\n}}\\n",
         'hostname_custom_port' => "homer.test.lan:8080 {{\\n\\troot * /usr/local/www/homer\\n\\tfile_server\\n}}\\n",
@@ -109,7 +102,7 @@ namespace {{
     foreach ($cases as $name => $content) {{
         $f = '{tmp_path}/' . $name . '.caddy';
         file_put_contents($f, $content);
-        $results[$name] = $tc->testParse($f);
+        $results[$name] = $mdl->getCaddyManagedConfig($f);
     }}
     echo json_encode($results);
 }}
@@ -143,6 +136,16 @@ namespace {{
     assert parsed["lan_ip"]["ServerName"] == ""
 
 
+def test_caddy_setup_and_editor_seed_homer():
+    setup_src = CADDY_SETUP.read_text()
+    assert "configctl homer sync-caddy" in setup_src
+    editor_src = CADDY_EDITOR.read_text()
+    assert "configctl homer sync-caddy" in editor_src
+
+
 def test_package_versions_bumped():
     homer_spec = yaml.safe_load(HOMER_CONFIG.read_text())
     assert homer_spec["pkg_manifest"]["version"] == "0.5.10"
+
+    caddy_spec = yaml.safe_load(CADDY_CONFIG.read_text())
+    assert caddy_spec["pkg_manifest"]["version"] == "0.8.17"

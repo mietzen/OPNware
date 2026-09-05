@@ -20,8 +20,24 @@ class ServiceController extends ApiMutableServiceControllerBase
 
     public function statusAction()
     {
+        $status = 'stopped';
+
         if (homer_caddy_is_present()) {
-            return ['status' => 'disabled'];
+            if (is_file('/var/run/caddy/caddy.pid')) {
+                $pid = (int)trim((string)@file_get_contents('/var/run/caddy/caddy.pid'));
+                if ($pid > 0 && @posix_kill($pid, 0)) {
+                    $status = 'running';
+                }
+            }
+
+            return [
+                'status' => $status,
+                'widget' => [
+                    'caption_restart' => gettext('Restart'),
+                    'caption_start' => gettext('Start'),
+                    'caption_stop' => gettext('Stop'),
+                ],
+            ];
         }
 
         $backend = new Backend();

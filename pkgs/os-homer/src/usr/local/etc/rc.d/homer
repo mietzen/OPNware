@@ -69,7 +69,7 @@ homer_prestart()
 
 homer_start()
 {
-    if [ -f /usr/local/opnsense/version/caddy-advanced ] && [ -d /usr/local/etc/caddy/conf.d ]; then
+    if [ -f /usr/local/opnsense/version/caddy-advanced ]; then
         echo "Homer is managed by Caddy Advanced via conf.d/homer.caddy (isolated instance disabled)."
         return 0
     fi

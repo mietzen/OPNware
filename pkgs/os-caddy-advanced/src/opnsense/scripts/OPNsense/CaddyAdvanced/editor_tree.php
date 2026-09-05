@@ -181,6 +181,9 @@ function editor_tree_seed($base = EDITOR_TREE_BASE)
                 return 'cannot update Caddyfile import';
             }
         }
+    if (file_exists('/usr/local/opnsense/version/homer') && !is_file($base . '/conf.d/homer.caddy')) {
+        @shell_exec('/usr/local/sbin/configctl homer sync-caddy >/dev/null 2>&1');
     }
+
     return null;
 }
