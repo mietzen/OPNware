@@ -206,7 +206,7 @@ def test_homer_sync_caddy_preserves_existing():
     assert "rename(CADDY_HOMER_FILE, CADDY_HOMER_DISABLED)" in src
     assert "$targetFile = $homerEnabled ? CADDY_HOMER_FILE : CADDY_HOMER_DISABLED;" in src
     assert "$managed = $mdl->getCaddyManagedConfig();" in src
-    assert "!file_exists('/usr/local/opnsense/version/caddy-advanced')" in src
+    assert "unlink(CADDY_HOMER_FILE)" in src
 
 
 def test_homer_model_preserves_disabled_customizations(tmp_path):

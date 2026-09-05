@@ -64,6 +64,7 @@ homer_prestart()
             echo "Homer is managed by Caddy Advanced via conf.d/homer.caddy (isolated instance disabled)."
             return 1
         fi
+        /usr/sbin/service caddy onestop >/dev/null 2>&1
     fi
 
     /usr/bin/install -d -m 755 -o "${homer_user}" -g "${homer_group}" "${homer_directory}"

@@ -116,14 +116,11 @@ if (file_exists(CADDY_HOMER_FILE) || file_exists(CADDY_HOMER_DISABLED)) {
         Config::getInstance()->save();
     }
 
-    // Only clean up drop-in files if Caddy Advanced package is completely uninstalled
-    if (!file_exists('/usr/local/opnsense/version/caddy-advanced')) {
-        if (file_exists(CADDY_HOMER_FILE)) {
-            @unlink(CADDY_HOMER_FILE);
-        }
-        if (file_exists(CADDY_HOMER_DISABLED)) {
-            @unlink(CADDY_HOMER_DISABLED);
-        }
+    if (file_exists(CADDY_HOMER_FILE)) {
+        @unlink(CADDY_HOMER_FILE);
+    }
+    if (file_exists(CADDY_HOMER_DISABLED)) {
+        @unlink(CADDY_HOMER_DISABLED);
     }
 }
 
