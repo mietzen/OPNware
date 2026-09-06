@@ -117,6 +117,20 @@ def test_container_terminal_websocket_and_modal_top_clearance():
 
 
 
+def test_modal_title_icon_spacing():
+    dash_file = PODMAN_SRC / "opnsense" / "mvc" / "app" / "views" / "OPNsense" / "Podman" / "dashboard.volt"
+    content = dash_file.read_text()
+
+    # Verify CSS rule for 10px spacing
+    assert ".modal-title > i" in content
+    assert "margin-right: 10px;" in content
+
+    # Verify modal title icon inline styles or markup
+    assert '<i class="fa fa-file-text-o text-primary" style="margin-right: 10px;">' in content
+    assert '<i class="fa fa-info-circle text-info" style="margin-right: 10px;">' in content
+    assert '<i class="fa fa-terminal text-primary" style="margin-right: 10px;">' in content
+
+
 def test_alias_and_cshrc_block_manipulation():
     begin_marker = "# BEGIN OPNWARE PODMAN ALIASES"
     end_marker = "# END OPNWARE PODMAN ALIASES"

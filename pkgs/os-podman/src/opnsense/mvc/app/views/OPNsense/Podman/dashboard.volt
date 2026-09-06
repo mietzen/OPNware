@@ -28,6 +28,14 @@
 <script src="{{ cache_safe('/ui/js/vendor/xterm/xterm.js') }}"></script>
 <script src="{{ cache_safe('/ui/js/vendor/xterm/addon-fit.js') }}"></script>
 
+<style>
+.modal-title > i,
+.modal-title > span.fa,
+.modal-title > .fa {
+    margin-right: 10px;
+}
+</style>
+
 <script>
     var autoRefreshInterval = null;
     var currentLogContainerId = null;
@@ -380,7 +388,7 @@
 
     function showContainerLogs(cid, name) {
         currentLogContainerId = cid;
-        $('#modal-logs-title').html('<i class="fa fa-file-text-o text-primary"></i> {{ lang._("Container Logs") }}: ' + escapeHtml(name || cid));
+        $('#modal-logs-title').html('<i class="fa fa-file-text-o text-primary" style="margin-right: 10px;"></i>{{ lang._("Container Logs") }}: ' + escapeHtml(name || cid));
         $('#modal-logs-body').text('{{ lang._("Loading logs...") }}');
         $('#modal-logs').modal('show');
         fetchLogsContent();
@@ -856,7 +864,7 @@
     }
 
     function showContainerInspect(cid, name) {
-        $('#modal-inspect-title').html('<i class="fa fa-info-circle text-info"></i> {{ lang._("Container Inspection") }}: ' + escapeHtml(name || cid));
+        $('#modal-inspect-title').html('<i class="fa fa-info-circle text-info" style="margin-right: 10px;"></i>{{ lang._("Container Inspection") }}: ' + escapeHtml(name || cid));
         $('#modal-inspect-content').html('<div class="text-center" style="padding: 40px;"><i class="fa fa-spinner fa-pulse fa-2x"></i><p style="margin-top: 10px;">{{ lang._("Loading inspection data...") }}</p></div>');
         $('#modal-inspect').modal('show');
         ajaxGet('/api/podman/containers/inspect/' + cid, {}, function (data, status) {
@@ -1059,7 +1067,7 @@
     function showContainerCli(cid, name) {
         currentCliContainerId = cid;
         currentCliContainerName = name;
-        $('#modal-cli-title').html('<i class="fa fa-terminal text-primary"></i> {{ lang._("Container Terminal") }}: ' + $('<div>').text(name || cid).html());
+        $('#modal-cli-title').html('<i class="fa fa-terminal text-primary" style="margin-right: 10px;"></i>{{ lang._("Container Terminal") }}: ' + $('<div>').text(name || cid).html());
         $('#modal-cli').modal('show');
     }
 
@@ -1417,7 +1425,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-                <h4 class="modal-title" id="modal-logs-title"><i class="fa fa-file-text-o text-primary"></i> {{ lang._('Container Logs') }}</h4>
+                <h4 class="modal-title" id="modal-logs-title"><i class="fa fa-file-text-o text-primary" style="margin-right: 10px;"></i>{{ lang._('Container Logs') }}</h4>
             </div>
             <div class="modal-body" style="padding: 15px; max-height: calc(100vh - 180px); overflow-y: auto;">
                 <pre id="modal-logs-body" style="background: #181818; color: #f0f0f0; font-family: Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace; font-size: 12px; max-height: calc(100vh - 260px); min-height: 400px; overflow-y: auto; padding: 15px; border-radius: 4px; margin-bottom: 0; white-space: pre-wrap;"></pre>
@@ -1436,7 +1444,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-                <h4 class="modal-title" id="modal-inspect-title"><i class="fa fa-info-circle text-info"></i> {{ lang._('Container Inspection') }}</h4>
+                <h4 class="modal-title" id="modal-inspect-title"><i class="fa fa-info-circle text-info" style="margin-right: 10px;"></i>{{ lang._('Container Inspection') }}</h4>
             </div>
             <div class="modal-body" style="padding: 15px; max-height: calc(100vh - 180px); overflow-y: auto;">
                 <div id="modal-inspect-content"></div>
@@ -1454,7 +1462,7 @@
         <div class="modal-content">
             <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px;">
                 <h4 class="modal-title" id="modal-cli-title" style="margin: 0;">
-                    <i class="fa fa-terminal text-primary"></i> {{ lang._('Container Terminal') }}
+                    <i class="fa fa-terminal text-primary" style="margin-right: 10px;"></i>{{ lang._('Container Terminal') }}
                 </h4>
                 <div style="display: flex; align-items: center; gap: 8px; margin-right: 20px;">
                     <div style="display: inline-flex; align-items: center; gap: 5px;">
