@@ -165,3 +165,22 @@ def test_settings_controller_login_shell_sync():
     assert "default_shell" in content
     assert "setAction" in content
 
+
+def test_terminal_view_template_and_fullscreen():
+    view_file = TERMINAL_SRC / "opnsense" / "mvc" / "app" / "views" / "OPNsense" / "Terminal" / "index.volt"
+    assert view_file.exists()
+    content = view_file.read_text()
+
+    # Fullscreen controls and styling
+    assert "#btn_term_fullscreen" in content
+    assert "toggleFullscreen" in content
+    assert "terminal-fullscreen" in content
+    assert "requestFullscreen" in content
+
+    # Font sizing controls
+    assert "#btn_term_font_inc" in content
+    assert "#btn_term_font_dec" in content
+    assert "updateFontSize" in content
+    assert "options.fontSize" in content
+
+
