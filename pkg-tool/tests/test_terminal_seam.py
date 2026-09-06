@@ -30,7 +30,7 @@ def test_os_terminal_config_and_structure():
     content = config_file.read_text()
     assert "name: terminal" in content
     assert "origin: opnware/os-terminal" in content
-    assert 'version: 0.1.1' in content
+    assert 'version: 0.1.2' in content
 
     build_sh = ROOT_DIR / "pkgs" / "os-terminal" / "build.sh"
     assert build_sh.exists()
@@ -201,8 +201,9 @@ def test_terminal_view_template_and_fullscreen():
     assert "isComposing" in content
     assert "Dead" in content
     assert "ArrowLeft" in content
-    assert "ArrowRight" in content
-    assert "macOptionIsMeta: true" in content
+    assert "macOptionIsMeta: false" in content
+    assert "startHeartbeat" in content
+    assert "autoReconnectTimer" in content
 
     # Reconnect button without forced session reset
     assert "connectWebSocket(false)" in content

@@ -35,11 +35,20 @@
     var currentCliContainerName = null;
     var currentTerm = null;
     var currentFitAddon = null;
-    var currentWs = null;
+    function decodeHtmlEntities(str) {
+        if (!str || typeof str !== 'string' || str.indexOf('&') === -1) return str;
+        return str
+            .replace(/&amp;/g, '&')
+            .replace(/&lt;/g, '<')
+            .replace(/&gt;/g, '>')
+            .replace(/&quot;/g, '"')
+            .replace(/&#039;/g, "'")
+            .replace(/&#39;/g, "'");
+    }
 
     function ansiToHtml(str) {
         if (!str) return '';
-        var html = str
+        var html = decodeHtmlEntities(String(str))
             .replace(/&/g, "&amp;")
             .replace(/</g, "&lt;")
             .replace(/>/g, "&gt;")
@@ -370,7 +379,7 @@
 
     function showContainerLogs(cid, name) {
         currentLogContainerId = cid;
-        $('#modal-logs-title').text('{{ lang._("Container Logs") }}: ' + (name || cid));
+        $('#modal-logs-title').html('<i class="fa fa-file-text-o text-primary"></i> {{ lang._("Container Logs") }}: ' + escapeHtml(name || cid));
         $('#modal-logs-body').text('{{ lang._("Loading logs...") }}');
         $('#modal-logs').modal('show');
         fetchLogsContent();
@@ -402,7 +411,7 @@
         if (str === null || str === undefined) {
             return '';
         }
-        return $('<div>').text(String(str)).html();
+        return $('<div>').text(decodeHtmlEntities(String(str))).html();
     }
 
     function copyToClipboard(text, btnElement) {
@@ -867,14 +876,99 @@
         currentTerm = new window.Terminal({
             cursorBlink: true,
             theme: {
-                background: '#1e1e1e',
-                foreground: '#d4d4d4',
+                background: '#181818',
+                foreground: '#f0f0f0',
                 cursor: '#5af78e',
+                cursorAccent: '#181818',
                 selectionBackground: '#334455'
             },
-            fontFamily: 'monospace, Menlo, Monaco, Consolas, "Courier New"',
-            fontSize: 12,
-            lineHeight: 1.2
+            fontFamily: 'Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
+            fontSize: 13,
+            lineHeight: 1.15,
+            scrollback: 5000,
+            macOptionIsMeta: false,
+            macOptionClickForcesSelection: false
+        });
+
+        currentTerm.attachCustomKeyEventHandler(function(e) {
+            if (e.type !== 'keydown') {
+                return true;
+            }
+
+            // Filter dead key / IME composition events
+            if (e.isComposing || e.key === 'Dead') {
+                return false;
+            }
+
+            // macOS Cmd+Left (Home / start of line)
+            if (e.metaKey && e.key === 'ArrowLeft') {
+                if (currentWs && currentWs.readyState === WebSocket.OPEN) {
+                    currentWs.send('\x01');
+                }
+                return false;
+            }
+
+            // macOS Cmd+Right (End / end of line)
+            if (e.metaKey && e.key === 'ArrowRight') {
+                if (currentWs && currentWs.readyState === WebSocket.OPEN) {
+                    currentWs.send('\x05');
+                }
+                return false;
+            }
+
+            // macOS Alt+Left (Word back)
+            if (e.altKey && e.key === 'ArrowLeft') {
+                if (currentWs && currentWs.readyState === WebSocket.OPEN) {
+                    currentWs.send('\x1bb');
+                }
+                return false;
+            }
+
+            // macOS Alt+Right (Word forward)
+            if (e.altKey && e.key === 'ArrowRight') {
+                if (currentWs && currentWs.readyState === WebSocket.OPEN) {
+                    currentWs.send('\x1bf');
+                }
+                return false;
+            }
+
+            // Home / Pos1 key
+            if (e.key === 'Home') {
+                if (currentWs && currentWs.readyState === WebSocket.OPEN) {
+                    currentWs.send('\x1b[H');
+                }
+                return false;
+            }
+
+            // End key
+            if (e.key === 'End') {
+                if (currentWs && currentWs.readyState === WebSocket.OPEN) {
+                    currentWs.send('\x1b[F');
+                }
+                return false;
+            }
+
+            // Tab key inside modal (prevent Bootstrap modal focus trap)
+            if (e.key === 'Tab') {
+                if (currentWs && currentWs.readyState === WebSocket.OPEN) {
+                    currentWs.send('\t');
+                }
+                e.preventDefault();
+                e.stopPropagation();
+                return false;
+            }
+
+            if (e.metaKey && (e.key === 'k' || e.key === 'K')) {
+                if (currentTerm) {
+                    currentTerm.clear();
+                }
+                if (currentWs && currentWs.readyState === WebSocket.OPEN) {
+                    currentWs.send('\x0c');
+                }
+                return false;
+            }
+
+            return true;
         });
 
         var FitClass = (window.FitAddon && window.FitAddon.FitAddon) ? window.FitAddon.FitAddon : window.FitAddon;
@@ -1100,6 +1194,18 @@
             }
         });
 
+        $('#modal-cli').on('keydown', function (e) {
+            if (e.key === 'Tab') {
+                e.stopPropagation();
+            }
+        });
+
+        $('#btn_clear_cli').click(function () {
+            if (currentTerm) {
+                currentTerm.clear();
+            }
+        });
+
         $('#cli-shell').change(function () {
             var shell = $(this).val() || '/bin/sh';
             if (currentCliContainerId) {
@@ -1306,14 +1412,14 @@
 
 <!-- Container Logs Modal -->
 <div class="modal fade" id="modal-logs" tabindex="-1" role="dialog" aria-labelledby="modal-logs-title" aria-hidden="true">
-    <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-dialog modal-lg" style="width: 85%; max-width: 1200px; margin-top: 30px;" role="document">
         <div class="modal-content">
             <div class="modal-header">
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-                <h4 class="modal-title" id="modal-logs-title">{{ lang._('Container Logs') }}</h4>
+                <h4 class="modal-title" id="modal-logs-title"><i class="fa fa-file-text-o text-primary"></i> {{ lang._('Container Logs') }}</h4>
             </div>
-            <div class="modal-body" style="padding: 10px;">
-                <pre id="modal-logs-body" style="background: #1e1e1e; color: #d4d4d4; font-family: monospace; font-size: 12px; max-height: 450px; overflow-y: auto; padding: 15px; border-radius: 4px; margin-bottom: 0; white-space: pre-wrap;"></pre>
+            <div class="modal-body" style="padding: 15px; max-height: calc(100vh - 180px); overflow-y: auto;">
+                <pre id="modal-logs-body" style="background: #181818; color: #f0f0f0; font-family: Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace; font-size: 12px; max-height: calc(100vh - 260px); min-height: 400px; overflow-y: auto; padding: 15px; border-radius: 4px; margin-bottom: 0; white-space: pre-wrap;"></pre>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-default" id="btn_refresh_modal_logs"><i class="fa fa-refresh"></i> {{ lang._('Refresh') }}</button>
@@ -1325,7 +1431,7 @@
 
 <!-- Container Inspect Modal -->
 <div class="modal fade" id="modal-inspect" tabindex="-1" role="dialog" aria-labelledby="modal-inspect-title" aria-hidden="true">
-    <div class="modal-dialog modal-lg" style="width: 85%; max-width: 1200px;" role="document">
+    <div class="modal-dialog modal-lg" style="width: 85%; max-width: 1200px; margin-top: 30px;" role="document">
         <div class="modal-content">
             <div class="modal-header">
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
@@ -1343,39 +1449,30 @@
 
 <!-- Container Terminal Modal -->
 <div class="modal fade" id="modal-cli" tabindex="-1" role="dialog" aria-labelledby="modal-cli-title" aria-hidden="true">
-    <div class="modal-dialog modal-lg" style="width: 85%; max-width: 1200px;" role="document">
+    <div class="modal-dialog modal-lg" style="width: 85%; max-width: 1200px; margin-top: 30px;" role="document">
         <div class="modal-content">
-            <div class="modal-header">
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-                <h4 class="modal-title" id="modal-cli-title">
+            <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px;">
+                <h4 class="modal-title" id="modal-cli-title" style="margin: 0;">
                     <i class="fa fa-terminal text-primary"></i> {{ lang._('Container Terminal') }}
                 </h4>
-            </div>
-            <div class="modal-body" style="padding: 15px;">
-                <div class="panel panel-default" style="margin-bottom: 0;">
-                    <div class="panel-heading" style="display: flex; justify-content: space-between; align-items: center; padding: 6px 12px;">
-                        <span style="font-weight: bold; font-size: 12px; text-transform: uppercase;">
-                            <i class="fa fa-terminal text-primary"></i> {{ lang._('Interactive Terminal Console') }}
-                        </span>
-                        <div style="display: flex; align-items: center; gap: 8px;">
-                            <div style="display: inline-flex; align-items: center; gap: 5px;">
-                                <label for="cli-shell" style="margin: 0; font-size: 12px; font-weight: normal;">{{ lang._('Shell') }}:</label>
-                                <input type="text" class="form-control input-sm" id="cli-shell" list="cli-shell-list" value="/bin/sh" style="width: 120px; height: 26px; padding: 2px 8px;" />
-                                <datalist id="cli-shell-list">
-                                    <option value="/bin/sh">
-                                    <option value="/bin/bash">
-                                    <option value="/bin/csh">
-                                    <option value="/bin/zsh">
-                                    <option value="/bin/ash">
-                                </datalist>
-                            </div>
-                            <button type="button" class="btn btn-xs btn-default" id="btn_clear_cli" title="{{ lang._('Clear Terminal') }}"><i class="fa fa-eraser"></i> {{ lang._('Clear') }}</button>
-                        </div>
+                <div style="display: flex; align-items: center; gap: 8px; margin-right: 20px;">
+                    <div style="display: inline-flex; align-items: center; gap: 5px;">
+                        <label for="cli-shell" style="margin: 0; font-size: 12px; font-weight: normal;">{{ lang._('Shell') }}:</label>
+                        <input type="text" class="form-control input-sm" id="cli-shell" list="cli-shell-list" value="/bin/sh" style="width: 110px; height: 26px; padding: 2px 8px;" />
+                        <datalist id="cli-shell-list">
+                            <option value="/bin/sh">
+                            <option value="/bin/bash">
+                            <option value="/bin/csh">
+                            <option value="/bin/zsh">
+                            <option value="/bin/ash">
+                        </datalist>
                     </div>
-                    <div class="panel-body" style="padding: 0; background: #1e1e1e; border-radius: 0 0 4px 4px;">
-                        <div id="xterm-terminal-container" style="height: 480px; width: 100%; padding: 8px; border-radius: 0 0 4px 4px;"></div>
-                    </div>
+                    <button type="button" class="btn btn-xs btn-default" id="btn_clear_cli" title="{{ lang._('Clear Terminal') }}"><i class="fa fa-eraser"></i> {{ lang._('Clear') }}</button>
                 </div>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close" style="margin-top: -2px;"><span aria-hidden="true">&times;</span></button>
+            </div>
+            <div class="modal-body" style="padding: 15px; background: #181818; border-radius: 0 0 4px 4px;">
+                <div id="xterm-terminal-container" style="height: 480px; min-height: 400px; width: 100%; padding: 8px; border-radius: 4px; background: #181818;"></div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-primary" data-dismiss="modal">{{ lang._('Close') }}</button>

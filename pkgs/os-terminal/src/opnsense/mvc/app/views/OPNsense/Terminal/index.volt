@@ -235,8 +235,8 @@ $(document).ready(function() {
             lineHeight: 1.15,
             theme: themePalette,
             scrollback: 5000,
-            macOptionIsMeta: true,
-            macOptionClickForcesSelection: true
+            macOptionIsMeta: false,
+            macOptionClickForcesSelection: false
         });
 
         term.attachCustomKeyEventHandler(function(e) {
@@ -336,7 +336,30 @@ $(document).ready(function() {
         connectWebSocket();
     }
 
+    var heartbeatTimer = null;
+    var autoReconnectTimer = null;
+    var reconnectAttempts = 0;
+
+    function clearHeartbeat() {
+        if (heartbeatTimer) {
+            clearInterval(heartbeatTimer);
+            heartbeatTimer = null;
+        }
+    }
+
+    function startHeartbeat() {
+        clearHeartbeat();
+        heartbeatTimer = setInterval(function() {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send('\x00{"type":"ping"}');
+            }
+        }, 15000);
+    }
+
     function connectWebSocket(reset) {
+        clearTimeout(autoReconnectTimer);
+        clearHeartbeat();
+
         if (ws) {
             try { ws.close(); } catch(e) {}
             ws = null;
@@ -353,6 +376,8 @@ $(document).ready(function() {
             ws.binaryType = 'arraybuffer';
 
             ws.onopen = function() {
+                reconnectAttempts = 0;
+                startHeartbeat();
                 statusPill.attr('class', 'status-pill status-connected')
                           .html('<i class="fa fa-check-circle"></i>&nbsp;{{ lang._("Connected") }}');
                 $('#term-user-info').text('host');
@@ -376,22 +401,38 @@ $(document).ready(function() {
                 if (term) {
                     if (event.data instanceof ArrayBuffer) {
                         term.write(new Uint8Array(event.data));
-                    } else {
+                    } else if (typeof event.data === 'string' && event.data.indexOf('pong') === -1) {
                         term.write(event.data);
                     }
                 }
             };
 
             ws.onerror = function(err) {
+                clearHeartbeat();
                 statusPill.attr('class', 'status-pill status-disconnected')
                           .html('<i class="fa fa-exclamation-triangle"></i>&nbsp;{{ lang._("Error") }}');
             };
 
             ws.onclose = function() {
+                clearHeartbeat();
                 statusPill.attr('class', 'status-pill status-disconnected')
                           .html('<i class="fa fa-times-circle"></i>&nbsp;{{ lang._("Disconnected") }}');
+
+                // Auto-reconnect if terminal tab is active
+                var activeTab = $('#maintabs li.active a').attr('href');
+                if (activeTab === '#tab-terminal' || !activeTab) {
+                    reconnectAttempts++;
+                    var delay = Math.min(1500 * Math.pow(1.3, reconnectAttempts), 8000);
+                    clearTimeout(autoReconnectTimer);
+                    autoReconnectTimer = setTimeout(function() {
+                        if ($('#maintabs li.active a').attr('href') === '#tab-terminal') {
+                            connectWebSocket(false);
+                        }
+                    }, delay);
+                }
             };
         } catch(e) {
+            clearHeartbeat();
             statusPill.attr('class', 'status-pill status-disconnected')
                       .html('<i class="fa fa-times-circle"></i>&nbsp;{{ lang._("Failed to connect") }}');
         }
@@ -576,15 +617,28 @@ $(document).ready(function() {
         if (e.target.id === 'tab_terminal_link') {
             if (term === null) {
                 initTerminal();
-            } else if (fitAddon) {
-                setTimeout(function() {
-                    fitAddon.fit();
-                    term.focus();
-                }, 100);
+            } else {
+                if (!ws || ws.readyState === WebSocket.CLOSED || ws.readyState === WebSocket.CLOSING) {
+                    connectWebSocket(false);
+                }
+                if (fitAddon) {
+                    setTimeout(function() {
+                        fitAddon.fit();
+                        term.focus();
+                    }, 100);
+                }
             }
         } else if (e.target.id === 'tab_settings_link') {
             refreshShellTable();
             loadFormData();
+        }
+    });
+
+    document.addEventListener('visibilitychange', function() {
+        if (!document.hidden && ($('#maintabs li.active a').attr('href') === '#tab-terminal' || !$('#maintabs li.active a').attr('href'))) {
+            if (term !== null && (!ws || ws.readyState === WebSocket.CLOSED || ws.readyState === WebSocket.CLOSING)) {
+                connectWebSocket(false);
+            }
         }
     });
 
