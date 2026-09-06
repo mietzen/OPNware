@@ -7,6 +7,7 @@ Spawns an interactive login shell for the authenticated OPNsense WebUI user.
 import argparse
 import asyncio
 import base64
+import errno
 import fcntl
 import hashlib
 import json
@@ -200,8 +201,6 @@ def resolve_shell(username: str, requested_shell: str = "", default_shell_settin
 
     return "/bin/sh"
 
-
-import errno
 
 ACTIVE_SESSIONS: dict[str, "HostTerminalSession"] = {}
 MAX_SCROLLBACK_BYTES = 256 * 1024

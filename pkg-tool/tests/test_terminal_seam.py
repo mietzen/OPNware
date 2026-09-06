@@ -63,6 +63,8 @@ def test_lighttpd_terminal_proxy_fragment():
     assert '"upgrade" => "enable"' in content
     assert '"host" => "127.0.0.1"' in content
     assert '"port" => 7682' in content
+    assert '"read-timeout" => 86400' in content
+    assert '"write-timeout" => 86400' in content
 
 
 def test_rc_script_and_templates():

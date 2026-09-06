@@ -138,6 +138,21 @@ def test_modal_title_icon_spacing():
     assert '<i class="fa fa-terminal text-primary" style="margin-right: 10px;">' in content
 
 
+def test_stats_bar_layout_alignment():
+    dash_file = PODMAN_SRC / "opnsense" / "mvc" / "app" / "views" / "OPNsense" / "Podman" / "dashboard.volt"
+    content = dash_file.read_text()
+
+    # Verify stat cards have left-aligned flex layout with vertical centering
+    assert "display: flex; align-items: center; text-align: left;" in content
+    assert "justify-content: space-between;" in content
+    assert "btn_system_prune" in content
+    assert "fa-recycle" in content
+    assert "fa-cubes" in content
+    assert "fa-clone" in content
+    assert "fa-database" in content
+
+
+
 def test_reclaimable_rounding_logic():
     import re
 
