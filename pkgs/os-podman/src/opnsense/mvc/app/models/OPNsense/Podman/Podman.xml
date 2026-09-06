@@ -12,6 +12,18 @@
                 <default>1</default>
                 <required>Y</required>
             </enable_linux>
+            <default_linux_platform type="BooleanField">
+                <default>1</default>
+                <required>N</required>
+            </default_linux_platform>
+            <docker_alias type="BooleanField">
+                <default>1</default>
+                <required>N</required>
+            </docker_alias>
+            <docker_search_registry type="BooleanField">
+                <default>1</default>
+                <required>N</required>
+            </docker_search_registry>
             <interfaces type="OPNsense\Base\FieldTypes\InterfaceField">
                 <Multiple>Y</Multiple>
                 <default>lan</default>
