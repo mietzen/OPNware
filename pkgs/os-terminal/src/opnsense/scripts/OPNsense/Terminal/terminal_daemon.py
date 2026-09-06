@@ -172,15 +172,11 @@ def resolve_user_shell_from_config(username: str) -> str:
 
 
 def resolve_shell(username: str, requested_shell: str = "", default_shell_setting: str = "auto") -> str:
-    """Resolve the executable shell for the given user."""
-    # 1. Explicit requested shell via query param
-    if requested_shell:
-        if requested_shell in KNOWN_SHELLS:
-            candidate = KNOWN_SHELLS[requested_shell]
-            if os.path.isfile(candidate) and os.access(candidate, os.X_OK):
-                return candidate
-        elif SHELL_PATTERN.match(requested_shell) and os.path.isfile(requested_shell) and os.access(requested_shell, os.X_OK):
-            return requested_shell
+    """Resolve effective shell path based on user login shell, settings, and availability."""
+    # 1. User's Login Shell from /conf/config.xml (System: Access: Users)
+    xml_shell = resolve_user_shell_from_config(username)
+    if xml_shell and os.path.isfile(xml_shell) and os.access(xml_shell, os.X_OK):
+        return xml_shell
 
     # 2. Configured default shell setting if not 'auto'
     if default_shell_setting and default_shell_setting != "auto":
@@ -188,12 +184,7 @@ def resolve_shell(username: str, requested_shell: str = "", default_shell_settin
         if os.path.isfile(candidate) and os.access(candidate, os.X_OK):
             return candidate
 
-    # 3. User's Login Shell from /conf/config.xml
-    xml_shell = resolve_user_shell_from_config(username)
-    if xml_shell and os.path.isfile(xml_shell) and os.access(xml_shell, os.X_OK):
-        return xml_shell
-
-    # 4. User's system shell from passwd
+    # 3. User's system shell from /etc/passwd
     try:
         pw = pwd.getpwnam(username)
         if pw.pw_shell and os.path.isfile(pw.pw_shell) and os.access(pw.pw_shell, os.X_OK):
@@ -202,7 +193,7 @@ def resolve_shell(username: str, requested_shell: str = "", default_shell_settin
     except KeyError:
         pass
 
-    # 5. Fallback shell priority
+    # 4. Fallback shell priority
     for candidate in ("/bin/csh", "/bin/sh", "/usr/local/bin/bash", "/usr/local/bin/zsh"):
         if os.path.isfile(candidate) and os.access(candidate, os.X_OK):
             return candidate
@@ -224,15 +215,18 @@ class HostTerminalSession:
         """Fork and execute interactive login shell inside PTY."""
         try:
             pw = pwd.getpwnam(self.username)
+            is_system_user = True
         except KeyError:
-            if self.username == "root":
-                pw = pwd.struct_passwd(("root", "*", 0, 0, "System Administrator", "/root", "/bin/csh"))
-            else:
-                raise PermissionError(f"User '{self.username}' does not have a valid system account")
+            try:
+                pw = pwd.getpwnam("root")
+            except KeyError:
+                pw = None
+            is_system_user = False
 
-        uid = pw.pw_uid
-        gid = pw.pw_gid
-        home = pw.pw_dir if os.path.isdir(pw.pw_dir) else "/tmp"
+        uid = pw.pw_uid if (pw and is_system_user) else 0
+        gid = pw.pw_gid if (pw and is_system_user) else 0
+        home = pw.pw_dir if (pw and is_system_user and os.path.isdir(pw.pw_dir)) else "/root"
+        exec_user = self.username if is_system_user else "root"
 
         master_fd, slave_fd = pty.openpty()
         self.master_fd = master_fd
@@ -268,8 +262,8 @@ class HostTerminalSession:
             os.environ.clear()
             os.environ.update(env)
 
-            # Drop privileges for non-root user (mandatory failure on error)
-            if uid != 0:
+            # Drop privileges for non-root system user (mandatory failure on error)
+            if uid != 0 and is_system_user:
                 try:
                     os.initgroups(self.username, gid)
                     os.setgid(gid)
@@ -460,7 +454,18 @@ def create_ws_handler(default_shell_setting: str):
         await writer.drain()
 
         session = HostTerminalSession(username, shell_path)
-        session.start()
+        try:
+            session.start()
+        except Exception as e:
+            err_msg = f"\r\n\x1b[31mFailed to start terminal session for '{username}': {e}\x1b[0m\r\n"
+            try:
+                writer.write(encode_ws_frame(err_msg.encode("utf-8"), opcode=OPCODE_TXT))
+                await writer.drain()
+            except Exception:
+                pass
+            session.close()
+            writer.close()
+            return
 
         pty_task = asyncio.create_task(handle_pty_read(session, writer))
         ws_task = asyncio.create_task(handle_ws_input(session, reader, writer))

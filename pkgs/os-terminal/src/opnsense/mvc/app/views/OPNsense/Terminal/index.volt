@@ -37,20 +37,56 @@
     height: calc(100vh - 280px);
     width: 100%;
 }
+#terminal-wrapper:fullscreen,
+#terminal-wrapper:-webkit-full-screen,
+#terminal-wrapper:-moz-full-screen,
 .terminal-fullscreen {
     position: fixed !important;
     top: 0 !important;
     left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
     width: 100vw !important;
     height: 100vh !important;
-    z-index: 99999 !important;
+    z-index: 2147483647 !important;
     padding: 0 !important;
     margin: 0 !important;
     border-radius: 0 !important;
+    background-color: #181818 !important;
+    display: flex !important;
+    flex-direction: column !important;
 }
-.terminal-fullscreen #xterm-container {
-    height: calc(100vh - 45px) !important;
+#terminal-wrapper:fullscreen .terminal-toolbar,
+#terminal-wrapper:-webkit-full-screen .terminal-toolbar,
+#terminal-wrapper:-moz-full-screen .terminal-toolbar,
+.terminal-fullscreen .terminal-toolbar {
     border-radius: 0 !important;
+    flex: 0 0 auto !important;
+    border: none !important;
+    border-bottom: 1px solid #2a2a2a !important;
+    background-color: #202020 !important;
+    z-index: 10 !important;
+}
+#terminal-wrapper:fullscreen #xterm-container,
+#terminal-wrapper:-webkit-full-screen #xterm-container,
+#terminal-wrapper:-moz-full-screen #xterm-container,
+.terminal-fullscreen #xterm-container {
+    flex: 1 1 auto !important;
+    height: calc(100vh - 42px) !important;
+    min-height: calc(100vh - 42px) !important;
+    border-radius: 0 !important;
+    border: none !important;
+    box-sizing: border-box !important;
+    padding: 8px !important;
+    overflow: hidden !important;
+}
+.terminal-fullscreen .xterm,
+.terminal-fullscreen .xterm-screen,
+.terminal-fullscreen .xterm-viewport {
+    height: 100% !important;
+}
+body.terminal-body-fullscreen {
+    overflow: hidden !important;
 }
 .status-pill {
     display: inline-flex;
@@ -350,36 +386,117 @@ $(document).ready(function() {
         }
     });
 
-    $('#btn_term_font_inc').click(function() {
-        if (term && currentFontSize < 24) {
-            currentFontSize += 1;
-            term.setOption('fontSize', currentFontSize);
-            if (fitAddon) { fitAddon.fit(); }
+    function updateFontSize(delta) {
+        if (!term) {
+            return;
         }
+        var nextSize = currentFontSize + delta;
+        if (nextSize >= 9 && nextSize <= 32) {
+            currentFontSize = nextSize;
+            if (term.options) {
+                term.options.fontSize = currentFontSize;
+            }
+            if (typeof term.setOption === 'function') {
+                try { term.setOption('fontSize', currentFontSize); } catch(e) {}
+            }
+            if (fitAddon) {
+                setTimeout(function() {
+                    try { fitAddon.fit(); } catch(e) {}
+                }, 50);
+            }
+        }
+    }
+
+    $('#btn_term_font_inc').click(function() {
+        updateFontSize(1);
     });
 
     $('#btn_term_font_dec').click(function() {
-        if (term && currentFontSize > 10) {
-            currentFontSize -= 1;
-            term.setOption('fontSize', currentFontSize);
-            if (fitAddon) { fitAddon.fit(); }
-        }
+        updateFontSize(-1);
     });
 
-    $('#btn_term_fullscreen').click(function() {
-        var wrapper = $('#terminal-wrapper');
-        isFullscreen = !isFullscreen;
-        if (isFullscreen) {
-            wrapper.addClass('terminal-fullscreen');
-            $(this).html('<i class="fa fa-compress"></i>');
+    function isDocFullscreen() {
+        return !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement);
+    }
+
+    function enableFullscreenUI() {
+        isFullscreen = true;
+        $('body').addClass('terminal-body-fullscreen');
+        $('#terminal-wrapper').addClass('terminal-fullscreen');
+        $('#btn_term_fullscreen').html('<i class="fa fa-compress"></i>');
+        setTimeout(function() {
+            if (fitAddon) {
+                try { fitAddon.fit(); } catch(e) {}
+            }
+            if (term) {
+                term.focus();
+            }
+        }, 150);
+    }
+
+    function disableFullscreenUI() {
+        isFullscreen = false;
+        $('body').removeClass('terminal-body-fullscreen');
+        $('#terminal-wrapper').removeClass('terminal-fullscreen');
+        $('#btn_term_fullscreen').html('<i class="fa fa-expand"></i>');
+        setTimeout(function() {
+            if (fitAddon) {
+                try { fitAddon.fit(); } catch(e) {}
+            }
+            if (term) {
+                term.focus();
+            }
+        }, 150);
+    }
+
+    function toggleFullscreen() {
+        var wrapper = document.getElementById('terminal-wrapper');
+        if (!isDocFullscreen() && !isFullscreen) {
+            if (wrapper && wrapper.requestFullscreen) {
+                wrapper.requestFullscreen().then(enableFullscreenUI).catch(function() {
+                    enableFullscreenUI();
+                });
+            } else if (wrapper && wrapper.webkitRequestFullscreen) {
+                wrapper.webkitRequestFullscreen();
+                enableFullscreenUI();
+            } else if (wrapper && wrapper.mozRequestFullScreen) {
+                wrapper.mozRequestFullScreen();
+                enableFullscreenUI();
+            } else if (wrapper && wrapper.msRequestFullscreen) {
+                wrapper.msRequestFullscreen();
+                enableFullscreenUI();
+            } else {
+                enableFullscreenUI();
+            }
         } else {
-            wrapper.removeClass('terminal-fullscreen');
-            $(this).html('<i class="fa fa-expand"></i>');
+            if (document.exitFullscreen) {
+                document.exitFullscreen().then(disableFullscreenUI).catch(function() {
+                    disableFullscreenUI();
+                });
+            } else if (document.webkitExitFullscreen) {
+                document.webkitExitFullscreen();
+                disableFullscreenUI();
+            } else if (document.mozCancelFullScreen) {
+                document.mozCancelFullScreen();
+                disableFullscreenUI();
+            } else if (document.msExitFullscreen) {
+                document.msExitFullscreen();
+                disableFullscreenUI();
+            } else {
+                disableFullscreenUI();
+            }
         }
-        if (fitAddon) {
-            setTimeout(function() {
-                fitAddon.fit();
-            }, 200);
+    }
+
+    $('#btn_term_fullscreen').click(function() {
+        toggleFullscreen();
+    });
+
+    $(document).on('fullscreenchange webkitfullscreenchange mozfullscreenchange MSFullscreenChange', function() {
+        if (isDocFullscreen()) {
+            enableFullscreenUI();
+        } else {
+            disableFullscreenUI();
         }
     });
 
