@@ -153,7 +153,7 @@
                 });
 
                 // Round reclaimable string numbers to 1 decimal digit
-                reclaimableStr = reclaimableStr.replace(/(\d+\.\d+)([a-zA-Z]+)/g, function (match, num, unit) {
+                reclaimableStr = reclaimableStr.replace(/(\d+\.\d+)\s*([a-zA-Z]+)/g, function (match, num, unit) {
                     return parseFloat(num).toFixed(1) + unit;
                 });
 
@@ -1300,7 +1300,7 @@
 <div class="row" style="margin-bottom: 15px;">
     <div class="col-xs-12 col-sm-6 col-md-3">
         <div class="panel panel-default" style="margin-bottom: 0;">
-            <div class="panel-body" style="padding: 10px 15px; min-height: 64px; display: flex; align-items: center; justify-content: space-between;">
+            <div class="panel-body" style="padding: 10px 15px; min-height: 64px; display: flex; align-items: center;">
                 <div>
                     <div class="text-muted" style="font-size: 11px; text-transform: uppercase;"><i class="fa fa-cubes" style="margin-right: 6px;"></i>{{ lang._('Containers') }}</div>
                     <div style="font-size: 18px; font-weight: bold;" id="stat-containers">--</div>
@@ -1310,7 +1310,7 @@
     </div>
     <div class="col-xs-12 col-sm-6 col-md-3">
         <div class="panel panel-default" style="margin-bottom: 0;">
-            <div class="panel-body" style="padding: 10px 15px; min-height: 64px; display: flex; align-items: center; justify-content: space-between;">
+            <div class="panel-body" style="padding: 10px 15px; min-height: 64px; display: flex; align-items: center;">
                 <div>
                     <div class="text-muted" style="font-size: 11px; text-transform: uppercase;"><i class="fa fa-clone" style="margin-right: 6px;"></i>{{ lang._('Images') }}</div>
                     <div style="font-size: 18px; font-weight: bold;" id="stat-images">--</div>
@@ -1320,7 +1320,7 @@
     </div>
     <div class="col-xs-12 col-sm-6 col-md-3">
         <div class="panel panel-default" style="margin-bottom: 0;">
-            <div class="panel-body" style="padding: 10px 15px; min-height: 64px; display: flex; align-items: center; justify-content: space-between;">
+            <div class="panel-body" style="padding: 10px 15px; min-height: 64px; display: flex; align-items: center;">
                 <div>
                     <div class="text-muted" style="font-size: 11px; text-transform: uppercase;"><i class="fa fa-database" style="margin-right: 6px;"></i>{{ lang._('Volumes') }}</div>
                     <div style="font-size: 18px; font-weight: bold;" id="stat-volumes">--</div>
