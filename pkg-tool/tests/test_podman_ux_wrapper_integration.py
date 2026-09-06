@@ -144,8 +144,8 @@ def test_stats_bar_layout_alignment():
 
     # Verify stat cards have left-aligned flex layout with vertical centering
     assert "display: flex; align-items: center; text-align: left;" in content
-    assert "justify-content: space-between;" in content
     assert "btn_system_prune" in content
+    assert "margin-left: auto;" in content
     assert "fa-recycle" in content
     assert "fa-cubes" in content
     assert "fa-clone" in content
