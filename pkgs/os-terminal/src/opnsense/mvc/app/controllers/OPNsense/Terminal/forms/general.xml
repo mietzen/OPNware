@@ -1,0 +1,26 @@
+<form>
+    <field>
+        <id>terminal.general.enabled</id>
+        <label>Enable Web Terminal</label>
+        <type>checkbox</type>
+        <help>Enable the background host terminal WebSocket service.</help>
+    </field>
+    <field>
+        <id>terminal.general.default_shell</id>
+        <label>Default Terminal Shell</label>
+        <type>dropdown</type>
+        <help>Select the default shell for web terminal sessions. 'Auto' synchronizes with the user's Login Shell configured in System: Access: Users.</help>
+    </field>
+    <field>
+        <id>terminal.general.theme</id>
+        <label>Terminal Theme</label>
+        <type>dropdown</type>
+        <help>Choose color scheme for the XTerm.js terminal viewport.</help>
+    </field>
+    <field>
+        <id>terminal.general.font_size</id>
+        <label>Font Size</label>
+        <type>text</type>
+        <help>Terminal font size in pixels (default: 13).</help>
+    </field>
+</form>

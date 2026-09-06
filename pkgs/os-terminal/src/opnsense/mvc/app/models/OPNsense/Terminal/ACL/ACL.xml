@@ -1,0 +1,10 @@
+<acl>
+    <page-system-terminal>
+        <name>System: Web Terminal</name>
+        <patterns>
+            <pattern>ui/terminal</pattern>
+            <pattern>ui/terminal/*</pattern>
+            <pattern>api/terminal/*</pattern>
+        </patterns>
+    </page-system-terminal>
+</acl>

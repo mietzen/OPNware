@@ -1,0 +1,106 @@
+#!/bin/sh
+
+# PROVIDE: terminal_service
+# REQUIRE: DAEMON NETWORKING
+# KEYWORD: shutdown
+
+. /etc/rc.subr
+
+name="terminal_service"
+rcvar="terminal_service_enable"
+
+load_rc_config "${name}"
+
+mkdir -p /var/run/terminal /var/log/terminal 2>/dev/null || true
+
+: ${terminal_service_enable:="NO"}
+: ${terminal_service_listen_address:="127.0.0.1"}
+: ${terminal_service_listen_port:="7682"}
+: ${terminal_service_default_shell:="auto"}
+
+pidfile="/var/run/terminal/terminal_service.pid"
+suppidfile="/var/run/terminal/terminal_service_sup.pid"
+logfile="/var/log/terminal/terminal.log"
+terminal_daemon="/usr/local/opnsense/scripts/OPNsense/Terminal/terminal_daemon.py"
+
+terminal_service_prestart()
+{
+    mkdir -p /var/run/terminal /var/log/terminal
+    chmod 0755 /var/run/terminal /var/log/terminal
+}
+
+_stop_pid()
+{
+    _target_pidfile="$1"
+    if [ -f "${_target_pidfile}" ]; then
+        _pid=$(cat "${_target_pidfile}" 2>/dev/null)
+        if [ -n "${_pid}" ] && kill -0 "${_pid}" 2>/dev/null; then
+            kill -TERM "${_pid}" 2>/dev/null
+            sleep 1
+            if kill -0 "${_pid}" 2>/dev/null; then
+                kill -KILL "${_pid}" 2>/dev/null
+            fi
+        fi
+        rm -f "${_target_pidfile}"
+    fi
+}
+
+terminal_service_start()
+{
+    terminal_service_prestart
+    echo -n "Starting ${name}... "
+    echo "$(date '+%Y-%m-%dT%H:%M:%S%z') [info] Starting Web Terminal daemon on ${terminal_service_listen_address}:${terminal_service_listen_port}..." >> "${logfile}"
+
+    if [ ! -f "${terminal_daemon}" ]; then
+        echo "failed (missing ${terminal_daemon})."
+        return 1
+    fi
+
+    /usr/sbin/daemon -r -R 1 -f -P "${suppidfile}" -p "${pidfile}" -o "${logfile}" \
+        /usr/local/bin/python3 "${terminal_daemon}" \
+        --host "${terminal_service_listen_address}" \
+        --port "${terminal_service_listen_port}" \
+        --default-shell "${terminal_service_default_shell}" \
+        --pidfile "${pidfile}" </dev/null >/dev/null 2>&1
+    sleep 1
+
+    if [ ! -f "${pidfile}" ] || ! /bin/kill -0 "$(/bin/cat "${pidfile}")" 2>/dev/null; then
+        echo "$(date '+%Y-%m-%dT%H:%M:%S%z') [error] Web Terminal daemon failed to start." >> "${logfile}"
+        echo "failed (see ${logfile})."
+        return 1
+    fi
+
+    echo "$(date '+%Y-%m-%dT%H:%M:%S%z') [info] Web Terminal daemon started (pid $(/bin/cat "${pidfile}"))." >> "${logfile}"
+    echo "done."
+    return 0
+}
+
+terminal_service_stop()
+{
+    echo -n "Stopping ${name}... "
+    echo "$(date '+%Y-%m-%dT%H:%M:%S%z') [info] Stopping Web Terminal daemon..." >> "${logfile}"
+    _stop_pid "${suppidfile}"
+    _stop_pid "${pidfile}"
+    echo "$(date '+%Y-%m-%dT%H:%M:%S%z') [info] Web Terminal daemon stopped." >> "${logfile}"
+    echo "done."
+}
+
+terminal_service_status()
+{
+    if [ -f "${pidfile}" ]; then
+        pid=$(cat "${pidfile}" 2>/dev/null)
+        if [ -n "${pid}" ] && kill -0 "${pid}" 2>/dev/null; then
+            echo "${name} is running as pid ${pid}."
+            return 0
+        fi
+    fi
+    echo "${name} is not running."
+    return 1
+}
+
+start_cmd="terminal_service_start"
+stop_cmd="terminal_service_stop"
+status_cmd="terminal_service_status"
+extra_commands="status"
+
+run_rc_command "$1"

@@ -1,0 +1,5 @@
+<menu>
+    <System>
+        <Terminal VisibleName="Web Terminal" cssClass="fa fa-terminal fa-fw" url="/ui/terminal" order="90"/>
+    </System>
+</menu>
