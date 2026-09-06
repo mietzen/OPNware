@@ -542,14 +542,8 @@ def create_ws_handler(default_shell_setting: str):
 
         session.attached_queues.add(send_queue)
 
-        ws_task = asyncio.create_task(handle_ws_input(session, reader, send_queue))
         try:
-            done, pending = await asyncio.wait(
-                [ws_task, writer_task],
-                return_when=asyncio.FIRST_COMPLETED
-            )
-            for t in pending:
-                t.cancel()
+            await handle_ws_input(session, reader, send_queue)
         finally:
             session.attached_queues.discard(send_queue)
             try:

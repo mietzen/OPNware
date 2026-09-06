@@ -157,16 +157,18 @@ if (!file_exists($containersConfPath)) {
 } else {
     $cConf = file_get_contents($containersConfPath);
     if (strpos($cConf, $aptMountSpec) === false) {
-        if (preg_match('/^\[containers\]/m', $cConf)) {
-            if (preg_match('/^volumes\s*=\s*\[(.*?)\]/ms', $cConf, $m)) {
-                $existingVols = trim($m[1]);
+        if (preg_match('/^\[containers\](.*?)(?=\n\[|\z)/ms', $cConf, $m)) {
+            $section = $m[1];
+            if (preg_match('/volumes\s*=\s*\[(.*?)\]/ms', $section, $vm)) {
+                $existingVols = trim($vm[1]);
                 $newVols = $existingVols ? ($existingVols . ",\n  \"{$aptMountSpec}\"") : "\n  \"{$aptMountSpec}\"\n";
-                $cConf = preg_replace('/^volumes\s*=\s*\[(.*?)\]/ms', "volumes = [{$newVols}]", $cConf);
+                $newSection = preg_replace('/volumes\s*=\s*\[(.*?)\]/ms', "volumes = [{$newVols}]", $section, 1);
             } else {
-                $cConf = preg_replace('/^\[containers\]/m', "[containers]\nvolumes = [\n  \"{$aptMountSpec}\"\n]", $cConf);
+                $newSection = "\nvolumes = [\n  \"{$aptMountSpec}\"\n]" . $section;
             }
+            $cConf = str_replace($m[0], "[containers]" . $newSection, $cConf);
         } else {
-            $cConf = "[containers]\nvolumes = [\n  \"{$aptMountSpec}\"\n]\n" . $cConf;
+            $cConf = "[containers]\nvolumes = [\n  \"{$aptMountSpec}\"\n]\n\n" . $cConf;
         }
         file_put_contents($containersConfPath, $cConf);
         log_msg("Added Linuxulator APT mmap volume to {$containersConfPath}");
