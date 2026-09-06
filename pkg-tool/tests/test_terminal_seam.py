@@ -117,12 +117,17 @@ def test_terminal_daemon_helpers_and_auth():
         expected_accept = "s3pPLMBiTxaQ9kYGzzhZRbK+xOo="
         assert terminal_daemon.compute_ws_accept(test_key) == expected_accept
 
-        # 2. Frame encoding
+        # 2. Frame encoding & decoding
         payload = b"test host terminal"
         frame = terminal_daemon.encode_ws_frame(payload, opcode=terminal_daemon.OPCODE_BIN)
         assert frame[0] == 0x82
         assert frame[1] == len(payload)
         assert frame[2:] == payload
+
+        ping_frame = terminal_daemon.encode_ws_frame(b'\x00{"type":"ping"}', opcode=terminal_daemon.OPCODE_TEXT)
+        assert ping_frame[0] == 0x81
+        pong_frame = terminal_daemon.encode_ws_frame(b'\x00{"type":"pong"}', opcode=terminal_daemon.OPCODE_TEXT)
+        assert pong_frame[0] == 0x81
 
         # 3. Auth extraction
         with tempfile.TemporaryDirectory() as sdir:

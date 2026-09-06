@@ -855,7 +855,7 @@
     }
 
     function showContainerInspect(cid, name) {
-        $('#modal-inspect-title').html('<i class="fa fa-info-circle text-info"></i> {{ lang._("Container Inspection") }}: ' + $('<div>').text(name || cid).html());
+        $('#modal-inspect-title').html('<i class="fa fa-info-circle text-info"></i> {{ lang._("Container Inspection") }}: ' + escapeHtml(name || cid));
         $('#modal-inspect-content').html('<div class="text-center" style="padding: 40px;"><i class="fa fa-spinner fa-pulse fa-2x"></i><p style="margin-top: 10px;">{{ lang._("Loading inspection data...") }}</p></div>');
         $('#modal-inspect').modal('show');
         ajaxGet('/api/podman/containers/inspect/' + cid, {}, function (data, status) {

@@ -401,8 +401,10 @@ $(document).ready(function() {
                 if (term) {
                     if (event.data instanceof ArrayBuffer) {
                         term.write(new Uint8Array(event.data));
-                    } else if (typeof event.data === 'string' && event.data.indexOf('pong') === -1) {
-                        term.write(event.data);
+                    } else if (typeof event.data === 'string') {
+                        if (!event.data.startsWith('\x00{')) {
+                            term.write(event.data);
+                        }
                     }
                 }
             };
