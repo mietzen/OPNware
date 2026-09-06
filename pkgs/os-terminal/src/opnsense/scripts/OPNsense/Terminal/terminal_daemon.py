@@ -381,6 +381,13 @@ class HostTerminalSession:
             return
         self.closed = True
 
+        for q in list(self.attached_queues):
+            try:
+                q.put_nowait(None)
+            except Exception:
+                pass
+        self.attached_queues.clear()
+
         if self.username in ACTIVE_SESSIONS and ACTIVE_SESSIONS[self.username] is self:
             del ACTIVE_SESSIONS[self.username]
 
@@ -535,8 +542,14 @@ def create_ws_handler(default_shell_setting: str):
 
         session.attached_queues.add(send_queue)
 
+        ws_task = asyncio.create_task(handle_ws_input(session, reader, send_queue))
         try:
-            await handle_ws_input(session, reader, send_queue)
+            done, pending = await asyncio.wait(
+                [ws_task, writer_task],
+                return_when=asyncio.FIRST_COMPLETED
+            )
+            for t in pending:
+                t.cancel()
         finally:
             session.attached_queues.discard(send_queue)
             try:

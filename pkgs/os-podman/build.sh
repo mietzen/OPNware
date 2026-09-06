@@ -31,6 +31,12 @@ mkdir -p "${DIST_ROOT}/dist/pkg/usr/local/bin"
 chmod 0755 "${DIST_ROOT}/dist/pkg/usr/local/bin"
 install -m 0755 "${SCRIPT_DIR}/src/usr/local/bin/podman-wrapper" \
     "${DIST_ROOT}/dist/pkg/usr/local/bin/podman-wrapper"
+
+mkdir -p "${DIST_ROOT}/dist/pkg/usr/local/share/opnware"
+chmod 0755 "${DIST_ROOT}/dist/pkg/usr/local/share/opnware"
+install -m 0644 "${SCRIPT_DIR}/src/usr/local/share/opnware/apt-freebsd.conf" \
+    "${DIST_ROOT}/dist/pkg/usr/local/share/opnware/apt-freebsd.conf"
+
 rm -rf "${DIST_ROOT}/dist/pkg/usr/local/usr/local"
 
 # License file

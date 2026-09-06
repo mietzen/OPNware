@@ -194,3 +194,18 @@ def test_alias_and_cshrc_block_manipulation():
     assert cleaned_cshrc == initial_cshrc.strip()
     assert begin_marker not in cleaned_cshrc
 
+
+def test_apt_freebsd_conf_and_containers_conf():
+    apt_conf_file = PODMAN_SRC / "usr" / "local" / "share" / "opnware" / "apt-freebsd.conf"
+    assert apt_conf_file.exists()
+    content = apt_conf_file.read_text()
+    assert "APT::Cache-Start 268435456;" in content
+    assert "APT::Cache-Limit 268435456;" in content
+
+    setup_file = PODMAN_SRC / "opnsense" / "scripts" / "OPNsense" / "Podman" / "setup.php"
+    setup_content = setup_file.read_text()
+    assert "containers.conf" in setup_content
+    assert "apt-freebsd.conf" in setup_content
+    assert "/etc/apt/apt.conf.d/99freebsd-mmap.conf:ro" in setup_content
+
+

@@ -140,6 +140,39 @@ if ($dockerSearchRegistry) {
     }
 }
 
+// Ensure containers.conf sets default volumes for FreeBSD Linuxulator APT mmap workaround
+$containersConfPath = '/usr/local/etc/containers/containers.conf';
+$aptFreebsdShare = '/usr/local/share/opnware/apt-freebsd.conf';
+$aptMountSpec = '/usr/local/share/opnware/apt-freebsd.conf:/etc/apt/apt.conf.d/99freebsd-mmap.conf:ro';
+
+if (!file_exists($aptFreebsdShare)) {
+    @mkdir('/usr/local/share/opnware', 0755, true);
+    @file_put_contents($aptFreebsdShare, "APT::Cache-Start 268435456;\nAPT::Cache-Limit 268435456;\n");
+}
+
+if (!file_exists($containersConfPath)) {
+    $containersConfContent = "[containers]\nvolumes = [\n  \"{$aptMountSpec}\"\n]\n";
+    file_put_contents($containersConfPath, $containersConfContent);
+    log_msg("Created {$containersConfPath} with default Linuxulator APT mmap volume");
+} else {
+    $cConf = file_get_contents($containersConfPath);
+    if (strpos($cConf, $aptMountSpec) === false) {
+        if (preg_match('/^\[containers\]/m', $cConf)) {
+            if (preg_match('/^volumes\s*=\s*\[(.*?)\]/ms', $cConf, $m)) {
+                $existingVols = trim($m[1]);
+                $newVols = $existingVols ? ($existingVols . ",\n  \"{$aptMountSpec}\"") : "\n  \"{$aptMountSpec}\"\n";
+                $cConf = preg_replace('/^volumes\s*=\s*\[(.*?)\]/ms', "volumes = [{$newVols}]", $cConf);
+            } else {
+                $cConf = preg_replace('/^\[containers\]/m', "[containers]\nvolumes = [\n  \"{$aptMountSpec}\"\n]", $cConf);
+            }
+        } else {
+            $cConf = "[containers]\nvolumes = [\n  \"{$aptMountSpec}\"\n]\n" . $cConf;
+        }
+        file_put_contents($containersConfPath, $cConf);
+        log_msg("Added Linuxulator APT mmap volume to {$containersConfPath}");
+    }
+}
+
 // 2. Linux 64-bit Emulation Kernel Modules
 $enableLinux = true;
 if ($podmanCfg !== null && isset($podmanCfg->general->enable_linux)) {

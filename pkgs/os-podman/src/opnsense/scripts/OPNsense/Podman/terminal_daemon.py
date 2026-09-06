@@ -274,10 +274,7 @@ async def handle_pty_read(session: TerminalSession, send_queue: asyncio.Queue):
             if data is None:
                 break
             frame = encode_ws_frame(data, opcode=OPCODE_BIN)
-            try:
-                send_queue.put_nowait(frame)
-            except (asyncio.QueueFull, Exception):
-                pass
+            await send_queue.put(frame)
     except (asyncio.CancelledError, Exception):
         pass
     finally:
@@ -383,7 +380,7 @@ async def handle_ws_conn(reader: asyncio.StreamReader, writer: asyncio.StreamWri
     ws_task = asyncio.create_task(handle_ws_input(session, reader, send_queue))
 
     done, pending = await asyncio.wait(
-        [pty_task, ws_task],
+        [pty_task, ws_task, writer_task],
         return_when=asyncio.FIRST_COMPLETED
     )
 
