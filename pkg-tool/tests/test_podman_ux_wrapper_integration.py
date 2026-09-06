@@ -210,28 +210,20 @@ def test_apt_freebsd_conf_and_containers_conf():
     assert "APT::Cache-Start 268435456;" in content
     assert "APT::Cache-Limit 268435456;" in content
 
+    share_conf = PODMAN_SRC / "usr" / "local" / "share" / "containers" / "containers.conf"
+    assert share_conf.exists()
+    share_content = share_conf.read_text()
+    assert "[containers]" in share_content
+    assert "/etc/apt/apt.conf.d/99freebsd-mmap.conf:ro" in share_content
+
+    build_sh = (PODMAN_SRC.parents[0] / "build.sh").read_text()
+    assert "share/containers/containers.conf" in build_sh
+
     setup_file = PODMAN_SRC / "opnsense" / "scripts" / "OPNsense" / "Podman" / "setup.php"
     setup_content = setup_file.read_text()
-    assert "containers.conf" in setup_content
+    assert "shareContainersConf" in setup_content
     assert "apt-freebsd.conf" in setup_content
     assert "/etc/apt/apt.conf.d/99freebsd-mmap.conf:ro" in setup_content
-
-    # Test TOML manipulation logic
-    import re
-    apt_mount = "/usr/local/share/opnware/apt-freebsd.conf:/etc/apt/apt.conf.d/99freebsd-mmap.conf:ro"
-    
-    # Case 1: Empty or new file
-    cConf = f"[containers]\nvolumes = [\n  \"{apt_mount}\"\n]\n"
-    assert apt_mount in cConf
-
-    # Case 2: Existing [containers] section without volumes
-    existing = "[containers]\nnetns = \"bridge\"\n\n[engine]\n"
-    m = re.search(r"^\[containers\](.*?)(?=\n\[|\Z)", existing, re.DOTALL | re.MULTILINE)
-    assert m is not None
-    new_section = f"\nvolumes = [\n  \"{apt_mount}\"\n]" + m.group(1)
-    res = existing.replace(m.group(0), "[containers]" + new_section)
-    assert apt_mount in res
-    assert 'netns = "bridge"' in res
 
 
 

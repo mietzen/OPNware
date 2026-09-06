@@ -37,6 +37,11 @@ chmod 0755 "${DIST_ROOT}/dist/pkg/usr/local/share/opnware"
 install -m 0644 "${SCRIPT_DIR}/src/usr/local/share/opnware/apt-freebsd.conf" \
     "${DIST_ROOT}/dist/pkg/usr/local/share/opnware/apt-freebsd.conf"
 
+mkdir -p "${DIST_ROOT}/dist/pkg/usr/local/share/containers"
+chmod 0755 "${DIST_ROOT}/dist/pkg/usr/local/share/containers"
+install -m 0644 "${SCRIPT_DIR}/src/usr/local/share/containers/containers.conf" \
+    "${DIST_ROOT}/dist/pkg/usr/local/share/containers/containers.conf"
+
 rm -rf "${DIST_ROOT}/dist/pkg/usr/local/usr/local"
 
 # License file
