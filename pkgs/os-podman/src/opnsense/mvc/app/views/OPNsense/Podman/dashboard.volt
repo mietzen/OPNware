@@ -28,6 +28,14 @@
 <script src="{{ cache_safe('/ui/js/vendor/xterm/xterm.js') }}"></script>
 <script src="{{ cache_safe('/ui/js/vendor/xterm/addon-fit.js') }}"></script>
 
+<style>
+.modal-title > i,
+.modal-title > span.fa,
+.modal-title > .fa {
+    margin-right: 10px;
+}
+</style>
+
 <script>
     var autoRefreshInterval = null;
     var currentLogContainerId = null;
@@ -142,6 +150,11 @@
                     } else if (item.Type === 'Local Volumes') {
                         totalVolumes = item.Total || 0;
                     }
+                });
+
+                // Round reclaimable string numbers to 1 decimal digit
+                reclaimableStr = reclaimableStr.replace(/(\d+\.\d+)\s*([a-zA-Z]+)/g, function (match, num, unit) {
+                    return parseFloat(num).toFixed(1) + unit;
                 });
 
                 $('#stat-containers').text(activeContainers + ' / ' + totalContainers + ' Running');
@@ -380,7 +393,7 @@
 
     function showContainerLogs(cid, name) {
         currentLogContainerId = cid;
-        $('#modal-logs-title').html('<i class="fa fa-file-text-o text-primary"></i> {{ lang._("Container Logs") }}: ' + escapeHtml(name || cid));
+        $('#modal-logs-title').html('<i class="fa fa-file-text-o text-primary" style="margin-right: 10px;"></i>{{ lang._("Container Logs") }}: ' + escapeHtml(name || cid));
         $('#modal-logs-body').text('{{ lang._("Loading logs...") }}');
         $('#modal-logs').modal('show');
         fetchLogsContent();
@@ -856,7 +869,7 @@
     }
 
     function showContainerInspect(cid, name) {
-        $('#modal-inspect-title').html('<i class="fa fa-info-circle text-info"></i> {{ lang._("Container Inspection") }}: ' + escapeHtml(name || cid));
+        $('#modal-inspect-title').html('<i class="fa fa-info-circle text-info" style="margin-right: 10px;"></i>{{ lang._("Container Inspection") }}: ' + escapeHtml(name || cid));
         $('#modal-inspect-content').html('<div class="text-center" style="padding: 40px;"><i class="fa fa-spinner fa-pulse fa-2x"></i><p style="margin-top: 10px;">{{ lang._("Loading inspection data...") }}</p></div>');
         $('#modal-inspect').modal('show');
         ajaxGet('/api/podman/containers/inspect/' + cid, {}, function (data, status) {
@@ -1059,7 +1072,7 @@
     function showContainerCli(cid, name) {
         currentCliContainerId = cid;
         currentCliContainerName = name;
-        $('#modal-cli-title').html('<i class="fa fa-terminal text-primary"></i> {{ lang._("Container Terminal") }}: ' + $('<div>').text(name || cid).html());
+        $('#modal-cli-title').html('<i class="fa fa-terminal text-primary" style="margin-right: 10px;"></i>{{ lang._("Container Terminal") }}: ' + $('<div>').text(name || cid).html());
         $('#modal-cli').modal('show');
     }
 
@@ -1287,36 +1300,44 @@
 <div class="row" style="margin-bottom: 15px;">
     <div class="col-xs-12 col-sm-6 col-md-3">
         <div class="panel panel-default" style="margin-bottom: 0;">
-            <div class="panel-body" style="padding: 10px 15px; min-height: 64px;">
-                <div class="text-muted" style="font-size: 11px; text-transform: uppercase;">{{ lang._('Containers') }}</div>
-                <div style="font-size: 18px; font-weight: bold;" id="stat-containers">--</div>
+            <div class="panel-body" style="padding: 10px 15px; min-height: 64px; display: flex; align-items: center; text-align: left;">
+                <div style="text-align: left;">
+                    <div class="text-muted" style="font-size: 11px; text-transform: uppercase;"><i class="fa fa-cubes" style="margin-right: 6px;"></i>{{ lang._('Containers') }}</div>
+                    <div style="font-size: 18px; font-weight: bold;" id="stat-containers">--</div>
+                </div>
             </div>
         </div>
     </div>
     <div class="col-xs-12 col-sm-6 col-md-3">
         <div class="panel panel-default" style="margin-bottom: 0;">
-            <div class="panel-body" style="padding: 10px 15px; min-height: 64px;">
-                <div class="text-muted" style="font-size: 11px; text-transform: uppercase;">{{ lang._('Images') }}</div>
-                <div style="font-size: 18px; font-weight: bold;" id="stat-images">--</div>
+            <div class="panel-body" style="padding: 10px 15px; min-height: 64px; display: flex; align-items: center; text-align: left;">
+                <div style="text-align: left;">
+                    <div class="text-muted" style="font-size: 11px; text-transform: uppercase;"><i class="fa fa-clone" style="margin-right: 6px;"></i>{{ lang._('Images') }}</div>
+                    <div style="font-size: 18px; font-weight: bold;" id="stat-images">--</div>
+                </div>
             </div>
         </div>
     </div>
     <div class="col-xs-12 col-sm-6 col-md-3">
         <div class="panel panel-default" style="margin-bottom: 0;">
-            <div class="panel-body" style="padding: 10px 15px; min-height: 64px;">
-                <div class="text-muted" style="font-size: 11px; text-transform: uppercase;">{{ lang._('Volumes') }}</div>
-                <div style="font-size: 18px; font-weight: bold;" id="stat-volumes">--</div>
+            <div class="panel-body" style="padding: 10px 15px; min-height: 64px; display: flex; align-items: center; text-align: left;">
+                <div style="text-align: left;">
+                    <div class="text-muted" style="font-size: 11px; text-transform: uppercase;"><i class="fa fa-database" style="margin-right: 6px;"></i>{{ lang._('Volumes') }}</div>
+                    <div style="font-size: 18px; font-weight: bold;" id="stat-volumes">--</div>
+                </div>
             </div>
         </div>
     </div>
     <div class="col-xs-12 col-sm-6 col-md-3">
         <div class="panel panel-default" style="margin-bottom: 0;">
-            <div class="panel-body" style="padding: 10px 15px; min-height: 64px;">
-                <button class="btn btn-xs btn-warning pull-right" id="btn_system_prune" title="{{ lang._('Prune unused containers and images') }}" style="margin-top: 5px;">
+            <div class="panel-body" style="padding: 10px 15px; min-height: 64px; display: flex; align-items: center; justify-content: space-between; text-align: left;">
+                <div style="text-align: left;">
+                    <div class="text-muted" style="font-size: 11px; text-transform: uppercase;"><i class="fa fa-recycle" style="margin-right: 6px;"></i>{{ lang._('Reclaimable') }}</div>
+                    <div style="font-size: 18px; font-weight: bold; color: #f0ad4e;" id="stat-reclaimable">--</div>
+                </div>
+                <button class="btn btn-xs btn-warning" id="btn_system_prune" title="{{ lang._('Prune unused containers and images') }}" style="margin-left: 10px;">
                     <i class="fa fa-trash-o"></i> {{ lang._('Prune') }} <i id="btn_system_prune_progress"></i>
                 </button>
-                <div class="text-muted" style="font-size: 11px; text-transform: uppercase;">{{ lang._('Reclaimable') }}</div>
-                <div style="font-size: 18px; font-weight: bold; color: #f0ad4e;" id="stat-reclaimable">--</div>
             </div>
         </div>
     </div>
@@ -1417,7 +1438,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-                <h4 class="modal-title" id="modal-logs-title"><i class="fa fa-file-text-o text-primary"></i> {{ lang._('Container Logs') }}</h4>
+                <h4 class="modal-title" id="modal-logs-title"><i class="fa fa-file-text-o text-primary" style="margin-right: 10px;"></i>{{ lang._('Container Logs') }}</h4>
             </div>
             <div class="modal-body" style="padding: 15px; max-height: calc(100vh - 180px); overflow-y: auto;">
                 <pre id="modal-logs-body" style="background: #181818; color: #f0f0f0; font-family: Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace; font-size: 12px; max-height: calc(100vh - 260px); min-height: 400px; overflow-y: auto; padding: 15px; border-radius: 4px; margin-bottom: 0; white-space: pre-wrap;"></pre>
@@ -1436,7 +1457,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-                <h4 class="modal-title" id="modal-inspect-title"><i class="fa fa-info-circle text-info"></i> {{ lang._('Container Inspection') }}</h4>
+                <h4 class="modal-title" id="modal-inspect-title"><i class="fa fa-info-circle text-info" style="margin-right: 10px;"></i>{{ lang._('Container Inspection') }}</h4>
             </div>
             <div class="modal-body" style="padding: 15px; max-height: calc(100vh - 180px); overflow-y: auto;">
                 <div id="modal-inspect-content"></div>
@@ -1454,7 +1475,7 @@
         <div class="modal-content">
             <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px;">
                 <h4 class="modal-title" id="modal-cli-title" style="margin: 0;">
-                    <i class="fa fa-terminal text-primary"></i> {{ lang._('Container Terminal') }}
+                    <i class="fa fa-terminal text-primary" style="margin-right: 10px;"></i>{{ lang._('Container Terminal') }}
                 </h4>
                 <div style="display: flex; align-items: center; gap: 8px; margin-right: 20px;">
                     <div style="display: inline-flex; align-items: center; gap: 5px;">

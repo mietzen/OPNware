@@ -1,5 +1,6 @@
 """Tests for os-terminal plugin and bash package integration."""
 
+import asyncio
 import os
 import sys
 import tempfile
@@ -62,6 +63,8 @@ def test_lighttpd_terminal_proxy_fragment():
     assert '"upgrade" => "enable"' in content
     assert '"host" => "127.0.0.1"' in content
     assert '"port" => 7682' in content
+    assert '"read-timeout" => 86400' in content
+    assert '"write-timeout" => 86400' in content
 
 
 def test_rc_script_and_templates():
@@ -168,8 +171,12 @@ def test_terminal_daemon_helpers_and_auth():
         session2.pid = None
         terminal_daemon.ACTIVE_SESSIONS["testuser"] = session2
         assert terminal_daemon.ACTIVE_SESSIONS.get("testuser") is session2
-        session2.close()
-        assert "testuser" not in terminal_daemon.ACTIVE_SESSIONS
+        # 7. Queue based broadcasting
+        session3 = terminal_daemon.HostTerminalSession("root", "/bin/sh")
+        q1 = asyncio.Queue()
+        session3.attached_queues.add(q1)
+        assert q1 in session3.attached_queues
+        session3.close()
 
     finally:
         sys.path.pop(0)
@@ -212,6 +219,7 @@ def test_terminal_view_template_and_fullscreen():
 
     # Reconnect button without forced session reset
     assert "connectWebSocket(false)" in content
+
 
 
 

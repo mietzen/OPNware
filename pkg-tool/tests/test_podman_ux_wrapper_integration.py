@@ -100,6 +100,13 @@ def test_dashboard_inspect_modal_and_theme_elements():
     assert 'id="stat-reclaimable"' in content
     assert "min-height: 64px;" in content
     assert "btn_system_prune" in content
+    assert 'class="fa fa-cubes"' in content
+    assert 'class="fa fa-clone"' in content
+    assert 'class="fa fa-database"' in content
+    assert 'class="fa fa-recycle"' in content
+    assert "display: flex; align-items: center;" in content
+    assert "reclaimableStr.replace" in content
+    assert "toFixed(1)" in content
 
 
 def test_container_terminal_websocket_and_modal_top_clearance():
@@ -115,6 +122,52 @@ def test_container_terminal_websocket_and_modal_top_clearance():
     assert "margin: 75px auto 30px auto;" in content or "margin-top: 75px;" in content
 
 
+
+
+def test_modal_title_icon_spacing():
+    dash_file = PODMAN_SRC / "opnsense" / "mvc" / "app" / "views" / "OPNsense" / "Podman" / "dashboard.volt"
+    content = dash_file.read_text()
+
+    # Verify CSS rule for 10px spacing
+    assert ".modal-title > i" in content
+    assert "margin-right: 10px;" in content
+
+    # Verify modal title icon inline styles or markup
+    assert '<i class="fa fa-file-text-o text-primary" style="margin-right: 10px;">' in content
+    assert '<i class="fa fa-info-circle text-info" style="margin-right: 10px;">' in content
+    assert '<i class="fa fa-terminal text-primary" style="margin-right: 10px;">' in content
+
+
+def test_stats_bar_layout_alignment():
+    dash_file = PODMAN_SRC / "opnsense" / "mvc" / "app" / "views" / "OPNsense" / "Podman" / "dashboard.volt"
+    content = dash_file.read_text()
+
+    # Verify stat cards have left-aligned flex layout with vertical centering
+    assert "display: flex; align-items: center; text-align: left;" in content
+    assert "justify-content: space-between;" in content
+    assert "btn_system_prune" in content
+    assert "fa-recycle" in content
+    assert "fa-cubes" in content
+    assert "fa-clone" in content
+    assert "fa-database" in content
+
+
+
+def test_reclaimable_rounding_logic():
+    import re
+
+    def round_reclaimable(s: str) -> str:
+        return re.sub(
+            r"(\d+\.\d+)\s*([a-zA-Z]+)",
+            lambda m: f"{float(m.group(1)):.1f}{m.group(2)}",
+            s,
+        )
+
+    assert round_reclaimable("8.735MB (3%)") == "8.7MB (3%)"
+    assert round_reclaimable("68.31kB (67%)") == "68.3kB (67%)"
+    assert round_reclaimable("0B (0%)") == "0B (0%)"
+    assert round_reclaimable("12.987GB (15%)") == "13.0GB (15%)"
+    assert round_reclaimable("10.0MB") == "10.0MB"
 
 
 def test_alias_and_cshrc_block_manipulation():

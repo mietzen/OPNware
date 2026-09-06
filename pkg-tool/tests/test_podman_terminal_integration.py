@@ -35,6 +35,8 @@ def test_lighttpd_terminal_fragment():
     assert '"upgrade" => "enable"' in content
     assert '"host" => "127.0.0.1"' in content
     assert '"port" => 7681' in content
+    assert '"read-timeout" => 86400' in content
+    assert '"write-timeout" => 86400' in content
 
 
 def test_terminal_daemon_script_and_rc_integration():

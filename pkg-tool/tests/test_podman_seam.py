@@ -41,8 +41,7 @@ def test_os_podman_spec_and_files_valid():
     manifest = spec.get("pkg_manifest", {})
     assert manifest.get("name") == "podman"
     assert manifest.get("origin") == "opnware/os-podman"
-    assert manifest.get("version") == "0.1.27"
-
+    assert manifest.get("version") == "0.1.28"
     deps = manifest.get("deps", {})
     for name in REDISTRIBUTE_PKGS:
         assert name in deps, f"os-podman missing dependency on {name}"
