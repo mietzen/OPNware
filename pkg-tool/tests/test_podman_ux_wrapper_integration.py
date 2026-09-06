@@ -102,6 +102,20 @@ def test_dashboard_inspect_modal_and_theme_elements():
     assert "btn_system_prune" in content
 
 
+def test_container_terminal_websocket_and_modal_top_clearance():
+    dash_file = PODMAN_SRC / "opnsense" / "mvc" / "app" / "views" / "OPNsense" / "Podman" / "dashboard.volt"
+    content = dash_file.read_text()
+
+    # 1. Terminal websocket state variable must be declared to prevent ReferenceError
+    assert "var currentWs = null;" in content
+
+    # 2. Modals must have >= 70px top margin to clear the fixed OPNsense top navbar header
+    for modal_id in ["modal-logs", "modal-inspect", "modal-cli"]:
+        assert modal_id in content
+    assert "margin: 75px auto 30px auto;" in content or "margin-top: 75px;" in content
+
+
+
 
 def test_alias_and_cshrc_block_manipulation():
     begin_marker = "# BEGIN OPNWARE PODMAN ALIASES"

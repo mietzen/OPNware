@@ -35,6 +35,7 @@
     var currentCliContainerName = null;
     var currentTerm = null;
     var currentFitAddon = null;
+    var currentWs = null;
     function decodeHtmlEntities(str) {
         if (!str || typeof str !== 'string' || str.indexOf('&') === -1) return str;
         return str
@@ -1412,7 +1413,7 @@
 
 <!-- Container Logs Modal -->
 <div class="modal fade" id="modal-logs" tabindex="-1" role="dialog" aria-labelledby="modal-logs-title" aria-hidden="true">
-    <div class="modal-dialog modal-lg" style="width: 85%; max-width: 1200px; margin-top: 30px;" role="document">
+    <div class="modal-dialog modal-lg" style="width: 85%; max-width: 1200px; margin: 75px auto 30px auto;" role="document">
         <div class="modal-content">
             <div class="modal-header">
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
@@ -1431,7 +1432,7 @@
 
 <!-- Container Inspect Modal -->
 <div class="modal fade" id="modal-inspect" tabindex="-1" role="dialog" aria-labelledby="modal-inspect-title" aria-hidden="true">
-    <div class="modal-dialog modal-lg" style="width: 85%; max-width: 1200px; margin-top: 30px;" role="document">
+    <div class="modal-dialog modal-lg" style="width: 85%; max-width: 1200px; margin: 75px auto 30px auto;" role="document">
         <div class="modal-content">
             <div class="modal-header">
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
@@ -1449,7 +1450,7 @@
 
 <!-- Container Terminal Modal -->
 <div class="modal fade" id="modal-cli" tabindex="-1" role="dialog" aria-labelledby="modal-cli-title" aria-hidden="true">
-    <div class="modal-dialog modal-lg" style="width: 85%; max-width: 1200px; margin-top: 30px;" role="document">
+    <div class="modal-dialog modal-lg" style="width: 85%; max-width: 1200px; margin: 75px auto 30px auto;" role="document">
         <div class="modal-content">
             <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px;">
                 <h4 class="modal-title" id="modal-cli-title" style="margin: 0;">
