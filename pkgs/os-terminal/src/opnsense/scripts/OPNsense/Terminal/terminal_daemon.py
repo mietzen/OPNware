@@ -267,6 +267,7 @@ class HostTerminalSession:
                 "PATH": "/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin",
                 "LANG": "en_US.UTF-8",
                 "LC_ALL": "en_US.UTF-8",
+                "ENV": "/etc/profile",
             }
             os.environ.clear()
             os.environ.update(env)
@@ -290,12 +291,14 @@ class HostTerminalSession:
                 except OSError:
                     pass
 
-            cmd = [self.shell_path, "-l"]
+            shell_name = os.path.basename(self.shell_path)
+            login_arg0 = f"-{shell_name}"
+            cmd = [login_arg0]
             try:
                 os.execv(self.shell_path, cmd)
             except Exception:
                 try:
-                    os.execv("/bin/sh", ["/bin/sh", "-l"])
+                    os.execv("/bin/sh", ["-sh"])
                 except Exception:
                     os._exit(1)
 
@@ -428,6 +431,13 @@ async def handle_ws_input(session: HostTerminalSession, reader: asyncio.StreamRe
                         continue
                 except Exception:
                     pass
+            elif data.startswith(b"\x00{") and b"ping" in data:
+                try:
+                    writer.write(encode_ws_frame(b"\x00{\"type\":\"pong\"}", opcode=OPCODE_TEXT))
+                    await writer.drain()
+                    continue
+                except Exception:
+                    break
             session.write(data)
 
 
