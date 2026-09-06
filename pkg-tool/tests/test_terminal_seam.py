@@ -144,7 +144,7 @@ def test_terminal_daemon_helpers_and_auth():
             assert terminal_daemon.extract_authenticated_user("PHPSESSID=admin456") == "admin"
 
         # 4. Shell resolution logic
-        assert terminal_daemon.resolve_shell("root", requested_shell="/bin/sh") == "/bin/sh"
+        assert terminal_daemon.resolve_shell("nonexistent_user", default_shell_setting="sh") == "/bin/sh"
         assert terminal_daemon.resolve_shell("root", default_shell_setting="sh") == "/bin/sh"
 
         # 5. HostTerminalSession close
