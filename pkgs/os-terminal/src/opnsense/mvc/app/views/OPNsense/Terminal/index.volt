@@ -382,7 +382,9 @@ $(document).ready(function() {
                           .html('<i class="fa fa-check-circle"></i>&nbsp;{{ lang._("Connected") }}');
                 $('#term-user-info').text('host');
                 if (term) {
-                    term.reset();
+                    if (reset) {
+                        term.reset();
+                    }
                     term.focus();
                     if (fitAddon) {
                         try {

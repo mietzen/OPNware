@@ -171,7 +171,16 @@ class TerminalSession:
             if slave_fd > 2:
                 os.close(slave_fd)
 
-            cmd = ["/usr/local/bin/podman", "exec", "-it", "--", self.cid, self.shell]
+            cmd = [
+                "/usr/local/bin/podman",
+                "exec",
+                "-it",
+                "-e", "TERM=xterm-256color",
+                "-e", "LANG=en_US.UTF-8",
+                "--",
+                self.cid,
+                self.shell,
+            ]
             os.environ["TERM"] = "xterm-256color"
             try:
                 os.execv(cmd[0], cmd)

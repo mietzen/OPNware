@@ -31,7 +31,7 @@ def test_os_terminal_config_and_structure():
     content = config_file.read_text()
     assert "name: terminal" in content
     assert "origin: opnware/os-terminal" in content
-    assert 'version: 0.1.3' in content
+    assert 'version: 0.1.4' in content
 
     build_sh = ROOT_DIR / "pkgs" / "os-terminal" / "build.sh"
     assert build_sh.exists()
@@ -219,6 +219,7 @@ def test_terminal_view_template_and_fullscreen():
 
     # Reconnect button without forced session reset
     assert "connectWebSocket(false)" in content
+    assert "if (reset) {" in content and "term.reset();" in content
 
 
 
