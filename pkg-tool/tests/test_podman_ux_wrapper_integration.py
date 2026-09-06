@@ -94,6 +94,9 @@ def test_dashboard_inspect_modal_and_theme_elements():
     assert "btn-copy-val" in content
     assert "nullfs" in content
     assert "mType === 'nullfs'" in content
+    assert 'id="stat-reclaimable"' in content
+    assert "min-height: 64px;" in content
+    assert "btn_system_prune" in content
 
 
 

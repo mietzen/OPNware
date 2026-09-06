@@ -21,11 +21,16 @@ function homer_caddy_is_present(): bool
 
 function homer_services()
 {
-
     // Registered unconditionally so the service can be started from the UI
     // even before it is enabled in the settings (start button on the status
     // page); pluginctl needs the entry to report a run state at all.
     $services = array();
+    $pidfile = '/var/run/os-homer/homer.pid';
+
+    if (homer_caddy_is_present() && file_exists('/usr/local/etc/caddy/conf.d/homer.caddy')) {
+        $pidfile = '/var/run/caddy/caddy.pid';
+    }
+
     $services[] = array(
         'description' => gettext('Homer'),
         'configd' => array(
@@ -34,7 +39,7 @@ function homer_services()
             'stop' => array('homer stop'),
         ),
         'name' => 'homer',
-        'pidfile' => '/var/run/os-homer/homer.pid'
+        'pidfile' => $pidfile
     );
 
     return $services;

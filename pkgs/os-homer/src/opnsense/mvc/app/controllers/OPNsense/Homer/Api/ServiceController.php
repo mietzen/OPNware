@@ -35,8 +35,13 @@ class ServiceController extends ApiMutableServiceControllerBase
             }
 
             return [
-                'status' => 'disabled',
+                'status' => $homerRunning ? 'running' : 'stopped',
                 'running' => $homerRunning,
+                'widget' => [
+                    'caption_restart' => gettext('Restart'),
+                    'caption_start' => gettext('Start'),
+                    'caption_stop' => gettext('Stop'),
+                ],
             ];
         }
 

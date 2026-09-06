@@ -41,7 +41,7 @@ def test_os_podman_spec_and_files_valid():
     manifest = spec.get("pkg_manifest", {})
     assert manifest.get("name") == "podman"
     assert manifest.get("origin") == "opnware/os-podman"
-    assert manifest.get("version") == "0.1.24"
+    assert manifest.get("version") == "0.1.25"
 
     deps = manifest.get("deps", {})
     for name in REDISTRIBUTE_PKGS:
@@ -101,8 +101,15 @@ def test_os_podman_spec_and_files_valid():
     assert 'class="modal-footer"' in cli_modal_section
     assert "ansiToHtml" in dashboard_content
     assert "act-cli" in dashboard_content
-    assert "btn_system_prune" in dashboard_content
-    assert "formatTimestamp" in dashboard_content
+    assert (src / "opnsense" / "www" / "js" / "widgets" / "Podman.js").exists()
+    assert (src / "opnsense" / "www" / "js" / "widgets" / "Metadata" / "Podman.xml").exists()
+    widget_js = (src / "opnsense" / "www" / "js" / "widgets" / "Podman.js").read_text()
+    assert "class Podman extends BaseTableWidget" in widget_js
+    assert "podmanContainersTable" in widget_js
+    assert "/api/podman/containers/list" in widget_js
+    widget_xml = (src / "opnsense" / "www" / "js" / "widgets" / "Metadata" / "Podman.xml").read_text()
+    assert "<filename>Podman.js</filename>" in widget_xml
+    assert "<title>Podman Containers</title>" in widget_xml
 
     assert (src / "opnsense" / "mvc" / "app" / "controllers" / "OPNsense" / "Podman" / "Api" / "PodmanApiControllerBase.php").exists()
 

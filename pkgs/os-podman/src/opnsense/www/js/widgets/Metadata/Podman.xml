@@ -1,0 +1,16 @@
+<metadata>
+    <podman>
+        <filename>Podman.js</filename>
+        <link>/ui/podman/dashboard</link>
+        <endpoints>
+            <endpoint>/api/podman/containers/list</endpoint>
+            <endpoint>/api/podman/service/status</endpoint>
+        </endpoints>
+        <translations>
+            <title>Podman Containers</title>
+            <running>Running</running>
+            <no_running_containers>No running containers</no_running_containers>
+            <service_stopped>Podman service is not running</service_stopped>
+        </translations>
+    </podman>
+</metadata>

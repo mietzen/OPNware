@@ -56,7 +56,7 @@ def test_homer_service_controller_status_contract():
     assert "homer_caddy_is_present()" in src
     assert "conf.d/homer.caddy" in src
     assert "caddyadvanced status" in src
-    assert "'status' => 'disabled'" in src
+    assert "'status' => $homerRunning ? 'running' : 'stopped'" in src
     assert "'running' => $homerRunning" in src
     assert "function reconfigureAction" in src
     assert "homer sync-caddy" in src
@@ -172,7 +172,7 @@ def test_homer_rcd_checks_caddy_enable():
 
 def test_package_versions_bumped():
     homer_spec = yaml.safe_load(HOMER_CONFIG.read_text())
-    assert homer_spec["pkg_manifest"]["version"] == "0.5.10"
+    assert homer_spec["pkg_manifest"]["version"] == "0.5.11"
 
     caddy_spec = yaml.safe_load(CADDY_CONFIG.read_text())
     assert caddy_spec["pkg_manifest"]["version"] == "0.8.18"
@@ -235,3 +235,20 @@ namespace {{
     assert parsed["Port"] == "8085"
     assert parsed["ServerName"] == "homer.custom.lan"
     assert parsed["TlsEnabled"] == "1"
+
+
+def test_homer_services_pidfile_and_service_control():
+    inc_src = HOMER_INC.read_text()
+    assert "homer_caddy_is_present() && file_exists('/usr/local/etc/caddy/conf.d/homer.caddy')" in inc_src
+    assert "$pidfile = '/var/run/caddy/caddy.pid';" in inc_src
+    assert "$pidfile = '/var/run/os-homer/homer.pid';" in inc_src
+    assert "'pidfile' => $pidfile" in inc_src
+
+    ctrl_file = Path("pkgs/os-homer/src/opnsense/scripts/OPNsense/Homer/service_control.php")
+    assert ctrl_file.exists()
+    ctrl_src = ctrl_file.read_text()
+    assert "homer_caddy_is_present()" in ctrl_src
+    assert "sync-caddy" in ctrl_src
+    assert "caddyadvanced restart" in ctrl_src
+    assert "/usr/sbin/service homer" in ctrl_src
+
