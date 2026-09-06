@@ -5,11 +5,12 @@
 This is my personal OPNsense `pkg` repository.\
 It provides custom OPNsense plugins and FreeBSD packages that I use on my firewalls:
 
-- **[os-podman](pkgs/os-podman)** — Native OCI container engine on FreeBSD Jails with ZFS storage, Linux emulation, WebUI Dashboard, container metrics, and remote Docker/Podman context support
+- **[os-podman](pkgs/os-podman)** — Native OCI container engine on FreeBSD Jails with ZFS storage, Linux emulation, WebUI Dashboard, interactive XTerm.js terminal, structured inspector, container metrics, and remote Docker/Podman context support
+- **[os-terminal](pkgs/os-terminal)** — Integrated Web Terminal console for OPNsense with XTerm.js, user privilege drop, shell switcher (synced with user login shell), persistent sessions across navigation, and bash/zsh management
 - **[os-caddy-advanced](pkgs/os-caddy-advanced)** — WebUI-managed Caddy web server: process settings, a user-owned Caddyfile editor (validated save cycle, Monaco editor), envfile secrets, and xcaddy module builder
 - **[os-homer](pkgs/os-homer)** — Homer dashboard served via its own isolated Caddy instance, automatic TLS, and Monaco YAML editor
 - **[monaco-editor](pkgs/monaco-editor)** — Shared Monaco editor assets with custom Caddyfile Monarch syntax grammar
-- **[caddy](pkgs/caddy)**, **[xcaddy](pkgs/xcaddy)**, **[yq](pkgs/yq)**, **[zsh](pkgs/zsh)**, **[htop](pkgs/htop)**, **[go126](pkgs/go126)**, and container dependencies (**[podman](pkgs/podman)**, **[ocijail](pkgs/ocijail)**, **[conmon](pkgs/conmon)**, **[containernetworking-plugins](pkgs/containernetworking-plugins)**, **[containers-common](pkgs/containers-common)**, **[gpgme](pkgs/gpgme)**)
+- **[caddy](pkgs/caddy)**, **[xcaddy](pkgs/xcaddy)**, **[yq](pkgs/yq)**, **[bash](pkgs/bash)**, **[zsh](pkgs/zsh)**, **[htop](pkgs/htop)**, **[go126](pkgs/go126)**, and container dependencies (**[podman](pkgs/podman)**, **[ocijail](pkgs/ocijail)**, **[conmon](pkgs/conmon)**, **[containernetworking-plugins](pkgs/containernetworking-plugins)**, **[containers-common](pkgs/containers-common)**, **[gpgme](pkgs/gpgme)**)
 
 ---
 
@@ -20,6 +21,9 @@ It provides custom OPNsense plugins and FreeBSD packages that I use on my firewa
 Run Docker and OCI containers natively on FreeBSD using Podman and `ocijail`:
 
 - **Live Dashboard**: Container lifecycle management (Start, Stop, Restart, Force Kill, Container CLI, Logs, Inspect, Delete), real-time CPU & Memory resource usage indicators, human-readable relative creation timestamps, and safe resource locks.
+- **Interactive Container Terminal**: Built-in full-screen capable XTerm.js console attached directly to running containers via WebSocket PTY daemon.
+- **Structured Inspector**: Rich inspection modal displaying overview cards (Network/Ports, Bind Mounts, Security/CAPs, Environment, CMD/Entrypoint, Labels) and collapsible Raw Spec with live JSON/YAML toggle.
+- **CLI Wrapper & Aliases**: Automatic `podman-wrapper` defaulting image pulls/runs to `linux/amd64`, shell profile integration (`/usr/local/etc/profile.d/podman.sh` & `/etc/csh.cshrc`), Docker CLI symlink (`/usr/local/bin/docker`), and Docker Hub search registry configuration.
 - **Storage & Emulation**: Automated ZFS dataset provisioning (`zroot/containers`) and 64-bit Linux kernel emulation (`linux64`, `linprocfs`, `linsysfs`, `fallback_brand=3`).
 - **Firewall Integration**: Automatic CNI port forwarding anchor registration (`cni-rdr/*`), outbound container NAT (DNS/Internet access), and interface filtering.
 - **Remote Contexts**: Connect directly from your local terminal using `docker context` or `podman --remote` over SSH or TCP/TLS.
@@ -30,7 +34,21 @@ Run Docker and OCI containers natively on FreeBSD using Podman and `ocijail`:
 
 ---
 
-### 2. os-caddy-advanced (Caddy Web Server)
+### 2. os-terminal (Web Terminal Console)
+
+Full-featured interactive terminal console inside the OPNsense WebUI:
+
+- **Authenticated Session**: Automatically logs in as the currently authenticated WebUI user with complete privilege drop.
+- **Shell Management**: Easily switch default shell (`csh`, `sh`, `bash`, `zsh`) synchronized with the user's login shell in System: Access: Users.
+- **Persistent Sessions**: Terminal history and PTY background daemon keep your session running when switching tabs or navigating away.
+- **XTerm.js Console**: Theme-matched OPNsense terminal console with Font Zoom (+/-), Fullscreen mode, and macOS navigation shortcut support (`Cmd+Left/Right`, `Alt+Left/Right`, `Cmd/Alt+Backspace`).
+- **One-Click Shell Installation**: Install `bash` and `zsh` packages directly from the plugin settings page.
+
+![os-terminal Console](docs/images/os-terminal.png)
+
+---
+
+### 3. os-caddy-advanced (Caddy Web Server)
 
 Enterprise-grade reverse proxy and web server with complete configuration flexibility:
 
@@ -43,7 +61,7 @@ Enterprise-grade reverse proxy and web server with complete configuration flexib
 
 ---
 
-### 3. os-homer (Dashboard)
+### 4. os-homer (Dashboard)
 
 Clean, fast personal dashboard for your network services:
 
@@ -59,7 +77,8 @@ Clean, fast personal dashboard for your network services:
 
 | Package | Type | Description |
 |---|---|---|
-| **os-podman** | Plugin | Native Podman container management & WebUI dashboard |
+| **os-podman** | Plugin | Native Podman container management, XTerm.js terminal & WebUI dashboard |
+| **os-terminal** | Plugin | Interactive Web Terminal console with XTerm.js & shell management |
 | **os-caddy-advanced** | Plugin | Advanced Caddy web server & Monaco Caddyfile editor |
 | **os-homer** | Plugin | Homer dashboard served via isolated Caddy instance |
 | **monaco-editor** | Plugin Asset | Shared Monaco editor assets with Caddyfile Monarch grammar |
@@ -71,6 +90,7 @@ Clean, fast personal dashboard for your network services:
 | **containers-common** | Redistributed | Container configuration and registries defaults |
 | **xcaddy** | Cross-compiled | Custom Caddy binary builder |
 | **yq** | Cross-compiled | Portable command-line YAML/JSON/XML processor |
+| **bash** | Redistributed | GNU Bourne-Again Shell |
 | **zsh** | Redistributed | Z shell |
 | **htop** | Redistributed | Interactive process viewer |
 | **go126** | Redistributed | Go 1.26 toolchain |
