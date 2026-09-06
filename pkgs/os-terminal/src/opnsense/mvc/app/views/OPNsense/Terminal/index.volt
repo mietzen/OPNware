@@ -244,6 +244,11 @@ $(document).ready(function() {
                 return true;
             }
 
+            // Filter dead key / IME composition events to prevent duplicate backtick inputs
+            if (e.isComposing || e.key === 'Dead') {
+                return false;
+            }
+
             if (e.metaKey && e.key === 'ArrowLeft') {
                 if (ws && ws.readyState === WebSocket.OPEN) {
                     ws.send('\x01');
@@ -308,9 +313,7 @@ $(document).ready(function() {
         term.open(container);
 
         if (fitAddon) {
-            setTimeout(function() {
-                try { fitAddon.fit(); } catch(e) {}
-            }, 100);
+            fitAddon.fit();
         }
 
         term.onData(function(data) {
@@ -422,11 +425,10 @@ $(document).ready(function() {
 
                 $('.btn-install-shell').click(function() {
                     var shellPkg = $(this).data('shell');
-                    var btn = $(this);
-                    btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Installing...');
-
-                    ajaxCall('/api/terminal/terminal/installShell', {shell: shellPkg}, function(res, s) {
-                        btn.html('<i class="fa fa-check"></i> Done');
+                    var actName = shellPkg === 'bash' ? 'installBash' : 'installZsh';
+                    var $btn = $(this);
+                    $btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> ' + '{{ lang._("Installing...") }}');
+                    ajaxCall('/api/terminal/service/' + actName, {}, function(data) {
                         setTimeout(refreshShellTable, 1000);
                     });
                 });
@@ -439,7 +441,7 @@ $(document).ready(function() {
         if (term) {
             term.clear();
         }
-        connectWebSocket(true);
+        connectWebSocket(false);
     });
 
     $('#btn_term_clear').click(function() {
