@@ -61,4 +61,9 @@
 		on_demand
 	}
 {% endif %}
+	log {
+		output net unixgram//var/run/homer/log.sock {
+		}
+		format json
+	}
 }

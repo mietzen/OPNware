@@ -67,6 +67,11 @@ if ($caddyPresent) {
             . "\troot * /usr/local/www/homer\n"
             . "\tfile_server\n"
             . $tlsBlock
+            . "\tlog {\n"
+            . "\t\toutput net unixgram//var/run/homer/log.sock {\n"
+            . "\t\t}\n"
+            . "\t\tformat json\n"
+            . "\t}\n"
             . "}\n";
 
         file_put_contents(CADDY_HOMER_FILE, $content);
