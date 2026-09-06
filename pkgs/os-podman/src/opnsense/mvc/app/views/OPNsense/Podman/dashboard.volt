@@ -152,6 +152,11 @@
                     }
                 });
 
+                // Round reclaimable string numbers to 1 decimal digit
+                reclaimableStr = reclaimableStr.replace(/(\d+\.\d+)([a-zA-Z]+)/g, function (match, num, unit) {
+                    return parseFloat(num).toFixed(1) + unit;
+                });
+
                 $('#stat-containers').text(activeContainers + ' / ' + totalContainers + ' Running');
                 $('#stat-images').text(activeImages + ' / ' + totalImages + ' Active');
                 $('#stat-volumes').text(totalVolumes + ' Volumes');

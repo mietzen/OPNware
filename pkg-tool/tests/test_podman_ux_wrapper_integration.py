@@ -105,6 +105,8 @@ def test_dashboard_inspect_modal_and_theme_elements():
     assert 'class="fa fa-database"' in content
     assert 'class="fa fa-recycle"' in content
     assert "align-items: center; justify-content: space-between;" in content
+    assert "reclaimableStr.replace" in content
+    assert "toFixed(1)" in content
 
 
 def test_container_terminal_websocket_and_modal_top_clearance():
