@@ -43,6 +43,7 @@ fi
 
 podman_service_prestart()
 {
+    umask 022
     /usr/local/bin/php /usr/local/opnsense/scripts/OPNsense/Podman/setup.php
     mkdir -p /var/run/podman /var/log/podman /var/db/containers
     chmod 0755 /var/run/podman
