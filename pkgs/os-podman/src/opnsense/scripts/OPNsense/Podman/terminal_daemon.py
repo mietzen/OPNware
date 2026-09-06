@@ -230,7 +230,20 @@ class TerminalSession:
             self.pid = None
 
 
-async def handle_pty_read(session: TerminalSession, writer: asyncio.StreamWriter):
+async def ws_writer_loop(writer: asyncio.StreamWriter, send_queue: asyncio.Queue):
+    """Drain frames from send_queue and transmit to client."""
+    try:
+        while True:
+            frame = await send_queue.get()
+            if frame is None:
+                break
+            writer.write(frame)
+            await writer.drain()
+    except (asyncio.CancelledError, Exception):
+        pass
+
+
+async def handle_pty_read(session: TerminalSession, send_queue: asyncio.Queue):
     """Read ANSI binary output from master PTY and stream to WebSocket."""
     loop = asyncio.get_running_loop()
     queue = asyncio.Queue()
@@ -261,9 +274,11 @@ async def handle_pty_read(session: TerminalSession, writer: asyncio.StreamWriter
             if data is None:
                 break
             frame = encode_ws_frame(data, opcode=OPCODE_BIN)
-            writer.write(frame)
-            await writer.drain()
-    except (asyncio.CancelledError, ConnectionResetError, BrokenPipeError):
+            try:
+                send_queue.put_nowait(frame)
+            except (asyncio.QueueFull, Exception):
+                pass
+    except (asyncio.CancelledError, Exception):
         pass
     finally:
         try:
@@ -273,15 +288,17 @@ async def handle_pty_read(session: TerminalSession, writer: asyncio.StreamWriter
             pass
 
 
-async def handle_ws_input(session: TerminalSession, reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
+async def handle_ws_input(session: TerminalSession, reader: asyncio.StreamReader, send_queue: asyncio.Queue):
     """Read WebSocket frames from browser and write to PTY."""
     while not session.closed:
         opcode, data = await parse_ws_frame(reader)
         if opcode is None or opcode == OPCODE_CLOSE:
             break
         elif opcode == OPCODE_PING:
-            writer.write(encode_ws_frame(data, opcode=OPCODE_PONG))
-            await writer.drain()
+            try:
+                send_queue.put_nowait(encode_ws_frame(data, opcode=OPCODE_PONG))
+            except Exception:
+                break
         elif opcode in (OPCODE_TEXT, OPCODE_BIN):
             # Control frame prefix (\x00{"type":"resize",...})
             if data.startswith(b"\x00{") and b"resize" in data:
@@ -356,11 +373,14 @@ async def handle_ws_conn(reader: asyncio.StreamReader, writer: asyncio.StreamWri
     writer.write(handshake_resp.encode("utf-8"))
     await writer.drain()
 
+    send_queue: asyncio.Queue = asyncio.Queue(maxsize=1024)
+    writer_task = asyncio.create_task(ws_writer_loop(writer, send_queue))
+
     session = TerminalSession(cid, shell)
     session.start()
 
-    pty_task = asyncio.create_task(handle_pty_read(session, writer))
-    ws_task = asyncio.create_task(handle_ws_input(session, reader, writer))
+    pty_task = asyncio.create_task(handle_pty_read(session, send_queue))
+    ws_task = asyncio.create_task(handle_ws_input(session, reader, send_queue))
 
     done, pending = await asyncio.wait(
         [pty_task, ws_task],
@@ -373,10 +393,17 @@ async def handle_ws_conn(reader: asyncio.StreamReader, writer: asyncio.StreamWri
     session.close()
 
     try:
-        writer.write(encode_ws_frame(b"", opcode=OPCODE_CLOSE))
-        await writer.drain()
-    except (ConnectionResetError, BrokenPipeError, OSError):
+        send_queue.put_nowait(encode_ws_frame(b"", opcode=OPCODE_CLOSE))
+    except Exception:
         pass
+    try:
+        send_queue.put_nowait(None)
+    except Exception:
+        pass
+    try:
+        await asyncio.wait_for(writer_task, timeout=1.0)
+    except Exception:
+        writer_task.cancel()
 
     writer.close()
     try:
