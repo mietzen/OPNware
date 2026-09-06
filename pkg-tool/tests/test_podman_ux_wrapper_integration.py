@@ -100,6 +100,11 @@ def test_dashboard_inspect_modal_and_theme_elements():
     assert 'id="stat-reclaimable"' in content
     assert "min-height: 64px;" in content
     assert "btn_system_prune" in content
+    assert 'class="fa fa-cubes"' in content
+    assert 'class="fa fa-clone"' in content
+    assert 'class="fa fa-database"' in content
+    assert 'class="fa fa-recycle"' in content
+    assert "align-items: center; justify-content: space-between;" in content
 
 
 def test_container_terminal_websocket_and_modal_top_clearance():

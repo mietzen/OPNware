@@ -1295,36 +1295,44 @@
 <div class="row" style="margin-bottom: 15px;">
     <div class="col-xs-12 col-sm-6 col-md-3">
         <div class="panel panel-default" style="margin-bottom: 0;">
-            <div class="panel-body" style="padding: 10px 15px; min-height: 64px;">
-                <div class="text-muted" style="font-size: 11px; text-transform: uppercase;">{{ lang._('Containers') }}</div>
-                <div style="font-size: 18px; font-weight: bold;" id="stat-containers">--</div>
+            <div class="panel-body" style="padding: 10px 15px; min-height: 64px; display: flex; align-items: center; justify-content: space-between;">
+                <div>
+                    <div class="text-muted" style="font-size: 11px; text-transform: uppercase;"><i class="fa fa-cubes" style="margin-right: 6px;"></i>{{ lang._('Containers') }}</div>
+                    <div style="font-size: 18px; font-weight: bold;" id="stat-containers">--</div>
+                </div>
             </div>
         </div>
     </div>
     <div class="col-xs-12 col-sm-6 col-md-3">
         <div class="panel panel-default" style="margin-bottom: 0;">
-            <div class="panel-body" style="padding: 10px 15px; min-height: 64px;">
-                <div class="text-muted" style="font-size: 11px; text-transform: uppercase;">{{ lang._('Images') }}</div>
-                <div style="font-size: 18px; font-weight: bold;" id="stat-images">--</div>
+            <div class="panel-body" style="padding: 10px 15px; min-height: 64px; display: flex; align-items: center; justify-content: space-between;">
+                <div>
+                    <div class="text-muted" style="font-size: 11px; text-transform: uppercase;"><i class="fa fa-clone" style="margin-right: 6px;"></i>{{ lang._('Images') }}</div>
+                    <div style="font-size: 18px; font-weight: bold;" id="stat-images">--</div>
+                </div>
             </div>
         </div>
     </div>
     <div class="col-xs-12 col-sm-6 col-md-3">
         <div class="panel panel-default" style="margin-bottom: 0;">
-            <div class="panel-body" style="padding: 10px 15px; min-height: 64px;">
-                <div class="text-muted" style="font-size: 11px; text-transform: uppercase;">{{ lang._('Volumes') }}</div>
-                <div style="font-size: 18px; font-weight: bold;" id="stat-volumes">--</div>
+            <div class="panel-body" style="padding: 10px 15px; min-height: 64px; display: flex; align-items: center; justify-content: space-between;">
+                <div>
+                    <div class="text-muted" style="font-size: 11px; text-transform: uppercase;"><i class="fa fa-database" style="margin-right: 6px;"></i>{{ lang._('Volumes') }}</div>
+                    <div style="font-size: 18px; font-weight: bold;" id="stat-volumes">--</div>
+                </div>
             </div>
         </div>
     </div>
     <div class="col-xs-12 col-sm-6 col-md-3">
         <div class="panel panel-default" style="margin-bottom: 0;">
-            <div class="panel-body" style="padding: 10px 15px; min-height: 64px;">
-                <button class="btn btn-xs btn-warning pull-right" id="btn_system_prune" title="{{ lang._('Prune unused containers and images') }}" style="margin-top: 5px;">
+            <div class="panel-body" style="padding: 10px 15px; min-height: 64px; display: flex; align-items: center; justify-content: space-between;">
+                <div>
+                    <div class="text-muted" style="font-size: 11px; text-transform: uppercase;"><i class="fa fa-recycle" style="margin-right: 6px;"></i>{{ lang._('Reclaimable') }}</div>
+                    <div style="font-size: 18px; font-weight: bold; color: #f0ad4e;" id="stat-reclaimable">--</div>
+                </div>
+                <button class="btn btn-xs btn-warning" id="btn_system_prune" title="{{ lang._('Prune unused containers and images') }}" style="margin-left: 10px;">
                     <i class="fa fa-trash-o"></i> {{ lang._('Prune') }} <i id="btn_system_prune_progress"></i>
                 </button>
-                <div class="text-muted" style="font-size: 11px; text-transform: uppercase;">{{ lang._('Reclaimable') }}</div>
-                <div style="font-size: 18px; font-weight: bold; color: #f0ad4e;" id="stat-reclaimable">--</div>
             </div>
         </div>
     </div>
