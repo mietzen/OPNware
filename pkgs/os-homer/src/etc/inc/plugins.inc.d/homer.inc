@@ -27,7 +27,7 @@ function homer_services()
     $services = array();
     $pidfile = '/var/run/os-homer/homer.pid';
 
-    if (homer_caddy_is_present()) {
+    if (homer_caddy_is_present() && file_exists('/usr/local/etc/caddy/conf.d/homer.caddy')) {
         $pidfile = '/var/run/caddy/caddy.pid';
     }
 

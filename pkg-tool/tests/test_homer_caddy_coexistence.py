@@ -239,7 +239,7 @@ namespace {{
 
 def test_homer_services_pidfile_and_service_control():
     inc_src = HOMER_INC.read_text()
-    assert "homer_caddy_is_present()" in inc_src
+    assert "homer_caddy_is_present() && file_exists('/usr/local/etc/caddy/conf.d/homer.caddy')" in inc_src
     assert "$pidfile = '/var/run/caddy/caddy.pid';" in inc_src
     assert "$pidfile = '/var/run/os-homer/homer.pid';" in inc_src
     assert "'pidfile' => $pidfile" in inc_src
