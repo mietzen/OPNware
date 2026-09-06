@@ -213,20 +213,22 @@ class HostTerminalSession:
 
     def start(self):
         """Fork and execute interactive login shell inside PTY."""
-        try:
-            pw = pwd.getpwnam(self.username)
-            is_system_user = True
-        except KeyError:
+        if self.username == "root":
             try:
                 pw = pwd.getpwnam("root")
             except KeyError:
-                pw = None
-            is_system_user = False
-
-        uid = pw.pw_uid if (pw and is_system_user) else 0
-        gid = pw.pw_gid if (pw and is_system_user) else 0
-        home = pw.pw_dir if (pw and is_system_user and os.path.isdir(pw.pw_dir)) else "/root"
-        exec_user = self.username if is_system_user else "root"
+                pw = pwd.struct_passwd(("root", "*", 0, 0, "System Administrator", "/root", "/bin/csh"))
+            uid = 0
+            gid = 0
+            home = pw.pw_dir if os.path.isdir(pw.pw_dir) else "/root"
+        else:
+            try:
+                pw = pwd.getpwnam(self.username)
+                uid = pw.pw_uid
+                gid = pw.pw_gid
+                home = pw.pw_dir if os.path.isdir(pw.pw_dir) else "/tmp"
+            except KeyError:
+                raise PermissionError(f"User '{self.username}' does not have a local system account")
 
         master_fd, slave_fd = pty.openpty()
         self.master_fd = master_fd
@@ -262,8 +264,8 @@ class HostTerminalSession:
             os.environ.clear()
             os.environ.update(env)
 
-            # Drop privileges for non-root system user (mandatory failure on error)
-            if uid != 0 and is_system_user:
+            # Drop privileges for non-root user (mandatory failure on error)
+            if uid != 0:
                 try:
                     os.initgroups(self.username, gid)
                     os.setgid(gid)
