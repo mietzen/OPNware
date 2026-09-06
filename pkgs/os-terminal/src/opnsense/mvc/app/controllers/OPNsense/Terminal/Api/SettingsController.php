@@ -3,6 +3,7 @@
 namespace OPNsense\Terminal\Api;
 
 use OPNsense\Base\ApiMutableModelControllerBase;
+use OPNsense\Core\Backend;
 use OPNsense\Core\Config;
 
 class SettingsController extends ApiMutableModelControllerBase
@@ -10,8 +11,6 @@ class SettingsController extends ApiMutableModelControllerBase
     protected static $internalModelClass = '\OPNsense\Terminal\Terminal';
     protected static $internalModelName = 'terminal';
     protected static $internalModelPath = 'general';
-
-
 
     public function setAction()
     {
@@ -47,11 +46,7 @@ class SettingsController extends ApiMutableModelControllerBase
                 if ((string)$user->name === $username) {
                     $user->shell = $targetShell;
                     Config::getInstance()->save();
-                    if (file_exists('/usr/local/etc/inc/auth.inc')) {
-                        require_once('auth.inc');
-                        $userArr = json_decode(json_encode($user), true);
-                        local_user_set($userArr);
-                    }
+                    (new Backend())->configdpRun('auth', ['sync', 'user', $username]);
                     break;
                 }
             }
