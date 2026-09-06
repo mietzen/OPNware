@@ -52,6 +52,10 @@ def test_terminal_daemon_script_and_rc_integration():
     assert "terminal.pid" in rc_content
     assert "7681" in rc_content
 
+    daemon_content = daemon_script.read_text()
+    assert "-e" in daemon_content
+    assert "TERM=xterm-256color" in daemon_content
+
 
 def test_dashboard_volt_terminal_integration():
     volt_file = PODMAN_SRC / "opnsense" / "mvc" / "app" / "views" / "OPNsense" / "Podman" / "dashboard.volt"
@@ -64,6 +68,8 @@ def test_dashboard_volt_terminal_integration():
     assert "xterm-terminal-container" in content
     assert "connectTerminalWs" in content
     assert "/api/podman/terminal/ws" in content
+    assert "brightGreen" in content
+    assert "brightCyan" in content
 
 
 def test_terminal_daemon_websocket_helpers():
