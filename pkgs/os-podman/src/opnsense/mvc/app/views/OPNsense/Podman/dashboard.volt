@@ -1180,7 +1180,7 @@
 <div class="row" style="margin-bottom: 15px;">
     <div class="col-xs-12 col-sm-6 col-md-3">
         <div class="panel panel-default" style="margin-bottom: 0;">
-            <div class="panel-body" style="padding: 10px 15px;">
+            <div class="panel-body" style="padding: 10px 15px; min-height: 64px;">
                 <div class="text-muted" style="font-size: 11px; text-transform: uppercase;">{{ lang._('Containers') }}</div>
                 <div style="font-size: 18px; font-weight: bold;" id="stat-containers">--</div>
             </div>
@@ -1188,7 +1188,7 @@
     </div>
     <div class="col-xs-12 col-sm-6 col-md-3">
         <div class="panel panel-default" style="margin-bottom: 0;">
-            <div class="panel-body" style="padding: 10px 15px;">
+            <div class="panel-body" style="padding: 10px 15px; min-height: 64px;">
                 <div class="text-muted" style="font-size: 11px; text-transform: uppercase;">{{ lang._('Images') }}</div>
                 <div style="font-size: 18px; font-weight: bold;" id="stat-images">--</div>
             </div>
@@ -1196,7 +1196,7 @@
     </div>
     <div class="col-xs-12 col-sm-6 col-md-3">
         <div class="panel panel-default" style="margin-bottom: 0;">
-            <div class="panel-body" style="padding: 10px 15px;">
+            <div class="panel-body" style="padding: 10px 15px; min-height: 64px;">
                 <div class="text-muted" style="font-size: 11px; text-transform: uppercase;">{{ lang._('Volumes') }}</div>
                 <div style="font-size: 18px; font-weight: bold;" id="stat-volumes">--</div>
             </div>
@@ -1204,16 +1204,12 @@
     </div>
     <div class="col-xs-12 col-sm-6 col-md-3">
         <div class="panel panel-default" style="margin-bottom: 0;">
-            <div class="panel-body" style="padding: 10px 15px; display: flex; justify-content: space-between; align-items: center;">
-                <div>
-                    <div class="text-muted" style="font-size: 11px; text-transform: uppercase;">{{ lang._('Reclaimable') }}</div>
-                    <div style="font-size: 18px; font-weight: bold; color: #f0ad4e;" id="stat-reclaimable">--</div>
-                </div>
-                <div>
-                    <button class="btn btn-sm btn-warning" id="btn_system_prune" title="{{ lang._('Prune unused containers and images') }}">
-                        <i class="fa fa-trash-o"></i> {{ lang._('Prune') }} <i id="btn_system_prune_progress"></i>
-                    </button>
-                </div>
+            <div class="panel-body" style="padding: 10px 15px; min-height: 64px;">
+                <button class="btn btn-xs btn-warning pull-right" id="btn_system_prune" title="{{ lang._('Prune unused containers and images') }}" style="margin-top: 5px;">
+                    <i class="fa fa-trash-o"></i> {{ lang._('Prune') }} <i id="btn_system_prune_progress"></i>
+                </button>
+                <div class="text-muted" style="font-size: 11px; text-transform: uppercase;">{{ lang._('Reclaimable') }}</div>
+                <div style="font-size: 18px; font-weight: bold; color: #f0ad4e;" id="stat-reclaimable">--</div>
             </div>
         </div>
     </div>
