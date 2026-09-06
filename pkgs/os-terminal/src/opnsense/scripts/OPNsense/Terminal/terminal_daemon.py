@@ -137,15 +137,13 @@ def extract_authenticated_user(cookie_header: str) -> str:
                         try:
                             with open(sfile, "r", errors="ignore") as f:
                                 content = f.read()
-                                # PHP serialized format: user_name|s:<len>:"<username>"
+                                # PHP serialized format: (user_name|Username|user|auth_user)|s:<len>:"<username>"
                                 m = re.search(
                                     r'(?:user_name|Username|user|auth_user)\|s:\d+:"([^"]+)"',
                                     content,
                                 )
                                 if m:
                                     return m.group(1)
-                                if any(marker in content for marker in ("user_name|", "Username|", "user|", "logged_in|")):
-                                    return "root"
                         except OSError:
                             pass
     return ""
@@ -192,15 +190,14 @@ def resolve_shell(username: str, requested_shell: str = "", default_shell_settin
 
     # 3. User's Login Shell from /conf/config.xml
     xml_shell = resolve_user_shell_from_config(username)
-    if xml_shell:
+    if xml_shell and os.path.isfile(xml_shell) and os.access(xml_shell, os.X_OK):
         return xml_shell
 
     # 4. User's system shell from passwd
     try:
         pw = pwd.getpwnam(username)
         if pw.pw_shell and os.path.isfile(pw.pw_shell) and os.access(pw.pw_shell, os.X_OK):
-            # Avoid opnsense-shell or nologin in web terminal
-            if "opnsense-shell" not in pw.pw_shell and "nologin" not in pw.pw_shell:
+            if "nologin" not in pw.pw_shell:
                 return pw.pw_shell
     except KeyError:
         pass
@@ -227,18 +224,15 @@ class HostTerminalSession:
         """Fork and execute interactive login shell inside PTY."""
         try:
             pw = pwd.getpwnam(self.username)
-            is_system_user = True
         except KeyError:
-            try:
-                pw = pwd.getpwnam("root")
-            except KeyError:
-                pw = None
-            is_system_user = False
+            if self.username == "root":
+                pw = pwd.struct_passwd(("root", "*", 0, 0, "System Administrator", "/root", "/bin/csh"))
+            else:
+                raise PermissionError(f"User '{self.username}' does not have a valid system account")
 
-        uid = pw.pw_uid if (pw and is_system_user) else 0
-        gid = pw.pw_gid if (pw and is_system_user) else 0
-        home = pw.pw_dir if pw and os.path.isdir(pw.pw_dir) else "/root"
-        exec_user = self.username if is_system_user else "root"
+        uid = pw.pw_uid
+        gid = pw.pw_gid
+        home = pw.pw_dir if os.path.isdir(pw.pw_dir) else "/tmp"
 
         master_fd, slave_fd = pty.openpty()
         self.master_fd = master_fd
@@ -263,8 +257,8 @@ class HostTerminalSession:
             # Prepare environment
             env = {
                 "TERM": "xterm-256color",
-                "USER": exec_user,
-                "LOGNAME": exec_user,
+                "USER": self.username,
+                "LOGNAME": self.username,
                 "HOME": home,
                 "SHELL": self.shell_path,
                 "PATH": "/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin",
@@ -274,17 +268,16 @@ class HostTerminalSession:
             os.environ.clear()
             os.environ.update(env)
 
-            # Drop privileges for non-root system user
-            if uid != 0 and is_system_user:
+            # Drop privileges for non-root user (mandatory failure on error)
+            if uid != 0:
                 try:
                     os.initgroups(self.username, gid)
-                except (KeyError, OSError):
-                    pass
-                try:
                     os.setgid(gid)
                     os.setuid(uid)
-                except OSError:
-                    pass
+                    if os.getuid() != uid or os.geteuid() != uid:
+                        os._exit(1)
+                except Exception:
+                    os._exit(1)
 
             try:
                 os.chdir(home)

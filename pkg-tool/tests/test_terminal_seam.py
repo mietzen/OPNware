@@ -143,7 +143,11 @@ def test_terminal_daemon_helpers_and_auth():
             assert terminal_daemon.extract_authenticated_user("PHPSESSID=root123") == "root"
             assert terminal_daemon.extract_authenticated_user("PHPSESSID=admin456") == "admin"
 
-        # 4. HostTerminalSession close
+        # 4. Shell resolution logic
+        assert terminal_daemon.resolve_shell("root", requested_shell="/bin/sh") == "/bin/sh"
+        assert terminal_daemon.resolve_shell("root", default_shell_setting="sh") == "/bin/sh"
+
+        # 5. HostTerminalSession close
         session = terminal_daemon.HostTerminalSession("root", "/bin/sh")
         session.master_fd = None
         session.pid = None
@@ -151,3 +155,13 @@ def test_terminal_daemon_helpers_and_auth():
         assert session.closed is True
     finally:
         sys.path.pop(0)
+
+
+def test_settings_controller_login_shell_sync():
+    ctrl_file = TERMINAL_SRC / "opnsense" / "mvc" / "app" / "controllers" / "OPNsense" / "Terminal" / "Api" / "SettingsController.php"
+    content = ctrl_file.read_text()
+    assert "syncUserShell" in content
+    assert "local_user_set" in content
+    assert "default_shell" in content
+    assert "setAction" in content
+
