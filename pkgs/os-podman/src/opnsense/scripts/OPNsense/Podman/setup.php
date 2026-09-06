@@ -249,19 +249,46 @@ if ($podmanCfg !== null && !empty((string)$podmanCfg->general->ca)) {
 
 // 4. Shell Aliases & Docker CLI Compatibility Symlink
 $wrapperBin = '/usr/local/bin/podman-wrapper';
-
-// Manage /usr/local/etc/profile.d/podman.sh for sh/bash/zsh shells
-$profileDir = '/usr/local/etc/profile.d';
-$profileFile = "{$profileDir}/podman.sh";
+$beginMarker = '# BEGIN OPNWARE PODMAN ALIASES';
+$endMarker = '# END OPNWARE PODMAN ALIASES';
 
 $shAliases = [];
+$cshAliases = [];
+
 if ($defaultLinuxPlatform) {
     $shAliases[] = 'alias podman="/usr/local/bin/podman-wrapper"';
+    $cshAliases[] = 'alias podman /usr/local/bin/podman-wrapper';
 }
 if ($dockerAlias) {
     $shAliases[] = 'alias docker="/usr/local/bin/podman-wrapper"';
+    $cshAliases[] = 'alias docker /usr/local/bin/podman-wrapper';
 }
 
+function update_delimited_block(string $filePath, array $lines, string $beginMarker, string $endMarker): void
+{
+    $content = file_exists($filePath) ? (@file_get_contents($filePath) ?: '') : '';
+    $pattern = '/\n?' . preg_quote($beginMarker, '/') . '.*?' . preg_quote($endMarker, '/') . '\n?/s';
+    $clean = trim(preg_replace($pattern, '', $content));
+
+    if (!empty($lines)) {
+        $block = "{$beginMarker}\n" . implode("\n", $lines) . "\n{$endMarker}\n";
+        $newContent = (!empty($clean) ? $clean . "\n\n" : "") . $block;
+    } else {
+        $newContent = !empty($clean) ? $clean . "\n" : "";
+    }
+
+    if ($newContent !== $content) {
+        $dir = dirname($filePath);
+        if (!is_dir($dir)) {
+            @mkdir($dir, 0755, true);
+        }
+        @file_put_contents($filePath, $newContent);
+        chmod($filePath, 0644);
+        log_msg("Updated {$filePath} aliases block");
+    }
+}
+
+// Manage /usr/local/etc/profile.d/podman.sh and /etc/profile.d/podman.sh
 if (!empty($shAliases)) {
     foreach (['/usr/local/etc/profile.d', '/etc/profile.d'] as $pDir) {
         if (!is_dir($pDir)) {
@@ -282,33 +309,18 @@ if (!empty($shAliases)) {
     }
 }
 
-// Manage /etc/csh.cshrc delimited block for csh/tcsh shells
-$cshrcFile = '/etc/csh.cshrc';
-$cshrcContent = file_exists($cshrcFile) ? (file_get_contents($cshrcFile) ?: '') : '';
-$beginMarker = '# BEGIN OPNWARE PODMAN ALIASES';
-$endMarker = '# END OPNWARE PODMAN ALIASES';
-$pattern = '/\n?' . preg_quote($beginMarker, '/') . '.*?' . preg_quote($endMarker, '/') . '\n?/s';
-$cshrcClean = trim(preg_replace($pattern, '', $cshrcContent));
-
-$cshAliases = [];
-if ($defaultLinuxPlatform) {
-    $cshAliases[] = 'alias podman /usr/local/bin/podman-wrapper';
-}
-if ($dockerAlias) {
-    $cshAliases[] = 'alias docker /usr/local/bin/podman-wrapper';
+// Manage zsh, bash, and csh init files
+$shTargetFiles = [
+    '/usr/local/etc/zshenv',
+    '/usr/local/etc/zshrc',
+    '/usr/local/etc/bash.bashrc',
+];
+foreach ($shTargetFiles as $shTarget) {
+    update_delimited_block($shTarget, $shAliases, $beginMarker, $endMarker);
 }
 
-if (!empty($cshAliases)) {
-    $block = "{$beginMarker}\n" . implode("\n", $cshAliases) . "\n{$endMarker}\n";
-    $newCshrc = (!empty($cshrcClean) ? $cshrcClean . "\n\n" : "") . $block;
-} else {
-    $newCshrc = !empty($cshrcClean) ? $cshrcClean . "\n" : "";
-}
-
-if ($newCshrc !== $cshrcContent) {
-    file_put_contents($cshrcFile, $newCshrc);
-    log_msg("Updated {$cshrcFile} aliases block");
-}
+// Manage /etc/csh.cshrc for csh/tcsh shells
+update_delimited_block('/etc/csh.cshrc', $cshAliases, $beginMarker, $endMarker);
 
 // Manage /usr/local/bin/docker symlink
 $dockerSymlink = '/usr/local/bin/docker';
