@@ -201,15 +201,22 @@ def resolve_shell(username: str, requested_shell: str = "", default_shell_settin
     return "/bin/sh"
 
 
+ACTIVE_SESSIONS: dict[str, "HostTerminalSession"] = {}
+MAX_SCROLLBACK_BYTES = 256 * 1024
+
+
 class HostTerminalSession:
-    """Manages master PTY and interactive host shell process."""
+    """Manages master PTY and interactive host shell process with background buffering."""
 
     def __init__(self, username: str, shell_path: str):
         self.username = username
         self.shell_path = shell_path
-        self.master_fd = None
-        self.pid = None
+        self.master_fd: int | None = None
+        self.pid: int | None = None
         self.closed = False
+        self.history = bytearray()
+        self.attached_writers: set[asyncio.StreamWriter] = set()
+        self.pty_task: asyncio.Task | None = None
 
     def start(self):
         """Fork and execute interactive login shell inside PTY."""
@@ -298,6 +305,57 @@ class HostTerminalSession:
         flags = fcntl.fcntl(master_fd, fcntl.F_GETFL)
         fcntl.fcntl(master_fd, fcntl.F_SETFL, flags | os.O_NONBLOCK)
 
+        self.pty_task = asyncio.create_task(self._pty_reader_loop())
+
+    async def _pty_reader_loop(self):
+        """Continuously read PTY output, append to history, and broadcast to attached WebSockets."""
+        loop = asyncio.get_running_loop()
+        queue = asyncio.Queue()
+        master_fd = self.master_fd
+
+        def on_read():
+            try:
+                chunk = os.read(master_fd, READ_CHUNK_SIZE)
+                if chunk:
+                    queue.put_nowait(chunk)
+                else:
+                    queue.put_nowait(None)
+            except (OSError, ValueError):
+                queue.put_nowait(None)
+
+        if master_fd is not None:
+            loop.add_reader(master_fd, on_read)
+
+        try:
+            while not self.closed:
+                chunk = await queue.get()
+                if chunk is None:
+                    break
+
+                self.history.extend(chunk)
+                if len(self.history) > MAX_SCROLLBACK_BYTES:
+                    del self.history[: len(self.history) - MAX_SCROLLBACK_BYTES]
+
+                frame = encode_ws_frame(chunk, opcode=OPCODE_BIN)
+                dead_writers = []
+                for writer in list(self.attached_writers):
+                    try:
+                        writer.write(frame)
+                        await writer.drain()
+                    except Exception:
+                        dead_writers.append(writer)
+                for dw in dead_writers:
+                    self.attached_writers.discard(dw)
+        except (asyncio.CancelledError, Exception):
+            pass
+        finally:
+            try:
+                if master_fd is not None:
+                    loop.remove_reader(master_fd)
+            except (ValueError, OSError):
+                pass
+            self.close()
+
     def write(self, data: bytes):
         """Write user input keystrokes to master PTY."""
         if not self.closed and self.master_fd is not None:
@@ -316,6 +374,9 @@ class HostTerminalSession:
         if self.closed:
             return
         self.closed = True
+
+        if self.username in ACTIVE_SESSIONS and ACTIVE_SESSIONS[self.username] is self:
+            del ACTIVE_SESSIONS[self.username]
 
         if self.master_fd is not None:
             try:
@@ -344,43 +405,6 @@ class HostTerminalSession:
             self.pid = None
 
 
-async def handle_pty_read(session: HostTerminalSession, writer: asyncio.StreamWriter):
-    """Read ANSI binary output from master PTY and stream to WebSocket."""
-    loop = asyncio.get_running_loop()
-    queue = asyncio.Queue()
-    master_fd = session.master_fd
-
-    def on_read():
-        try:
-            chunk = os.read(master_fd, READ_CHUNK_SIZE)
-            if chunk:
-                queue.put_nowait(chunk)
-            else:
-                queue.put_nowait(None)
-        except (OSError, ValueError):
-            queue.put_nowait(None)
-
-    if master_fd is not None:
-        loop.add_reader(master_fd, on_read)
-
-    try:
-        while not session.closed:
-            data = await queue.get()
-            if data is None:
-                break
-            frame = encode_ws_frame(data, opcode=OPCODE_BIN)
-            writer.write(frame)
-            await writer.drain()
-    except (asyncio.CancelledError, ConnectionResetError, BrokenPipeError):
-        pass
-    finally:
-        try:
-            if master_fd is not None:
-                loop.remove_reader(master_fd)
-        except (ValueError, OSError):
-            pass
-
-
 async def handle_ws_input(session: HostTerminalSession, reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
     """Read WebSocket frames from browser and write to PTY."""
     while not session.closed:
@@ -388,10 +412,12 @@ async def handle_ws_input(session: HostTerminalSession, reader: asyncio.StreamRe
         if opcode is None or opcode == OPCODE_CLOSE:
             break
         elif opcode == OPCODE_PING:
-            writer.write(encode_ws_frame(data, opcode=OPCODE_PONG))
-            await writer.drain()
+            try:
+                writer.write(encode_ws_frame(data, opcode=OPCODE_PONG))
+                await writer.drain()
+            except Exception:
+                break
         elif opcode in (OPCODE_TEXT, OPCODE_BIN):
-            # Control frame prefix (\x00{"type":"resize",...})
             if data.startswith(b"\x00{") and b"resize" in data:
                 try:
                     msg = json.loads(data[1:].decode("utf-8"))
@@ -406,7 +432,7 @@ async def handle_ws_input(session: HostTerminalSession, reader: asyncio.StreamRe
 
 
 def create_ws_handler(default_shell_setting: str):
-    """Create connection handler with configured default shell."""
+    """Create connection handler with persistent session management."""
     async def handle_ws_conn(reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
         headers = {}
         path_line = ""
@@ -430,7 +456,6 @@ def create_ws_handler(default_shell_setting: str):
             writer.close()
             return
 
-        # Check authentication
         cookie_header = headers.get("cookie", "")
         username = extract_authenticated_user(cookie_header)
         if not username:
@@ -441,9 +466,28 @@ def create_ws_handler(default_shell_setting: str):
 
         parsed_url = urlparse(path_line.split(" ")[1] if len(path_line.split(" ")) > 1 else "")
         params = parse_qs(parsed_url.query)
-        requested_shell = params.get("shell", [""])[0]
+        reset_requested = params.get("reset", ["0"])[0] == "1"
 
-        shell_path = resolve_shell(username, requested_shell, default_shell_setting)
+        shell_path = resolve_shell(username, default_shell_setting=default_shell_setting)
+
+        session = ACTIVE_SESSIONS.get(username)
+        if reset_requested or session is None or session.closed or session.shell_path != shell_path:
+            if session and not session.closed:
+                session.close()
+            session = HostTerminalSession(username, shell_path)
+            try:
+                session.start()
+                ACTIVE_SESSIONS[username] = session
+            except Exception as e:
+                err_msg = f"\r\n\x1b[31mFailed to start terminal session for '{username}': {e}\x1b[0m\r\n"
+                try:
+                    writer.write(encode_ws_frame(err_msg.encode("utf-8"), opcode=OPCODE_TEXT))
+                    await writer.drain()
+                except Exception:
+                    pass
+                session.close()
+                writer.close()
+                return
 
         accept_val = compute_ws_accept(ws_key)
         handshake_resp = (
@@ -455,44 +499,30 @@ def create_ws_handler(default_shell_setting: str):
         writer.write(handshake_resp.encode("utf-8"))
         await writer.drain()
 
-        session = HostTerminalSession(username, shell_path)
-        try:
-            session.start()
-        except Exception as e:
-            err_msg = f"\r\n\x1b[31mFailed to start terminal session for '{username}': {e}\x1b[0m\r\n"
+        # Replay scrollback buffer so terminal output is preserved
+        if session.history:
             try:
-                writer.write(encode_ws_frame(err_msg.encode("utf-8"), opcode=OPCODE_TEXT))
+                writer.write(encode_ws_frame(bytes(session.history), opcode=OPCODE_BIN))
                 await writer.drain()
             except Exception:
                 pass
-            session.close()
+
+        session.attached_writers.add(writer)
+
+        try:
+            await handle_ws_input(session, reader, writer)
+        finally:
+            session.attached_writers.discard(writer)
+            try:
+                writer.write(encode_ws_frame(b"", opcode=OPCODE_CLOSE))
+                await writer.drain()
+            except Exception:
+                pass
             writer.close()
-            return
-
-        pty_task = asyncio.create_task(handle_pty_read(session, writer))
-        ws_task = asyncio.create_task(handle_ws_input(session, reader, writer))
-
-        done, pending = await asyncio.wait(
-            [pty_task, ws_task],
-            return_when=asyncio.FIRST_COMPLETED
-        )
-
-        for task in pending:
-            task.cancel()
-
-        session.close()
-
-        try:
-            writer.write(encode_ws_frame(b"", opcode=OPCODE_CLOSE))
-            await writer.drain()
-        except (ConnectionResetError, BrokenPipeError, OSError):
-            pass
-
-        writer.close()
-        try:
-            await writer.wait_closed()
-        except Exception:
-            pass
+            try:
+                await writer.wait_closed()
+            except Exception:
+                pass
 
     return handle_ws_conn
 

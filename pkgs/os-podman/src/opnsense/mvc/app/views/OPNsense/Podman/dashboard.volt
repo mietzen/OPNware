@@ -587,7 +587,12 @@
         }
 
         var imageDigest = rawObj.Image || '';
-        var imageDigestShort = imageDigest.length > 19 ? imageDigest.substring(0, 19) + '...' : imageDigest;
+        var imageDigestShort = imageDigest;
+        if (imageDigest.startsWith('sha256:')) {
+            imageDigestShort = imageDigest.substring(7, 19);
+        } else if (imageDigest.length > 12) {
+            imageDigestShort = imageDigest.substring(0, 12);
+        }
 
         var headerHtml = '<div class="panel panel-default" style="margin-bottom: 15px;">' +
             '<div class="panel-body" style="padding: 12px 15px;">' +
@@ -616,7 +621,7 @@
             '<div class="col-xs-12">' +
             '<span class="text-muted" style="font-size: 11px; text-transform: uppercase;">{{ lang._("Image") }}: </span>' +
             '<code>' + escapeHtml(imageTag) + '</code>' +
-            (imageDigest && imageDigest !== imageTag ? ' <span class="text-muted">({{ lang._("Digest/ID") }}: <code title="' + escapeHtml(imageDigest) + '">' + escapeHtml(imageDigestShort) + '</code>)</span>' : '') +
+            (imageDigest && imageDigest !== imageTag ? ' <span class="text-muted">({{ lang._("ID / Digest") }}: <code title="' + escapeHtml(imageDigest) + '">' + escapeHtml(imageDigestShort) + '</code>' + '<button type="button" class="btn btn-xs btn-default btn-copy-val" data-copy-val="' + escapeHtml(imageDigest) + '" title="{{ lang._("Copy full ID / Digest") }}" style="margin-left: 4px;"><i class="fa fa-clipboard"></i></button>)</span>' : '') +
             '</div>' +
             '</div>' +
             '</div>' +
@@ -665,7 +670,10 @@
         var mountRows = '';
         if (Array.isArray(mounts) && mounts.length > 0) {
             $.each(mounts, function (mIdx, m) {
-                var mType = m.Type || 'bind';
+                var mType = (m.Type || 'bind').toLowerCase();
+                if (mType === 'nullfs') {
+                    mType = 'bind';
+                }
                 var mSrc = m.Source || m.Name || '--';
                 var mDst = m.Destination || '--';
                 var mMode = m.Mode || (m.RW ? 'rw' : 'ro');

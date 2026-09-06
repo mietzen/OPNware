@@ -235,7 +235,73 @@ $(document).ready(function() {
             lineHeight: 1.15,
             theme: themePalette,
             scrollback: 5000,
-            allowProposedApi: true
+            macOptionIsMeta: true,
+            macOptionClickForcesSelection: true
+        });
+
+        term.attachCustomKeyEventHandler(function(e) {
+            if (e.type !== 'keydown') {
+                return true;
+            }
+
+            // Filter dead key / IME composition events to prevent duplicate backtick inputs
+            if (e.isComposing || e.key === 'Dead') {
+                return false;
+            }
+
+            if (e.metaKey && e.key === 'ArrowLeft') {
+                if (ws && ws.readyState === WebSocket.OPEN) {
+                    ws.send('\x01');
+                }
+                return false;
+            }
+
+            if (e.metaKey && e.key === 'ArrowRight') {
+                if (ws && ws.readyState === WebSocket.OPEN) {
+                    ws.send('\x05');
+                }
+                return false;
+            }
+
+            if (e.altKey && e.key === 'ArrowLeft') {
+                if (ws && ws.readyState === WebSocket.OPEN) {
+                    ws.send('\x1bb');
+                }
+                return false;
+            }
+
+            if (e.altKey && e.key === 'ArrowRight') {
+                if (ws && ws.readyState === WebSocket.OPEN) {
+                    ws.send('\x1bf');
+                }
+                return false;
+            }
+
+            if (e.metaKey && e.key === 'Backspace') {
+                if (ws && ws.readyState === WebSocket.OPEN) {
+                    ws.send('\x15');
+                }
+                return false;
+            }
+
+            if (e.altKey && e.key === 'Backspace') {
+                if (ws && ws.readyState === WebSocket.OPEN) {
+                    ws.send('\x17');
+                }
+                return false;
+            }
+
+            if (e.metaKey && (e.key === 'k' || e.key === 'K')) {
+                if (term) {
+                    term.clear();
+                }
+                if (ws && ws.readyState === WebSocket.OPEN) {
+                    ws.send('\x0c');
+                }
+                return false;
+            }
+
+            return true;
         });
 
         if (window.FitAddon && window.FitAddon.FitAddon) {
@@ -247,9 +313,7 @@ $(document).ready(function() {
         term.open(container);
 
         if (fitAddon) {
-            setTimeout(function() {
-                try { fitAddon.fit(); } catch(e) {}
-            }, 100);
+            fitAddon.fit();
         }
 
         term.onData(function(data) {
@@ -272,7 +336,7 @@ $(document).ready(function() {
         connectWebSocket();
     }
 
-    function connectWebSocket() {
+    function connectWebSocket(reset) {
         if (ws) {
             try { ws.close(); } catch(e) {}
             ws = null;
@@ -282,7 +346,7 @@ $(document).ready(function() {
         statusPill.attr('class', 'status-pill status-connecting')
                   .html('<i class="fa fa-circle-o-notch fa-spin"></i>&nbsp;{{ lang._("Connecting...") }}');
 
-        var wsUrl = getWsProtocol() + '//' + window.location.host + '/api/terminal/ws';
+        var wsUrl = getWsProtocol() + '//' + window.location.host + '/api/terminal/ws' + (reset ? '?reset=1' : '');
 
         try {
             ws = new WebSocket(wsUrl);
@@ -361,11 +425,10 @@ $(document).ready(function() {
 
                 $('.btn-install-shell').click(function() {
                     var shellPkg = $(this).data('shell');
-                    var btn = $(this);
-                    btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Installing...');
-
-                    ajaxCall('/api/terminal/terminal/installShell', {shell: shellPkg}, function(res, s) {
-                        btn.html('<i class="fa fa-check"></i> Done');
+                    var actName = shellPkg === 'bash' ? 'installBash' : 'installZsh';
+                    var $btn = $(this);
+                    $btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> ' + '{{ lang._("Installing...") }}');
+                    ajaxCall('/api/terminal/service/' + actName, {}, function(data) {
                         setTimeout(refreshShellTable, 1000);
                     });
                 });
@@ -378,7 +441,7 @@ $(document).ready(function() {
         if (term) {
             term.clear();
         }
-        connectWebSocket();
+        connectWebSocket(false);
     });
 
     $('#btn_term_clear').click(function() {
@@ -543,6 +606,10 @@ $(document).ready(function() {
         saveFormToEndpoint('/api/terminal/settings/set', 'frm_general-settings', function() {
             ajaxCall('/api/terminal/service/reconfigure', {}, function() {
                 refreshShellTable();
+                if (term) {
+                    term.clear();
+                }
+                connectWebSocket(true);
             });
         });
     });

@@ -90,7 +90,11 @@ def test_dashboard_inspect_modal_and_theme_elements():
     assert "Security & Runtime" in content
     assert "Environment & Execution" in content
     assert 'class="panel-collapse collapse"' in content
-    assert "Digest/ID" in content
+    assert "ID / Digest" in content
+    assert "btn-copy-val" in content
+    assert "nullfs" in content
+    assert "mType === 'nullfs'" in content
+
 
 
 def test_alias_and_cshrc_block_manipulation():

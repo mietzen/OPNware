@@ -30,7 +30,7 @@ def test_os_terminal_config_and_structure():
     content = config_file.read_text()
     assert "name: terminal" in content
     assert "origin: opnware/os-terminal" in content
-    assert 'version: 0.1.0' in content
+    assert 'version: 0.1.1' in content
 
     build_sh = ROOT_DIR / "pkgs" / "os-terminal" / "build.sh"
     assert build_sh.exists()
@@ -147,12 +147,25 @@ def test_terminal_daemon_helpers_and_auth():
         assert terminal_daemon.resolve_shell("nonexistent_user", default_shell_setting="sh") == "/bin/sh"
         assert terminal_daemon.resolve_shell("root", default_shell_setting="sh") == "/bin/sh"
 
-        # 5. HostTerminalSession close
+        # 5. HostTerminalSession close and scrollback buffering
         session = terminal_daemon.HostTerminalSession("root", "/bin/sh")
         session.master_fd = None
         session.pid = None
+        assert isinstance(session.history, bytearray)
+        session.history.extend(b"sample terminal history output")
+        assert len(session.history) > 0
         session.close()
         assert session.closed is True
+
+        # 6. Active sessions mapping
+        session2 = terminal_daemon.HostTerminalSession("testuser", "/bin/sh")
+        session2.master_fd = None
+        session2.pid = None
+        terminal_daemon.ACTIVE_SESSIONS["testuser"] = session2
+        assert terminal_daemon.ACTIVE_SESSIONS.get("testuser") is session2
+        session2.close()
+        assert "testuser" not in terminal_daemon.ACTIVE_SESSIONS
+
     finally:
         sys.path.pop(0)
 
@@ -182,5 +195,17 @@ def test_terminal_view_template_and_fullscreen():
     assert "#btn_term_font_dec" in content
     assert "updateFontSize" in content
     assert "options.fontSize" in content
+
+    # macOS shortcuts & Dead key handling
+    assert "attachCustomKeyEventHandler" in content
+    assert "isComposing" in content
+    assert "Dead" in content
+    assert "ArrowLeft" in content
+    assert "ArrowRight" in content
+    assert "macOptionIsMeta: true" in content
+
+    # Reconnect button without forced session reset
+    assert "connectWebSocket(false)" in content
+
 
 
