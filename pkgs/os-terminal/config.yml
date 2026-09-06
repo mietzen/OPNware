@@ -1,0 +1,21 @@
+---
+build_config:
+  include: {}
+plugin:
+  opnsense_version: "26.7"
+  tier: 3
+pkg_manifest:
+  name: terminal
+  origin: opnware/os-terminal
+  version: 0.1.0
+  comment: Interactive Web Terminal for OPNsense
+  www: https://github.com/mietzen/OPNware
+  maintainer: github.nstein@mailbox.org
+  prefix: /usr/local
+  licenselogic: single
+  licenses:
+    - MIT
+  desc: |
+    OPNware os-terminal provides an interactive web terminal directly inside
+    the OPNsense WebUI using XTerm.js, attached to the authenticated user's
+    login shell with full PTY support.

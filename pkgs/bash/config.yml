@@ -1,0 +1,9 @@
+---
+build_config:
+  include: {}
+redistribute:
+  name: bash
+  version:
+    FreeBSD-15-amd64: "5.3.15"
+  repo: http://pkg.freebsd.org
+  path: quarterly/All
