@@ -172,10 +172,30 @@ def test_homer_rcd_checks_caddy_enable():
 
 def test_package_versions_bumped():
     homer_spec = yaml.safe_load(HOMER_CONFIG.read_text())
-    assert homer_spec["pkg_manifest"]["version"] == "0.5.11"
+    assert homer_spec["pkg_manifest"]["version"] == "0.5.12"
 
     caddy_spec = yaml.safe_load(CADDY_CONFIG.read_text())
     assert caddy_spec["pkg_manifest"]["version"] == "0.8.18"
+
+
+def test_homer_access_logging_configuration():
+    caddyfile_template = Path("pkgs/os-homer/src/opnsense/service/templates/OPNsense/Homer/Caddyfile").read_text()
+    assert "log {" in caddyfile_template
+    assert "output net unixgram//var/run/homer/log.sock" in caddyfile_template
+    assert "format json" in caddyfile_template
+
+    sync_src = HOMER_SYNC.read_text()
+    assert "log {" in sync_src
+    assert "output net unixgram//var/run/homer/log.sock" in sync_src
+
+    syslog_src = Path("pkgs/os-homer/src/etc/syslog-ng.conf.d/homer.conf").read_text()
+    assert "unix-dgram(" in syslog_src
+    assert "flags(no-parse)" in syslog_src
+    assert ".caddy.request.remote_ip" in syslog_src
+    assert ".caddy.request.method" in syslog_src
+    assert ".caddy.request.uri" in syslog_src
+    assert ".caddy.status" in syslog_src
+    assert "http.log.access" in syslog_src
 
 
 CADDY_RCD = Path("pkgs/os-caddy-advanced/src/usr/local/etc/rc.d/caddy")
