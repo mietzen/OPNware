@@ -201,6 +201,8 @@ def resolve_shell(username: str, requested_shell: str = "", default_shell_settin
     return "/bin/sh"
 
 
+import errno
+
 ACTIVE_SESSIONS: dict[str, "HostTerminalSession"] = {}
 MAX_SCROLLBACK_BYTES = 256 * 1024
 
@@ -215,7 +217,7 @@ class HostTerminalSession:
         self.pid: int | None = None
         self.closed = False
         self.history = bytearray()
-        self.attached_writers: set[asyncio.StreamWriter] = set()
+        self.attached_queues: set[asyncio.Queue] = set()
         self.pty_task: asyncio.Task | None = None
 
     def start(self):
@@ -323,7 +325,13 @@ class HostTerminalSession:
                     queue.put_nowait(chunk)
                 else:
                     queue.put_nowait(None)
-            except (OSError, ValueError):
+            except (BlockingIOError, InterruptedError):
+                return
+            except OSError as e:
+                if e.errno in (errno.EAGAIN, errno.EWOULDBLOCK, errno.EINTR):
+                    return
+                queue.put_nowait(None)
+            except Exception:
                 queue.put_nowait(None)
 
         if master_fd is not None:
@@ -340,15 +348,11 @@ class HostTerminalSession:
                     del self.history[: len(self.history) - MAX_SCROLLBACK_BYTES]
 
                 frame = encode_ws_frame(chunk, opcode=OPCODE_BIN)
-                dead_writers = []
-                for writer in list(self.attached_writers):
+                for q in list(self.attached_queues):
                     try:
-                        writer.write(frame)
-                        await writer.drain()
-                    except Exception:
-                        dead_writers.append(writer)
-                for dw in dead_writers:
-                    self.attached_writers.discard(dw)
+                        q.put_nowait(frame)
+                    except (asyncio.QueueFull, Exception):
+                        pass
         except (asyncio.CancelledError, Exception):
             pass
         finally:
@@ -408,7 +412,20 @@ class HostTerminalSession:
             self.pid = None
 
 
-async def handle_ws_input(session: HostTerminalSession, reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
+async def ws_writer_loop(writer: asyncio.StreamWriter, send_queue: asyncio.Queue):
+    """Drain frames from send_queue and transmit to client."""
+    try:
+        while True:
+            frame = await send_queue.get()
+            if frame is None:
+                break
+            writer.write(frame)
+            await writer.drain()
+    except (asyncio.CancelledError, Exception):
+        pass
+
+
+async def handle_ws_input(session: HostTerminalSession, reader: asyncio.StreamReader, send_queue: asyncio.Queue):
     """Read WebSocket frames from browser and write to PTY."""
     while not session.closed:
         opcode, data = await parse_ws_frame(reader)
@@ -416,8 +433,7 @@ async def handle_ws_input(session: HostTerminalSession, reader: asyncio.StreamRe
             break
         elif opcode == OPCODE_PING:
             try:
-                writer.write(encode_ws_frame(data, opcode=OPCODE_PONG))
-                await writer.drain()
+                send_queue.put_nowait(encode_ws_frame(data, opcode=OPCODE_PONG))
             except Exception:
                 break
         elif opcode in (OPCODE_TEXT, OPCODE_BIN):
@@ -433,8 +449,7 @@ async def handle_ws_input(session: HostTerminalSession, reader: asyncio.StreamRe
                     pass
             elif data.startswith(b"\x00{") and b"ping" in data:
                 try:
-                    writer.write(encode_ws_frame(b"\x00{\"type\":\"pong\"}", opcode=OPCODE_TEXT))
-                    await writer.drain()
+                    send_queue.put_nowait(encode_ws_frame(b"\x00{\"type\":\"pong\"}", opcode=OPCODE_TEXT))
                     continue
                 except Exception:
                     break
@@ -509,25 +524,34 @@ def create_ws_handler(default_shell_setting: str):
         writer.write(handshake_resp.encode("utf-8"))
         await writer.drain()
 
+        send_queue: asyncio.Queue = asyncio.Queue(maxsize=1024)
+        writer_task = asyncio.create_task(ws_writer_loop(writer, send_queue))
+
         # Replay scrollback buffer so terminal output is preserved
         if session.history:
             try:
-                writer.write(encode_ws_frame(bytes(session.history), opcode=OPCODE_BIN))
-                await writer.drain()
+                send_queue.put_nowait(encode_ws_frame(bytes(session.history), opcode=OPCODE_BIN))
             except Exception:
                 pass
 
-        session.attached_writers.add(writer)
+        session.attached_queues.add(send_queue)
 
         try:
-            await handle_ws_input(session, reader, writer)
+            await handle_ws_input(session, reader, send_queue)
         finally:
-            session.attached_writers.discard(writer)
+            session.attached_queues.discard(send_queue)
             try:
-                writer.write(encode_ws_frame(b"", opcode=OPCODE_CLOSE))
-                await writer.drain()
+                send_queue.put_nowait(encode_ws_frame(b"", opcode=OPCODE_CLOSE))
             except Exception:
                 pass
+            try:
+                send_queue.put_nowait(None)
+            except Exception:
+                pass
+            try:
+                await asyncio.wait_for(writer_task, timeout=1.0)
+            except Exception:
+                writer_task.cancel()
             writer.close()
             try:
                 await writer.wait_closed()

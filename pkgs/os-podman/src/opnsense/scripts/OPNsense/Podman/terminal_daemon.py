@@ -7,6 +7,7 @@ Connects browser XTerm clients to container shells via podman exec.
 import argparse
 import asyncio
 import base64
+import errno
 import fcntl
 import hashlib
 import json
@@ -242,7 +243,13 @@ async def handle_pty_read(session: TerminalSession, writer: asyncio.StreamWriter
                 queue.put_nowait(chunk)
             else:
                 queue.put_nowait(None)
-        except (OSError, ValueError):
+        except (BlockingIOError, InterruptedError):
+            return
+        except OSError as e:
+            if e.errno in (errno.EAGAIN, errno.EWOULDBLOCK, errno.EINTR):
+                return
+            queue.put_nowait(None)
+        except Exception:
             queue.put_nowait(None)
 
     if master_fd is not None:
