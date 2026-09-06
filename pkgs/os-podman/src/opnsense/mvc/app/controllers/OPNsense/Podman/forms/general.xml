@@ -12,6 +12,24 @@
         <help>Automatically load FreeBSD 64-bit Linux kernel modules (linux64.ko, linprocfs, linsysfs) to allow running Linux container images.</help>
     </field>
     <field>
+        <id>podman.general.default_linux_platform</id>
+        <label>Default Linux Platform</label>
+        <type>checkbox</type>
+        <help>Use podman-wrapper to default build, run, create, and pull to --platform linux/amd64.</help>
+    </field>
+    <field>
+        <id>podman.general.docker_alias</id>
+        <label>Docker Alias</label>
+        <type>checkbox</type>
+        <help>Provide 'docker' command alias and /usr/local/bin/docker symlink pointing to Podman.</help>
+    </field>
+    <field>
+        <id>podman.general.docker_search_registry</id>
+        <label>Docker Hub Search Registry</label>
+        <type>checkbox</type>
+        <help>Set unqualified-search-registries = ["docker.io"] in /usr/local/etc/containers/registries.conf.</help>
+    </field>
+    <field>
         <id>podman.general.interfaces</id>
         <label>Firewall Interfaces</label>
         <type>select_multiple</type>

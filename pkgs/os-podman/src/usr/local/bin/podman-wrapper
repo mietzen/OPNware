@@ -1,0 +1,26 @@
+#!/bin/sh
+
+PODMAN=/usr/local/bin/podman
+SUDO=/usr/bin/sudo
+
+case "${1:-}" in
+    build|run|create|pull)
+        cmd="$1"
+        shift
+
+        # Don't add a duplicate --platform if explicitly specified.
+        for arg in "$@"; do
+            case "$arg" in
+                --platform|--platform=*)
+                    exec "$SUDO" "$PODMAN" "$cmd" "$@"
+                    ;;
+            esac
+        done
+
+        exec "$SUDO" "$PODMAN" "$cmd" \
+            --platform linux/amd64 "$@"
+        ;;
+    *)
+        exec "$SUDO" "$PODMAN" "$@"
+        ;;
+esac

@@ -41,7 +41,7 @@ def test_os_podman_spec_and_files_valid():
     manifest = spec.get("pkg_manifest", {})
     assert manifest.get("name") == "podman"
     assert manifest.get("origin") == "opnware/os-podman"
-    assert manifest.get("version") == "0.1.22"
+    assert manifest.get("version") == "0.1.23"
 
     deps = manifest.get("deps", {})
     for name in REDISTRIBUTE_PKGS:
@@ -122,6 +122,29 @@ def test_os_podman_spec_and_files_valid():
     assert "/usr/local/bin/docker" in setup_content
     assert "hasExistingStorage" in setup_content
     assert "skipping zroot/containers creation" in setup_content
+    assert "BEGIN OPNWARE PODMAN ALIASES" in setup_content
+    assert "profile.d/podman.sh" in setup_content
+    assert "podman-wrapper" in setup_content
+    assert "unqualified-search-registries" in setup_content
+
+    # Stream A wrapper & build staging assertions
+    wrapper_path = src / "usr" / "local" / "bin" / "podman-wrapper"
+    assert wrapper_path.exists()
+    assert wrapper_path.stat().st_mode & 0o111
+    wrapper_text = wrapper_path.read_text()
+    assert "--platform linux/amd64" in wrapper_text
+    assert "build|run|create|pull" in wrapper_text
+
+    build_sh_text = (podman_dir / "build.sh").read_text()
+    assert "bin/podman-wrapper" in build_sh_text
+
+    assert "<default_linux_platform" in podman_xml
+    assert "<docker_alias" in podman_xml
+    assert "<docker_search_registry" in podman_xml
+
+    assert "podman.general.default_linux_platform" in forms_general
+    assert "podman.general.docker_alias" in forms_general
+    assert "podman.general.docker_search_registry" in forms_general
 
     manage_content = (src / "opnsense" / "scripts" / "OPNsense" / "Podman" / "manage.py").read_text()
     assert "containers.exec" in manage_content
@@ -135,3 +158,4 @@ def test_os_podman_spec_and_files_valid():
     doc_text = (ROOT_DIR / "docs" / "plugins" / "os-podman.md").read_text()
     assert "Root Privileges Required" in doc_text
     assert (ROOT_DIR / "docs" / "plugins" / "os-podman.md").exists()
+
