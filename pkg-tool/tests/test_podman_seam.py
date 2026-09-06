@@ -98,7 +98,7 @@ def test_os_podman_spec_and_files_valid():
     assert "xterm-terminal-container" in dashboard_content
     assert "connectTerminalWs" in dashboard_content
     cli_modal_section = dashboard_content[dashboard_content.find('id="modal-cli"'):]
-    assert 'class="modal-footer"' not in cli_modal_section
+    assert 'class="modal-footer"' in cli_modal_section
     assert "ansiToHtml" in dashboard_content
     assert "act-cli" in dashboard_content
     assert "btn_system_prune" in dashboard_content

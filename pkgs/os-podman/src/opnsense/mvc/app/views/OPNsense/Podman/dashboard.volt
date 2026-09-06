@@ -856,16 +856,16 @@
             return;
         }
 
-        currentTerm = new TermClass({
+        currentTerm = new window.Terminal({
             cursorBlink: true,
             theme: {
-                background: '#181818',
-                foreground: '#f0f0f0',
+                background: '#1e1e1e',
+                foreground: '#d4d4d4',
                 cursor: '#5af78e',
                 selectionBackground: '#334455'
             },
-            fontFamily: 'Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
-            fontSize: 13,
+            fontFamily: 'monospace, Menlo, Monaco, Consolas, "Courier New"',
+            fontSize: 12,
             lineHeight: 1.2
         });
 
@@ -956,7 +956,7 @@
     function showContainerCli(cid, name) {
         currentCliContainerId = cid;
         currentCliContainerName = name;
-        $('#modal-cli-title').html('<i class="fa fa-terminal text-warning"></i> {{ lang._("Container Terminal") }}: ' + $('<div>').text(name || cid).html());
+        $('#modal-cli-title').html('<i class="fa fa-terminal text-primary"></i> {{ lang._("Container Terminal") }}: ' + $('<div>').text(name || cid).html());
         $('#modal-cli').modal('show');
     }
 
@@ -1339,30 +1339,42 @@
 
 <!-- Container Terminal Modal -->
 <div class="modal fade" id="modal-cli" tabindex="-1" role="dialog" aria-labelledby="modal-cli-title" aria-hidden="true">
-    <div class="modal-dialog modal-lg" style="width: 85%; max-width: 1100px;" role="document">
-        <div class="modal-content" style="background: #181818; color: #f0f0f0; border: 1px solid #2a2a2a; border-radius: 6px;">
-            <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; background: #181818; border-bottom: 1px solid #2a2a2a; padding: 10px 15px;">
-                <h4 class="modal-title" id="modal-cli-title" style="margin: 0; font-size: 15px; font-weight: bold; color: #f0f0f0;">
-                    <i class="fa fa-terminal text-warning"></i> {{ lang._('Container Terminal') }}
+    <div class="modal-dialog modal-lg" style="width: 85%; max-width: 1200px;" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title" id="modal-cli-title">
+                    <i class="fa fa-terminal text-primary"></i> {{ lang._('Container Terminal') }}
                 </h4>
-                <div style="display: flex; align-items: center; gap: 8px;">
-                    <div style="display: inline-flex; align-items: center; gap: 5px;">
-                        <label for="cli-shell" style="margin: 0; font-size: 12px; font-weight: normal; color: #aaa;">{{ lang._('Shell') }}:</label>
-                        <input type="text" class="form-control input-sm" id="cli-shell" list="cli-shell-list" value="/bin/sh" style="width: 100px; height: 26px; padding: 2px 8px; background: #242424; color: #f0f0f0; border: 1px solid #333;" />
-                        <datalist id="cli-shell-list">
-                            <option value="/bin/sh">
-                            <option value="/bin/bash">
-                            <option value="/bin/csh">
-                            <option value="/bin/zsh">
-                            <option value="/bin/ash">
-                        </datalist>
+            </div>
+            <div class="modal-body" style="padding: 15px;">
+                <div class="panel panel-default" style="margin-bottom: 0;">
+                    <div class="panel-heading" style="display: flex; justify-content: space-between; align-items: center; padding: 6px 12px;">
+                        <span style="font-weight: bold; font-size: 12px; text-transform: uppercase;">
+                            <i class="fa fa-terminal text-primary"></i> {{ lang._('Interactive Terminal Console') }}
+                        </span>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <div style="display: inline-flex; align-items: center; gap: 5px;">
+                                <label for="cli-shell" style="margin: 0; font-size: 12px; font-weight: normal;">{{ lang._('Shell') }}:</label>
+                                <input type="text" class="form-control input-sm" id="cli-shell" list="cli-shell-list" value="/bin/sh" style="width: 120px; height: 26px; padding: 2px 8px;" />
+                                <datalist id="cli-shell-list">
+                                    <option value="/bin/sh">
+                                    <option value="/bin/bash">
+                                    <option value="/bin/csh">
+                                    <option value="/bin/zsh">
+                                    <option value="/bin/ash">
+                                </datalist>
+                            </div>
+                            <button type="button" class="btn btn-xs btn-default" id="btn_clear_cli" title="{{ lang._('Clear Terminal') }}"><i class="fa fa-eraser"></i> {{ lang._('Clear') }}</button>
+                        </div>
                     </div>
-                    <button type="button" class="btn btn-xs btn-default" id="btn_clear_cli" title="{{ lang._('Clear Terminal') }}" style="background: #242424; color: #f0f0f0; border: 1px solid #333;"><i class="fa fa-eraser"></i> {{ lang._('Clear') }}</button>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close" style="color: #fff; opacity: 0.8; margin-left: 10px;"><span aria-hidden="true">&times;</span></button>
+                    <div class="panel-body" style="padding: 0; background: #1e1e1e; border-radius: 0 0 4px 4px;">
+                        <div id="xterm-terminal-container" style="height: 480px; width: 100%; padding: 8px; border-radius: 0 0 4px 4px;"></div>
+                    </div>
                 </div>
             </div>
-            <div class="modal-body" style="padding: 10px; background: #181818; border-radius: 0 0 6px 6px;">
-                <div id="xterm-terminal-container" style="height: 480px; width: 100%; background: #181818; border: 1px solid #2a2a2a; border-radius: 4px; padding: 4px;"></div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-dismiss="modal">{{ lang._('Close') }}</button>
             </div>
         </div>
     </div>

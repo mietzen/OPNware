@@ -75,7 +75,7 @@ def test_dashboard_inspect_modal_and_theme_elements():
     content = dash_file.read_text()
 
     # XTerm Theme blend-in
-    assert "background: '#181818'" in content
+    assert "background: '#1e1e1e'" in content
     assert "cursor: '#5af78e'" in content
 
     # Inspect modal structured elements
