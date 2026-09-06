@@ -586,6 +586,9 @@
             statusBadge = '<span class="label label-info">' + escapeHtml(rawObj.Status) + '</span>';
         }
 
+        var imageDigest = rawObj.Image || '';
+        var imageDigestShort = imageDigest.length > 19 ? imageDigest.substring(0, 19) + '...' : imageDigest;
+
         var headerHtml = '<div class="panel panel-default" style="margin-bottom: 15px;">' +
             '<div class="panel-body" style="padding: 12px 15px;">' +
             '<div class="row">' +
@@ -613,6 +616,7 @@
             '<div class="col-xs-12">' +
             '<span class="text-muted" style="font-size: 11px; text-transform: uppercase;">{{ lang._("Image") }}: </span>' +
             '<code>' + escapeHtml(imageTag) + '</code>' +
+            (imageDigest && imageDigest !== imageTag ? ' <span class="text-muted">({{ lang._("Digest/ID") }}: <code title="' + escapeHtml(imageDigest) + '">' + escapeHtml(imageDigestShort) + '</code>)</span>' : '') +
             '</div>' +
             '</div>' +
             '</div>' +
@@ -810,7 +814,7 @@
             '<button type="button" class="btn btn-xs btn-default" id="btn_copy_inspect_raw" title="{{ lang._("Copy Raw Specification") }}"><i class="fa fa-clipboard"></i> {{ lang._("Copy") }}</button>' +
             '</div>' +
             '</div>' +
-            '<div id="inspect-raw-collapse" class="panel-collapse collapse in">' +
+            '<div id="inspect-raw-collapse" class="panel-collapse collapse">' +
             '<div class="panel-body" style="padding: 0; background: #181818;">' +
             '<pre id="modal-inspect-raw" style="background: #181818; color: #f0f0f0; border: none; font-family: Menlo, Monaco, Consolas, monospace; font-size: 12px; max-height: 380px; overflow-y: auto; padding: 12px; margin-bottom: 0; white-space: pre; border-radius: 0 0 4px 4px;"></pre>' +
             '</div>' +

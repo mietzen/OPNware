@@ -89,3 +89,31 @@ def test_dashboard_inspect_modal_and_theme_elements():
     assert "Storage & Mounts" in content
     assert "Security & Runtime" in content
     assert "Environment & Execution" in content
+    assert 'class="panel-collapse collapse"' in content
+    assert "Digest/ID" in content
+
+
+def test_alias_and_cshrc_block_manipulation():
+    begin_marker = "# BEGIN OPNWARE PODMAN ALIASES"
+    end_marker = "# END OPNWARE PODMAN ALIASES"
+
+    # 1. Existing cshrc with other content
+    initial_cshrc = "# System cshrc\nset prompt = '%n@%m:%~%# '\n"
+    aliases = [
+        "alias podman /usr/local/bin/podman-wrapper",
+        "alias docker /usr/local/bin/podman-wrapper",
+    ]
+    block = f"{begin_marker}\n" + "\n".join(aliases) + f"\n{end_marker}\n"
+    updated_cshrc = initial_cshrc.strip() + "\n\n" + block
+
+    assert begin_marker in updated_cshrc
+    assert "alias podman /usr/local/bin/podman-wrapper" in updated_cshrc
+    assert "alias docker /usr/local/bin/podman-wrapper" in updated_cshrc
+
+    # 2. Test removal/update of block
+    import re
+    pattern = r"\n?" + re.escape(begin_marker) + r".*?" + re.escape(end_marker) + r"\n?"
+    cleaned_cshrc = re.sub(pattern, "", updated_cshrc, flags=re.DOTALL).strip()
+    assert cleaned_cshrc == initial_cshrc.strip()
+    assert begin_marker not in cleaned_cshrc
+

@@ -1,7 +1,11 @@
 #!/bin/sh
 
 PODMAN=/usr/local/bin/podman
-SUDO=/usr/bin/sudo
+SUDO=/usr/local/bin/sudo
+
+if [ "$(id -u 2>/dev/null)" = "0" ] || [ ! -x "$SUDO" ]; then
+    SUDO=""
+fi
 
 case "${1:-}" in
     build|run|create|pull)
@@ -12,15 +16,15 @@ case "${1:-}" in
         for arg in "$@"; do
             case "$arg" in
                 --platform|--platform=*)
-                    exec "$SUDO" "$PODMAN" "$cmd" "$@"
+                    exec $SUDO "$PODMAN" "$cmd" "$@"
                     ;;
             esac
         done
 
-        exec "$SUDO" "$PODMAN" "$cmd" \
+        exec $SUDO "$PODMAN" "$cmd" \
             --platform linux/amd64 "$@"
         ;;
     *)
-        exec "$SUDO" "$PODMAN" "$@"
+        exec $SUDO "$PODMAN" "$@"
         ;;
 esac
