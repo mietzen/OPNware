@@ -7,7 +7,7 @@ plugin:
 pkg_manifest:
   name: podman
   origin: opnware/os-podman
-  version: 0.1.28
+  version: 0.1.29
   comment: Manage containers, images, volumes, and networks via Podman on FreeBSD Jails
   www: https://podman.io/
   maintainer: github.nstein@mailbox.org

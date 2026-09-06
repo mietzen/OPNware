@@ -1330,12 +1330,12 @@
     </div>
     <div class="col-xs-12 col-sm-6 col-md-3">
         <div class="panel panel-default" style="margin-bottom: 0;">
-            <div class="panel-body" style="padding: 10px 15px; min-height: 64px; display: flex; align-items: center; justify-content: space-between; text-align: left;">
+            <div class="panel-body" style="padding: 10px 15px; min-height: 64px; display: flex; align-items: center; text-align: left;">
                 <div style="text-align: left;">
                     <div class="text-muted" style="font-size: 11px; text-transform: uppercase;"><i class="fa fa-recycle" style="margin-right: 6px;"></i>{{ lang._('Reclaimable') }}</div>
                     <div style="font-size: 18px; font-weight: bold; color: #f0ad4e;" id="stat-reclaimable">--</div>
                 </div>
-                <button class="btn btn-xs btn-warning" id="btn_system_prune" title="{{ lang._('Prune unused containers and images') }}" style="margin-left: 10px;">
+                <button class="btn btn-xs btn-warning" id="btn_system_prune" title="{{ lang._('Prune unused containers and images') }}" style="margin-left: auto;">
                     <i class="fa fa-trash-o"></i> {{ lang._('Prune') }} <i id="btn_system_prune_progress"></i>
                 </button>
             </div>

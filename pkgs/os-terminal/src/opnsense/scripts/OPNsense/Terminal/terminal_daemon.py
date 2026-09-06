@@ -381,6 +381,13 @@ class HostTerminalSession:
             return
         self.closed = True
 
+        for q in list(self.attached_queues):
+            try:
+                q.put_nowait(None)
+            except Exception:
+                pass
+        self.attached_queues.clear()
+
         if self.username in ACTIVE_SESSIONS and ACTIVE_SESSIONS[self.username] is self:
             del ACTIVE_SESSIONS[self.username]
 

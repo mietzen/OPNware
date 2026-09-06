@@ -274,10 +274,7 @@ async def handle_pty_read(session: TerminalSession, send_queue: asyncio.Queue):
             if data is None:
                 break
             frame = encode_ws_frame(data, opcode=OPCODE_BIN)
-            try:
-                send_queue.put_nowait(frame)
-            except (asyncio.QueueFull, Exception):
-                pass
+            await send_queue.put(frame)
     except (asyncio.CancelledError, Exception):
         pass
     finally:

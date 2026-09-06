@@ -31,7 +31,7 @@ def test_os_terminal_config_and_structure():
     content = config_file.read_text()
     assert "name: terminal" in content
     assert "origin: opnware/os-terminal" in content
-    assert 'version: 0.1.2' in content
+    assert 'version: 0.1.3' in content
 
     build_sh = ROOT_DIR / "pkgs" / "os-terminal" / "build.sh"
     assert build_sh.exists()
