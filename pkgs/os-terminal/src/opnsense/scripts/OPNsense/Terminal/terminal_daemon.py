@@ -173,16 +173,16 @@ def resolve_user_shell_from_config(username: str) -> str:
 
 def resolve_shell(username: str, requested_shell: str = "", default_shell_setting: str = "auto") -> str:
     """Resolve effective shell path based on user login shell, settings, and availability."""
-    # 1. User's Login Shell from /conf/config.xml (System: Access: Users)
-    xml_shell = resolve_user_shell_from_config(username)
-    if xml_shell and os.path.isfile(xml_shell) and os.access(xml_shell, os.X_OK):
-        return xml_shell
-
-    # 2. Configured default shell setting if not 'auto'
+    # 1. Configured default shell setting if not 'auto'
     if default_shell_setting and default_shell_setting != "auto":
         candidate = KNOWN_SHELLS.get(default_shell_setting, default_shell_setting)
         if os.path.isfile(candidate) and os.access(candidate, os.X_OK):
             return candidate
+
+    # 2. User's Login Shell from /conf/config.xml (System: Access: Users)
+    xml_shell = resolve_user_shell_from_config(username)
+    if xml_shell and os.path.isfile(xml_shell) and os.access(xml_shell, os.X_OK):
+        return xml_shell
 
     # 3. User's system shell from /etc/passwd
     try:
@@ -459,7 +459,7 @@ def create_ws_handler(default_shell_setting: str):
         except Exception as e:
             err_msg = f"\r\n\x1b[31mFailed to start terminal session for '{username}': {e}\x1b[0m\r\n"
             try:
-                writer.write(encode_ws_frame(err_msg.encode("utf-8"), opcode=OPCODE_TXT))
+                writer.write(encode_ws_frame(err_msg.encode("utf-8"), opcode=OPCODE_TEXT))
                 await writer.drain()
             except Exception:
                 pass

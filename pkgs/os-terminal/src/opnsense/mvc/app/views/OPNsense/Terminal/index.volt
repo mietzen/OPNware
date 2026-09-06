@@ -291,6 +291,7 @@ $(document).ready(function() {
             ws.onopen = function() {
                 statusPill.attr('class', 'status-pill status-connected')
                           .html('<i class="fa fa-check-circle"></i>&nbsp;{{ lang._("Connected") }}');
+                $('#term-user-info').text('host');
                 if (term) {
                     term.focus();
                     if (fitAddon) {

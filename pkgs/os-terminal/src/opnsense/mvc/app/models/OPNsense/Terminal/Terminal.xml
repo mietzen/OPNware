@@ -19,22 +19,6 @@
                     <zsh>/usr/local/bin/zsh (Z Shell)</zsh>
                 </OptionValues>
             </default_shell>
-            <theme type="OptionField">
-                <default>opnsense_dark</default>
-                <required>N</required>
-                <OptionValues>
-                    <opnsense_dark>OPNsense Dark Console (#181818)</opnsense_dark>
-                    <black>Deep Black (#000000)</black>
-                    <monokai>Monokai (#272822)</monokai>
-                    <solarized_dark>Solarized Dark (#002b36)</solarized_dark>
-                </OptionValues>
-            </theme>
-            <font_size type="IntegerField">
-                <default>13</default>
-                <required>N</required>
-                <minimumValue>10</minimumValue>
-                <maximumValue>24</maximumValue>
-            </font_size>
         </general>
     </items>
 </model>

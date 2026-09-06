@@ -11,33 +11,7 @@ class SettingsController extends ApiMutableModelControllerBase
     protected static $internalModelName = 'terminal';
     protected static $internalModelPath = 'general';
 
-    public function getAction()
-    {
-        $result = parent::getAction();
-        if (is_array($result) && isset($result['general'])) {
-            $username = (string)$this->session->get('Username') ?: 'root';
-            $config = Config::getInstance()->object();
-            if (isset($config->system->user)) {
-                foreach ($config->system->user as $user) {
-                    if ((string)$user->name === $username && !empty($user->shell)) {
-                        $userShell = (string)$user->shell;
-                        $revMap = [
-                            '/bin/csh' => 'csh',
-                            '/bin/sh' => 'sh',
-                            '/usr/local/bin/bash' => 'bash',
-                            '/usr/local/bin/zsh' => 'zsh',
-                            '/usr/local/sbin/opnsense-shell' => 'opnsense_menu',
-                        ];
-                        if (isset($revMap[$userShell]) && ($result['general']['default_shell'] ?? 'auto') === 'auto') {
-                            $result['general']['default_shell'] = $revMap[$userShell];
-                        }
-                        break;
-                    }
-                }
-            }
-        }
-        return $result;
-    }
+
 
     public function setAction()
     {
