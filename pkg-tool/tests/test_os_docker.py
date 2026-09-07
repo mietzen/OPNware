@@ -100,3 +100,22 @@ def test_docker_templates_and_targets():
     targets_text = targets_file.read_text()
     assert "rc.conf.d/docker:/etc/rc.conf.d/docker" in targets_text
     assert "docker-vm.conf:/var/db/vm/docker-vm/docker-vm.conf" in targets_text
+
+
+def test_alpine_update_detection(monkeypatch):
+    """Verify Alpine release update detection logic."""
+    from pkg_tool import _alpine_latest_version
+
+    sample_yaml = """
+- flavor: alpine-virt
+  version: "3.24.2"
+- flavor: alpine-standard
+  version: "3.24.2"
+"""
+    class MockResponse:
+        status_code = 200
+        text = sample_yaml
+
+    monkeypatch.setattr("requests.get", lambda url, timeout=10: MockResponse())
+    ver = _alpine_latest_version("v3.24")
+    assert ver == "3.24.2"

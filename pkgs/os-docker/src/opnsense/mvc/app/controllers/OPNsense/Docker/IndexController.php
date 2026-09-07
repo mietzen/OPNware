@@ -27,37 +27,14 @@
  *    POSSIBILITY OF SUCH DAMAGE.
  */
 
-namespace OPNsense\Docker\Api;
+namespace OPNsense\Docker;
 
-class SystemController extends DockerApiControllerBase
+use OPNsense\Base\IndexController as BaseIndexController;
+
+class IndexController extends BaseIndexController
 {
-    public function statsAction()
+    public function indexAction()
     {
-        return $this->executeAction('system_stats');
-    }
-
-    public function infoAction()
-    {
-        return $this->executeAction('system_info');
-    }
-
-    public function pruneAction()
-    {
-        if ($this->request->isPost()) {
-            return $this->executeAction('system_prune');
-        }
-        return ["status" => "failed", "message" => gettext("Method Not Allowed")];
-    }
-
-    public function conflictsAction()
-    {
-        $conflictsFile = '/var/db/os-docker/conflicts.json';
-        if (file_exists($conflictsFile)) {
-            $data = json_decode(file_get_contents($conflictsFile), true);
-            if (is_array($data)) {
-                return ["status" => "ok", "conflicts" => $data];
-            }
-        }
-        return ["status" => "ok", "conflicts" => []];
+        $this->view->pick('OPNsense/Docker/dashboard');
     }
 }

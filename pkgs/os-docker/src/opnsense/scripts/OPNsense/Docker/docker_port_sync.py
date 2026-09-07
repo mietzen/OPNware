@@ -85,7 +85,8 @@ def get_active_interfaces():
         proc = subprocess.run(["/sbin/ifconfig", "-l"], capture_output=True, text=True, timeout=5)
         if proc.returncode == 0:
             for iface in proc.stdout.strip().split():
-                if iface.startswith(("vtnet", "em", "igb", "ix", "vmx", "re", "igc", "bge")):
+                # Ignore loopbacks, tap, bridge, bhyve, and packet filter interfaces
+                if not iface.startswith(("lo", "tap", "bridge", "vm-", "epair", "enc", "pflog", "pfsync")):
                     ifs.append(iface)
     except Exception:
         pass
@@ -99,6 +100,7 @@ def sync_pf_rules():
 
     rules = []
     active_keys = set()
+    conflicts = []
 
     for p in container_ports:
         key = (p["proto"], p["host_port"])
@@ -112,14 +114,13 @@ def sync_pf_rules():
             msg = f"Docker port conflict! Container '{p['container']}' requested host port {p['host_port']}/{p['proto']} which is currently bound by host process '{owner}'. Skipping port forward."
             syslog.syslog(syslog.LOG_ERR, f"docker_port_sync: {msg}")
             print(f"ERROR: {msg}", flush=True)
-            try:
-                subprocess.run(
-                    ["/usr/local/sbin/configctl", "core", "notify", "docker_conflict", msg],
-                    capture_output=True,
-                    timeout=5
-                )
-            except Exception:
-                pass
+            conflicts.append({
+                "container": p["container"],
+                "port": p["host_port"],
+                "proto": p["proto"],
+                "owner": owner,
+                "message": msg
+            })
             continue
 
         # Build PF redirect rules for all host interfaces
@@ -127,6 +128,14 @@ def sync_pf_rules():
             rules.append(
                 f"rdr on {iface} proto {p['proto']} from any to ({iface}) port {p['host_port']} -> {VM_IP} port {p['host_port']}"
             )
+
+    # Save conflict status for WebUI dashboard
+    try:
+        os.makedirs("/var/db/os-docker", mode=0o755, exist_ok=True)
+        with open("/var/db/os-docker/conflicts.json", "w") as f:
+            json.dump(conflicts, f)
+    except Exception:
+        pass
 
     rules_text = "\n".join(rules) + "\n" if rules else ""
     try:

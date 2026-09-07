@@ -164,6 +164,17 @@
                 $('#stat_volumes').text(items.length);
             }
         });
+        ajaxGet('/api/docker/system/conflicts', {}, function(data, status) {
+            if (status === 'success' && data && data.conflicts && data.conflicts.length > 0) {
+                var msgs = data.conflicts.map(function(c) {
+                    return '<li>' + decodeHtml(c.message) + '</li>';
+                }).join('');
+                $('#docker_conflict_text').html('<ul style="margin-bottom:0; padding-left:20px;">' + msgs + '</ul>');
+                $('#docker_conflict_alert').slideDown();
+            } else {
+                $('#docker_conflict_alert').slideUp();
+            }
+        });
     }
 
     function refreshContainers() {
@@ -512,6 +523,11 @@
         });
     });
 </script>
+
+<div id="docker_conflict_alert" class="alert alert-danger" style="display:none; margin-bottom: 20px;">
+    <h4><i class="fa fa-exclamation-triangle"></i> <strong>{{ lang._('Port Conflict Detected') }}</strong></h4>
+    <div id="docker_conflict_text"></div>
+</div>
 
 <div class="row" style="margin-bottom: 20px;">
     <div class="col-md-3">
