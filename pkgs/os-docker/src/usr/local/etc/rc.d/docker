@@ -54,8 +54,11 @@ docker_start()
             /usr/local/bin/python3 /usr/local/opnsense/scripts/OPNsense/Docker/terminal_daemon.py </dev/null >/dev/null 2>&1
     fi
 
-    # Use port_sync PID or write service active marker
-    if [ -f /var/run/os-docker/docker_port_sync.pid ]; then
+    # Track bhyve VM process PID
+    bhyve_pid=$(pgrep -f "bhyve.*docker-vm" 2>/dev/null | head -n 1)
+    if [ -n "${bhyve_pid}" ]; then
+        echo "${bhyve_pid}" > "${pidfile}"
+    elif [ -f /var/run/os-docker/docker_port_sync.pid ]; then
         cp /var/run/os-docker/docker_port_sync.pid "${pidfile}"
     fi
     echo "Docker service started successfully."
@@ -76,8 +79,10 @@ docker_stop()
         rm -f /var/run/os-docker/terminal_daemon.pid
     fi
 
-    # 2. Flush PF port forwarding anchor
-    /sbin/pfctl -a 'opnware-docker/*' -F all >/dev/null 2>&1 || true
+    # 2. Flush PF port forwarding and NAT anchors
+    /sbin/pfctl -a opnware-docker/rdr -F all >/dev/null 2>&1 || true
+    /sbin/pfctl -a opnware-docker/nat -F all >/dev/null 2>&1 || true
+    /sbin/pfctl -a opnware-docker/fw -F all >/dev/null 2>&1 || true
 
     # 3. Power off bhyve microVM
     if /usr/local/sbin/vm list 2>/dev/null | grep -E "docker-vm[[:space:]]+.*[[:space:]]+Running" >/dev/null 2>&1; then
