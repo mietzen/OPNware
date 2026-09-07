@@ -22,8 +22,8 @@ cp -R "${SCRIPT_DIR}/src/." "${DIST_ROOT}/dist/pkg/usr/local/"
 # Relocate rc.d script and docker-wrapper to target paths
 mkdir -p "${DIST_ROOT}/dist/pkg/usr/local/etc/rc.d"
 chmod 0755 "${DIST_ROOT}/dist/pkg/usr/local/etc/rc.d"
-install -m 0755 "${SCRIPT_DIR}/src/usr/local/etc/rc.d/docker-service" \
-    "${DIST_ROOT}/dist/pkg/usr/local/etc/rc.d/docker-service"
+install -m 0755 "${SCRIPT_DIR}/src/usr/local/etc/rc.d/docker" \
+    "${DIST_ROOT}/dist/pkg/usr/local/etc/rc.d/docker"
 
 mkdir -p "${DIST_ROOT}/dist/pkg/usr/local/share/opnware/docker"
 chmod 0755 "${DIST_ROOT}/dist/pkg/usr/local/share/opnware/docker"
@@ -44,7 +44,7 @@ chmod 0644 "${DIST_ROOT}/dist/pkg/usr/local/share/doc/os-docker/LICENSE"
 # Normalize permissions
 find "${DIST_ROOT}/dist/pkg/usr/local" -type d -exec chmod 0755 {} +
 find "${DIST_ROOT}/dist/pkg/usr/local" -type f -exec chmod 0644 {} +
-chmod 0755 "${DIST_ROOT}/dist/pkg/usr/local/etc/rc.d/docker-service"
+chmod 0755 "${DIST_ROOT}/dist/pkg/usr/local/etc/rc.d/docker"
 chmod 0755 "${DIST_ROOT}/dist/pkg/usr/local/opnsense/scripts/OPNsense/Docker/"*.php 2>/dev/null || true
 chmod 0755 "${DIST_ROOT}/dist/pkg/usr/local/opnsense/scripts/OPNsense/Docker/"*.py 2>/dev/null || true
 

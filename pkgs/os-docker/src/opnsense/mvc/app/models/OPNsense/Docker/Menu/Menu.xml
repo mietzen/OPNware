@@ -2,7 +2,7 @@
     <Services>
         <Docker VisibleName="Docker" cssClass="fa fa-ship" Order="550">
             <Dashboard VisibleName="Dashboard" url="/ui/docker" Order="10"/>
-            <Settings VisibleName="Settings" url="/ui/docker/index/settings" Order="20"/>
+            <Settings VisibleName="Settings" url="/ui/docker/general" Order="20"/>
         </Docker>
     </Services>
 </menu>

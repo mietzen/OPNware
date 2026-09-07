@@ -54,8 +54,10 @@ docker_start()
             /usr/local/bin/python3 /usr/local/opnsense/scripts/OPNsense/Docker/terminal_daemon.py </dev/null >/dev/null 2>&1
     fi
 
-    # Write master service PID
-    echo $$ > "${pidfile}"
+    # Use port_sync PID or write service active marker
+    if [ -f /var/run/os-docker/docker_port_sync.pid ]; then
+        cp /var/run/os-docker/docker_port_sync.pid "${pidfile}"
+    fi
     echo "Docker service started successfully."
 }
 

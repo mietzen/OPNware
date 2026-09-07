@@ -109,15 +109,23 @@ def sync_pf_rules():
         # Check for host collision
         if key in host_ports:
             owner = host_ports[key]
-            msg = f"ERROR: Docker port conflict! Container '{p['container']}' requested host port {p['host_port']}/{p['proto']} which is currently bound by host process '{owner}'. Skipping port forward."
+            msg = f"Docker port conflict! Container '{p['container']}' requested host port {p['host_port']}/{p['proto']} which is currently bound by host process '{owner}'. Skipping port forward."
             syslog.syslog(syslog.LOG_ERR, f"docker_port_sync: {msg}")
-            print(msg, flush=True)
+            print(f"ERROR: {msg}", flush=True)
+            try:
+                subprocess.run(
+                    ["/usr/local/sbin/configctl", "core", "notify", "docker_conflict", msg],
+                    capture_output=True,
+                    timeout=5
+                )
+            except Exception:
+                pass
             continue
 
         # Build PF redirect rules for all host interfaces
         for iface in interfaces:
             rules.append(
-                f"rdr on {iface} proto {p['proto']} from any to ({iface}) port {p['host_port']} -> {VM_IP} port {p['container_port']}"
+                f"rdr on {iface} proto {p['proto']} from any to ({iface}) port {p['host_port']} -> {VM_IP} port {p['host_port']}"
             )
 
     rules_text = "\n".join(rules) + "\n" if rules else ""

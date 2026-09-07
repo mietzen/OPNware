@@ -88,6 +88,29 @@ if (!file_exists($sshKey)) {
     @chmod($sshKey, 0600);
 }
 
+// Ensure SSH config directs ssh://root@100.64.0.2 to use the key
+$sshClientConfig = <<<EOF
+# BEGIN OPNWARE DOCKER SSH
+Host 100.64.0.2
+    User root
+    IdentityFile {$sshKey}
+    StrictHostKeyChecking no
+    UserKnownHostsFile /dev/null
+    LogLevel ERROR
+# END OPNWARE DOCKER SSH
+EOF;
+
+@mkdir('/root/.ssh', 0700, true);
+$rootSshConf = '/root/.ssh/config';
+$existingSsh = file_exists($rootSshConf) ? file_get_contents($rootSshConf) : '';
+if (strpos($existingSsh, '# BEGIN OPNWARE DOCKER SSH') !== false) {
+    $existingSsh = preg_replace('/# BEGIN OPNWARE DOCKER SSH.*?# END OPNWARE DOCKER SSH\n?/s', $sshClientConfig . "\n", $existingSsh);
+} else {
+    $existingSsh .= "\n" . $sshClientConfig . "\n";
+}
+file_put_contents($rootSshConf, $existingSsh);
+@chmod($rootSshConf, 0600);
+
 // 3. Base OS Image Setup (os.img)
 $osImgTarget = "{$vmDir}/os.img";
 $osImgSource = "{$shareDir}/os.img.zst";
