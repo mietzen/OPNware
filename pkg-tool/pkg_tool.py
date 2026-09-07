@@ -151,6 +151,16 @@ def _validate_spec(spec, source):
             raise ValueError(f"{source}: content.version required")
         if isinstance(content['version'], (dict, list)):
             raise TypeError(f"{source}: content.version must be a scalar")
+    alpine = spec.get('alpine')
+    if alpine is not None:
+        if not isinstance(alpine, dict):
+            raise TypeError(f"{source}: alpine is not a mapping")
+        if not alpine.get('branch') or not isinstance(alpine['branch'], str):
+            raise ValueError(f"{source}: alpine.branch required")
+        if not alpine.get('version'):
+            raise ValueError(f"{source}: alpine.version required")
+        if isinstance(alpine['version'], (dict, list)):
+            raise TypeError(f"{source}: alpine.version must be a scalar")
     if pkg_manifest is not None:
         if not isinstance(pkg_manifest, dict):
             raise TypeError(f"{source}: pkg_manifest is not a mapping")
@@ -793,6 +803,13 @@ def bump(pkg, version=None, abi_arch=None):
         base, revision = m.group(1), int(m.group(2) or 0) + 1
         content = _replace_scalar_in_section(
             content, 'pkg_manifest', 'version', f'{base}_{revision}')
+    elif spec.get('alpine'):
+        content = _replace_scalar_in_section_line(content, 'alpine', 'version', version)
+        manifest_version = str(spec['pkg_manifest']['version'])
+        m = re.match(r'^(.*?)(?:_(\d+))?$', manifest_version)
+        base, revision = m.group(1), int(m.group(2) or 0) + 1
+        content = _replace_scalar_in_section(
+            content, 'pkg_manifest', 'version', f'{base}_{revision}')
     elif spec.get('redistribute'):
         if abi_arch is None:
             raise ValueError(f"{config_path}: redistribute specs need --abi-arch")
@@ -866,13 +883,27 @@ def _gh_latest_version(src_repo, token=None):
         raise ValueError(f"no release found for {src_repo}")
     return remote_version
 
+def _alpine_latest_version(branch):
+    url = f"https://dl-cdn.alpinelinux.org/alpine/{branch}/releases/x86_64/latest-releases.yaml"
+    response = requests.get(url, timeout=10)
+    if response.status_code != 200:
+        raise ValueError(f"failed to fetch Alpine releases from {url}: HTTP {response.status_code}")
+    data = yaml.safe_load(response.text)
+    if isinstance(data, list):
+        for item in data:
+            if item.get('flavor') in ('alpine-virt', 'alpine-minirootfs', 'alpine-standard'):
+                ver = item.get('version')
+                if ver:
+                    return str(ver)
+    raise ValueError(f"no version found in Alpine releases from {url}")
+
 def check_updates(pkgs_dir='pkgs'):
     """
     Check all package specs for newer versions.
 
     Returns the update matrix: {'pkg': [...], 'include': [{pkg, abi_arch, version}, ...]}.
-    Sources are adapters: FreeBSD packagesite (redistribute specs) and GitHub
-    releases (build specs with a src_repo).
+    Sources are adapters: FreeBSD packagesite (redistribute specs), GitHub
+    releases (build specs with a src_repo), and Alpine releases (alpine specs).
     """
     matrix = {'pkg': [], 'include': []}
     for config_file in sorted(Path(pkgs_dir).glob('*/config.yml')):
@@ -888,6 +919,13 @@ def check_updates(pkgs_dir='pkgs'):
             if str(remote) != local:
                 matrix['pkg'].append(pkg_name)
                 matrix['include'].append({'pkg': pkg_name, 'abi_arch': 'content', 'version': remote})
+            continue
+        if config.get('alpine'):
+            remote = _alpine_latest_version(config['alpine']['branch'])
+            local = str(config['alpine']['version'])
+            if str(remote) != local:
+                matrix['pkg'].append(pkg_name)
+                matrix['include'].append({'pkg': pkg_name, 'abi_arch': 'alpine', 'version': remote})
             continue
         if config.get('plugin'):
             continue

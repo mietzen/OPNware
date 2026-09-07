@@ -1,0 +1,2 @@
+rc.conf.d/docker:/etc/rc.conf.d/docker
+docker-vm.conf:/var/db/vm/docker-vm/docker-vm.conf

@@ -1,0 +1,121 @@
+"""
+Unit tests for os-docker OPNsense plugin packaging, configuration, and backend integrity.
+"""
+
+from pathlib import Path
+import configparser
+import xml.etree.ElementTree as ET
+import yaml
+from pkg_tool import _load_spec
+
+REPO_ROOT = Path(__file__).resolve().parent.parent.parent
+DOCKER_PKG_DIR = REPO_ROOT / "pkgs" / "os-docker"
+
+
+def test_docker_config_spec_valid():
+    """Verify pkgs/os-docker/config.yml is valid and has correct metadata."""
+    config_file = DOCKER_PKG_DIR / "config.yml"
+    assert config_file.is_file()
+    spec = _load_spec(str(config_file))
+
+    assert spec["pkg_manifest"]["name"] == "docker"
+    assert spec["pkg_manifest"]["origin"] == "opnware/os-docker"
+    assert spec["plugin"]["opnsense_version"] == "26.7"
+    assert "docker-cli" in spec["pkg_manifest"]["deps"]
+    assert "vm-bhyve" in spec["pkg_manifest"]["deps"]
+    assert "bhyve-firmware" in spec["pkg_manifest"]["deps"]
+    assert spec["alpine"]["branch"] == "v3.24"
+    assert spec["alpine"]["version"] == "3.24.1"
+
+
+def test_docker_model_xml_schema():
+    """Verify Docker.xml model has valid mount point and required fields."""
+    model_xml = DOCKER_PKG_DIR / "src" / "opnsense" / "mvc" / "app" / "models" / "OPNsense" / "Docker" / "Docker.xml"
+    assert model_xml.is_file()
+    tree = ET.parse(model_xml)
+    root = tree.getroot()
+
+    assert root.findtext("mount") == "//OPNsense/docker"
+    general = root.find("items/general")
+    assert general is not None
+    assert general.find("enabled") is not None
+    assert general.find("cpus") is not None
+    assert general.find("memory") is not None
+    assert general.find("disk_size") is not None
+    assert general.find("subnet") is not None
+    assert general.find("port_sync") is not None
+    assert general.find("fail_on_conflict") is not None
+
+
+def test_docker_form_xml_mapping():
+    """Verify general.xml form field IDs map exactly to model items."""
+    form_xml = DOCKER_PKG_DIR / "src" / "opnsense" / "mvc" / "app" / "controllers" / "OPNsense" / "Docker" / "forms" / "general.xml"
+    assert form_xml.is_file()
+    tree = ET.parse(form_xml)
+    root = tree.getroot()
+
+    field_ids = [field.findtext("id") for field in root.findall("field")]
+    expected_fields = [
+        "docker.general.enabled",
+        "docker.general.cpus",
+        "docker.general.memory",
+        "docker.general.disk_size",
+        "docker.general.subnet",
+        "docker.general.port_sync",
+        "docker.general.fail_on_conflict",
+        "docker.general.log_level"
+    ]
+    for ef in expected_fields:
+        assert ef in field_ids, f"Field {ef} missing in form XML"
+
+
+def test_docker_configd_actions():
+    """Verify actions_docker.conf syntax and command declarations."""
+    actions_file = DOCKER_PKG_DIR / "src" / "opnsense" / "service" / "conf" / "actions.d" / "actions_docker.conf"
+    assert actions_file.is_file()
+
+    parser = configparser.ConfigParser()
+    parser.read(actions_file)
+
+    required_actions = [
+        "start", "stop", "restart", "status", "setup", "host_resources",
+        "containers_list", "containers_start", "containers_stop", "containers_restart",
+        "containers_delete", "containers_logs", "containers_inspect",
+        "images_list", "images_pull", "images_delete", "images_prune",
+        "volumes_list", "volumes_create", "volumes_inspect", "volumes_delete", "volumes_prune",
+        "system_stats", "system_info", "system_prune"
+    ]
+
+    for act in required_actions:
+        assert parser.has_section(act), f"Missing configd action section: {act}"
+        assert parser.has_option(act, "command"), f"Action {act} missing command"
+        assert parser.has_option(act, "type"), f"Action {act} missing type"
+
+
+def test_docker_templates_and_targets():
+    """Verify +TARGETS template destinations."""
+    targets_file = DOCKER_PKG_DIR / "src" / "opnsense" / "service" / "templates" / "OPNsense" / "Docker" / "+TARGETS"
+    assert targets_file.is_file()
+
+    targets_text = targets_file.read_text()
+    assert "rc.conf.d/docker:/etc/rc.conf.d/docker" in targets_text
+    assert "docker-vm.conf:/var/db/vm/docker-vm/docker-vm.conf" in targets_text
+
+
+def test_alpine_update_detection(monkeypatch):
+    """Verify Alpine release update detection logic."""
+    from pkg_tool import _alpine_latest_version
+
+    sample_yaml = """
+- flavor: alpine-virt
+  version: "3.24.2"
+- flavor: alpine-standard
+  version: "3.24.2"
+"""
+    class MockResponse:
+        status_code = 200
+        text = sample_yaml
+
+    monkeypatch.setattr("requests.get", lambda url, timeout=10: MockResponse())
+    ver = _alpine_latest_version("v3.24")
+    assert ver == "3.24.2"
