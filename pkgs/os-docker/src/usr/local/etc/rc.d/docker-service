@@ -1,0 +1,108 @@
+#!/bin/sh
+
+# PROVIDE: docker
+# REQUIRE: DAEMON NETWORKING
+# KEYWORD: shutdown
+
+. /etc/rc.subr
+
+name="docker"
+rcvar="docker_enable"
+
+load_rc_config "${name}"
+
+: ${docker_enable:="NO"}
+
+pidfile="/var/run/os-docker/docker_service.pid"
+procname="/usr/sbin/bhyve"
+start_cmd="docker_start"
+stop_cmd="docker_stop"
+status_cmd="docker_status"
+restart_cmd="docker_restart"
+
+mkdir -p /var/run/os-docker /var/db/os-docker /var/log/docker
+
+docker_start()
+{
+    if ! checkyesno docker_enable; then
+        echo "Docker is disabled in /etc/rc.conf.d/docker."
+        return 0
+    fi
+
+    echo "Starting Docker microVM and background services..."
+
+    # 1. Provision switches, base OS, data disk, SSH keys, aliases
+    /usr/local/bin/php /usr/local/opnsense/scripts/OPNsense/Docker/setup.php
+
+    # 2. Start bhyve MicroVM if not already running
+    if ! /usr/local/sbin/vm list 2>/dev/null | grep -E "docker-vm[[:space:]]+.*[[:space:]]+Running" >/dev/null 2>&1; then
+        echo "Booting Alpine Linux microVM..."
+        /usr/local/sbin/vm start docker-vm >/dev/null 2>&1
+    fi
+
+    # 3. Start dynamic PF port sync daemon
+    if [ ! -f /var/run/os-docker/docker_port_sync.pid ] || ! kill -0 $(cat /var/run/os-docker/docker_port_sync.pid 2>/dev/null) 2>/dev/null; then
+        /usr/sbin/daemon -f -p /var/run/os-docker/docker_port_sync.pid \
+            -o /var/log/docker/port_sync.log \
+            /usr/local/bin/python3 /usr/local/opnsense/scripts/OPNsense/Docker/docker_port_sync.py </dev/null >/dev/null 2>&1
+    fi
+
+    # 4. Start interactive container terminal daemon
+    if [ ! -f /var/run/os-docker/terminal_daemon.pid ] || ! kill -0 $(cat /var/run/os-docker/terminal_daemon.pid 2>/dev/null) 2>/dev/null; then
+        /usr/sbin/daemon -f -p /var/run/os-docker/terminal_daemon.pid \
+            -o /var/log/docker/terminal.log \
+            /usr/local/bin/python3 /usr/local/opnsense/scripts/OPNsense/Docker/terminal_daemon.py </dev/null >/dev/null 2>&1
+    fi
+
+    # Write master service PID
+    echo $$ > "${pidfile}"
+    echo "Docker service started successfully."
+}
+
+docker_stop()
+{
+    echo "Stopping Docker microVM and background services..."
+
+    # 1. Stop background daemons
+    if [ -f /var/run/os-docker/docker_port_sync.pid ]; then
+        kill $(cat /var/run/os-docker/docker_port_sync.pid 2>/dev/null) 2>/dev/null || true
+        rm -f /var/run/os-docker/docker_port_sync.pid
+    fi
+
+    if [ -f /var/run/os-docker/terminal_daemon.pid ]; then
+        kill $(cat /var/run/os-docker/terminal_daemon.pid 2>/dev/null) 2>/dev/null || true
+        rm -f /var/run/os-docker/terminal_daemon.pid
+    fi
+
+    # 2. Flush PF port forwarding anchor
+    /sbin/pfctl -a 'opnware-docker/*' -F all >/dev/null 2>&1 || true
+
+    # 3. Power off bhyve microVM
+    if /usr/local/sbin/vm list 2>/dev/null | grep -E "docker-vm[[:space:]]+.*[[:space:]]+Running" >/dev/null 2>&1; then
+        echo "Shutting down Alpine Linux microVM..."
+        /usr/local/sbin/vm poweroff docker-vm >/dev/null 2>&1 || /usr/local/sbin/vm stop -f docker-vm >/dev/null 2>&1 || true
+    fi
+
+    rm -f "${pidfile}"
+    echo "Docker service stopped."
+}
+
+docker_status()
+{
+    if /usr/local/sbin/vm list 2>/dev/null | grep -E "docker-vm[[:space:]]+.*[[:space:]]+Running" >/dev/null 2>&1; then
+        echo "docker is running (MicroVM active)."
+        return 0
+    else
+        echo "docker is not running."
+        return 1
+    fi
+}
+
+docker_restart()
+{
+    docker_stop
+    sleep 2
+    docker_start
+}
+
+run_rc_command "$1"

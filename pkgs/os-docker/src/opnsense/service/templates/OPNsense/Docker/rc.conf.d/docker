@@ -1,0 +1,5 @@
+{% if helpers.exists('OPNsense.docker.general.enabled') and OPNsense.docker.general.enabled == '1' %}
+docker_enable="YES"
+{% else %}
+docker_enable="NO"
+{% endif %}

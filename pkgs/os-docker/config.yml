@@ -1,0 +1,34 @@
+---
+build_config:
+  include: {}
+plugin:
+  opnsense_version: "26.7"
+  tier: 3
+pkg_manifest:
+  name: docker
+  origin: opnware/os-docker
+  version: 0.1.0
+  comment: Manage Linux containers, images, and volumes via Docker inside an Alpine Linux microVM
+  www: https://www.docker.com/
+  maintainer: github.nstein@mailbox.org
+  prefix: /usr/local
+  licenselogic: single
+  licenses:
+    - MIT
+  desc: |
+    OPNware os-docker: provides high-performance, isolated Linux container management on OPNsense using a lightweight Alpine Linux 3.24 bhyve MicroVM and native FreeBSD docker-cli. Features include dual-disk architecture with zero-loss OS upgrades, persistent ext4 data volume, dynamic host resource detection, dynamic PF port forwarding with host collision protection, and a full WebUI dashboard for containers, images, volumes, and live terminal sessions.
+  deps:
+    docker-cli:
+      origin: sysutils/docker-cli
+      version: ">=29.4.2"
+    vm-bhyve:
+      origin: sysutils/vm-bhyve
+      version: ">=1.7.5"
+    bhyve-firmware:
+      origin: sysutils/bhyve-firmware
+      version: ">=1.0_2"
+alpine:
+  branch: "v3.24"
+  version: "3.24.1"
+  flavor: "alpine-virt"
+  arch: "x86_64"

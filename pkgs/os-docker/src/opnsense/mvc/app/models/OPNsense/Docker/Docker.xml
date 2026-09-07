@@ -1,0 +1,61 @@
+<model>
+    <mount>//OPNsense/docker</mount>
+    <version>1.0.0</version>
+    <description>OPNware Docker Engine Settings</description>
+    <items>
+        <general>
+            <enabled type="BooleanField">
+                <default>0</default>
+                <Required>Y</Required>
+            </enabled>
+            <cpus type="IntegerField">
+                <default>2</default>
+                <MinimumValue>1</MinimumValue>
+                <MaximumValue>128</MaximumValue>
+                <Required>Y</Required>
+            </cpus>
+            <memory type="IntegerField">
+                <default>2048</default>
+                <MinimumValue>512</MinimumValue>
+                <MaximumValue>1048576</MaximumValue>
+                <Required>Y</Required>
+            </memory>
+            <disk_size type="IntegerField">
+                <default>20</default>
+                <MinimumValue>5</MinimumValue>
+                <MaximumValue>10000</MaximumValue>
+                <Required>Y</Required>
+            </disk_size>
+            <subnet type="TextField">
+                <default>100.64.0.0/24</default>
+                <Required>Y</Required>
+            </subnet>
+            <vm_ip type="TextField">
+                <default>100.64.0.2</default>
+                <Required>Y</Required>
+            </vm_ip>
+            <host_ip type="TextField">
+                <default>100.64.0.1</default>
+                <Required>Y</Required>
+            </host_ip>
+            <port_sync type="BooleanField">
+                <default>1</default>
+                <Required>Y</Required>
+            </port_sync>
+            <fail_on_conflict type="BooleanField">
+                <default>1</default>
+                <Required>Y</Required>
+            </fail_on_conflict>
+            <log_level type="OptionField">
+                <default>info</default>
+                <Required>Y</Required>
+                <OptionValues>
+                    <debug>Debug</debug>
+                    <info>Informational</info>
+                    <warning>Warning</warning>
+                    <error>Error</error>
+                </OptionValues>
+            </log_level>
+        </general>
+    </items>
+</model>

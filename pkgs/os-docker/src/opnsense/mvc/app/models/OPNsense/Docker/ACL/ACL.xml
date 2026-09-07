@@ -1,0 +1,9 @@
+<acl>
+    <page-services-docker>
+        <name>Services: Docker</name>
+        <patterns>
+            <pattern>ui/docker/*</pattern>
+            <pattern>api/docker/*</pattern>
+        </patterns>
+    </page-services-docker>
+</acl>

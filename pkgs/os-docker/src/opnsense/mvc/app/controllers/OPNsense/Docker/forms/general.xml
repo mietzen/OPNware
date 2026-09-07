@@ -1,0 +1,50 @@
+<form>
+    <field>
+        <id>docker.general.enabled</id>
+        <label>Enable Docker</label>
+        <type>checkbox</type>
+        <help>Enable the Alpine Linux bhyve microVM and background Docker service.</help>
+    </field>
+    <field>
+        <id>docker.general.cpus</id>
+        <label>Virtual CPUs</label>
+        <type>text</type>
+        <help>Number of virtual CPU cores allocated to the Docker microVM (1 to Host Core Count).</help>
+    </field>
+    <field>
+        <id>docker.general.memory</id>
+        <label>RAM Allocation (MB)</label>
+        <type>text</type>
+        <help>RAM memory allocated to the Docker microVM in Megabytes (e.g. 2048 for 2GB, 4096 for 4GB).</help>
+    </field>
+    <field>
+        <id>docker.general.disk_size</id>
+        <label>Data Disk Size (GB)</label>
+        <type>text</type>
+        <help>Storage capacity allocated for /var/lib/docker container layers and volumes in Gigabytes. Stored as a sparse file.</help>
+    </field>
+    <field>
+        <id>docker.general.subnet</id>
+        <label>VM Bridge Subnet</label>
+        <type>text</type>
+        <help>RFC 6598 carrier-grade NAT bridge network for the microVM. Default: 100.64.0.0/24.</help>
+    </field>
+    <field>
+        <id>docker.general.port_sync</id>
+        <label>Dynamic Port Forwarding</label>
+        <type>checkbox</type>
+        <help>Automatically forward published container ports (-p host:container) via PF firewall rules.</help>
+    </field>
+    <field>
+        <id>docker.general.fail_on_conflict</id>
+        <label>Port Conflict Protection</label>
+        <type>checkbox</type>
+        <help>Prevent containers from binding ports already in use by host services (WebGUI, Unbound DNS, SSH) and raise an alert.</help>
+    </field>
+    <field>
+        <id>docker.general.log_level</id>
+        <label>Log Level</label>
+        <type>dropdown</type>
+        <help>Select the logging verbosity for the Docker daemon and sync service.</help>
+    </field>
+</form>
