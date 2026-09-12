@@ -11,6 +11,8 @@ import os
 import re
 import syslog
 
+import xml.etree.ElementTree as ET
+
 DOCKER_BIN = "/usr/local/bin/docker"
 VM_HOST = "tcp://100.64.0.2:2375"
 PF_ANCHOR = "opnware-docker/rdr"
@@ -78,6 +80,27 @@ def get_container_published_ports():
     return ports
 
 
+def get_configured_interfaces(config_path="/conf/config.xml"):
+    """Get list of network interface devices from OPNsense config."""
+    ifs = ["lo0"]
+    try:
+        if os.path.exists(config_path):
+            tree = ET.parse(config_path)
+            root = tree.getroot()
+            selected_raw = root.findtext(".//OPNsense/docker/general/interfaces") or root.findtext(".//docker/general/interfaces") or "lan"
+            selected_keys = [k.strip() for k in selected_raw.split(",") if k.strip()]
+            for k in selected_keys:
+                dev = root.findtext(f".//interfaces/{k}/if")
+                if dev:
+                    ifs.append(dev)
+    except Exception as e:
+        syslog.syslog(syslog.LOG_WARNING, f"docker_port_sync: error reading interfaces config: {e}")
+
+    if len(ifs) == 1:
+        return get_active_interfaces()
+    return list(dict.fromkeys(ifs))
+
+
 def get_active_interfaces():
     """Get list of active network interfaces to bind port forwards."""
     ifs = ["lo0"]
@@ -96,7 +119,7 @@ def get_active_interfaces():
 def sync_pf_rules():
     host_ports = get_host_bound_ports()
     container_ports = get_container_published_ports()
-    interfaces = get_active_interfaces()
+    interfaces = get_configured_interfaces()
 
     rules = []
     active_keys = set()

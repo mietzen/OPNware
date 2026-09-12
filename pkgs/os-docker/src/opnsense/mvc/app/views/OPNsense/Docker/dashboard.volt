@@ -166,8 +166,17 @@
                 $('#stat-containers').text(activeContainers + ' / ' + totalContainers + ' Running');
                 $('#stat-images').text(activeImages + ' / ' + totalImages + ' Active');
                 $('#stat-volumes').text(totalVolumes + ' Volumes');
-                $('#stat-networks').text(totalNetworks + ' Networks');
                 $('#stat-reclaimable').text(reclaimableStr);
+
+                if (totalNetworks > 0) {
+                    $('#stat-networks').text(totalNetworks + ' Networks');
+                } else {
+                    ajaxGet('/api/docker/networks/list', {}, function (netData) {
+                        if (netData && Array.isArray(netData.items)) {
+                            $('#stat-networks').text(netData.items.length + ' Networks');
+                        }
+                    });
+                }
             }
         });
     }
@@ -375,6 +384,7 @@
         ajaxGet('/api/docker/networks/list', {}, function (data, status) {
             var $tbody = $('#grid-networks tbody');
             var items = (data && data.items) ? data.items : [];
+            $('#stat-networks').text(items.length + ' Networks');
             if (items.length === 0) {
                 $tbody.html('<tr><td colspan="5" class="text-center"><em>{{ lang._("No networks found") }}</em></td></tr>');
                 return;
@@ -385,6 +395,8 @@
                 var subnets = '';
                 if (Array.isArray(net.Subnets)) {
                     subnets = net.Subnets.map(function(s) { return s.Subnet || ''; }).join(', ');
+                } else if (net.Scope) {
+                    subnets = net.Scope;
                 }
                 var isDefault = (netName === 'bridge' || netName === 'none' || netName === 'host');
                 var actions = '';
@@ -492,8 +504,17 @@
                     }
                 });
 
-                window.addEventListener('resize', function () {
-                    if (currentFitAddon) currentFitAddon.fit();
+                $(window).off('resize.docker_term').on('resize.docker_term', function () {
+                    if (currentFitAddon && currentTerm) {
+                        currentFitAddon.fit();
+                        if (currentWs && currentWs.readyState === WebSocket.OPEN) {
+                            currentWs.send(JSON.stringify({
+                                action: 'resize',
+                                cols: currentTerm.cols,
+                                rows: currentTerm.rows
+                            }));
+                        }
+                    }
                 });
             }
             if (currentFitAddon) currentFitAddon.fit();
@@ -542,6 +563,7 @@
         });
 
         $('#modal-cli').on('hidden.bs.modal', function () {
+            $(window).off('resize.docker_term');
             if (currentWs) {
                 try { currentWs.close(); } catch (e) {}
                 currentWs = null;

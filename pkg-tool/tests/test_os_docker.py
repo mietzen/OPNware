@@ -157,7 +157,7 @@ def test_docker_acl_and_log_routes():
 
 
 def test_docker_dashboard_tabs_and_terminal():
-    """Verify dashboard.volt contains all required tabs and terminal datalist."""
+    """Verify dashboard.volt contains all required tabs, terminal wiring, and handlers."""
     dash_file = DOCKER_PKG_DIR / "src" / "opnsense" / "mvc" / "app" / "views" / "OPNsense" / "Docker" / "dashboard.volt"
     assert dash_file.is_file()
     content = dash_file.read_text()
@@ -168,5 +168,53 @@ def test_docker_dashboard_tabs_and_terminal():
     assert "#tab-networks" in content
     assert "cli-shell" in content
     assert "btn_clear_cli" in content
+    assert "$('#btn_clear_cli').click" in content
+    assert "$('#cli-shell').change" in content
+    assert "resize.docker_term" in content
+    assert "stat-networks" in content
+
+
+def test_docker_syslog_config():
+    """Verify syslog-ng fragment captures all docker logs including terminal and dockerd."""
+    conf_file = DOCKER_PKG_DIR / "src" / "etc" / "syslog-ng.conf.d" / "docker.conf"
+    assert conf_file.is_file()
+    text = conf_file.read_text()
+
+    assert "/var/log/docker/setup.log" in text
+    assert "/var/log/docker/port_sync.log" in text
+    assert "/var/log/docker/terminal.log" in text
+    assert "/var/log/docker/dockerd.log" in text
+    assert "d_local_docker" in text
+
+
+def test_docker_port_sync_interface_logic(tmp_path, monkeypatch):
+    """Verify docker_port_sync.py reads configured interfaces from config.xml."""
+    import importlib.util
+    sync_script = DOCKER_PKG_DIR / "src" / "opnsense" / "scripts" / "OPNsense" / "Docker" / "docker_port_sync.py"
+    spec = importlib.util.spec_from_file_location("docker_port_sync", str(sync_script))
+    docker_port_sync = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(docker_port_sync)
+
+    config_xml = """<opnsense>
+        <interfaces>
+            <lan><if>vtnet0</if></lan>
+            <opt1><if>vtnet2</if></opt1>
+        </interfaces>
+        <OPNsense>
+            <docker>
+                <general>
+                    <interfaces>lan,opt1</interfaces>
+                </general>
+            </docker>
+        </OPNsense>
+    </opnsense>"""
+    cfg_file = tmp_path / "config.xml"
+    cfg_file.write_text(config_xml)
+
+    ifs = docker_port_sync.get_configured_interfaces(config_path=str(cfg_file))
+    assert "lo0" in ifs
+    assert "vtnet0" in ifs
+    assert "vtnet2" in ifs
+
 
 

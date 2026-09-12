@@ -119,8 +119,9 @@
                     });
                 }
 
+                var maxDisk = Math.max(50, Math.min(2000, Math.floor(freeGb * 0.9)));
                 if (diskInput.length > 0 && $('#slider_disk').length === 0) {
-                    diskInput.after('<input type="range" id="slider_disk" min="5" max="500" step="5" value="' + (diskInput.val() || 20) + '" style="margin-top:6px;">');
+                    diskInput.after('<input type="range" id="slider_disk" min="5" max="' + maxDisk + '" step="5" value="' + (diskInput.val() || 20) + '" style="margin-top:6px;">');
                     $('#slider_disk').on('input change', function () {
                         diskInput.val($(this).val());
                     });
