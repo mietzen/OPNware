@@ -119,3 +119,23 @@ def test_alpine_update_detection(monkeypatch):
     monkeypatch.setattr("requests.get", lambda url, timeout=10: MockResponse())
     ver = _alpine_latest_version("v3.24")
     assert ver == "3.24.2"
+
+
+def test_package_file_overlap_coexistence():
+    """Verify that no packages have overlapping file paths in src/ (pkg conflicts)."""
+    import os
+    from collections import defaultdict
+
+    pkgs_dir = REPO_ROOT / "pkgs"
+    file_owners = defaultdict(list)
+    for pkg in os.listdir(pkgs_dir):
+        src = pkgs_dir / pkg / "src"
+        if src.is_dir():
+            for root, _, files in os.walk(src):
+                for f in files:
+                    rel_path = os.path.relpath(os.path.join(root, f), src)
+                    file_owners[rel_path].append(pkg)
+
+    conflicts = {path: owners for path, owners in file_owners.items() if len(owners) > 1}
+    assert not conflicts, f"Conflicting files found between packages: {conflicts}"
+

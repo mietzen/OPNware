@@ -24,9 +24,9 @@
  # POSSIBILITY OF SUCH DAMAGE.
  #}
 
-<link rel="stylesheet" href="{{ cache_safe('/ui/css/vendor/xterm/xterm.css') }}">
-<script src="{{ cache_safe('/ui/js/vendor/xterm/xterm.js') }}"></script>
-<script src="{{ cache_safe('/ui/js/vendor/xterm/addon-fit.js') }}"></script>
+<link rel="stylesheet" href="{{ cache_safe('/ui/css/vendor/docker/xterm.css') }}">
+<script src="{{ cache_safe('/ui/js/vendor/docker/xterm.js') }}"></script>
+<script src="{{ cache_safe('/ui/js/vendor/docker/addon-fit.js') }}"></script>
 
 <style>
 .modal-title > i,
