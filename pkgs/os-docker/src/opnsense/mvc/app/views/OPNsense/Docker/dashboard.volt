@@ -114,9 +114,10 @@
         return html;
     }
 
+    var lastDfLoadTime = 0;
+
     function refreshActiveTab() {
         var activeTab = $('#maintabs li.active a').attr('href');
-        loadSystemDf();
         loadConflicts();
         if (activeTab === '#tab-containers') {
             loadContainers();
@@ -127,9 +128,15 @@
         } else if (activeTab === '#tab-networks') {
             loadNetworks();
         }
+        loadSystemDf(false);
     }
 
-    function loadSystemDf() {
+    function loadSystemDf(force) {
+        var now = Date.now();
+        if (!force && (now - lastDfLoadTime < 15000)) {
+            return;
+        }
+        lastDfLoadTime = now;
         ajaxGet('/api/docker/system/df', {}, function (data, status) {
             if (data && Array.isArray(data.items)) {
                 var totalContainers = 0;
@@ -158,9 +165,15 @@
                     return parseFloat(num).toFixed(1) + unit;
                 });
 
-                $('#stat-containers').text(activeContainers + ' / ' + totalContainers + ' Running');
-                $('#stat-images').text(activeImages + ' / ' + totalImages + ' Active');
-                $('#stat-volumes').text(totalVolumes + ' Volumes');
+                if (totalContainers > 0) {
+                    $('#stat-containers').text(activeContainers + ' / ' + totalContainers + ' Running');
+                }
+                if (totalImages > 0) {
+                    $('#stat-images').text(activeImages + ' / ' + totalImages + ' Active');
+                }
+                if (totalVolumes > 0) {
+                    $('#stat-volumes').text(totalVolumes + ' Volumes');
+                }
                 $('#stat-reclaimable').text(reclaimableStr);
             }
         });
@@ -223,6 +236,17 @@
             var $tbody = $('#grid-containers tbody');
             var items = (data && data.items) ? data.items : [];
             cachedContainers = items;
+
+            var totalContainers = items.length;
+            var activeContainers = 0;
+            $.each(items, function (idx, c) {
+                var state = c.State || c.Status || '';
+                if (state.toLowerCase().indexOf('up') !== -1 || state.toLowerCase() === 'running') {
+                    activeContainers++;
+                }
+            });
+            $('#stat-containers').text(activeContainers + ' / ' + totalContainers + ' Running');
+
             if (items.length === 0) {
                 $tbody.html('<tr><td colspan="6" class="text-center"><em>{{ lang._("No containers found") }}</em></td></tr>');
                 return;

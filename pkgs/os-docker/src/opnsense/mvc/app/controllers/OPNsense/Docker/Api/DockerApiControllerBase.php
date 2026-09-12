@@ -35,10 +35,18 @@ use OPNsense\Core\Backend;
 abstract class DockerApiControllerBase extends ApiControllerBase
 {
     protected const DOCKER_REST_BASE = 'http://100.64.0.2:2375';
-    protected const REST_TIMEOUT_SEC = 4;
+    protected const REST_TIMEOUT_SEC = 6;
     protected const REST_CONNECT_TIMEOUT_MS = 2000;
     protected const STATUS_FILE = '/var/db/os-docker/manage_status.json';
     protected const DF_CACHE_FILE = '/var/run/os-docker/df_cache.json';
+
+    public function initialize()
+    {
+        parent::initialize();
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            session_write_close();
+        }
+    }
 
     protected function invalidateDfCache(): void
     {

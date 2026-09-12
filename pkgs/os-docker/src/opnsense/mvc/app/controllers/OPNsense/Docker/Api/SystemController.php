@@ -31,7 +31,7 @@ namespace OPNsense\Docker\Api;
 
 class SystemController extends DockerApiControllerBase
 {
-    private const DF_CACHE_TTL = 15;
+    private const DF_CACHE_TTL = 30;
     private const CONFLICTS_FILE = '/var/db/os-docker/conflicts.json';
 
     public function dfAction()
@@ -46,7 +46,7 @@ class SystemController extends DockerApiControllerBase
             }
         }
 
-        $res = $this->dockerRest('/system/df', 'GET', null, 3);
+        $res = $this->dockerRest('/system/df', 'GET', null, 8);
         if ($res['code'] >= 200 && $res['code'] < 300) {
             $df = json_decode($res['body'], true);
             if (is_array($df)) {

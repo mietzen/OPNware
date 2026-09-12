@@ -358,3 +358,12 @@ def test_docker_setup_disk_shrink_protection():
     assert setup_file.is_file()
     content = setup_file.read_text()
     assert "@unlink($dataImgTarget)" not in content
+
+
+def test_docker_api_controller_session_lock_release():
+    """Verify DockerApiControllerBase releases session write lock to allow parallel requests."""
+    ctrl_file = DOCKER_PKG_DIR / "src" / "opnsense" / "mvc" / "app" / "controllers" / "OPNsense" / "Docker" / "Api" / "DockerApiControllerBase.php"
+    assert ctrl_file.is_file()
+    content = ctrl_file.read_text()
+    assert "session_write_close" in content
+
