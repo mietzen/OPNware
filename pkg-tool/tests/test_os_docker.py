@@ -228,13 +228,70 @@ def test_docker_api_controller_rest_and_cache():
     assert "executeRestQuery" in base_content
     assert "executeRestAction" in base_content
     assert "stripDockerLogHeaders" in base_content
+    assert "DF_CACHE_FILE" in base_content
+    assert "invalidateDfCache" in base_content
 
     sys_file = DOCKER_PKG_DIR / "src" / "opnsense" / "mvc" / "app" / "controllers" / "OPNsense" / "Docker" / "Api" / "SystemController.php"
     assert sys_file.is_file()
     sys_content = sys_file.read_text()
 
-    assert "df_cache.json" in sys_content
     assert "DF_CACHE_TTL" in sys_content
+    assert "executeAction('system_stats')" in sys_content
+
+
+def test_docker_port_sync_rest_parsing(monkeypatch):
+    """Verify docker_port_sync.py parses Docker REST API container port mappings."""
+    import importlib.util
+    import io
+    sync_script = DOCKER_PKG_DIR / "src" / "opnsense" / "scripts" / "OPNsense" / "Docker" / "docker_port_sync.py"
+    spec = importlib.util.spec_from_file_location("docker_port_sync", str(sync_script))
+    docker_port_sync = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(docker_port_sync)
+
+    mock_response_data = [
+        {
+            "Id": "1234567890ab",
+            "Names": ["/my-web"],
+            "Ports": [
+                {"PrivatePort": 80, "PublicPort": 8080, "Type": "tcp"},
+                {"PrivatePort": 53, "PublicPort": 53, "Type": "udp"}
+            ]
+        }
+    ]
+
+    class MockHTTPResponse:
+        def __init__(self, data):
+            import json
+            self._bytes = json.dumps(data).encode("utf-8")
+        def read(self):
+            return self._bytes
+        def __enter__(self):
+            return self
+        def __exit__(self, *args):
+            pass
+
+    monkeypatch.setattr(
+        docker_port_sync.urllib.request,
+        "urlopen",
+        lambda req, timeout=2: MockHTTPResponse(mock_response_data)
+    )
+
+    ports = docker_port_sync.get_container_published_ports()
+    assert len(ports) == 2
+    assert ports[0]["container"] == "my-web"
+    assert ports[0]["host_port"] == 8080
+    assert ports[0]["container_port"] == 80
+    assert ports[0]["proto"] == "tcp"
+    assert ports[1]["proto"] == "udp"
+
+
+def test_docker_base_image_daemon_json():
+    """Verify build_base_image.sh configures containerd-snapshotter false."""
+    script_file = DOCKER_PKG_DIR / "scripts" / "build_base_image.sh"
+    assert script_file.is_file()
+    content = script_file.read_text()
+    assert "containerd-snapshotter" in content
+    assert "false" in content
 
 
 

@@ -38,6 +38,14 @@ abstract class DockerApiControllerBase extends ApiControllerBase
     protected const REST_TIMEOUT_SEC = 2;
     protected const REST_CONNECT_TIMEOUT_MS = 500;
     protected const STATUS_FILE = '/var/db/os-docker/manage_status.json';
+    protected const DF_CACHE_FILE = '/var/run/os-docker/df_cache.json';
+
+    protected function invalidateDfCache(): void
+    {
+        if (file_exists(self::DF_CACHE_FILE)) {
+            @unlink(self::DF_CACHE_FILE);
+        }
+    }
 
     protected function executeAction($cmd, $param = null)
     {
@@ -104,7 +112,8 @@ abstract class DockerApiControllerBase extends ApiControllerBase
     protected function executeRestAction(string $endpoint, string $method, string $fallbackCmd, $fallbackParam = null, ?string $body = null): array
     {
         $res = $this->dockerRest($endpoint, $method, $body, 3);
-        if ($res['code'] >= 200 && $res['code'] < 300) {
+        $isSuccess = ($res['code'] === 304 || ($res['code'] >= 200 && $res['code'] < 300));
+        if ($isSuccess) {
             return ['status' => 'ok', 'output' => $res['body'] ?: 'OK'];
         }
 

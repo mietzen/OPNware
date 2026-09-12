@@ -31,15 +31,6 @@ namespace OPNsense\Docker\Api;
 
 class VolumesController extends DockerApiControllerBase
 {
-    private const DF_CACHE_FILE = '/var/run/os-docker/df_cache.json';
-
-    private function invalidateDfCache(): void
-    {
-        if (file_exists(self::DF_CACHE_FILE)) {
-            @unlink(self::DF_CACHE_FILE);
-        }
-    }
-
     public function listAction()
     {
         return $this->executeRestQuery('/volumes', 'volumes_list', function (array $data) {

@@ -31,15 +31,6 @@ namespace OPNsense\Docker\Api;
 
 class ImagesController extends DockerApiControllerBase
 {
-    private const DF_CACHE_FILE = '/var/run/os-docker/df_cache.json';
-
-    private function invalidateDfCache(): void
-    {
-        if (file_exists(self::DF_CACHE_FILE)) {
-            @unlink(self::DF_CACHE_FILE);
-        }
-    }
-
     public function listAction()
     {
         return $this->executeRestQuery('/images/json', 'images_list', function (array $images) {

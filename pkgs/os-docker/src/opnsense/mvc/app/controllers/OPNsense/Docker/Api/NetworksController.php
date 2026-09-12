@@ -31,15 +31,6 @@ namespace OPNsense\Docker\Api;
 
 class NetworksController extends DockerApiControllerBase
 {
-    private const DF_CACHE_FILE = '/var/run/os-docker/df_cache.json';
-
-    private function invalidateDfCache(): void
-    {
-        if (file_exists(self::DF_CACHE_FILE)) {
-            @unlink(self::DF_CACHE_FILE);
-        }
-    }
-
     public function listAction()
     {
         return $this->executeRestQuery('/networks', 'networks_list', function (array $networks) {
@@ -76,7 +67,6 @@ class NetworksController extends DockerApiControllerBase
             if (empty($netName) || !$this->isValidIdentifier($netName)) {
                 return ["status" => "error", "message" => gettext("Valid network name is required")];
             }
-            $this->invalidateDfCache();
             return $this->executeRestAction("/networks/{$netName}", 'DELETE', 'networks_delete', $netName);
         }
         return ["status" => "failed", "message" => gettext("Method Not Allowed")];

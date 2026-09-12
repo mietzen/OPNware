@@ -31,16 +31,8 @@ namespace OPNsense\Docker\Api;
 
 class SystemController extends DockerApiControllerBase
 {
-    private const DF_CACHE_FILE = '/var/run/os-docker/df_cache.json';
     private const DF_CACHE_TTL = 15;
     private const CONFLICTS_FILE = '/var/db/os-docker/conflicts.json';
-
-    private function invalidateDfCache(): void
-    {
-        if (file_exists(self::DF_CACHE_FILE)) {
-            @unlink(self::DF_CACHE_FILE);
-        }
-    }
 
     public function dfAction()
     {
@@ -135,7 +127,7 @@ class SystemController extends DockerApiControllerBase
 
     public function statsAction()
     {
-        return $this->executeRestQuery('/containers/json', 'system_stats');
+        return $this->executeAction('system_stats');
     }
 
     public function infoAction()

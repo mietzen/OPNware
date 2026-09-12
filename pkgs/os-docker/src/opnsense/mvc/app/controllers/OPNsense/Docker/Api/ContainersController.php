@@ -31,15 +31,6 @@ namespace OPNsense\Docker\Api;
 
 class ContainersController extends DockerApiControllerBase
 {
-    private const DF_CACHE_FILE = '/var/run/os-docker/df_cache.json';
-
-    private function invalidateDfCache(): void
-    {
-        if (file_exists(self::DF_CACHE_FILE)) {
-            @unlink(self::DF_CACHE_FILE);
-        }
-    }
-
     private function handleContainerAction($action, $id)
     {
         if (!$this->request->isPost()) {
