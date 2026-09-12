@@ -84,7 +84,7 @@ docker_start()
     if [ ! -f "${term_pidfile}" ] || ! kill -0 $(cat "${term_pidfile}" 2>/dev/null) 2>/dev/null; then
         /usr/sbin/daemon -r -R 1 -f -P "${term_suppidfile}" -p "${term_pidfile}" \
             -o /var/log/docker/terminal.log \
-            /usr/local/bin/python3 /usr/local/opnsense/scripts/OPNsense/Docker/terminal_daemon.py --host 127.0.0.1 --port 7682 </dev/null >/dev/null 2>&1
+            /usr/local/bin/python3 /usr/local/opnsense/scripts/OPNsense/Docker/terminal_daemon.py --host 127.0.0.1 --port 7683 </dev/null >/dev/null 2>&1
     fi
 
     # 5. Start UNIX domain socket proxy bridge (/var/run/docker.sock -> 100.64.0.2:2375)

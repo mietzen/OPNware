@@ -367,3 +367,19 @@ def test_docker_api_controller_session_lock_release():
     content = ctrl_file.read_text()
     assert "session_write_close" in content
 
+
+def test_docker_terminal_port_no_collision():
+    """Verify os-docker terminal uses dedicated port 7683 to avoid colliding with os-terminal (7682) or os-podman (7681)."""
+    lighttpd_conf = DOCKER_PKG_DIR / "src" / "etc" / "lighttpd_webgui" / "conf.d" / "50-docker-terminal.conf"
+    assert lighttpd_conf.is_file()
+    assert '"port" => 7683' in lighttpd_conf.read_text()
+
+    daemon_file = DOCKER_PKG_DIR / "src" / "opnsense" / "scripts" / "OPNsense" / "Docker" / "terminal_daemon.py"
+    assert daemon_file.is_file()
+    assert "DEFAULT_PORT = 7683" in daemon_file.read_text()
+
+    rc_file = DOCKER_PKG_DIR / "src" / "usr" / "local" / "etc" / "rc.d" / "docker"
+    assert rc_file.is_file()
+    assert "--port 7683" in rc_file.read_text()
+
+
