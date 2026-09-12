@@ -31,21 +31,74 @@ namespace OPNsense\Docker\Api;
 
 class ContainersController extends DockerApiControllerBase
 {
+    private const DF_CACHE_FILE = '/var/run/os-docker/df_cache.json';
+
+    private function invalidateDfCache(): void
+    {
+        if (file_exists(self::DF_CACHE_FILE)) {
+            @unlink(self::DF_CACHE_FILE);
+        }
+    }
+
     private function handleContainerAction($action, $id)
     {
-        if ($this->request->isPost()) {
-            $containerId = $id ?: $this->request->getPost('id');
-            if (empty($containerId) || !$this->isValidIdentifier($containerId)) {
-                return ["status" => "error", "message" => gettext("Valid container ID is required")];
-            }
-            return $this->executeAction("containers_{$action}", $containerId);
+        if (!$this->request->isPost()) {
+            return ["status" => "failed", "message" => gettext("Method Not Allowed")];
         }
-        return ["status" => "failed", "message" => gettext("Method Not Allowed")];
+
+        $containerId = $id ?: $this->request->getPost('id');
+        if (empty($containerId) || !$this->isValidIdentifier($containerId)) {
+            return ["status" => "error", "message" => gettext("Valid container ID is required")];
+        }
+
+        $this->invalidateDfCache();
+
+        if ($action === 'start') {
+            return $this->executeRestAction("/containers/{$containerId}/start", 'POST', 'containers_start', $containerId);
+        }
+        if ($action === 'stop') {
+            return $this->executeRestAction("/containers/{$containerId}/stop", 'POST', 'containers_stop', $containerId);
+        }
+        if ($action === 'restart') {
+            return $this->executeRestAction("/containers/{$containerId}/restart", 'POST', 'containers_restart', $containerId);
+        }
+        if ($action === 'kill') {
+            return $this->executeRestAction("/containers/{$containerId}/kill", 'POST', 'containers_kill', $containerId);
+        }
+        if ($action === 'delete') {
+            return $this->executeRestAction("/containers/{$containerId}?v=1&force=1", 'DELETE', 'containers_delete', $containerId);
+        }
+
+        return $this->executeAction("containers_{$action}", $containerId);
     }
 
     public function listAction()
     {
-        return $this->executeAction('containers_list');
+        return $this->executeRestQuery('/containers/json?all=1', 'containers_list', function (array $containers) {
+            $items = [];
+            foreach ($containers as $c) {
+                $rawNames = $c['Names'] ?? [];
+                $names = array_map(function ($n) {
+                    return ltrim($n, '/');
+                }, $rawNames);
+
+                $rawId = $c['Id'] ?? '';
+                $items[] = [
+                    'Id' => $rawId,
+                    'ID' => substr($rawId, 0, 12),
+                    'Names' => $names,
+                    'Image' => $c['Image'] ?? '',
+                    'ImageID' => $c['ImageID'] ?? '',
+                    'State' => $c['State'] ?? '',
+                    'Status' => $c['Status'] ?? '',
+                    'Created' => $c['Created'] ?? 0,
+                    'CreatedAt' => $c['Created'] ?? 0,
+                    'Ports' => $c['Ports'] ?? [],
+                    'Mounts' => $c['Mounts'] ?? []
+                ];
+            }
+            return $items;
+        });
     }
 
     public function startAction($id = null)
@@ -79,6 +132,12 @@ class ContainersController extends DockerApiControllerBase
         if (empty($containerId) || !$this->isValidIdentifier($containerId)) {
             return ["status" => "error", "message" => gettext("Valid container ID is required")];
         }
+
+        $res = $this->dockerRest("/containers/{$containerId}/logs?stdout=1&stderr=1&tail=200", 'GET', null, 3);
+        if ($res['code'] >= 200 && $res['code'] < 300) {
+            return ["status" => "ok", "output" => $this->stripDockerLogHeaders($res['body'])];
+        }
+
         return $this->executeAction('containers_logs', $containerId);
     }
 
@@ -88,6 +147,14 @@ class ContainersController extends DockerApiControllerBase
         if (empty($containerId) || !$this->isValidIdentifier($containerId)) {
             return ["status" => "error", "message" => gettext("Valid container ID is required")];
         }
+
+        $res = $this->dockerRest("/containers/{$containerId}/json", 'GET', null, 2);
+        if ($res['code'] >= 200 && $res['code'] < 300) {
+            $data = json_decode($res['body'], true);
+            $formatted = ($data !== null) ? json_encode($data, JSON_PRETTY_PRINT) : $res['body'];
+            return ["status" => "ok", "output" => $formatted];
+        }
+
         return $this->executeAction('containers_inspect', $containerId);
     }
 }

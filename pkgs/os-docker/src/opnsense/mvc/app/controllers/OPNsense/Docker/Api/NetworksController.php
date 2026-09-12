@@ -31,9 +31,42 @@ namespace OPNsense\Docker\Api;
 
 class NetworksController extends DockerApiControllerBase
 {
+    private const DF_CACHE_FILE = '/var/run/os-docker/df_cache.json';
+
+    private function invalidateDfCache(): void
+    {
+        if (file_exists(self::DF_CACHE_FILE)) {
+            @unlink(self::DF_CACHE_FILE);
+        }
+    }
+
     public function listAction()
     {
-        return $this->executeAction('networks_list');
+        return $this->executeRestQuery('/networks', 'networks_list', function (array $networks) {
+            $items = [];
+            foreach ($networks as $net) {
+                $subnets = [];
+                if (!empty($net['IPAM']['Config'])) {
+                    foreach ($net['IPAM']['Config'] as $cfg) {
+                        if (!empty($cfg['Subnet'])) {
+                            $subnets[] = ['Subnet' => $cfg['Subnet']];
+                        }
+                    }
+                }
+
+                $rawId = $net['Id'] ?? '';
+                $items[] = [
+                    'Id' => $rawId,
+                    'ID' => substr($rawId, 0, 12),
+                    'Name' => $net['Name'] ?? '',
+                    'name' => $net['Name'] ?? '',
+                    'Driver' => $net['Driver'] ?? 'bridge',
+                    'Scope' => $net['Scope'] ?? 'local',
+                    'Subnets' => $subnets
+                ];
+            }
+            return $items;
+        });
     }
 
     public function deleteAction($name = null)
@@ -43,7 +76,8 @@ class NetworksController extends DockerApiControllerBase
             if (empty($netName) || !$this->isValidIdentifier($netName)) {
                 return ["status" => "error", "message" => gettext("Valid network name is required")];
             }
-            return $this->executeAction('networks_delete', $netName);
+            $this->invalidateDfCache();
+            return $this->executeRestAction("/networks/{$netName}", 'DELETE', 'networks_delete', $netName);
         }
         return ["status" => "failed", "message" => gettext("Method Not Allowed")];
     }
@@ -54,6 +88,14 @@ class NetworksController extends DockerApiControllerBase
         if (empty($netName) || !$this->isValidIdentifier($netName)) {
             return ["status" => "error", "message" => gettext("Valid network identifier is required")];
         }
+
+        $res = $this->dockerRest("/networks/{$netName}", 'GET', null, 2);
+        if ($res['code'] >= 200 && $res['code'] < 300) {
+            $data = json_decode($res['body'], true);
+            $formatted = ($data !== null) ? json_encode($data, JSON_PRETTY_PRINT) : $res['body'];
+            return ["status" => "ok", "output" => $formatted];
+        }
+
         return $this->executeAction('networks_inspect', $netName);
     }
 }

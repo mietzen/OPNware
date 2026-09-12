@@ -31,34 +31,138 @@ namespace OPNsense\Docker\Api;
 
 class SystemController extends DockerApiControllerBase
 {
+    private const DF_CACHE_FILE = '/var/run/os-docker/df_cache.json';
+    private const DF_CACHE_TTL = 15;
+    private const CONFLICTS_FILE = '/var/db/os-docker/conflicts.json';
+
+    private function invalidateDfCache(): void
+    {
+        if (file_exists(self::DF_CACHE_FILE)) {
+            @unlink(self::DF_CACHE_FILE);
+        }
+    }
+
     public function dfAction()
     {
+        if (file_exists(self::DF_CACHE_FILE)) {
+            $mtime = filemtime(self::DF_CACHE_FILE);
+            if ($mtime !== false && (time() - $mtime) < self::DF_CACHE_TTL) {
+                $cached = json_decode((string)file_get_contents(self::DF_CACHE_FILE), true);
+                if (is_array($cached) && !empty($cached['items'])) {
+                    return $cached;
+                }
+            }
+        }
+
+        $res = $this->dockerRest('/system/df', 'GET', null, 3);
+        if ($res['code'] >= 200 && $res['code'] < 300) {
+            $df = json_decode($res['body'], true);
+            if (is_array($df)) {
+                $containers = $df['Containers'] ?? [];
+                $activeContainers = 0;
+                foreach ($containers as $c) {
+                    $state = strtolower($c['State'] ?? '');
+                    $status = strtolower($c['Status'] ?? '');
+                    if ($state === 'running' || strpos($status, 'up') !== false) {
+                        $activeContainers++;
+                    }
+                }
+
+                $images = $df['Images'] ?? [];
+                $activeImages = 0;
+                $totalImgSize = 0;
+                $reclaimableImgSize = 0;
+                foreach ($images as $img) {
+                    $size = (int)($img['Size'] ?? 0);
+                    $totalImgSize += $size;
+                    $refContainers = (int)($img['Containers'] ?? 0);
+                    if ($refContainers > 0) {
+                        $activeImages++;
+                    } else {
+                        $reclaimableImgSize += $size;
+                    }
+                }
+
+                $volumes = $df['Volumes'] ?? [];
+                $activeVolumes = 0;
+                $totalVolSize = 0;
+                $reclaimableVolSize = 0;
+                foreach ($volumes as $v) {
+                    $usage = $v['UsageData'] ?? [];
+                    $size = (int)($usage['Size'] ?? 0);
+                    $totalVolSize += $size;
+                    $refCount = (int)($usage['RefCount'] ?? 0);
+                    if ($refCount > 0) {
+                        $activeVolumes++;
+                    } else {
+                        $reclaimableVolSize += $size;
+                    }
+                }
+
+                $items = [
+                    [
+                        'Type' => 'Images',
+                        'Total' => count($images),
+                        'TotalCount' => count($images),
+                        'Active' => $activeImages,
+                        'Size' => $this->formatBytes($totalImgSize),
+                        'Reclaimable' => $this->formatBytes($reclaimableImgSize)
+                    ],
+                    [
+                        'Type' => 'Containers',
+                        'Total' => count($containers),
+                        'TotalCount' => count($containers),
+                        'Active' => $activeContainers
+                    ],
+                    [
+                        'Type' => 'Local Volumes',
+                        'Total' => count($volumes),
+                        'TotalCount' => count($volumes),
+                        'Active' => $activeVolumes,
+                        'Size' => $this->formatBytes($totalVolSize),
+                        'Reclaimable' => $this->formatBytes($reclaimableVolSize)
+                    ]
+                ];
+
+                $response = ['status' => 'ok', 'items' => $items];
+                @file_put_contents(self::DF_CACHE_FILE, json_encode($response));
+                return $response;
+            }
+        }
+
         return $this->executeAction('system_df');
     }
 
     public function statsAction()
     {
-        return $this->executeAction('system_stats');
+        return $this->executeRestQuery('/containers/json', 'system_stats');
     }
 
     public function infoAction()
     {
+        $res = $this->dockerRest('/info', 'GET', null, 2);
+        if ($res['code'] >= 200 && $res['code'] < 300) {
+            $data = json_decode($res['body'], true);
+            if ($data !== null) {
+                return ['status' => 'ok', 'items' => [$data]];
+            }
+        }
         return $this->executeAction('system_info');
     }
 
     public function pruneAction()
     {
         if ($this->request->isPost()) {
-            return $this->executeAction('system_prune');
+            $this->invalidateDfCache();
+            return $this->executeRestAction('/system/prune?volumes=1', 'POST', 'system_prune');
         }
         return ["status" => "failed", "message" => gettext("Method Not Allowed")];
     }
 
     public function conflictsAction()
     {
-        $conflictsFile = '/var/db/os-docker/conflicts.json';
-        if (file_exists($conflictsFile)) {
-            $data = json_decode(file_get_contents($conflictsFile), true);
+        if (file_exists(self::CONFLICTS_FILE)) {
+            $data = json_decode((string)file_get_contents(self::CONFLICTS_FILE), true);
             if (is_array($data)) {
                 return ["status" => "ok", "conflicts" => $data];
             }

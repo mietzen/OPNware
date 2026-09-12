@@ -217,4 +217,25 @@ def test_docker_port_sync_interface_logic(tmp_path, monkeypatch):
     assert "vtnet2" in ifs
 
 
+def test_docker_api_controller_rest_and_cache():
+    """Verify DockerApiControllerBase and controllers implement direct REST methods and df cache."""
+    base_file = DOCKER_PKG_DIR / "src" / "opnsense" / "mvc" / "app" / "controllers" / "OPNsense" / "Docker" / "Api" / "DockerApiControllerBase.php"
+    assert base_file.is_file()
+    base_content = base_file.read_text()
+
+    assert "DOCKER_REST_BASE" in base_content
+    assert "dockerRest" in base_content
+    assert "executeRestQuery" in base_content
+    assert "executeRestAction" in base_content
+    assert "stripDockerLogHeaders" in base_content
+
+    sys_file = DOCKER_PKG_DIR / "src" / "opnsense" / "mvc" / "app" / "controllers" / "OPNsense" / "Docker" / "Api" / "SystemController.php"
+    assert sys_file.is_file()
+    sys_content = sys_file.read_text()
+
+    assert "df_cache.json" in sys_content
+    assert "DF_CACHE_TTL" in sys_content
+
+
+
 

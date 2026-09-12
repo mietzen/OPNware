@@ -31,9 +31,30 @@ namespace OPNsense\Docker\Api;
 
 class VolumesController extends DockerApiControllerBase
 {
+    private const DF_CACHE_FILE = '/var/run/os-docker/df_cache.json';
+
+    private function invalidateDfCache(): void
+    {
+        if (file_exists(self::DF_CACHE_FILE)) {
+            @unlink(self::DF_CACHE_FILE);
+        }
+    }
+
     public function listAction()
     {
-        return $this->executeAction('volumes_list');
+        return $this->executeRestQuery('/volumes', 'volumes_list', function (array $data) {
+            $items = [];
+            foreach ($data['Volumes'] ?? [] as $v) {
+                $items[] = [
+                    'Name' => $v['Name'] ?? '',
+                    'Driver' => $v['Driver'] ?? 'local',
+                    'Mountpoint' => $v['Mountpoint'] ?? '',
+                    'CreatedAt' => $v['CreatedAt'] ?? '',
+                    'Created' => $v['CreatedAt'] ?? ''
+                ];
+            }
+            return $items;
+        });
     }
 
     public function createAction()
@@ -43,7 +64,8 @@ class VolumesController extends DockerApiControllerBase
             if (empty($name) || !$this->isValidIdentifier($name)) {
                 return ["status" => "error", "message" => gettext("Valid volume name is required")];
             }
-            return $this->executeAction('volumes_create', $name);
+            $this->invalidateDfCache();
+            return $this->executeRestAction('/volumes/create', 'POST', 'volumes_create', $name, json_encode(['Name' => $name]));
         }
         return ["status" => "failed", "message" => gettext("Method Not Allowed")];
     }
@@ -54,6 +76,14 @@ class VolumesController extends DockerApiControllerBase
         if (empty($volumeName) || !$this->isValidIdentifier($volumeName)) {
             return ["status" => "error", "message" => gettext("Valid volume name is required")];
         }
+
+        $res = $this->dockerRest("/volumes/{$volumeName}", 'GET', null, 2);
+        if ($res['code'] >= 200 && $res['code'] < 300) {
+            $data = json_decode($res['body'], true);
+            $formatted = ($data !== null) ? json_encode($data, JSON_PRETTY_PRINT) : $res['body'];
+            return ["status" => "ok", "output" => $formatted];
+        }
+
         return $this->executeAction('volumes_inspect', $volumeName);
     }
 
@@ -64,7 +94,8 @@ class VolumesController extends DockerApiControllerBase
             if (empty($volumeName) || !$this->isValidIdentifier($volumeName)) {
                 return ["status" => "error", "message" => gettext("Valid volume name is required")];
             }
-            return $this->executeAction('volumes_delete', $volumeName);
+            $this->invalidateDfCache();
+            return $this->executeRestAction("/volumes/{$volumeName}?force=1", 'DELETE', 'volumes_delete', $volumeName);
         }
         return ["status" => "failed", "message" => gettext("Method Not Allowed")];
     }
@@ -72,7 +103,8 @@ class VolumesController extends DockerApiControllerBase
     public function pruneAction()
     {
         if ($this->request->isPost()) {
-            return $this->executeAction('volumes_prune');
+            $this->invalidateDfCache();
+            return $this->executeRestAction('/volumes/prune', 'POST', 'volumes_prune');
         }
         return ["status" => "failed", "message" => gettext("Method Not Allowed")];
     }

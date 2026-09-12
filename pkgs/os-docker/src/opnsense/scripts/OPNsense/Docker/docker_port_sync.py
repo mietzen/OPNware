@@ -10,6 +10,7 @@ import subprocess
 import os
 import re
 import syslog
+import urllib.request
 
 import xml.etree.ElementTree as ET
 
@@ -46,13 +47,35 @@ def get_container_published_ports():
     """Return list of published port mappings from running containers."""
     ports = []
     try:
+        req = urllib.request.Request("http://100.64.0.2:2375/containers/json")
+        with urllib.request.urlopen(req, timeout=2) as resp:
+            containers = json.loads(resp.read().decode("utf-8"))
+            for c in containers:
+                names = c.get("Names") or ["container"]
+                name = names[0].lstrip("/") if isinstance(names, list) else str(names).lstrip("/")
+                for p in c.get("Ports", []):
+                    public_p = p.get("PublicPort")
+                    private_p = p.get("PrivatePort")
+                    proto = (p.get("Type") or "tcp").lower()
+                    if public_p and private_p:
+                        ports.append({
+                            "container": name,
+                            "host_port": int(public_p),
+                            "container_port": int(private_p),
+                            "proto": proto
+                        })
+            return ports
+    except Exception:
+        pass
+
+    try:
         env = os.environ.copy()
         env["DOCKER_HOST"] = VM_HOST
         proc = subprocess.run(
             [DOCKER_BIN, "-H", VM_HOST, "ps", "--format", "{{json .}}"],
             capture_output=True,
             text=True,
-            timeout=10,
+            timeout=5,
             env=env
         )
         if proc.returncode == 0:
@@ -64,7 +87,6 @@ def get_container_published_ports():
                     c = json.loads(line)
                     raw_ports = c.get("Ports", "")
                     name = c.get("Names", "container")
-                    # e.g., "0.0.0.0:8080->80/tcp, :::8080->80/tcp, 0.0.0.0:53->53/udp"
                     matches = re.findall(r"(?:0\.0\.0\.0|:::?|\[::\]):(\d+)->(\d+)/(tcp|udp)", raw_ports)
                     for host_p, cont_p, proto in matches:
                         ports.append({

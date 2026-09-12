@@ -40,6 +40,13 @@ docker_start()
         /usr/local/sbin/vm start docker-vm >/dev/null 2>&1
     fi
 
+    # Ensure daemon.json disables containerd snapshotter for fast metadata queries
+    (
+        sleep 2
+        ssh -i /var/db/os-docker/id_ed25519 -o StrictHostKeyChecking=no -o ConnectTimeout=2 root@100.64.0.2 \
+            "if [ ! -f /etc/docker/daemon.json ]; then mkdir -p /etc/docker && echo '{\"features\":{\"containerd-snapshotter\":false}}' > /etc/docker/daemon.json && rc-service docker restart >/dev/null 2>&1; fi" >/dev/null 2>&1
+    ) &
+
     # 3. Start dynamic PF port sync daemon
     if [ ! -f /var/run/os-docker/docker_port_sync.pid ] || ! kill -0 $(cat /var/run/os-docker/docker_port_sync.pid 2>/dev/null) 2>/dev/null; then
         /usr/sbin/daemon -f -p /var/run/os-docker/docker_port_sync.pid \
