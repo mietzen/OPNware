@@ -104,11 +104,6 @@ if ($podmanCfg !== null && isset($podmanCfg->general->default_linux_platform)) {
     $defaultLinuxPlatform = ((string)$podmanCfg->general->default_linux_platform === '1');
 }
 
-$dockerAlias = true;
-if ($podmanCfg !== null && isset($podmanCfg->general->docker_alias)) {
-    $dockerAlias = ((string)$podmanCfg->general->docker_alias === '1');
-}
-
 $dockerSearchRegistry = true;
 if ($podmanCfg !== null && isset($podmanCfg->general->docker_search_registry)) {
     $dockerSearchRegistry = ((string)$podmanCfg->general->docker_search_registry === '1');
@@ -229,7 +224,7 @@ if ($podmanCfg !== null && !empty((string)$podmanCfg->general->ca)) {
     }
 }
 
-// 4. Shell Aliases & Docker CLI Compatibility Symlink
+// 4. Shell Aliases & Wrapper Setup
 $wrapperBin = '/usr/local/bin/podman-wrapper';
 $beginMarker = '# BEGIN OPNWARE PODMAN ALIASES';
 $endMarker = '# END OPNWARE PODMAN ALIASES';
@@ -240,10 +235,6 @@ $cshAliases = [];
 if ($defaultLinuxPlatform) {
     $shAliases[] = 'alias podman="/usr/local/bin/podman-wrapper"';
     $cshAliases[] = 'alias podman /usr/local/bin/podman-wrapper';
-}
-if ($dockerAlias) {
-    $shAliases[] = 'alias docker="/usr/local/bin/podman-wrapper"';
-    $cshAliases[] = 'alias docker /usr/local/bin/podman-wrapper';
 }
 
 function update_delimited_block(string $filePath, array $lines, string $beginMarker, string $endMarker): void
@@ -304,24 +295,11 @@ foreach ($shTargetFiles as $shTarget) {
 // Manage /etc/csh.cshrc for csh/tcsh shells
 update_delimited_block('/etc/csh.cshrc', $cshAliases, $beginMarker, $endMarker);
 
-// Manage /usr/local/bin/docker symlink
+// Remove any legacy /usr/local/bin/docker symlink created by older podman releases
 $dockerSymlink = '/usr/local/bin/docker';
-if ($dockerAlias) {
-    if (is_link($dockerSymlink)) {
-        if (readlink($dockerSymlink) !== $wrapperBin) {
-            @unlink($dockerSymlink);
-            @symlink($wrapperBin, $dockerSymlink);
-            log_msg("Updated {$dockerSymlink} symlink -> {$wrapperBin}");
-        }
-    } elseif (!file_exists($dockerSymlink)) {
-        @symlink($wrapperBin, $dockerSymlink);
-        log_msg("Created {$dockerSymlink} symlink -> {$wrapperBin}");
-    }
-} else {
-    if (is_link($dockerSymlink)) {
-        @unlink($dockerSymlink);
-        log_msg("Removed {$dockerSymlink} symlink");
-    }
+if (is_link($dockerSymlink)) {
+    @unlink($dockerSymlink);
+    log_msg("Removed legacy {$dockerSymlink} symlink to allow native docker package");
 }
 
 // 5. Notify Caddy Advanced if installed
@@ -344,7 +322,6 @@ $status = [
     'driver' => $storageDriver,
     'linux_emulation' => $enableLinux,
     'default_linux_platform' => $defaultLinuxPlatform,
-    'docker_alias' => $dockerAlias,
     'docker_search_registry' => $dockerSearchRegistry,
     'timestamp' => time()
 ];

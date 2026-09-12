@@ -7,7 +7,7 @@ plugin:
 pkg_manifest:
   name: docker
   origin: opnware/os-docker
-  version: 0.1.1
+  version: 0.1.2
   comment: Manage Linux containers, images, and volumes via Docker inside an Alpine Linux microVM
   www: https://www.docker.com/
   maintainer: github.nstein@mailbox.org
@@ -27,6 +27,9 @@ pkg_manifest:
     bhyve-firmware:
       origin: sysutils/bhyve-firmware
       version: ">=1.0_2"
+    socat:
+      origin: net/socat
+      version: ">=1.8.0.0"
 alpine:
   branch: "v3.24"
   version: "3.24.1"

@@ -10,9 +10,12 @@ import subprocess
 import os
 import re
 import syslog
+import urllib.request
+
+import xml.etree.ElementTree as ET
 
 DOCKER_BIN = "/usr/local/bin/docker"
-VM_HOST = "ssh://root@100.64.0.2"
+VM_HOST = "tcp://100.64.0.2:2375"
 PF_ANCHOR = "opnware-docker/rdr"
 VM_IP = "100.64.0.2"
 
@@ -44,13 +47,35 @@ def get_container_published_ports():
     """Return list of published port mappings from running containers."""
     ports = []
     try:
+        req = urllib.request.Request("http://100.64.0.2:2375/containers/json")
+        with urllib.request.urlopen(req, timeout=2) as resp:
+            containers = json.loads(resp.read().decode("utf-8"))
+            for c in containers:
+                names = c.get("Names") or ["container"]
+                name = names[0].lstrip("/") if isinstance(names, list) else str(names).lstrip("/")
+                for p in c.get("Ports", []):
+                    public_p = p.get("PublicPort")
+                    private_p = p.get("PrivatePort")
+                    proto = (p.get("Type") or "tcp").lower()
+                    if public_p and private_p:
+                        ports.append({
+                            "container": name,
+                            "host_port": int(public_p),
+                            "container_port": int(private_p),
+                            "proto": proto
+                        })
+            return ports
+    except Exception:
+        pass
+
+    try:
         env = os.environ.copy()
         env["DOCKER_HOST"] = VM_HOST
         proc = subprocess.run(
             [DOCKER_BIN, "-H", VM_HOST, "ps", "--format", "{{json .}}"],
             capture_output=True,
             text=True,
-            timeout=10,
+            timeout=5,
             env=env
         )
         if proc.returncode == 0:
@@ -62,7 +87,6 @@ def get_container_published_ports():
                     c = json.loads(line)
                     raw_ports = c.get("Ports", "")
                     name = c.get("Names", "container")
-                    # e.g., "0.0.0.0:8080->80/tcp, :::8080->80/tcp, 0.0.0.0:53->53/udp"
                     matches = re.findall(r"(?:0\.0\.0\.0|:::?|\[::\]):(\d+)->(\d+)/(tcp|udp)", raw_ports)
                     for host_p, cont_p, proto in matches:
                         ports.append({
@@ -76,6 +100,27 @@ def get_container_published_ports():
     except Exception:
         pass
     return ports
+
+
+def get_configured_interfaces(config_path="/conf/config.xml"):
+    """Get list of network interface devices from OPNsense config."""
+    ifs = ["lo0"]
+    try:
+        if os.path.exists(config_path):
+            tree = ET.parse(config_path)
+            root = tree.getroot()
+            selected_raw = root.findtext(".//OPNsense/docker/general/interfaces") or root.findtext(".//docker/general/interfaces") or "lan"
+            selected_keys = [k.strip() for k in selected_raw.split(",") if k.strip()]
+            for k in selected_keys:
+                dev = root.findtext(f".//interfaces/{k}/if")
+                if dev:
+                    ifs.append(dev)
+    except Exception as e:
+        syslog.syslog(syslog.LOG_WARNING, f"docker_port_sync: error reading interfaces config: {e}")
+
+    if len(ifs) == 1:
+        return get_active_interfaces()
+    return list(dict.fromkeys(ifs))
 
 
 def get_active_interfaces():
@@ -96,7 +141,7 @@ def get_active_interfaces():
 def sync_pf_rules():
     host_ports = get_host_bound_ports()
     container_ports = get_container_published_ports()
-    interfaces = get_active_interfaces()
+    interfaces = get_configured_interfaces()
 
     rules = []
     active_keys = set()
@@ -123,10 +168,10 @@ def sync_pf_rules():
             })
             continue
 
-        # Build PF redirect rules for all host interfaces
+        # Build PF redirect rules for configured interfaces
         for iface in interfaces:
             rules.append(
-                f"rdr on {iface} proto {p['proto']} from any to ({iface}) port {p['host_port']} -> {VM_IP} port {p['host_port']}"
+                f"rdr pass on {iface} proto {p['proto']} from any to ({iface}) port {p['host_port']} -> {VM_IP} port {p['host_port']}"
             )
 
     # Save conflict status for WebUI dashboard

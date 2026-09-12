@@ -73,6 +73,16 @@ start() {
 EOF
 chmod 0755 "${OUTPUT_DIR}/rootfs/etc/init.d/docker-storage-init"
 
-# 5. Summary and Packaging instructions
+# 5. Configure Docker Daemon (disable slow snapshotter layer recursion)
+mkdir -p "${OUTPUT_DIR}/rootfs/etc/docker"
+cat << 'EOF' > "${OUTPUT_DIR}/rootfs/etc/docker/daemon.json"
+{
+  "features": {
+    "containerd-snapshotter": false
+  }
+}
+EOF
+
+# 6. Summary and Packaging instructions
 echo "Rootfs prepared successfully."
 echo "Packaged artifact target: ${OUTPUT_ZST}"

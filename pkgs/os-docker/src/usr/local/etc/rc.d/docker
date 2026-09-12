@@ -20,7 +20,30 @@ stop_cmd="docker_stop"
 status_cmd="docker_status"
 restart_cmd="docker_restart"
 
+port_pidfile="/var/run/os-docker/docker_port_sync.pid"
+port_suppidfile="/var/run/os-docker/docker_port_sync_sup.pid"
+term_pidfile="/var/run/os-docker/terminal_daemon.pid"
+term_suppidfile="/var/run/os-docker/terminal_daemon_sup.pid"
+proxy_pidfile="/var/run/os-docker/socket_proxy.pid"
+proxy_suppidfile="/var/run/os-docker/socket_proxy_sup.pid"
+
 mkdir -p /var/run/os-docker /var/db/os-docker /var/log/docker
+
+_stop_pid()
+{
+    _target_pidfile="$1"
+    if [ -f "${_target_pidfile}" ]; then
+        _pid=$(cat "${_target_pidfile}" 2>/dev/null)
+        if [ -n "${_pid}" ] && kill -0 "${_pid}" 2>/dev/null; then
+            kill -TERM "${_pid}" 2>/dev/null
+            sleep 1
+            if kill -0 "${_pid}" 2>/dev/null; then
+                kill -KILL "${_pid}" 2>/dev/null
+            fi
+        fi
+        rm -f "${_target_pidfile}"
+    fi
+}
 
 docker_start()
 {
@@ -40,26 +63,51 @@ docker_start()
         /usr/local/sbin/vm start docker-vm >/dev/null 2>&1
     fi
 
+    # Wait up to 15 seconds for dockerd in MicroVM to respond on TCP 2375
+    echo -n "Waiting for Docker daemon readiness..."
+    for i in $(seq 1 15); do
+        if /usr/bin/nc -z -w 1 100.64.0.2 2375 >/dev/null 2>&1; then
+            echo " ready."
+            break
+        fi
+        sleep 1
+    done
+
     # 3. Start dynamic PF port sync daemon
-    if [ ! -f /var/run/os-docker/docker_port_sync.pid ] || ! kill -0 $(cat /var/run/os-docker/docker_port_sync.pid 2>/dev/null) 2>/dev/null; then
-        /usr/sbin/daemon -f -p /var/run/os-docker/docker_port_sync.pid \
+    if [ ! -f "${port_pidfile}" ] || ! kill -0 $(cat "${port_pidfile}" 2>/dev/null) 2>/dev/null; then
+        /usr/sbin/daemon -r -R 1 -f -P "${port_suppidfile}" -p "${port_pidfile}" \
             -o /var/log/docker/port_sync.log \
             /usr/local/bin/python3 /usr/local/opnsense/scripts/OPNsense/Docker/docker_port_sync.py </dev/null >/dev/null 2>&1
     fi
 
     # 4. Start interactive container terminal daemon
-    if [ ! -f /var/run/os-docker/terminal_daemon.pid ] || ! kill -0 $(cat /var/run/os-docker/terminal_daemon.pid 2>/dev/null) 2>/dev/null; then
-        /usr/sbin/daemon -f -p /var/run/os-docker/terminal_daemon.pid \
+    if [ ! -f "${term_pidfile}" ] || ! kill -0 $(cat "${term_pidfile}" 2>/dev/null) 2>/dev/null; then
+        /usr/sbin/daemon -r -R 1 -f -P "${term_suppidfile}" -p "${term_pidfile}" \
             -o /var/log/docker/terminal.log \
-            /usr/local/bin/python3 /usr/local/opnsense/scripts/OPNsense/Docker/terminal_daemon.py </dev/null >/dev/null 2>&1
+            /usr/local/bin/python3 /usr/local/opnsense/scripts/OPNsense/Docker/terminal_daemon.py --host 127.0.0.1 --port 7683 </dev/null >/dev/null 2>&1
     fi
 
+    # 5. Start UNIX domain socket proxy bridge (/var/run/docker.sock -> 100.64.0.2:2375)
+    if [ -x /usr/local/bin/socat ]; then
+        if [ ! -f "${proxy_pidfile}" ] || ! kill -0 $(cat "${proxy_pidfile}" 2>/dev/null) 2>/dev/null; then
+            /usr/sbin/daemon -r -R 1 -f -P "${proxy_suppidfile}" -p "${proxy_pidfile}" \
+                -o /var/log/docker/socket_proxy.log \
+                /usr/local/bin/socat UNIX-LISTEN:/var/run/docker.sock,fork,mode=660,group=wheel,unlink-early TCP:100.64.0.2:2375 </dev/null >/dev/null 2>&1
+        fi
+    fi
+
+
     # Track bhyve VM process PID
-    bhyve_pid=$(pgrep -f "bhyve.*docker-vm" 2>/dev/null | head -n 1)
-    if [ -n "${bhyve_pid}" ]; then
-        echo "${bhyve_pid}" > "${pidfile}"
-    elif [ -f /var/run/os-docker/docker_port_sync.pid ]; then
-        cp /var/run/os-docker/docker_port_sync.pid "${pidfile}"
+    for i in 1 2 3 4 5; do
+        bhyve_pid=$(pgrep -f "bhyve.*docker-vm" 2>/dev/null | head -n 1)
+        if [ -n "${bhyve_pid}" ]; then
+            echo "${bhyve_pid}" > "${pidfile}"
+            break
+        fi
+        sleep 1
+    done
+    if [ ! -f "${pidfile}" ] && [ -f /var/db/vm/docker-vm/run.pid ]; then
+        cp /var/db/vm/docker-vm/run.pid "${pidfile}"
     fi
     echo "Docker service started successfully."
 }
@@ -69,15 +117,15 @@ docker_stop()
     echo "Stopping Docker microVM and background services..."
 
     # 1. Stop background daemons
-    if [ -f /var/run/os-docker/docker_port_sync.pid ]; then
-        kill $(cat /var/run/os-docker/docker_port_sync.pid 2>/dev/null) 2>/dev/null || true
-        rm -f /var/run/os-docker/docker_port_sync.pid
-    fi
+    _stop_pid "${proxy_suppidfile}"
+    _stop_pid "${proxy_pidfile}"
+    rm -f /var/run/docker.sock
 
-    if [ -f /var/run/os-docker/terminal_daemon.pid ]; then
-        kill $(cat /var/run/os-docker/terminal_daemon.pid 2>/dev/null) 2>/dev/null || true
-        rm -f /var/run/os-docker/terminal_daemon.pid
-    fi
+    _stop_pid "${term_suppidfile}"
+    _stop_pid "${term_pidfile}"
+    _stop_pid "${port_suppidfile}"
+    _stop_pid "${port_pidfile}"
+
 
     # 2. Flush PF port forwarding and NAT anchors
     /sbin/pfctl -a opnware-docker/rdr -F all >/dev/null 2>&1 || true
@@ -87,7 +135,8 @@ docker_stop()
     # 3. Power off bhyve microVM
     if /usr/local/sbin/vm list 2>/dev/null | grep -E "docker-vm[[:space:]]+.*[[:space:]]+Running" >/dev/null 2>&1; then
         echo "Shutting down Alpine Linux microVM..."
-        /usr/local/sbin/vm poweroff docker-vm >/dev/null 2>&1 || /usr/local/sbin/vm stop -f docker-vm >/dev/null 2>&1 || true
+        /usr/local/sbin/vm poweroff -f docker-vm >/dev/null 2>&1 || true
+        /usr/sbin/bhyvectl --destroy --vm=docker-vm >/dev/null 2>&1 || true
     fi
 
     rm -f "${pidfile}"

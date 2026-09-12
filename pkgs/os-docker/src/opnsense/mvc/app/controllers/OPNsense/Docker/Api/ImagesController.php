@@ -33,7 +33,25 @@ class ImagesController extends DockerApiControllerBase
 {
     public function listAction()
     {
-        return $this->executeAction('images_list');
+        return $this->executeRestQuery('/images/json', 'images_list', function (array $images) {
+            $items = [];
+            foreach ($images as $img) {
+                $rawTags = $img['RepoTags'] ?? [];
+                $names = !empty($rawTags) ? $rawTags : ['<none>'];
+                $rawId = str_replace('sha256:', '', $img['Id'] ?? '');
+
+                $items[] = [
+                    'Id' => $rawId,
+                    'ID' => substr($rawId, 0, 12),
+                    'Names' => $names,
+                    'Repository' => $names[0] ?? '<none>',
+                    'Size' => $img['Size'] ?? 0,
+                    'Created' => $img['Created'] ?? 0,
+                    'CreatedAt' => $img['Created'] ?? 0
+                ];
+            }
+            return $items;
+        });
     }
 
     public function pullAction()
@@ -43,6 +61,7 @@ class ImagesController extends DockerApiControllerBase
             if (empty($image) || !$this->isValidIdentifier($image)) {
                 return ["status" => "error", "message" => gettext("Valid image reference is required")];
             }
+            $this->invalidateDfCache();
             return $this->executeAction('images_pull', $image);
         }
         return ["status" => "failed", "message" => gettext("Method Not Allowed")];
@@ -55,7 +74,8 @@ class ImagesController extends DockerApiControllerBase
             if (empty($imageId) || !$this->isValidIdentifier($imageId)) {
                 return ["status" => "error", "message" => gettext("Valid image ID is required")];
             }
-            return $this->executeAction('images_delete', $imageId);
+            $this->invalidateDfCache();
+            return $this->executeRestAction("/images/{$imageId}?force=1", 'DELETE', 'images_delete', $imageId);
         }
         return ["status" => "failed", "message" => gettext("Method Not Allowed")];
     }
@@ -63,7 +83,8 @@ class ImagesController extends DockerApiControllerBase
     public function pruneAction()
     {
         if ($this->request->isPost()) {
-            return $this->executeAction('images_prune');
+            $this->invalidateDfCache();
+            return $this->executeRestAction('/images/prune', 'POST', 'images_prune');
         }
         return ["status" => "failed", "message" => gettext("Method Not Allowed")];
     }
