@@ -22,7 +22,7 @@
             </memory>
             <disk_size type="IntegerField">
                 <default>20</default>
-                <MinimumValue>5</MinimumValue>
+                <MinimumValue>2</MinimumValue>
                 <MaximumValue>10000</MaximumValue>
                 <Required>Y</Required>
             </disk_size>

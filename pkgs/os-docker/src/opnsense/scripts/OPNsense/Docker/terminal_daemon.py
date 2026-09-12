@@ -41,11 +41,13 @@ SESSION_PATH_PATTERN = re.compile(r"^[a-zA-Z0-9,-]+$")
 
 
 def compute_ws_accept(key: str) -> str:
+    """Compute RFC6455 Sec-WebSocket-Accept token."""
     raw = (key.strip() + WS_GUID).encode("utf-8")
     return base64.b64encode(hashlib.sha1(raw).digest()).decode("utf-8")
 
 
 def encode_ws_frame(payload: bytes, opcode: int = OPCODE_BIN) -> bytes:
+    """Encode an unmasked server-to-client WebSocket frame."""
     length = len(payload)
     header = bytearray()
     header.append(0x80 | opcode)
@@ -63,11 +65,13 @@ def encode_ws_frame(payload: bytes, opcode: int = OPCODE_BIN) -> bytes:
 
 
 async def read_exact(reader: asyncio.StreamReader, n: int) -> bytes:
+    """Read exactly n bytes or raise EOFError."""
     buf = await reader.readexactly(n)
     return buf
 
 
 async def parse_ws_frame(reader: asyncio.StreamReader):
+    """Read and decode a masked client WebSocket frame."""
     try:
         head = await read_exact(reader, 2)
     except (asyncio.IncompleteReadError, EOFError):
@@ -98,35 +102,89 @@ async def parse_ws_frame(reader: asyncio.StreamReader):
     return opcode, data
 
 
-def set_pty_size(fd: int, rows: int, cols: int):
+def set_winsize(fd: int, rows: int, cols: int):
+    """Set terminal window size on master PTY."""
     try:
-        winsize = struct.pack("HHHH", rows, cols, 0, 0)
-        fcntl.ioctl(fd, termios.TIOCSWINSZ, winsize)
-    except Exception:
+        fcntl.ioctl(fd, termios.TIOCSWINSZ, struct.pack("HHHH", rows, cols, 0, 0))
+    except OSError:
         pass
 
 
-class ContainerSession:
-    def __init__(self, cid: str, shell: str, rows: int, cols: int):
+def is_authenticated_session(cookie_header: str) -> bool:
+    """Validate active authenticated OPNsense PHP session."""
+    if not cookie_header:
+        return False
+
+    session_dirs = [
+        os.getenv("OPNSENSE_SESSION_DIR", "/var/lib/php/sessions"),
+        "/tmp",
+        "/var/tmp",
+    ]
+
+    for part in cookie_header.split(";"):
+        part = part.strip()
+        if part.startswith("PHPSESSID="):
+            sid = part.split("=", 1)[1].strip()
+            if SESSION_PATH_PATTERN.match(sid):
+                for sdir in session_dirs:
+                    sfile = os.path.join(sdir, f"sess_{sid}")
+                    if os.path.exists(sfile) and os.path.getsize(sfile) > 0:
+                        try:
+                            with open(sfile, "r", errors="ignore") as f:
+                                content = f.read()
+                                if any(marker in content for marker in ("user_name|", "Username|", "user|", "logged_in|")):
+                                    return True
+                        except OSError:
+                            pass
+    return False
+
+
+def is_valid_origin(origin_header: str, host_header: str) -> bool:
+    """Validate Origin header against expected host to prevent CSWSH attacks."""
+    if not origin_header:
+        return True
+
+    try:
+        parsed_origin = urlparse(origin_header)
+        origin_hostname = parsed_origin.hostname or ""
+        if origin_hostname in ("127.0.0.1", "localhost", "::1"):
+            return True
+
+        if host_header:
+            parsed_host = host_header.split(":", 1)[0].strip()
+            if origin_hostname.lower() == parsed_host.lower():
+                return True
+
+        return False
+    except Exception:
+        return False
+
+
+class TerminalSession:
+    """Manages master PTY and container shell process."""
+
+    def __init__(self, cid: str, shell: str):
         self.cid = cid
-        self.shell = shell
-        self.rows = rows
-        self.cols = cols
+        self.shell = shell or DEFAULT_SHELL
         self.master_fd = None
         self.pid = None
-        self.history = bytearray()
-        self.max_history = 100000
+        self.closed = False
 
     def start(self):
+        """Fork and execute docker exec inside a PTY."""
         master_fd, slave_fd = pty.openpty()
-        set_pty_size(master_fd, self.rows, self.cols)
+        self.master_fd = master_fd
+
+        set_winsize(master_fd, DEFAULT_ROWS, DEFAULT_COLS)
 
         pid = os.fork()
         if pid == 0:
-            # Child process
             os.close(master_fd)
             os.setsid()
-            fcntl.ioctl(slave_fd, termios.TIOCSCTTY, 0)
+            try:
+                fcntl.ioctl(slave_fd, termios.TIOCSCTTY, 0)
+            except OSError:
+                pass
 
             os.dup2(slave_fd, 0)
             os.dup2(slave_fd, 1)
@@ -148,231 +206,308 @@ class ContainerSession:
             os.environ["DOCKER_HOST"] = "tcp://100.64.0.2:2375"
             try:
                 os.execv(cmd[0], cmd)
-            except Exception as e:
-                print(f"Exec failed: {e}", file=sys.stderr)
+            except Exception:
                 os._exit(1)
-        else:
-            # Parent
-            os.close(slave_fd)
-            # Set non-blocking on master_fd
-            flags = fcntl.fcntl(master_fd, fcntl.F_GETFL)
-            fcntl.fcntl(master_fd, fcntl.F_SETFL, flags | os.O_NONBLOCK)
 
-            self.master_fd = master_fd
-            self.pid = pid
+        os.close(slave_fd)
+        self.pid = pid
 
-    def append_history(self, chunk: bytes):
-        self.history.extend(chunk)
-        if len(self.history) > self.max_history:
-            self.history = self.history[-self.max_history:]
+        flags = fcntl.fcntl(master_fd, fcntl.F_GETFL)
+        fcntl.fcntl(master_fd, fcntl.F_SETFL, flags | os.O_NONBLOCK)
+
+    def write(self, data: bytes):
+        """Write user input keystrokes to master PTY."""
+        if not self.closed and self.master_fd is not None:
+            try:
+                os.write(self.master_fd, data)
+            except OSError:
+                pass
+
+    def resize(self, rows: int, cols: int):
+        """Resize PTY window."""
+        if not self.closed and self.master_fd is not None:
+            set_winsize(self.master_fd, rows, cols)
 
     def close(self):
+        """Terminate child process, close PTY, and reap process."""
+        if self.closed:
+            return
+        self.closed = True
+
         if self.master_fd is not None:
             try:
                 os.close(self.master_fd)
-            except Exception:
+            except OSError:
                 pass
             self.master_fd = None
 
         if self.pid is not None:
             try:
                 os.kill(self.pid, signal.SIGTERM)
-            except Exception:
+            except (ProcessLookupError, OSError):
                 pass
+
             try:
-                os.waitpid(self.pid, os.WNOHANG)
-            except Exception:
+                reaped_pid, _ = os.waitpid(self.pid, os.WNOHANG)
+                if reaped_pid == 0:
+                    try:
+                        os.kill(self.pid, signal.SIGKILL)
+                    except (ProcessLookupError, OSError):
+                        pass
+                    os.waitpid(self.pid, os.WNOHANG)
+            except (ChildProcessError, OSError):
                 pass
+
             self.pid = None
 
 
-class TerminalDaemon:
-    def __init__(self, host=DEFAULT_HOST, port=DEFAULT_PORT):
-        self.host = host
-        self.port = port
-        self.sessions = {}
-
-    async def handle_client(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
-        try:
-            req_line = await reader.readline()
-            if not req_line:
-                writer.close()
-                return
-
-            req_str = req_line.decode("utf-8", errors="ignore")
-            parts = req_str.strip().split()
-            if len(parts) < 2 or parts[0].upper() != "GET":
-                writer.close()
-                return
-
-            path = parts[1]
-            headers = {}
-            while True:
-                line = await reader.readline()
-                if not line or line == b"\r\n" or line == b"\n":
-                    break
-                line_str = line.decode("utf-8", errors="ignore").strip()
-                if ":" in line_str:
-                    k, v = line_str.split(":", 1)
-                    headers[k.strip().lower()] = v.strip()
-
-            sec_key = headers.get("sec-websocket-key")
-            if not sec_key:
-                writer.write(b"HTTP/1.1 400 Bad Request\r\n\r\nMissing Sec-WebSocket-Key")
-                await writer.drain()
-                writer.close()
-                return
-
-            accept_val = compute_ws_accept(sec_key)
-            resp = (
-                "HTTP/1.1 101 Switching Protocols\r\n"
-                "Upgrade: websocket\r\n"
-                "Connection: Upgrade\r\n"
-                f"Sec-WebSocket-Accept: {accept_val}\r\n"
-                "\r\n"
-            )
-            writer.write(resp.encode("utf-8"))
-            await writer.drain()
-
-            parsed = urlparse(path)
-            qs = parse_qs(parsed.query)
-
-            cid = qs.get("id", [None])[0] or qs.get("cid", [None])[0]
-            if not cid or not CID_PATTERN.match(cid):
-                # Try path /api/docker/terminal/ws/<cid>
-                path_match = re.search(r"/ws/([^/?]+)", parsed.path)
-                if path_match:
-                    cid = path_match.group(1)
-
-            if not cid or not CID_PATTERN.match(cid):
-                err_msg = "\r\n\x1b[31mError: Invalid or missing container ID.\x1b[0m\r\n"
-                writer.write(encode_ws_frame(err_msg.encode("utf-8"), OPCODE_BIN))
-                await writer.drain()
-                writer.close()
-                return
-
-            shell = qs.get("shell", [DEFAULT_SHELL])[0]
-            if not SHELL_PATTERN.match(shell):
-                shell = DEFAULT_SHELL
-
-            rows = int(qs.get("rows", [DEFAULT_ROWS])[0])
-            cols = int(qs.get("cols", [DEFAULT_COLS])[0])
-
-            session_key = f"{cid}_{shell}"
-            session = self.sessions.get(session_key)
-
-            # If existing session PID died, reset it
-            if session:
-                try:
-                    res = os.waitpid(session.pid, os.WNOHANG)
-                    if res[0] != 0:
-                        session.close()
-                        session = None
-                except Exception:
-                    session.close()
-                    session = None
-
-            if not session:
-                session = ContainerSession(cid, shell, rows, cols)
-                session.start()
-                self.sessions[session_key] = session
-            else:
-                set_pty_size(session.master_fd, rows, cols)
-
-            out_queue = asyncio.Queue()
-
-            async def ws_sender():
-                try:
-                    while True:
-                        payload, opcode = await out_queue.get()
-                        frame = encode_ws_frame(payload, opcode)
-                        writer.write(frame)
-                        await writer.drain()
-                        out_queue.task_done()
-                except Exception:
-                    pass
-
-            sender_task = asyncio.create_task(ws_sender())
-
-            # Send back history
-            if session.history:
-                await out_queue.put((bytes(session.history), OPCODE_BIN))
-
-            loop = asyncio.get_running_loop()
-
-            def on_pty_readable():
-                if session.master_fd is None:
-                    return
-                try:
-                    data = os.read(session.master_fd, READ_CHUNK_SIZE)
-                    if data:
-                        session.append_history(data)
-                        asyncio.create_task(out_queue.put((data, OPCODE_BIN)))
-                    else:
-                        loop.remove_reader(session.master_fd)
-                except (BlockingIOError, InterruptedError):
-                    pass
-                except OSError as e:
-                    if e.errno in (errno.EAGAIN, errno.EWOULDBLOCK, errno.EINTR):
-                        pass
-                    else:
-                        try:
-                            loop.remove_reader(session.master_fd)
-                        except Exception:
-                            pass
-
-            loop.add_reader(session.master_fd, on_pty_readable)
-
-            # Read WS frames from client
-            try:
-                while True:
-                    opcode, data = await parse_ws_frame(reader)
-                    if opcode is None or opcode == OPCODE_CLOSE:
-                        break
-                    elif opcode == OPCODE_PING:
-                        await out_queue.put((data, OPCODE_PONG))
-                    elif opcode in (OPCODE_TEXT, OPCODE_BIN):
-                        if data:
-                            # Check for JSON resize message
-                            if data.startswith(b"{") and b"resize" in data:
-                                try:
-                                    msg = json.loads(data.decode("utf-8"))
-                                    if msg.get("action") == "resize" or msg.get("type") == "resize":
-                                        r = int(msg.get("rows", rows))
-                                        c = int(msg.get("cols", cols))
-                                        set_pty_size(session.master_fd, r, c)
-                                        continue
-                                except Exception:
-                                    pass
-                            try:
-                                os.write(session.master_fd, data)
-                            except Exception:
-                                break
-            finally:
-                try:
-                    if session.master_fd is not None:
-                        loop.remove_reader(session.master_fd)
-                except Exception:
-                    pass
-                sender_task.cancel()
-                writer.close()
-
-        except Exception:
-            writer.close()
-
-    async def start(self):
-        server = await asyncio.start_server(self.handle_client, self.host, self.port)
-        async with server:
-            await server.serve_forever()
-
-
-def main():
-    daemon = TerminalDaemon()
+async def ws_writer_loop(writer: asyncio.StreamWriter, send_queue: asyncio.Queue):
+    """Drain frames from send_queue and transmit to client."""
     try:
-        asyncio.run(daemon.start())
-    except KeyboardInterrupt:
+        while True:
+            frame = await send_queue.get()
+            if frame is None:
+                break
+            writer.write(frame)
+            await writer.drain()
+    except (asyncio.CancelledError, Exception):
         pass
 
 
+async def handle_pty_read(session: TerminalSession, send_queue: asyncio.Queue):
+    """Read ANSI binary output from master PTY and stream to WebSocket."""
+    loop = asyncio.get_running_loop()
+    queue = asyncio.Queue()
+    master_fd = session.master_fd
+
+    def on_read():
+        try:
+            chunk = os.read(master_fd, READ_CHUNK_SIZE)
+            if chunk:
+                queue.put_nowait(chunk)
+            else:
+                queue.put_nowait(None)
+        except (BlockingIOError, InterruptedError):
+            return
+        except OSError as e:
+            if e.errno in (errno.EAGAIN, errno.EWOULDBLOCK, errno.EINTR):
+                return
+            queue.put_nowait(None)
+        except Exception:
+            queue.put_nowait(None)
+
+    if master_fd is not None:
+        loop.add_reader(master_fd, on_read)
+
+    try:
+        while not session.closed:
+            data = await queue.get()
+            if data is None:
+                break
+            frame = encode_ws_frame(data, opcode=OPCODE_BIN)
+            await send_queue.put(frame)
+    except (asyncio.CancelledError, Exception):
+        pass
+    finally:
+        try:
+            if master_fd is not None:
+                loop.remove_reader(master_fd)
+        except (ValueError, OSError):
+            pass
+
+
+async def handle_ws_input(session: TerminalSession, reader: asyncio.StreamReader, send_queue: asyncio.Queue):
+    """Read WebSocket frames from browser and write to PTY."""
+    while not session.closed:
+        opcode, data = await parse_ws_frame(reader)
+        if opcode is None or opcode == OPCODE_CLOSE:
+            break
+        elif opcode == OPCODE_PING:
+            try:
+                send_queue.put_nowait(encode_ws_frame(data, opcode=OPCODE_PONG))
+            except Exception:
+                break
+        elif opcode in (OPCODE_TEXT, OPCODE_BIN):
+            if data.startswith(b"\x00{") and b"resize" in data:
+                try:
+                    msg = json.loads(data[1:].decode("utf-8"))
+                    if msg.get("type") == "resize" or msg.get("action") == "resize":
+                        r = int(msg.get("rows", DEFAULT_ROWS))
+                        c = int(msg.get("cols", DEFAULT_COLS))
+                        session.resize(r, c)
+                        continue
+                except Exception:
+                    pass
+            elif data.startswith(b"{") and b"resize" in data:
+                try:
+                    msg = json.loads(data.decode("utf-8"))
+                    if msg.get("type") == "resize" or msg.get("action") == "resize":
+                        r = int(msg.get("rows", DEFAULT_ROWS))
+                        c = int(msg.get("cols", DEFAULT_COLS))
+                        session.resize(r, c)
+                        continue
+                except Exception:
+                    pass
+            session.write(data)
+
+
+async def handle_ws_conn(reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
+    """Handle WebSocket handshake and bridge session."""
+    headers = {}
+    path_line = ""
+
+    while True:
+        line = await reader.readline()
+        if not line or line == b"\r\n":
+            break
+        decoded = line.decode("utf-8", errors="ignore").rstrip("\r\n")
+        if not path_line and (decoded.startswith("GET ") or "HTTP/" in decoded):
+            path_line = decoded
+            continue
+        if ":" in decoded:
+            k, v = decoded.split(":", 1)
+            headers[k.strip().lower()] = v.strip()
+
+    ws_key = headers.get("sec-websocket-key")
+    if not ws_key:
+        writer.write(b"HTTP/1.1 400 Bad Request\r\n\r\n")
+        await writer.drain()
+        writer.close()
+        return
+
+    origin_header = headers.get("origin", "")
+    host_header = headers.get("host", "")
+    if not is_valid_origin(origin_header, host_header):
+        writer.write(b"HTTP/1.1 403 Forbidden\r\n\r\n")
+        await writer.drain()
+        writer.close()
+        return
+
+    cookie_header = headers.get("cookie", "")
+    if not is_authenticated_session(cookie_header):
+        writer.write(b"HTTP/1.1 401 Unauthorized\r\n\r\n")
+        await writer.drain()
+        writer.close()
+        return
+
+    parsed_url = urlparse(path_line.split(" ")[1] if len(path_line.split(" ")) > 1 else "")
+    params = parse_qs(parsed_url.query)
+    cid = params.get("cid", [""])[0] or params.get("id", [""])[0]
+    shell = params.get("shell", [DEFAULT_SHELL])[0]
+
+    if not cid or not CID_PATTERN.match(cid):
+        writer.write(b"HTTP/1.1 400 Invalid or missing container ID\r\n\r\n")
+        await writer.drain()
+        writer.close()
+        return
+
+    if not SHELL_PATTERN.match(shell):
+        writer.write(b"HTTP/1.1 400 Invalid shell path\r\n\r\n")
+        await writer.drain()
+        writer.close()
+        return
+
+    accept_val = compute_ws_accept(ws_key)
+    handshake_resp = (
+        "HTTP/1.1 101 Switching Protocols\r\n"
+        "Upgrade: websocket\r\n"
+        "Connection: Upgrade\r\n"
+        f"Sec-WebSocket-Accept: {accept_val}\r\n\r\n"
+    )
+    writer.write(handshake_resp.encode("utf-8"))
+    await writer.drain()
+
+    send_queue: asyncio.Queue = asyncio.Queue(maxsize=1024)
+    writer_task = asyncio.create_task(ws_writer_loop(writer, send_queue))
+
+    session = TerminalSession(cid, shell)
+    session.start()
+
+    pty_task = asyncio.create_task(handle_pty_read(session, send_queue))
+    ws_task = asyncio.create_task(handle_ws_input(session, reader, send_queue))
+
+    done, pending = await asyncio.wait(
+        [pty_task, ws_task],
+        return_when=asyncio.FIRST_COMPLETED
+    )
+
+    for task in pending:
+        task.cancel()
+
+    session.close()
+
+    try:
+        send_queue.put_nowait(encode_ws_frame(b"", opcode=OPCODE_CLOSE))
+    except Exception:
+        pass
+    try:
+        send_queue.put_nowait(None)
+    except Exception:
+        pass
+    try:
+        await asyncio.wait_for(writer_task, timeout=1.0)
+    except Exception:
+        writer_task.cancel()
+
+    writer.close()
+    try:
+        await writer.wait_closed()
+    except Exception:
+        pass
+
+
+def write_pid(path: str):
+    """Write daemon process ID to file."""
+    if path:
+        dir_name = os.path.dirname(path)
+        if dir_name:
+            os.makedirs(dir_name, exist_ok=True)
+        with open(path, "w") as f:
+            f.write(f"{os.getpid()}\n")
+
+
+def remove_pid(path: str):
+    """Remove PID file on shutdown."""
+    if path and os.path.exists(path):
+        try:
+            os.remove(path)
+        except OSError:
+            pass
+
+
+async def main():
+    parser = argparse.ArgumentParser(description="Docker XTerm PTY WebSocket Bridge Daemon")
+    parser.add_argument("--host", default=DEFAULT_HOST, help="Bind host")
+    parser.add_argument("--port", type=int, default=DEFAULT_PORT, help="Bind port")
+    parser.add_argument("--pidfile", default=None, help="PID file path")
+    args = parser.parse_args()
+
+    if args.pidfile:
+        write_pid(args.pidfile)
+
+    server = await asyncio.start_server(
+        handle_ws_conn, args.host, args.port, reuse_address=True, reuse_port=True
+    )
+
+    loop = asyncio.get_running_loop()
+    stop_event = asyncio.Event()
+
+    def on_signal():
+        stop_event.set()
+
+    for sig in (signal.SIGTERM, signal.SIGINT):
+        loop.add_signal_handler(sig, on_signal)
+
+    print(f"Docker Terminal Daemon listening on {args.host}:{args.port} (PID {os.getpid()})")
+
+    try:
+        await stop_event.wait()
+    finally:
+        server.close()
+        await server.wait_closed()
+        if args.pidfile:
+            remove_pid(args.pidfile)
+
+
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())

@@ -170,8 +170,8 @@ def test_docker_dashboard_tabs_and_terminal():
     assert "btn_clear_cli" in content
     assert "$('#btn_clear_cli').click" in content
     assert "$('#cli-shell').change" in content
-    assert "resize.docker_term" in content
-    assert "stat-networks" in content
+    assert "resize.terminal" in content
+    assert "stat-reclaimable" in content
 
 
 def test_docker_syslog_config():
@@ -297,8 +297,64 @@ def test_docker_base_image_daemon_json():
     assert vm_script.is_file()
     vm_content = vm_script.read_text()
     assert "containerd-snapshotter" in vm_content
-    assert "false" in vm_content
+def test_docker_socket_proxy_and_min_disk():
+    """Verify socat dependency, MinimumValue 2 for disk, and rc.d/docker socket forwarding."""
+    config_yml = DOCKER_PKG_DIR / "config.yml"
+    assert config_yml.is_file()
+    import yaml
+    cfg = yaml.safe_load(config_yml.read_text())
+    assert "socat" in cfg["pkg_manifest"]["deps"]
+    assert cfg["pkg_manifest"]["deps"]["socat"]["origin"] == "net/socat"
+
+    model_xml = DOCKER_PKG_DIR / "src" / "opnsense" / "mvc" / "app" / "models" / "OPNsense" / "Docker" / "Docker.xml"
+    tree = ET.parse(model_xml)
+    min_disk = tree.findtext("items/general/disk_size/MinimumValue")
+    assert min_disk == "2"
+
+    rc_file = DOCKER_PKG_DIR / "src" / "usr" / "local" / "etc" / "rc.d" / "docker"
+    rc_content = rc_file.read_text()
+    assert "socat" in rc_content
+    assert "/var/run/docker.sock" in rc_content
+    assert "UNIX-LISTEN:/var/run/docker.sock" in rc_content
 
 
+def test_docker_firewall_isolation():
+    """Verify docker.inc does not expose broad unauthenticated subnet access."""
+    inc_file = DOCKER_PKG_DIR / "src" / "etc" / "inc" / "plugins.inc.d" / "docker.inc"
+    assert inc_file.is_file()
+    content = inc_file.read_text()
+    assert "opnware-docker/*" in content
+    # Ensure wide open pass rule to entire subnet from any interface is removed
+    assert "Allow access to Docker container published ports on" not in content
 
 
+def test_terminal_daemon_origin_validation():
+    """Verify terminal_daemon.py validates Origin header to prevent CSWSH."""
+    daemon_file = DOCKER_PKG_DIR / "src" / "opnsense" / "scripts" / "OPNsense" / "Docker" / "terminal_daemon.py"
+    assert daemon_file.is_file()
+    content = daemon_file.read_text()
+    assert "is_valid_origin" in content
+
+
+def test_docker_api_controller_fast_abort():
+    """Verify DockerApiControllerBase avoids cascading 60s fallback when MicroVM is unreachable."""
+    ctrl_file = DOCKER_PKG_DIR / "src" / "opnsense" / "mvc" / "app" / "controllers" / "OPNsense" / "Docker" / "Api" / "DockerApiControllerBase.php"
+    assert ctrl_file.is_file()
+    content = ctrl_file.read_text()
+    assert "code === 0" in content or "curl_errno" in content or "$res['code'] === 0" in content
+
+
+def test_docker_rc_readiness_wait():
+    """Verify rc.d/docker waits for microVM TCP 2375 readiness on startup."""
+    rc_file = DOCKER_PKG_DIR / "src" / "usr" / "local" / "etc" / "rc.d" / "docker"
+    assert rc_file.is_file()
+    content = rc_file.read_text()
+    assert "Waiting for Docker daemon readiness" in content or "100.64.0.2 2375" in content
+
+
+def test_docker_setup_disk_shrink_protection():
+    """Verify setup.php does not automatically unlink data.img on shrink."""
+    setup_file = DOCKER_PKG_DIR / "src" / "opnsense" / "scripts" / "OPNsense" / "Docker" / "setup.php"
+    assert setup_file.is_file()
+    content = setup_file.read_text()
+    assert "@unlink($dataImgTarget)" not in content

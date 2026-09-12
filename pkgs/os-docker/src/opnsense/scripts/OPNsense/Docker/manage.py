@@ -8,6 +8,7 @@ import sys
 import json
 import subprocess
 import os
+import re
 
 STATUS_FILE = "/var/db/os-docker/manage_status.json"
 DOCKER_BIN = "/usr/local/bin/docker"
@@ -157,6 +158,86 @@ def main():
         run_docker(["info", "--format", "{{json .}}"])
     elif action == "system_prune":
         run_docker(["system", "prune", "-f"])
+    elif action == "metrics":
+        ssh_bin = "/usr/local/bin/ssh" if os.path.exists("/usr/local/bin/ssh") else "/usr/bin/ssh"
+        ssh_cmd = [
+            ssh_bin,
+            "-i", SSH_KEY,
+            "-o", "StrictHostKeyChecking=no",
+            "-o", "ConnectTimeout=2",
+            "-o", "BatchMode=yes",
+            "root@100.64.0.2",
+            "cat /proc/loadavg; grep -E '^(MemTotal|MemAvailable):' /proc/meminfo; df -k /var/lib/docker"
+        ]
+        res = {
+            "status": "ok",
+            "running": False,
+            "cpu": {"display": "--", "load_1m": 0, "percent": 0, "vcpus": 2},
+            "ram": {"display": "--", "used_mb": 0, "total_mb": 0, "percent": 0},
+            "disk": {"display": "--", "used_gb": 0, "total_gb": 0, "percent": 0}
+        }
+        try:
+            proc = subprocess.run(ssh_cmd, capture_output=True, text=True, timeout=4)
+            if proc.returncode == 0 and proc.stdout.strip():
+                lines = [l.strip() for l in proc.stdout.splitlines() if l.strip()]
+                if lines:
+                    res["running"] = True
+                    load_parts = lines[0].split()
+                    l1 = float(load_parts[0]) if len(load_parts) > 0 else 0.0
+                    l5 = float(load_parts[1]) if len(load_parts) > 1 else 0.0
+                    l15 = float(load_parts[2]) if len(load_parts) > 2 else 0.0
+                    vcpus = os.cpu_count() or 2
+                    cpu_pct = min(100, round((l1 / max(1, vcpus)) * 100, 1))
+                    res["cpu"] = {
+                        "load_1m": l1,
+                        "load_5m": l5,
+                        "load_15m": l15,
+                        "percent": cpu_pct,
+                        "vcpus": vcpus,
+                        "display": f"{l1:.2f}, {l5:.2f}, {l15:.2f} ({vcpus} vCPUs)"
+                    }
+                    mem_total = 0
+                    mem_avail = 0
+                    for l in lines:
+                        if l.startswith("MemTotal:"):
+                            m = re.search(r"(\d+)", l)
+                            if m:
+                                mem_total = int(m.group(1))
+                        elif l.startswith("MemAvailable:"):
+                            m = re.search(r"(\d+)", l)
+                            if m:
+                                mem_avail = int(m.group(1))
+                    if mem_total > 0:
+                        mem_used = max(0, mem_total - mem_avail)
+                        used_mb = round(mem_used / 1024)
+                        total_mb = round(mem_total / 1024)
+                        mem_pct = round((used_mb / max(1, total_mb)) * 100, 1)
+                        res["ram"] = {
+                            "used_mb": used_mb,
+                            "total_mb": total_mb,
+                            "percent": mem_pct,
+                            "display": f"{used_mb} MB / {total_mb} MB ({mem_pct:.1f}%)"
+                        }
+                    for l in lines:
+                        if "/var/lib/docker" in l:
+                            cols = l.split()
+                            if len(cols) >= 5:
+                                total_kb = int(cols[1])
+                                used_kb = int(cols[2])
+                                total_gb = round(total_kb / (1024 * 1024), 1)
+                                used_gb = round(used_kb / (1024 * 1024), 2)
+                                disk_pct = round((used_kb / total_kb) * 100, 1) if total_kb > 0 else 0
+                                res["disk"] = {
+                                    "used_gb": used_gb,
+                                    "total_gb": total_gb,
+                                    "percent": disk_pct,
+                                    "display": f"{used_gb:.2f} GB / {total_gb:.1f} GB ({disk_pct:.1f}%)"
+                                }
+                            break
+        except Exception as e:
+            res["error"] = str(e)
+        print(json.dumps(res))
+        sys.exit(0)
 
     else:
         res = {"status": "error", "message": f"Unknown action: {action}"}

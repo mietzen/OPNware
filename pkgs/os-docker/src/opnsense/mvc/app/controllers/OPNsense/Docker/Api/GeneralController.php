@@ -52,4 +52,36 @@ class GeneralController extends ApiMutableModelControllerBase
         }
         return $data;
     }
+
+    public function metricsAction()
+    {
+        $cacheFile = '/var/run/os-docker/metrics_cache.json';
+        if (file_exists($cacheFile)) {
+            $mtime = filemtime($cacheFile);
+            if ($mtime !== false && (time() - $mtime) < 3) {
+                $cached = json_decode((string)file_get_contents($cacheFile), true);
+                if (is_array($cached)) {
+                    return $cached;
+                }
+            }
+        }
+
+        $backend = new \OPNsense\Core\Backend();
+        $response = $backend->configdRun('docker metrics');
+        $res = json_decode($response, true);
+        if (is_array($res) && isset($res['status'])) {
+            @file_put_contents($cacheFile, json_encode($res));
+            return $res;
+        }
+
+        $fallback = [
+            'status' => 'ok',
+            'running' => false,
+            'cpu' => ['display' => '--', 'load_1m' => 0, 'percent' => 0, 'vcpus' => 2],
+            'ram' => ['display' => '--', 'used_mb' => 0, 'total_mb' => 0, 'percent' => 0],
+            'disk' => ['display' => '--', 'used_gb' => 0, 'total_gb' => 0, 'percent' => 0]
+        ];
+        @file_put_contents($cacheFile, json_encode($fallback));
+        return $fallback;
+    }
 }

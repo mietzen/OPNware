@@ -38,9 +38,11 @@ class GeneralController extends IndexController
         $config = \OPNsense\Core\Config::getInstance()->object();
         $lanIp = (string)($config->interfaces->lan->ipaddr ?? '127.0.0.1');
         $sshEnabled = isset($config->system->ssh->enabled);
+        $currentUser = $this->session->get('Username') ?: ($_SESSION['user_name'] ?? 'root');
         $this->view->generalForm = $this->getForm("general");
         $this->view->lanIp = $lanIp;
         $this->view->sshEnabled = $sshEnabled;
+        $this->view->currentUser = $currentUser;
         $this->view->pick('OPNsense/Docker/general');
     }
 }

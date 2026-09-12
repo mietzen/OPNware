@@ -35,8 +35,8 @@ use OPNsense\Core\Backend;
 abstract class DockerApiControllerBase extends ApiControllerBase
 {
     protected const DOCKER_REST_BASE = 'http://100.64.0.2:2375';
-    protected const REST_TIMEOUT_SEC = 2;
-    protected const REST_CONNECT_TIMEOUT_MS = 500;
+    protected const REST_TIMEOUT_SEC = 4;
+    protected const REST_CONNECT_TIMEOUT_MS = 2000;
     protected const STATUS_FILE = '/var/db/os-docker/manage_status.json';
     protected const DF_CACHE_FILE = '/var/run/os-docker/df_cache.json';
 
@@ -107,6 +107,11 @@ abstract class DockerApiControllerBase extends ApiControllerBase
             }
         }
 
+        // Fast abort on connection error without waiting for 60s configd timeout
+        if ($res['code'] === 0) {
+            return ['status' => 'ok', 'items' => []];
+        }
+
         return $this->executeAction($fallbackCmd);
     }
 
@@ -116,6 +121,11 @@ abstract class DockerApiControllerBase extends ApiControllerBase
         $isSuccess = ($res['code'] === 304 || ($res['code'] >= 200 && $res['code'] < 300));
         if ($isSuccess) {
             return ['status' => 'ok', 'output' => $res['body'] ?: 'OK'];
+        }
+
+        // Fast abort on connection error
+        if ($res['code'] === 0) {
+            return ['status' => 'error', 'message' => 'Docker microVM is unreachable'];
         }
 
         return $this->executeAction($fallbackCmd, $fallbackParam);

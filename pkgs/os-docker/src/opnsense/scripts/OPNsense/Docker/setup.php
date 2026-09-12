@@ -62,8 +62,10 @@ foreach (['setup.log', 'port_sync.log', 'terminal.log', 'dockerd.log'] as $lf) {
     }
 }
 
-// 0. Ensure vm-bhyve is enabled and initialized
+// 0. Ensure vm-bhyve is enabled and initialized, disable bridge pfil to allow VM bridge traffic
 exec('/usr/sbin/sysrc vm_enable="YES" vm_dir="/var/db/vm" 2>/dev/null');
+exec('/sbin/sysctl net.link.bridge.pfil_member=0 net.link.bridge.pfil_bridge=0 2>/dev/null');
+@file_put_contents('/etc/sysctl.d/99-docker.conf', "net.link.bridge.pfil_member=0\nnet.link.bridge.pfil_bridge=0\n");
 if (!is_dir('/var/db/vm/.config')) {
     exec('/usr/local/sbin/vm init 2>/dev/null');
 }
@@ -98,9 +100,12 @@ exec('/usr/local/sbin/vm switch address docker-net ' . escapeshellarg("{$hostIp}
 $sshKey = "{$stateDir}/id_ed25519";
 if (!file_exists($sshKey)) {
     log_msg("Generating SSH management key: {$sshKey}");
-    exec("/usr/bin/ssh-keygen -t ed25519 -N '' -f " . escapeshellarg($sshKey) . " -C 'opnsense-docker-mgmt' 2>/dev/null");
-    @chmod($sshKey, 0600);
+    $keygenBin = file_exists('/usr/local/bin/ssh-keygen') ? '/usr/local/bin/ssh-keygen' : '/usr/bin/ssh-keygen';
+    exec($keygenBin . " -t ed25519 -N '' -f " . escapeshellarg($sshKey) . " -C 'opnsense-docker-mgmt' 2>/dev/null");
 }
+@chgrp($sshKey, 'wheel');
+@chmod($sshKey, 0640);
+@chmod("{$sshKey}.pub", 0644);
 
 // Ensure SSH config directs ssh://root@100.64.0.2 to use the key
 $sshClientConfig = <<<EOF
@@ -125,11 +130,24 @@ if (strpos($existingSsh, '# BEGIN OPNWARE DOCKER SSH') !== false) {
 file_put_contents($rootSshConf, $existingSsh);
 @chmod($rootSshConf, 0600);
 
+// Global /etc/ssh/ssh_config for non-root users
+$globalSshConf = '/etc/ssh/ssh_config';
+if (file_exists('/etc/ssh')) {
+    $existingGlobal = file_exists($globalSshConf) ? file_get_contents($globalSshConf) : '';
+    if (strpos($existingGlobal, '# BEGIN OPNWARE DOCKER SSH') !== false) {
+        $existingGlobal = preg_replace('/# BEGIN OPNWARE DOCKER SSH.*?# END OPNWARE DOCKER SSH\n?/s', $sshClientConfig . "\n", $existingGlobal);
+    } else {
+        $existingGlobal .= "\n" . $sshClientConfig . "\n";
+    }
+    file_put_contents($globalSshConf, $existingGlobal);
+    @chmod($globalSshConf, 0644);
+}
+
 // 3. Base OS Image Setup (os.img)
 $osImgTarget = "{$vmDir}/os.img";
 $osImgSource = "{$shareDir}/os.img.zst";
 
-if (!file_exists($osImgTarget)) {
+if (!file_exists($osImgTarget) || (file_exists($osImgSource) && filemtime($osImgSource) > filemtime($osImgTarget))) {
     if (file_exists($osImgSource)) {
         log_msg("Extracting deterministic base OS image to {$osImgTarget}");
         exec("/usr/local/bin/zstd -d -f " . escapeshellarg($osImgSource) . " -o " . escapeshellarg($osImgTarget) . " 2>/dev/null");
@@ -141,14 +159,24 @@ if (!file_exists($osImgTarget)) {
 // 4. Persistent Data Disk Setup (data.img)
 $dataImgTarget = "{$vmDir}/data.img";
 $diskSizeGb = (int)($dockerCfg->general->disk_size ?? 20);
-if ($diskSizeGb < 5) {
-    $diskSizeGb = 20;
+if ($diskSizeGb < 2) {
+    $diskSizeGb = 2;
 }
 
 if (!file_exists($dataImgTarget)) {
     log_msg("Creating {$diskSizeGb}GB sparse data disk at {$dataImgTarget}");
     exec("/usr/bin/truncate -s {$diskSizeGb}G " . escapeshellarg($dataImgTarget) . " 2>/dev/null");
+} else {
+    $currentBytes = @filesize($dataImgTarget) ?: 0;
+    $targetBytes = $diskSizeGb * 1024 * 1024 * 1024;
+    if ($targetBytes > $currentBytes) {
+        log_msg("Expanding sparse data disk from " . round($currentBytes / (1024 * 1024 * 1024)) . "GB to {$diskSizeGb}GB");
+        exec("/usr/bin/truncate -s {$diskSizeGb}G " . escapeshellarg($dataImgTarget) . " 2>/dev/null");
+    } elseif ($targetBytes < $currentBytes) {
+        log_msg("Configured disk size ({$diskSizeGb}GB) is smaller than existing image; retaining current data image to prevent data loss");
+    }
 }
+
 
 // 5. Deploy /usr/local/bin/docker-wrapper
 $wrapperPath = '/usr/local/bin/docker-wrapper';

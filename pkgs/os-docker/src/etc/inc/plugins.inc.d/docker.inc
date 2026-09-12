@@ -140,20 +140,5 @@ function docker_firewall($fw)
             ]
         );
     }
-
-    // 4. Inbound port access to microVM container ports on selected interfaces
-    foreach ($interfaces as $intf) {
-        $fw->registerFilterRule(
-            10,
-            [
-                'interface' => $intf,
-                'statetype' => 'keep',
-                'direction' => 'in',
-                'from' => 'any',
-                'to' => $subnet,
-                'descr' => "Allow access to Docker container published ports on {$intf}",
-                '#ref' => 'ui/docker/general'
-            ]
-        );
-    }
 }
+

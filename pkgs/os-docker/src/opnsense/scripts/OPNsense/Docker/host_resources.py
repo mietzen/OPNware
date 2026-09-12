@@ -19,10 +19,13 @@ def get_host_resources():
 
     memory_mb = 2048
     try:
-        proc = subprocess.run(["/sbin/sysctl", "-n", "hw.physmem"], capture_output=True, text=True, timeout=5)
+        proc = subprocess.run(["/sbin/sysctl", "-n", "hw.realmem"], capture_output=True, text=True, timeout=5)
+        if proc.returncode != 0 or not proc.stdout.strip().isdigit():
+            proc = subprocess.run(["/sbin/sysctl", "-n", "hw.physmem"], capture_output=True, text=True, timeout=5)
         if proc.returncode == 0 and proc.stdout.strip().isdigit():
             memory_bytes = int(proc.stdout.strip())
-            memory_mb = memory_bytes // (1024 * 1024)
+            raw_mb = memory_bytes / (1024 * 1024)
+            memory_mb = max(512, int(round(raw_mb / 512.0) * 512))
     except Exception:
         pass
 

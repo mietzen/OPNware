@@ -194,6 +194,7 @@ class SystemController extends DockerApiControllerBase
         $config = \OPNsense\Core\Config::getInstance()->object();
         $lanIp = (string)($config->interfaces->lan->ipaddr ?? '127.0.0.1');
         $sshEnabled = isset($config->system->ssh->enabled);
+        $currentUser = $this->session->get('Username') ?: ($_SESSION['user_name'] ?? 'root');
 
         return [
             'status' => $isRunning ? 'running' : 'stopped',
@@ -206,7 +207,8 @@ class SystemController extends DockerApiControllerBase
             'fail_on_conflict' => $conflictProt,
             'interfaces' => $interfaces,
             'lan_ip' => $lanIp,
-            'ssh_enabled' => $sshEnabled
+            'ssh_enabled' => $sshEnabled,
+            'current_user' => $currentUser
         ];
     }
 }
