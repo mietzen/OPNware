@@ -34,30 +34,6 @@
 .modal-title > .fa {
     margin-right: 10px;
 }
-.docker-stat-card {
-    display: flex;
-    align-items: center;
-    padding: 15px;
-}
-.docker-stat-icon {
-    font-size: 2.2em;
-    margin-right: 15px;
-    opacity: 0.8;
-}
-.docker-stat-content {
-    flex-grow: 1;
-}
-.docker-stat-value {
-    font-size: 1.5em;
-    font-weight: bold;
-    margin-top: 2px;
-}
-.term-container {
-    background: #000;
-    padding: 5px;
-    border-radius: 4px;
-    height: 450px;
-}
 </style>
 
 <script>
@@ -69,15 +45,25 @@
     var currentFitAddon = null;
     var currentWs = null;
 
-    function decodeHtml(str) {
+    function decodeHtmlEntities(str) {
         if (!str || typeof str !== 'string' || str.indexOf('&') === -1) return str;
-        return str.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#039;/g, "'");
+        return str
+            .replace(/&amp;/g, '&')
+            .replace(/&lt;/g, '<')
+            .replace(/&gt;/g, '>')
+            .replace(/&quot;/g, '"')
+            .replace(/&#039;/g, "'")
+            .replace(/&#39;/g, "'");
     }
 
     function ansiToHtml(str) {
         if (!str) return '';
-        var html = decodeHtml(String(str))
-            .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        var html = decodeHtmlEntities(String(str))
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
 
         var colors = {
             '30': '#4e4e4e', '31': '#ff6b68', '32': '#5af78e', '33': '#f3f99d',
@@ -98,6 +84,8 @@
                     reset = true;
                 } else if (code === '1') {
                     styles.push('font-weight: bold;');
+                } else if (code === '4') {
+                    styles.push('text-decoration: underline;');
                 } else if (colors[code]) {
                     styles.push('color: ' + colors[code] + ';');
                 }
@@ -121,632 +109,766 @@
             html += '</span>';
             openSpans--;
         }
+
+        html = html.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, '');
         return html;
     }
 
-    function formatBytes(bytes, decimals) {
-        if (!bytes || bytes === 0) return '0 B';
-        var k = 1024;
-        var dm = decimals < 0 ? 0 : decimals;
-        var sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
-        var i = Math.floor(Math.log(bytes) / Math.log(k));
-        return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+    function refreshActiveTab() {
+        var activeTab = $('#maintabs li.active a').attr('href');
+        loadSystemDf();
+        loadConflicts();
+        if (activeTab === '#tab-containers') {
+            loadContainers();
+        } else if (activeTab === '#tab-images') {
+            loadImages();
+        } else if (activeTab === '#tab-volumes') {
+            loadVolumes();
+        } else if (activeTab === '#tab-networks') {
+            loadNetworks();
+        }
     }
 
-    function updateStats() {
-        ajaxGet('/api/docker/system/stats', {}, function(data, status) {
-            if (status === 'success' && data && data.status === 'ok') {
-                var items = data.items || [];
-                var running = items.length;
-                $('#stat_containers_running').text(running);
-            }
-        });
-        ajaxGet('/api/docker/containers/list', {}, function(data, status) {
-            if (status === 'success' && data && data.status === 'ok') {
-                var items = data.items || [];
-                var total = items.length;
-                var running = items.filter(function(c) {
-                    var st = (c.State || c.Status || '').toLowerCase();
-                    return st.indexOf('up') !== -1 || st.indexOf('running') !== -1;
-                }).length;
-                $('#stat_containers').text(running + ' / ' + total);
-            }
-        });
-        ajaxGet('/api/docker/images/list', {}, function(data, status) {
-            if (status === 'success' && data && data.status === 'ok') {
-                var items = data.items || [];
-                $('#stat_images').text(items.length);
-            }
-        });
-        ajaxGet('/api/docker/volumes/list', {}, function(data, status) {
-            if (status === 'success' && data && data.status === 'ok') {
-                var items = data.items || [];
-                $('#stat_volumes').text(items.length);
-            }
-        });
-        ajaxGet('/api/docker/system/conflicts', {}, function(data, status) {
-            if (status === 'success' && data && data.conflicts && data.conflicts.length > 0) {
-                var msgs = data.conflicts.map(function(c) {
-                    return '<li>' + decodeHtml(c.message) + '</li>';
-                }).join('');
-                $('#docker_conflict_text').html('<ul style="margin-bottom:0; padding-left:20px;">' + msgs + '</ul>');
-                $('#docker_conflict_alert').slideDown();
-            } else {
-                $('#docker_conflict_alert').slideUp();
-            }
-        });
-    }
+    function loadSystemDf() {
+        ajaxGet('/api/docker/system/df', {}, function (data, status) {
+            if (data && Array.isArray(data.items)) {
+                var totalContainers = 0;
+                var activeContainers = 0;
+                var totalImages = 0;
+                var activeImages = 0;
+                var totalVolumes = 0;
+                var totalNetworks = 0;
+                var reclaimableStr = '0B';
 
-    function refreshContainers() {
-        ajaxGet('/api/docker/containers/list', {}, function(data, status) {
-            var tbody = $('#table_containers tbody');
-            tbody.empty();
-            if (status !== 'success' || !data || data.status !== 'ok' || !data.items || data.items.length === 0) {
-                tbody.append('<tr><td colspan="7" class="text-center text-muted"><em>{{ lang._("No containers found.") }}</em></td></tr>');
-                return;
-            }
-            data.items.forEach(function(c) {
-                var cid = c.ID || c.Id || '';
-                var shortId = cid.substring(0, 12);
-                var name = c.Names || c.Name || '';
-                if (Array.isArray(name)) name = name[0];
-                name = String(name).replace(/^\//, '');
-                var image = c.Image || '';
-                var state = (c.State || c.Status || '').toLowerCase();
-                var isRunning = state.indexOf('up') !== -1 || state.indexOf('running') !== -1;
-                var statusBadge = isRunning
-                    ? '<span class="label label-success"><i class="fa fa-play"></i> Running</span>'
-                    : '<span class="label label-default"><i class="fa fa-stop"></i> Stopped</span>';
-                var ports = c.Ports || '';
-                var created = c.CreatedAt || c.Created || '';
-
-                var tr = $('<tr></tr>');
-                tr.append('<td><strong>' + name + '</strong><br><small class="text-muted">' + shortId + '</small></td>');
-                tr.append('<td><code>' + image + '</code></td>');
-                tr.append('<td>' + statusBadge + '</td>');
-                tr.append('<td><small>' + (ports || '-') + '</small></td>');
-                tr.append('<td><small>' + created + '</small></td>');
-
-                var actions = $('<td class="text-right"></td>');
-                if (isRunning) {
-                    actions.append('<button class="btn btn-xs btn-default act-stop" data-id="' + cid + '" title="Stop"><i class="fa fa-stop"></i></button> ');
-                    actions.append('<button class="btn btn-xs btn-default act-restart" data-id="' + cid + '" title="Restart"><i class="fa fa-refresh"></i></button> ');
-                    actions.append('<button class="btn btn-xs btn-default act-cli" data-id="' + cid + '" data-name="' + name + '" title="Shell"><i class="fa fa-terminal"></i></button> ');
-                } else {
-                    actions.append('<button class="btn btn-xs btn-success act-start" data-id="' + cid + '" title="Start"><i class="fa fa-play"></i></button> ');
-                }
-                actions.append('<button class="btn btn-xs btn-info act-logs" data-id="' + cid + '" data-name="' + name + '" title="Logs"><i class="fa fa-file-text-o"></i></button> ');
-                actions.append('<button class="btn btn-xs btn-default act-inspect" data-id="' + cid + '" title="Inspect"><i class="fa fa-search"></i></button> ');
-                actions.append('<button class="btn btn-xs btn-danger act-delete" data-id="' + cid + '" title="Remove"><i class="fa fa-trash-o"></i></button>');
-
-                tr.append(actions);
-                tbody.append(tr);
-            });
-        });
-    }
-
-    function refreshImages() {
-        ajaxGet('/api/docker/images/list', {}, function(data, status) {
-            var tbody = $('#table_images tbody');
-            tbody.empty();
-            if (status !== 'success' || !data || data.status !== 'ok' || !data.items || data.items.length === 0) {
-                tbody.append('<tr><td colspan="6" class="text-center text-muted"><em>{{ lang._("No images found.") }}</em></td></tr>');
-                return;
-            }
-            data.items.forEach(function(img) {
-                var id = img.ID || img.Id || '';
-                var shortId = id.replace(/^sha256:/, '').substring(0, 12);
-                var repo = img.Repository || '<none>';
-                var tag = img.Tag || '<none>';
-                var size = img.Size || '';
-                var created = img.CreatedAt || img.CreatedSince || '';
-
-                var tr = $('<tr></tr>');
-                tr.append('<td><strong>' + repo + '</strong></td>');
-                tr.append('<td><span class="label label-info">' + tag + '</span></td>');
-                tr.append('<td><code>' + shortId + '</code></td>');
-                tr.append('<td>' + size + '</td>');
-                tr.append('<td><small>' + created + '</small></td>');
-
-                var actions = $('<td class="text-right"></td>');
-                actions.append('<button class="btn btn-xs btn-danger act-img-delete" data-id="' + (repo !== '<none>' ? repo + ':' + tag : id) + '" title="Remove"><i class="fa fa-trash-o"></i></button>');
-                tr.append(actions);
-                tbody.append(tr);
-            });
-        });
-    }
-
-    function refreshVolumes() {
-        ajaxGet('/api/docker/volumes/list', {}, function(data, status) {
-            var tbody = $('#table_volumes tbody');
-            tbody.empty();
-            if (status !== 'success' || !data || data.status !== 'ok' || !data.items || data.items.length === 0) {
-                tbody.append('<tr><td colspan="5" class="text-center text-muted"><em>{{ lang._("No volumes found.") }}</em></td></tr>');
-                return;
-            }
-            data.items.forEach(function(vol) {
-                var name = vol.Name || '';
-                var driver = vol.Driver || 'local';
-                var scope = vol.Scope || 'local';
-                var mount = vol.Mountpoint || '';
-
-                var tr = $('<tr></tr>');
-                tr.append('<td><strong>' + name + '</strong></td>');
-                tr.append('<td><span class="label label-default">' + driver + '</span></td>');
-                tr.append('<td>' + scope + '</td>');
-                tr.append('<td><small class="text-muted">' + mount + '</small></td>');
-
-                var actions = $('<td class="text-right"></td>');
-                actions.append('<button class="btn btn-xs btn-default act-vol-inspect" data-name="' + name + '" title="Inspect"><i class="fa fa-search"></i></button> ');
-                actions.append('<button class="btn btn-xs btn-danger act-vol-delete" data-name="' + name + '" title="Remove"><i class="fa fa-trash-o"></i></button>');
-                tr.append(actions);
-                tbody.append(tr);
-            });
-        });
-    }
-
-    $(document).ready(function() {
-        updateStats();
-        refreshContainers();
-        refreshImages();
-        refreshVolumes();
-
-        // Containers Actions
-        $(document).on('click', '.act-start', function() {
-            var id = $(this).data('id');
-            ajaxCall('/api/docker/containers/start/' + id, {}, function() {
-                refreshContainers();
-                updateStats();
-            });
-        });
-
-        $(document).on('click', '.act-stop', function() {
-            var id = $(this).data('id');
-            ajaxCall('/api/docker/containers/stop/' + id, {}, function() {
-                refreshContainers();
-                updateStats();
-            });
-        });
-
-        $(document).on('click', '.act-restart', function() {
-            var id = $(this).data('id');
-            ajaxCall('/api/docker/containers/restart/' + id, {}, function() {
-                refreshContainers();
-                updateStats();
-            });
-        });
-
-        $(document).on('click', '.act-delete', function() {
-            var id = $(this).data('id');
-            if (confirm("{{ lang._('Are you sure you want to remove this container?') }}")) {
-                ajaxCall('/api/docker/containers/delete/' + id, {}, function() {
-                    refreshContainers();
-                    updateStats();
+                $.each(data.items, function (idx, item) {
+                    if (item.Type === 'Containers') {
+                        totalContainers = item.Total || 0;
+                        activeContainers = item.Active || 0;
+                    } else if (item.Type === 'Images') {
+                        totalImages = item.Total || 0;
+                        activeImages = item.Active || 0;
+                        if (item.Reclaimable) {
+                            reclaimableStr = item.Reclaimable;
+                        }
+                    } else if (item.Type === 'Local Volumes' || item.Type === 'Volumes') {
+                        totalVolumes = item.Total || 0;
+                    } else if (item.Type === 'Networks') {
+                        totalNetworks = item.Total || 0;
+                    }
                 });
+
+                reclaimableStr = reclaimableStr.replace(/(\d+\.\d+)\s*([a-zA-Z]+)/g, function (match, num, unit) {
+                    return parseFloat(num).toFixed(1) + unit;
+                });
+
+                $('#stat-containers').text(activeContainers + ' / ' + totalContainers + ' Running');
+                $('#stat-images').text(activeImages + ' / ' + totalImages + ' Active');
+                $('#stat-volumes').text(totalVolumes + ' Volumes');
+                $('#stat-networks').text(totalNetworks + ' Networks');
+                $('#stat-reclaimable').text(reclaimableStr);
             }
         });
+    }
 
-        $(document).on('click', '.act-logs', function() {
-            currentLogContainerId = $(this).data('id');
-            var name = $(this).data('name');
-            $('#modal_logs_title').text("Logs: " + name);
-            $('#modal_logs_content').html('<div class="text-center"><i class="fa fa-spinner fa-spin"></i> Loading...</div>');
-            $('#modal_logs').modal('show');
-            loadLogs();
+    function loadConflicts() {
+        ajaxGet('/api/docker/system/conflicts', {}, function (data, status) {
+            if (data && Array.isArray(data.conflicts) && data.conflicts.length > 0) {
+                var listHtml = '';
+                $.each(data.conflicts, function(idx, conf) {
+                    listHtml += '<li><strong>' + $('<div>').text(conf.container || 'Container').html() + '</strong>: ' +
+                                'Port <code>' + conf.host_port + '/' + conf.proto + '</code> conflicts with host service <code>' +
+                                $('<div>').text(conf.process || 'unknown').html() + '</code></li>';
+                });
+                $('#conflict-list').html(listHtml);
+                $('#docker-conflict-banner').slideDown();
+            } else {
+                $('#docker-conflict-banner').slideUp();
+            }
         });
+    }
 
-        function loadLogs() {
-            if (!currentLogContainerId) return;
-            ajaxGet('/api/docker/containers/logs/' + currentLogContainerId, {}, function(data, status) {
-                if (status === 'success' && data) {
-                    var out = data.output || data.message || '';
-                    $('#modal_logs_content').html('<pre style="background:#1e1e1e;color:#f1f1f0;max-height:500px;overflow:auto;">' + ansiToHtml(out) + '</pre>');
+    var cachedContainers = [];
+
+    function formatTimestamp(val) {
+        if (!val) return '--';
+        var d = null;
+        if (typeof val === 'number') {
+            d = new Date(val > 1e11 ? val : val * 1000);
+        } else if (/^\d+$/.test(val)) {
+            var n = parseInt(val, 10);
+            d = new Date(n > 1e11 ? n : n * 1000);
+        } else {
+            d = new Date(val);
+        }
+        if (!d || isNaN(d.getTime())) {
+            return $('<div>').text(val).html();
+        }
+        var now = new Date();
+        var diffSec = Math.floor((now - d) / 1000);
+        var rel = '';
+        if (diffSec < 60) {
+            rel = '{{ lang._("just now") }}';
+        } else if (diffSec < 3600) {
+            var m = Math.floor(diffSec / 60);
+            rel = m + (m === 1 ? ' {{ lang._("min ago") }}' : ' {{ lang._("mins ago") }}');
+        } else if (diffSec < 86400) {
+            var h = Math.floor(diffSec / 3600);
+            rel = h + (h === 1 ? ' {{ lang._("hour ago") }}' : ' {{ lang._("hours ago") }}');
+        } else {
+            var days = Math.floor(diffSec / 86400);
+            rel = days + (days === 1 ? ' {{ lang._("day ago") }}' : ' {{ lang._("days ago") }}');
+        }
+        var iso = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0') + ' ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+        return '<span title="' + iso + '">' + rel + '</span>';
+    }
+
+    function loadContainers() {
+        ajaxGet('/api/docker/containers/list', {}, function (data, status) {
+            var $tbody = $('#grid-containers tbody');
+            var items = (data && data.items) ? data.items : [];
+            cachedContainers = items;
+            if (items.length === 0) {
+                $tbody.html('<tr><td colspan="6" class="text-center"><em>{{ lang._("No containers found") }}</em></td></tr>');
+                return;
+            }
+
+            var rows = '';
+            $.each(items, function (idx, c) {
+                var cid = (c.Id || c.ID || '').substring(0, 12);
+                var names = Array.isArray(c.Names) ? c.Names.join(', ') : (c.Names || '');
+                var image = c.Image || '';
+                var state = c.State || c.Status || '';
+                var created = c.Created || c.CreatedAt || '';
+
+                var isRunning = (state.toLowerCase().indexOf('up') !== -1 || state.toLowerCase() === 'running');
+                var badgeClass = isRunning ? 'label-success' : 'label-default';
+
+                var startStopBtn = isRunning
+                    ? '<button class="btn btn-xs btn-default act-stop" data-id="' + cid + '" title="{{ lang._("Stop Container") }}"><i class="fa fa-stop text-warning"></i></button> '
+                    : '<button class="btn btn-xs btn-default act-start" data-id="' + cid + '" title="{{ lang._("Start Container") }}"><i class="fa fa-play text-success"></i></button> ';
+
+                var restartBtn = isRunning
+                    ? '<button class="btn btn-xs btn-default act-restart" data-id="' + cid + '" title="{{ lang._("Restart") }}"><i class="fa fa-refresh text-info"></i></button> '
+                    : '<button class="btn btn-xs btn-default" disabled="disabled" title="{{ lang._("Restart (Container stopped)") }}"><i class="fa fa-refresh text-muted"></i></button> ';
+
+                var killBtn = isRunning
+                    ? '<button class="btn btn-xs btn-default act-kill" data-id="' + cid + '" title="{{ lang._("Force Stop") }}"><i class="fa fa-bolt text-danger"></i></button> '
+                    : '<button class="btn btn-xs btn-default" disabled="disabled" title="{{ lang._("Force Stop (Container stopped)") }}"><i class="fa fa-bolt text-muted"></i></button> ';
+
+                var cliBtn = isRunning
+                    ? '<button class="btn btn-xs btn-default act-cli" data-id="' + cid + '" data-name="' + $('<div>').text(names).html() + '" title="{{ lang._("Container CLI") }}"><i class="fa fa-terminal text-warning"></i></button> '
+                    : '<button class="btn btn-xs btn-default" disabled="disabled" title="{{ lang._("Container CLI (Container stopped)") }}"><i class="fa fa-terminal text-muted"></i></button> ';
+
+                var logsBtn = '<button class="btn btn-xs btn-default act-logs" data-id="' + cid + '" data-name="' + $('<div>').text(names).html() + '" title="{{ lang._("View Logs") }}"><i class="fa fa-file-text-o text-primary"></i></button> ';
+                var inspectBtn = '<button class="btn btn-xs btn-default act-inspect" data-id="' + cid + '" data-name="' + $('<div>').text(names).html() + '" title="{{ lang._("Inspect Container") }}"><i class="fa fa-info-circle text-info"></i></button> ';
+
+                var deleteBtn = isRunning
+                    ? '<button class="btn btn-xs btn-default" disabled="disabled" title="{{ lang._("Cannot delete running container. Stop container first.") }}"><i class="fa fa-lock text-muted"></i></button>'
+                    : '<button class="btn btn-xs btn-default act-delete-container" data-id="' + cid + '" data-name="' + $('<div>').text(names).html() + '" title="{{ lang._("Delete Container") }}"><i class="fa fa-trash text-danger"></i></button>';
+
+                var actions = startStopBtn + restartBtn + killBtn + cliBtn + logsBtn + inspectBtn + deleteBtn;
+
+                rows += '<tr>' +
+                    '<td><code>' + cid + '</code></td>' +
+                    '<td><strong>' + $('<div>').text(names).html() + '</strong></td>' +
+                    '<td>' + $('<div>').text(image).html() + '</td>' +
+                    '<td><span class="label ' + badgeClass + '">' + $('<div>').text(state).html() + '</span></td>' +
+                    '<td>' + formatTimestamp(created) + '</td>' +
+                    '<td>' + actions + '</td>' +
+                    '</tr>';
+            });
+            $tbody.html(rows);
+        });
+    }
+
+    function loadImages() {
+        ajaxGet('/api/docker/images/list', {}, function (data, status) {
+            var $tbody = $('#grid-images tbody');
+            var items = (data && data.items) ? data.items : [];
+            if (items.length === 0) {
+                $tbody.html('<tr><td colspan="5" class="text-center"><em>{{ lang._("No images found") }}</em></td></tr>');
+                return;
+            }
+
+            var usedImages = {};
+            $.each(cachedContainers, function(idx, c) {
+                var cimg = c.Image || '';
+                var cname = Array.isArray(c.Names) ? c.Names[0] : (c.Names || c.Id);
+                usedImages[cimg] = cname;
+                if (c.ImageID) {
+                    usedImages[c.ImageID.substring(0, 12)] = cname;
                 }
             });
+
+            var rows = '';
+            $.each(items, function (idx, img) {
+                var repo = Array.isArray(img.Names) ? img.Names.join(', ') : (img.Repository || img.History || 'none');
+                var iid = (img.Id || img.ID || '').substring(0, 12);
+                var size = img.Size ? (typeof img.Size === 'number' ? (img.Size / (1024*1024)).toFixed(1) + ' MB' : img.Size) : '';
+                var created = img.Created || img.CreatedAt || '';
+
+                var inUseBy = usedImages[repo] || usedImages[iid];
+                var actions = '';
+                if (inUseBy) {
+                    actions = '<button class="btn btn-xs btn-default" disabled="disabled" title="{{ lang._("Image is currently used by container: ") }}' + $('<div>').text(inUseBy).html() + '"><i class="fa fa-lock text-muted"></i></button>';
+                } else {
+                    actions = '<button class="btn btn-xs btn-default act-delete-image" data-id="' + iid + '" data-name="' + $('<div>').text(repo).html() + '" title="{{ lang._("Delete Image") }}"><i class="fa fa-trash text-danger"></i></button>';
+                }
+
+                rows += '<tr>' +
+                    '<td><strong>' + $('<div>').text(repo).html() + '</strong></td>' +
+                    '<td><code>' + iid + '</code></td>' +
+                    '<td>' + size + '</td>' +
+                    '<td>' + formatTimestamp(created) + '</td>' +
+                    '<td>' + actions + '</td>' +
+                    '</tr>';
+            });
+            $tbody.html(rows);
+        });
+    }
+
+    function loadVolumes() {
+        ajaxGet('/api/docker/volumes/list', {}, function (data, status) {
+            var $tbody = $('#grid-volumes tbody');
+            var items = (data && data.items) ? data.items : [];
+            if (items.length === 0) {
+                $tbody.html('<tr><td colspan="4" class="text-center"><em>{{ lang._("No volumes found") }}</em></td></tr>');
+                return;
+            }
+
+            var usedVolumes = {};
+            $.each(cachedContainers, function(idx, c) {
+                if (Array.isArray(c.Mounts)) {
+                    $.each(c.Mounts, function(mIdx, m) {
+                        if (m.Name) {
+                            usedVolumes[m.Name] = Array.isArray(c.Names) ? c.Names[0] : c.Names;
+                        }
+                    });
+                }
+            });
+
+            var rows = '';
+            $.each(items, function (idx, v) {
+                var vname = v.Name || '';
+                var inUseBy = usedVolumes[vname];
+                var actions = '';
+                if (inUseBy) {
+                    actions = '<button class="btn btn-xs btn-default" disabled="disabled" title="{{ lang._("Volume is in use by container: ") }}' + $('<div>').text(inUseBy).html() + '"><i class="fa fa-lock text-muted"></i></button>';
+                } else {
+                    actions = '<button class="btn btn-xs btn-default act-delete-volume" data-name="' + $('<div>').text(vname).html() + '" title="{{ lang._("Delete Volume") }}"><i class="fa fa-trash text-danger"></i></button>';
+                }
+
+                rows += '<tr>' +
+                    '<td><strong>' + $('<div>').text(vname).html() + '</strong></td>' +
+                    '<td>' + $('<div>').text(v.Driver || '').html() + '</td>' +
+                    '<td><code>' + $('<div>').text(v.Mountpoint || '').html() + '</code></td>' +
+                    '<td>' + actions + '</td>' +
+                    '</tr>';
+            });
+            $tbody.html(rows);
+        });
+    }
+
+    function loadNetworks() {
+        ajaxGet('/api/docker/networks/list', {}, function (data, status) {
+            var $tbody = $('#grid-networks tbody');
+            var items = (data && data.items) ? data.items : [];
+            if (items.length === 0) {
+                $tbody.html('<tr><td colspan="5" class="text-center"><em>{{ lang._("No networks found") }}</em></td></tr>');
+                return;
+            }
+            var rows = '';
+            $.each(items, function (idx, net) {
+                var netName = net.Name || net.name || '';
+                var subnets = '';
+                if (Array.isArray(net.Subnets)) {
+                    subnets = net.Subnets.map(function(s) { return s.Subnet || ''; }).join(', ');
+                }
+                var isDefault = (netName === 'bridge' || netName === 'none' || netName === 'host');
+                var actions = '';
+                if (!isDefault) {
+                    actions = '<button class="btn btn-xs btn-default act-delete-network" data-name="' + $('<div>').text(netName).html() + '" title="{{ lang._("Delete Network") }}"><i class="fa fa-trash text-danger"></i></button>';
+                } else {
+                    actions = '<button class="btn btn-xs btn-default" disabled="disabled" title="{{ lang._("Default system network cannot be deleted") }}"><i class="fa fa-lock text-muted"></i></button>';
+                }
+
+                rows += '<tr>' +
+                    '<td><strong>' + $('<div>').text(netName).html() + '</strong></td>' +
+                    '<td><code>' + ((net.id || net.ID || net.Id || '').substring(0, 12) || '--') + '</code></td>' +
+                    '<td>' + $('<div>').text(net.Driver || 'bridge').html() + '</td>' +
+                    '<td>' + $('<div>').text(subnets).html() + '</td>' +
+                    '<td>' + actions + '</td>' +
+                    '</tr>';
+            });
+            $tbody.html(rows);
+        });
+    }
+
+    function showContainerLogs(cid, name) {
+        currentLogContainerId = cid;
+        $('#modal-logs-title').html('<i class="fa fa-file-text-o text-primary" style="margin-right: 10px;"></i>{{ lang._("Container Logs") }}: ' + $('<div>').text(name || cid).html());
+        $('#modal-logs-body').text('{{ lang._("Loading logs...") }}');
+        $('#modal-logs').modal('show');
+        fetchLogsContent();
+    }
+
+    function fetchLogsContent() {
+        if (!currentLogContainerId) return;
+        ajaxGet('/api/docker/containers/logs/' + currentLogContainerId, {}, function (data, status) {
+            var text = (data && data.output) ? data.output : (data && data.message ? data.message : '({{ lang._("No log output") }})');
+            $('#modal-logs-body').html(ansiToHtml(text));
+            var pre = document.getElementById('modal-logs-body');
+            if (pre) pre.scrollTop = pre.scrollHeight;
+        });
+    }
+
+    function connectTerminalWs(cid, reset) {
+        var host = window.location.host;
+        var proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        var url = proto + '//' + host + '/api/docker/terminal/ws?id=' + encodeURIComponent(cid);
+
+        if (currentWs) {
+            try { currentWs.close(); } catch(e) {}
+            currentWs = null;
         }
 
-        $('#btn_logs_refresh').click(function() {
-            loadLogs();
-        });
+        currentWs = new WebSocket(url);
+        currentWs.binaryType = 'arraybuffer';
 
-        $(document).on('click', '.act-inspect', function() {
-            var id = $(this).data('id');
-            ajaxGet('/api/docker/containers/inspect/' + id, {}, function(data, status) {
-                if (status === 'success' && data) {
-                    $('#modal_inspect_content').text(JSON.stringify(data.items || data, null, 2));
-                    $('#modal_inspect').modal('show');
-                }
-            });
-        });
-
-        // Web Terminal Modal
-        $(document).on('click', '.act-cli', function() {
-            currentCliContainerId = $(this).data('id');
-            currentCliContainerName = $(this).data('name');
-            $('#modal_cli_title').text("Shell: " + currentCliContainerName);
-            $('#modal_cli').modal('show');
-        });
-
-        $('#modal_cli').on('shown.bs.modal', function() {
-            if (!currentCliContainerId) return;
-            if (currentTerm) {
-                currentTerm.dispose();
+        currentWs.onopen = function () {
+            if (reset && currentTerm) currentTerm.reset();
+            if (currentFitAddon) currentFitAddon.fit();
+            if (currentTerm && currentWs && currentWs.readyState === WebSocket.OPEN) {
+                var initMsg = JSON.stringify({ type: 'resize', cols: currentTerm.cols, rows: currentTerm.rows });
+                currentWs.send(initMsg);
             }
-            $('#terminal_container').empty();
+        };
 
-            currentTerm = new Terminal({
-                cursorBlink: true,
-                theme: {
-                    background: '#000000',
-                    foreground: '#f1f1f0',
-                    cursor: '#ffffff'
-                }
-            });
-            currentFitAddon = new FitAddon.FitAddon();
-            currentTerm.loadAddon(currentFitAddon);
-            currentTerm.open(document.getElementById('terminal_container'));
-            currentFitAddon.fit();
-
-            var loc = window.location;
-            var wsProtocol = (loc.protocol === 'https:') ? 'wss:' : 'ws:';
-            var wsUrl = wsProtocol + '//' + loc.host + '/api/docker/terminal/ws?id=' + encodeURIComponent(currentCliContainerId);
-
-            currentWs = new WebSocket(wsUrl);
-            currentWs.binaryType = 'arraybuffer';
-
-            currentWs.onopen = function() {
-                currentTerm.write('\r\n\x1b[32m[Connected to container shell]\x1b[0m\r\n');
-            };
-
-            currentWs.onmessage = function(ev) {
-                if (typeof ev.data === 'string') {
-                    currentTerm.write(ev.data);
+        currentWs.onmessage = function (evt) {
+            if (currentTerm) {
+                if (typeof evt.data === 'string') {
+                    currentTerm.write(evt.data);
                 } else {
-                    var arr = new Uint8Array(ev.data);
-                    currentTerm.write(arr);
+                    currentTerm.write(new Uint8Array(evt.data));
                 }
-            };
+            }
+        };
 
-            currentWs.onerror = function() {
-                currentTerm.write('\r\n\x1b[31m[WebSocket Connection Error]\x1b[0m\r\n');
-            };
+        currentWs.onclose = function () {
+            if (currentTerm) currentTerm.write('\r\n\x1b[33m[Connection closed]\x1b[0m\r\n');
+        };
+    }
 
-            currentWs.onclose = function() {
-                currentTerm.write('\r\n\x1b[33m[Connection Closed]\x1b[0m\r\n');
-            };
+    function showContainerCli(cid, name) {
+        currentCliContainerId = cid;
+        currentCliContainerName = name || cid;
+        $('#modal-cli-title').html('<i class="fa fa-terminal text-warning" style="margin-right: 10px;"></i>{{ lang._("Container CLI") }}: ' + $('<div>').text(currentCliContainerName).html());
+        $('#modal-cli').modal('show');
 
-            currentTerm.onData(function(data) {
-                if (currentWs && currentWs.readyState === WebSocket.OPEN) {
-                    currentWs.send(data);
+        setTimeout(function () {
+            var container = document.getElementById('xterm-cli-container');
+            if (!container) return;
+            if (!currentTerm) {
+                currentTerm = new Terminal({
+                    cursorBlink: true,
+                    fontSize: 13,
+                    fontFamily: 'Menlo, Monaco, "Courier New", monospace',
+                    theme: {
+                        background: '#1c1f24',
+                        foreground: '#dcdfe4',
+                        cursor: '#528bff'
+                    }
+                });
+                currentFitAddon = new FitAddon.FitAddon();
+                currentTerm.loadAddon(currentFitAddon);
+                currentTerm.open(container);
+
+                currentTerm.onData(function (data) {
+                    if (currentWs && currentWs.readyState === WebSocket.OPEN) {
+                        currentWs.send(data);
+                    }
+                });
+
+                window.addEventListener('resize', function () {
+                    if (currentFitAddon) currentFitAddon.fit();
+                });
+            }
+            if (currentFitAddon) currentFitAddon.fit();
+            connectTerminalWs(cid, true);
+        }, 200);
+    }
+
+    function inspectContainer(cid, name) {
+        ajaxGet('/api/docker/containers/inspect/' + cid, {}, function (data, status) {
+            var raw = (data && data.output) ? data.output : (data && data.items ? JSON.stringify(data.items, null, 2) : '');
+            $('#modal-inspect-title').html('<i class="fa fa-info-circle text-info" style="margin-right: 10px;"></i>{{ lang._("Inspect Container") }}: ' + $('<div>').text(name || cid).html());
+            $('#inspect-raw-content').text(raw);
+            $('#modal-inspect').modal('show');
+        });
+    }
+
+    $(document).ready(function () {
+        refreshActiveTab();
+        updateServiceControlUI('docker');
+
+        autoRefreshInterval = setInterval(function () {
+            refreshActiveTab();
+        }, 10000);
+
+        $('#maintabs a').on('shown.bs.tab', function () {
+            refreshActiveTab();
+        });
+
+        $('#btn_refresh_grid').click(function () {
+            refreshActiveTab();
+        });
+
+        $('#btn_system_prune').click(function () {
+            BootstrapDialog.confirm({
+                title: "{{ lang._('Prune System Resources') }}",
+                message: "{{ lang._('This will remove all stopped containers, unused networks, dangling images, and build caches. Continue?') }}",
+                type: BootstrapDialog.TYPE_WARNING,
+                btnCancelLabel: "{{ lang._('Cancel') }}",
+                btnOKLabel: "{{ lang._('Prune') }}",
+                btnOKClass: "btn-warning",
+                callback: function (result) {
+                    if (result) {
+                        ajaxCall('/api/docker/system/prune', {}, function () {
+                            refreshActiveTab();
+                        });
+                    }
                 }
             });
         });
 
-        $('#modal_cli').on('hidden.bs.modal', function() {
+        // Grid Action Delegation
+        $(document).on('click', '.act-start', function () {
+            var cid = $(this).data('id');
+            ajaxCall('/api/docker/containers/start/' + cid, {}, function () { refreshActiveTab(); });
+        });
+
+        $(document).on('click', '.act-stop', function () {
+            var cid = $(this).data('id');
+            ajaxCall('/api/docker/containers/stop/' + cid, {}, function () { refreshActiveTab(); });
+        });
+
+        $(document).on('click', '.act-restart', function () {
+            var cid = $(this).data('id');
+            ajaxCall('/api/docker/containers/restart/' + cid, {}, function () { refreshActiveTab(); });
+        });
+
+        $(document).on('click', '.act-kill', function () {
+            var cid = $(this).data('id');
+            ajaxCall('/api/docker/containers/kill/' + cid, {}, function () { refreshActiveTab(); });
+        });
+
+        $(document).on('click', '.act-cli', function () {
+            showContainerCli($(this).data('id'), $(this).data('name'));
+        });
+
+        $(document).on('click', '.act-logs', function () {
+            showContainerLogs($(this).data('id'), $(this).data('name'));
+        });
+
+        $(document).on('click', '.act-inspect', function () {
+            inspectContainer($(this).data('id'), $(this).data('name'));
+        });
+
+        $(document).on('click', '.act-delete-container', function () {
+            var cid = $(this).data('id');
+            var cname = $(this).data('name') || cid;
+            BootstrapDialog.confirm({
+                title: "{{ lang._('Delete Container') }}",
+                message: "{{ lang._('Are you sure you want to permanently delete container: ') }}<strong>" + $('<div>').text(cname).html() + "</strong>?",
+                type: BootstrapDialog.TYPE_DANGER,
+                btnCancelLabel: "{{ lang._('Cancel') }}",
+                btnOKLabel: "{{ lang._('Delete') }}",
+                btnOKClass: "btn-danger",
+                callback: function (result) {
+                    if (result) {
+                        ajaxCall('/api/docker/containers/delete/' + cid, {}, function () { refreshActiveTab(); });
+                    }
+                }
+            });
+        });
+
+        $(document).on('click', '.act-delete-image', function () {
+            var iid = $(this).data('id');
+            var iname = $(this).data('name') || iid;
+            BootstrapDialog.confirm({
+                title: "{{ lang._('Delete Image') }}",
+                message: "{{ lang._('Are you sure you want to delete image: ') }}<strong>" + $('<div>').text(iname).html() + "</strong>?",
+                type: BootstrapDialog.TYPE_DANGER,
+                btnCancelLabel: "{{ lang._('Cancel') }}",
+                btnOKLabel: "{{ lang._('Delete') }}",
+                btnOKClass: "btn-danger",
+                callback: function (result) {
+                    if (result) {
+                        ajaxCall('/api/docker/images/delete/' + iid, {}, function () { refreshActiveTab(); });
+                    }
+                }
+            });
+        });
+
+        $(document).on('click', '.act-delete-volume', function () {
+            var vname = $(this).data('name');
+            BootstrapDialog.confirm({
+                title: "{{ lang._('Delete Volume') }}",
+                message: "{{ lang._('Are you sure you want to delete volume: ') }}<strong>" + $('<div>').text(vname).html() + "</strong>?",
+                type: BootstrapDialog.TYPE_DANGER,
+                btnCancelLabel: "{{ lang._('Cancel') }}",
+                btnOKLabel: "{{ lang._('Delete') }}",
+                btnOKClass: "btn-danger",
+                callback: function (result) {
+                    if (result) {
+                        ajaxCall('/api/docker/volumes/delete/' + vname, {}, function () { refreshActiveTab(); });
+                    }
+                }
+            });
+        });
+
+        $(document).on('click', '.act-delete-network', function () {
+            var netName = $(this).data('name');
+            BootstrapDialog.confirm({
+                title: "{{ lang._('Delete Network') }}",
+                message: "{{ lang._('Are you sure you want to delete network: ') }}<strong>" + $('<div>').text(netName).html() + "</strong>?",
+                type: BootstrapDialog.TYPE_DANGER,
+                btnCancelLabel: "{{ lang._('Cancel') }}",
+                btnOKLabel: "{{ lang._('Delete') }}",
+                btnOKClass: "btn-danger",
+                callback: function (result) {
+                    if (result) {
+                        ajaxCall('/api/docker/networks/delete/' + netName, {}, function () { refreshActiveTab(); });
+                    }
+                }
+            });
+        });
+
+        $('#modal-cli').on('hidden.bs.modal', function () {
             if (currentWs) {
-                currentWs.close();
+                try { currentWs.close(); } catch(e) {}
                 currentWs = null;
             }
-            if (currentTerm) {
-                currentTerm.dispose();
-                currentTerm = null;
-            }
-        });
-
-        // Image Actions
-        $('#btn_img_pull').click(function() {
-            $('#modal_img_pull').modal('show');
-        });
-
-        $('#btn_do_pull').click(function() {
-            var img = $('#pull_image_name').val().trim();
-            if (!img) return;
-            $('#btn_do_pull').prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Pulling...');
-            ajaxCall('/api/docker/images/pull', {image: img}, function(data) {
-                $('#btn_do_pull').prop('disabled', false).text('Pull Image');
-                $('#modal_img_pull').modal('hide');
-                refreshImages();
-                updateStats();
-            });
-        });
-
-        $(document).on('click', '.act-img-delete', function() {
-            var id = $(this).data('id');
-            if (confirm("{{ lang._('Are you sure you want to remove this image?') }}")) {
-                ajaxCall('/api/docker/images/delete', {id: id}, function() {
-                    refreshImages();
-                    updateStats();
-                });
-            }
-        });
-
-        $('#btn_img_prune').click(function() {
-            if (confirm("{{ lang._('Prune all unused Docker images?') }}")) {
-                ajaxCall('/api/docker/images/prune', {}, function() {
-                    refreshImages();
-                    updateStats();
-                });
-            }
-        });
-
-        // Volume Actions
-        $('#btn_vol_create').click(function() {
-            $('#modal_vol_create').modal('show');
-        });
-
-        $('#btn_do_vol_create').click(function() {
-            var name = $('#create_volume_name').val().trim();
-            if (!name) return;
-            ajaxCall('/api/docker/volumes/create', {name: name}, function() {
-                $('#modal_vol_create').modal('hide');
-                refreshVolumes();
-                updateStats();
-            });
-        });
-
-        $(document).on('click', '.act-vol-delete', function() {
-            var name = $(this).data('name');
-            if (confirm("{{ lang._('Are you sure you want to remove volume: ') }}" + name + "?")) {
-                ajaxCall('/api/docker/volumes/delete', {name: name}, function() {
-                    refreshVolumes();
-                    updateStats();
-                });
-            }
-        });
-
-        $('#btn_vol_prune').click(function() {
-            if (confirm("{{ lang._('Prune all unused Docker volumes?') }}")) {
-                ajaxCall('/api/docker/volumes/prune', {}, function() {
-                    refreshVolumes();
-                    updateStats();
-                });
-            }
-        });
-
-        $('#btn_system_prune').click(function() {
-            if (confirm("{{ lang._('Prune all stopped containers, unused networks, and dangling images?') }}")) {
-                ajaxCall('/api/docker/system/prune', {}, function() {
-                    refreshContainers();
-                    refreshImages();
-                    refreshVolumes();
-                    updateStats();
-                });
-            }
-        });
-
-        // Auto Refresh
-        $('#btn_refresh_all').click(function() {
-            updateStats();
-            refreshContainers();
-            refreshImages();
-            refreshVolumes();
         });
     });
 </script>
 
-<div id="docker_conflict_alert" class="alert alert-danger" style="display:none; margin-bottom: 20px;">
-    <h4><i class="fa fa-exclamation-triangle"></i> <strong>{{ lang._('Port Conflict Detected') }}</strong></h4>
-    <div id="docker_conflict_text"></div>
+<!-- Conflict Alert Banner -->
+<div id="docker-conflict-banner" class="alert alert-danger" style="display: none; margin-bottom: 20px;">
+    <h4><i class="fa fa-exclamation-triangle"></i> <b>{{ lang._('Docker Port Conflicts Detected!') }}</b></h4>
+    <p>{{ lang._('The following published container ports conflict with services running on the OPNsense firewall:') }}</p>
+    <ul id="conflict-list" style="margin-bottom: 10px;"></ul>
+    <p>{{ lang._('Port forwarding for these containers has been blocked to prevent firewall service disruption.') }}</p>
 </div>
 
+<!-- System Overview Stats Bar -->
 <div class="row" style="margin-bottom: 20px;">
-    <div class="col-md-3">
-        <div class="panel panel-default">
-            <div class="docker-stat-card">
-                <div class="docker-stat-icon text-primary"><i class="fa fa-cubes"></i></div>
-                <div class="docker-stat-content">
-                    <div class="text-muted">{{ lang._('Containers') }}</div>
-                    <div class="docker-stat-value" id="stat_containers">-</div>
+    <div class="col-md-2 col-sm-4 col-xs-6">
+        <div class="panel panel-default" style="margin-bottom: 0;">
+            <div class="panel-body" style="padding: 12px; display: flex; align-items: center; min-height: 70px;">
+                <i class="fa fa-cubes fa-2x text-primary" style="margin-right: 12px;"></i>
+                <div style="text-align: left;">
+                    <div class="text-muted" style="font-size: 11px; text-transform: uppercase; font-weight: 600;">{{ lang._('Containers') }}</div>
+                    <div id="stat-containers" style="font-size: 14px; font-weight: 700;">--</div>
                 </div>
             </div>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="panel panel-default">
-            <div class="docker-stat-card">
-                <div class="docker-stat-icon text-info"><i class="fa fa-clone"></i></div>
-                <div class="docker-stat-content">
-                    <div class="text-muted">{{ lang._('Images') }}</div>
-                    <div class="docker-stat-value" id="stat_images">-</div>
+    <div class="col-md-2 col-sm-4 col-xs-6">
+        <div class="panel panel-default" style="margin-bottom: 0;">
+            <div class="panel-body" style="padding: 12px; display: flex; align-items: center; min-height: 70px;">
+                <i class="fa fa-clone fa-2x text-info" style="margin-right: 12px;"></i>
+                <div style="text-align: left;">
+                    <div class="text-muted" style="font-size: 11px; text-transform: uppercase; font-weight: 600;">{{ lang._('Images') }}</div>
+                    <div id="stat-images" style="font-size: 14px; font-weight: 700;">--</div>
                 </div>
             </div>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="panel panel-default">
-            <div class="docker-stat-card">
-                <div class="docker-stat-icon text-warning"><i class="fa fa-database"></i></div>
-                <div class="docker-stat-content">
-                    <div class="text-muted">{{ lang._('Volumes') }}</div>
-                    <div class="docker-stat-value" id="stat_volumes">-</div>
+    <div class="col-md-2 col-sm-4 col-xs-6">
+        <div class="panel panel-default" style="margin-bottom: 0;">
+            <div class="panel-body" style="padding: 12px; display: flex; align-items: center; min-height: 70px;">
+                <i class="fa fa-database fa-2x text-warning" style="margin-right: 12px;"></i>
+                <div style="text-align: left;">
+                    <div class="text-muted" style="font-size: 11px; text-transform: uppercase; font-weight: 600;">{{ lang._('Volumes') }}</div>
+                    <div id="stat-volumes" style="font-size: 14px; font-weight: 700;">--</div>
                 </div>
             </div>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="panel panel-default">
-            <div class="docker-stat-card" style="justify-content: space-between;">
-                <div style="display:flex; align-items:center;">
-                    <div class="docker-stat-icon text-success"><i class="fa fa-recycle"></i></div>
-                    <div class="docker-stat-content">
-                        <div class="text-muted">{{ lang._('Maintenance') }}</div>
-                        <div class="docker-stat-value"><button class="btn btn-xs btn-default" id="btn_system_prune"><i class="fa fa-trash-o"></i> {{ lang._('Prune System') }}</button></div>
-                    </div>
+    <div class="col-md-2 col-sm-4 col-xs-6">
+        <div class="panel panel-default" style="margin-bottom: 0;">
+            <div class="panel-body" style="padding: 12px; display: flex; align-items: center; min-height: 70px;">
+                <i class="fa fa-sitemap fa-2x text-success" style="margin-right: 12px;"></i>
+                <div style="text-align: left;">
+                    <div class="text-muted" style="font-size: 11px; text-transform: uppercase; font-weight: 600;">{{ lang._('Networks') }}</div>
+                    <div id="stat-networks" style="font-size: 14px; font-weight: 700;">--</div>
                 </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 col-sm-8 col-xs-12">
+        <div class="panel panel-default" style="margin-bottom: 0;">
+            <div class="panel-body" style="padding: 12px; display: flex; align-items: center; min-height: 70px;">
+                <i class="fa fa-recycle fa-2x text-muted" style="margin-right: 12px;"></i>
+                <div style="text-align: left;">
+                    <div class="text-muted" style="font-size: 11px; text-transform: uppercase; font-weight: 600;">{{ lang._('Reclaimable') }}</div>
+                    <div id="stat-reclaimable" style="font-size: 14px; font-weight: 700;">--</div>
+                </div>
+                <button id="btn_system_prune" class="btn btn-sm btn-default" style="margin-left: auto;" title="{{ lang._('Prune all unused Docker data') }}">
+                    <i class="fa fa-trash text-warning"></i> {{ lang._('Prune System') }}
+                </button>
             </div>
         </div>
     </div>
 </div>
 
-<ul class="nav nav-tabs" role="tablist" id="maintabs">
-    <li class="active"><a data-toggle="tab" href="#tab_containers"><b><i class="fa fa-cubes"></i> {{ lang._('Containers') }}</b></a></li>
-    <li><a data-toggle="tab" href="#tab_images"><b><i class="fa fa-clone"></i> {{ lang._('Images') }}</b></a></li>
-    <li><a data-toggle="tab" href="#tab_volumes"><b><i class="fa fa-database"></i> {{ lang._('Volumes') }}</b></a></li>
+<!-- Navigation Tabs -->
+<ul class="nav nav-tabs" role="tablist" id="maintabs" style="margin-bottom: 0;">
+    <li class="active"><a href="#tab-containers" data-toggle="tab"><i class="fa fa-cubes"></i> <b>{{ lang._('Containers') }}</b></a></li>
+    <li><a href="#tab-images" data-toggle="tab"><i class="fa fa-clone"></i> <b>{{ lang._('Images') }}</b></a></li>
+    <li><a href="#tab-volumes" data-toggle="tab"><i class="fa fa-database"></i> <b>{{ lang._('Volumes') }}</b></a></li>
+    <li><a href="#tab-networks" data-toggle="tab"><i class="fa fa-sitemap"></i> <b>{{ lang._('Networks') }}</b></a></li>
+    <li class="pull-right">
+        <button id="btn_refresh_grid" class="btn btn-sm btn-default" style="margin-top: 5px; margin-right: 5px;" title="{{ lang._('Refresh View') }}">
+            <i class="fa fa-refresh"></i> {{ lang._('Refresh') }}
+        </button>
+    </li>
 </ul>
 
-<div class="content-box tab-content">
-    <!-- Containers Tab -->
-    <div id="tab_containers" class="tab-pane fade in active">
-        <div class="pull-right" style="margin-bottom: 10px;">
-            <button class="btn btn-sm btn-default" id="btn_refresh_all"><i class="fa fa-refresh"></i> {{ lang._('Refresh') }}</button>
+<!-- Tab Panes -->
+<div class="content-box tab-content" style="padding: 0; border-top: none;">
+    <!-- Containers Pane -->
+    <div id="tab-containers" class="tab-pane active" style="padding: 15px;">
+        <div class="table-responsive">
+            <table class="table table-striped table-hover" id="grid-containers">
+                <thead>
+                    <tr>
+                        <th style="width: 120px;">{{ lang._('ID') }}</th>
+                        <th>{{ lang._('Name') }}</th>
+                        <th>{{ lang._('Image') }}</th>
+                        <th style="width: 120px;">{{ lang._('Status') }}</th>
+                        <th style="width: 150px;">{{ lang._('Created') }}</th>
+                        <th style="width: 200px;">{{ lang._('Actions') }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td colspan="6" class="text-center"><i class="fa fa-spinner fa-pulse"></i> {{ lang._('Loading containers...') }}</td></tr>
+                </tbody>
+            </table>
         </div>
-        <table class="table table-striped table-hover" id="table_containers">
-            <thead>
-                <tr>
-                    <th>{{ lang._('Name / ID') }}</th>
-                    <th>{{ lang._('Image') }}</th>
-                    <th>{{ lang._('Status') }}</th>
-                    <th>{{ lang._('Port Mappings') }}</th>
-                    <th>{{ lang._('Created') }}</th>
-                    <th class="text-right">{{ lang._('Actions') }}</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr><td colspan="6" class="text-center"><i class="fa fa-spinner fa-spin"></i> Loading...</td></tr>
-            </tbody>
-        </table>
     </div>
 
-    <!-- Images Tab -->
-    <div id="tab_images" class="tab-pane fade">
-        <div class="pull-right" style="margin-bottom: 10px;">
-            <button class="btn btn-sm btn-primary" id="btn_img_pull"><i class="fa fa-download"></i> {{ lang._('Pull Image') }}</button>
-            <button class="btn btn-sm btn-default" id="btn_img_prune"><i class="fa fa-trash-o"></i> {{ lang._('Prune Unused') }}</button>
+    <!-- Images Pane -->
+    <div id="tab-images" class="tab-pane" style="padding: 15px;">
+        <div class="table-responsive">
+            <table class="table table-striped table-hover" id="grid-images">
+                <thead>
+                    <tr>
+                        <th>{{ lang._('Repository:Tag') }}</th>
+                        <th style="width: 140px;">{{ lang._('Image ID') }}</th>
+                        <th style="width: 120px;">{{ lang._('Size') }}</th>
+                        <th style="width: 150px;">{{ lang._('Created') }}</th>
+                        <th style="width: 100px;">{{ lang._('Actions') }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td colspan="5" class="text-center"><i class="fa fa-spinner fa-pulse"></i> {{ lang._('Loading images...') }}</td></tr>
+                </tbody>
+            </table>
         </div>
-        <table class="table table-striped table-hover" id="table_images">
-            <thead>
-                <tr>
-                    <th>{{ lang._('Repository') }}</th>
-                    <th>{{ lang._('Tag') }}</th>
-                    <th>{{ lang._('ID') }}</th>
-                    <th>{{ lang._('Size') }}</th>
-                    <th>{{ lang._('Created') }}</th>
-                    <th class="text-right">{{ lang._('Actions') }}</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr><td colspan="6" class="text-center"><i class="fa fa-spinner fa-spin"></i> Loading...</td></tr>
-            </tbody>
-        </table>
     </div>
 
-    <!-- Volumes Tab -->
-    <div id="tab_volumes" class="tab-pane fade">
-        <div class="pull-right" style="margin-bottom: 10px;">
-            <button class="btn btn-sm btn-primary" id="btn_vol_create"><i class="fa fa-plus"></i> {{ lang._('Create Volume') }}</button>
-            <button class="btn btn-sm btn-default" id="btn_vol_prune"><i class="fa fa-trash-o"></i> {{ lang._('Prune Unused') }}</button>
+    <!-- Volumes Pane -->
+    <div id="tab-volumes" class="tab-pane" style="padding: 15px;">
+        <div class="table-responsive">
+            <table class="table table-striped table-hover" id="grid-volumes">
+                <thead>
+                    <tr>
+                        <th>{{ lang._('Name') }}</th>
+                        <th style="width: 140px;">{{ lang._('Driver') }}</th>
+                        <th>{{ lang._('Mountpoint') }}</th>
+                        <th style="width: 100px;">{{ lang._('Actions') }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td colspan="4" class="text-center"><i class="fa fa-spinner fa-pulse"></i> {{ lang._('Loading volumes...') }}</td></tr>
+                </tbody>
+            </table>
         </div>
-        <table class="table table-striped table-hover" id="table_volumes">
-            <thead>
-                <tr>
-                    <th>{{ lang._('Name') }}</th>
-                    <th>{{ lang._('Driver') }}</th>
-                    <th>{{ lang._('Scope') }}</th>
-                    <th>{{ lang._('Mountpoint') }}</th>
-                    <th class="text-right">{{ lang._('Actions') }}</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr><td colspan="5" class="text-center"><i class="fa fa-spinner fa-spin"></i> Loading...</td></tr>
-            </tbody>
-        </table>
     </div>
-</div>
 
-<!-- Logs Modal -->
-<div class="modal fade" id="modal_logs" tabindex="-1" role="dialog">
-    <div class="modal-dialog modal-lg" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <button type="button" class="close" data-dismiss="modal">&times;</button>
-                <h4 class="modal-title" id="modal_logs_title"><i class="fa fa-file-text-o"></i> Container Logs</h4>
-            </div>
-            <div class="modal-body" id="modal_logs_content">
-                <div class="text-center"><i class="fa fa-spinner fa-spin"></i> Loading...</div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-default" id="btn_logs_refresh"><i class="fa fa-refresh"></i> Refresh</button>
-                <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
-            </div>
+    <!-- Networks Pane -->
+    <div id="tab-networks" class="tab-pane" style="padding: 15px;">
+        <div class="table-responsive">
+            <table class="table table-striped table-hover" id="grid-networks">
+                <thead>
+                    <tr>
+                        <th>{{ lang._('Name') }}</th>
+                        <th style="width: 140px;">{{ lang._('Network ID') }}</th>
+                        <th style="width: 140px;">{{ lang._('Driver') }}</th>
+                        <th>{{ lang._('Subnets / Gateway') }}</th>
+                        <th style="width: 100px;">{{ lang._('Actions') }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td colspan="5" class="text-center"><i class="fa fa-spinner fa-pulse"></i> {{ lang._('Loading networks...') }}</td></tr>
+                </tbody>
+            </table>
         </div>
     </div>
 </div>
 
-<!-- Inspect Modal -->
-<div class="modal fade" id="modal_inspect" tabindex="-1" role="dialog">
-    <div class="modal-dialog modal-lg" role="document">
+<!-- Modal: Container Logs -->
+<div class="modal fade" id="modal-logs" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" style="width: 80%;">
         <div class="modal-content">
             <div class="modal-header">
                 <button type="button" class="close" data-dismiss="modal">&times;</button>
-                <h4 class="modal-title"><i class="fa fa-search"></i> Inspect Details</h4>
+                <h4 class="modal-title" id="modal-logs-title"><i class="fa fa-file-text-o text-primary"></i> {{ lang._('Container Logs') }}</h4>
             </div>
-            <div class="modal-body">
-                <pre id="modal_inspect_content" style="max-height: 500px; overflow: auto; background: #1e1e1e; color: #f1f1f0;"></pre>
+            <div class="modal-body" style="padding: 0;">
+                <pre id="modal-logs-body" style="background: #1c1f24; color: #dcdfe4; padding: 15px; margin: 0; min-height: 400px; max-height: 600px; overflow-y: auto; font-family: Menlo, Monaco, 'Courier New', monospace; font-size: 12px; border-radius: 0;"></pre>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-default pull-left" onclick="fetchLogsContent()"><i class="fa fa-refresh"></i> {{ lang._('Refresh') }}</button>
+                <button type="button" class="btn btn-default" data-dismiss="modal">{{ lang._('Close') }}</button>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Web Terminal Modal -->
-<div class="modal fade" id="modal_cli" tabindex="-1" role="dialog">
-    <div class="modal-dialog modal-lg" role="document">
+<!-- Modal: Container CLI (XTerm.js) -->
+<div class="modal fade" id="modal-cli" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" style="width: 80%;">
         <div class="modal-content">
             <div class="modal-header">
                 <button type="button" class="close" data-dismiss="modal">&times;</button>
-                <h4 class="modal-title" id="modal_cli_title"><i class="fa fa-terminal"></i> Container Shell</h4>
+                <h4 class="modal-title" id="modal-cli-title"><i class="fa fa-terminal text-warning"></i> {{ lang._('Container CLI') }}</h4>
             </div>
-            <div class="modal-body">
-                <div id="terminal_container" class="term-container"></div>
+            <div class="modal-body" style="padding: 0; background: #1c1f24;">
+                <div id="xterm-cli-container" style="height: 480px; width: 100%; padding: 10px;"></div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-default" data-dismiss="modal">{{ lang._('Close') }}</button>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Pull Image Modal -->
-<div class="modal fade" id="modal_img_pull" tabindex="-1" role="dialog">
-    <div class="modal-dialog" role="document">
+<!-- Modal: Inspect Container -->
+<div class="modal fade" id="modal-inspect" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" style="width: 80%;">
         <div class="modal-content">
             <div class="modal-header">
                 <button type="button" class="close" data-dismiss="modal">&times;</button>
-                <h4 class="modal-title"><i class="fa fa-download"></i> Pull Image</h4>
+                <h4 class="modal-title" id="modal-inspect-title"><i class="fa fa-info-circle text-info"></i> {{ lang._('Inspect') }}</h4>
             </div>
-            <div class="modal-body">
-                <div class="form-group">
-                    <label for="pull_image_name">{{ lang._('Image Name (e.g. nginx:alpine, pihole/pihole:latest)') }}</label>
-                    <input type="text" class="form-control" id="pull_image_name" placeholder="nginx:alpine">
-                </div>
+            <div class="modal-body" style="padding: 0;">
+                <pre id="inspect-raw-content" style="background: #f5f5f5; color: #333; padding: 15px; margin: 0; min-height: 400px; max-height: 600px; overflow-y: auto; font-family: Menlo, Monaco, 'Courier New', monospace; font-size: 12px; border-radius: 0;"></pre>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" id="btn_do_pull">Pull Image</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Create Volume Modal -->
-<div class="modal fade" id="modal_vol_create" tabindex="-1" role="dialog">
-    <div class="modal-dialog" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <button type="button" class="close" data-dismiss="modal">&times;</button>
-                <h4 class="modal-title"><i class="fa fa-plus"></i> Create Volume</h4>
-            </div>
-            <div class="modal-body">
-                <div class="form-group">
-                    <label for="create_volume_name">{{ lang._('Volume Name') }}</label>
-                    <input type="text" class="form-control" id="create_volume_name" placeholder="my_data_volume">
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" id="btn_do_vol_create">Create</button>
+                <button type="button" class="btn btn-default" data-dismiss="modal">{{ lang._('Close') }}</button>
             </div>
         </div>
     </div>

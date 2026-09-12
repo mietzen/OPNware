@@ -1,8 +1,9 @@
 <menu>
     <Services>
-        <Docker VisibleName="Docker" cssClass="fa fa-ship" Order="550">
+        <Docker VisibleName="Docker" cssClass="fa fa-ship fa-fw" Order="550">
             <Dashboard VisibleName="Dashboard" url="/ui/docker" Order="10"/>
             <Settings VisibleName="Settings" url="/ui/docker/general" Order="20"/>
+            <LogFile VisibleName="Log File" url="/ui/diagnostics/log/core/docker" Order="30"/>
         </Docker>
     </Services>
 </menu>

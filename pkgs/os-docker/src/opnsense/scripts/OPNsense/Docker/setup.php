@@ -147,9 +147,8 @@ $wrapperPath = '/usr/local/bin/docker-wrapper';
 $wrapperContent = <<<'EOF'
 #!/bin/sh
 # OPNware Docker CLI wrapper: connects seamlessly to the Alpine Linux MicroVM
-export DOCKER_HOST="ssh://root@100.64.0.2"
-export GIT_SSH_COMMAND="ssh -i /var/db/os-docker/id_ed25519 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
-exec /usr/local/bin/docker -H ssh://root@100.64.0.2 "$@"
+export DOCKER_HOST="tcp://100.64.0.2:2375"
+exec /usr/local/bin/docker "$@"
 EOF;
 
 file_put_contents($wrapperPath, $wrapperContent);
@@ -158,8 +157,8 @@ file_put_contents($wrapperPath, $wrapperContent);
 // 6. Manage Shell Profile & Aliases across all FreeBSD shells
 $beginMarker = "# BEGIN OPNWARE DOCKER ALIASES";
 $endMarker = "# END OPNWARE DOCKER ALIASES";
-$aliasBlockSh = "{$beginMarker}\nalias docker='/usr/local/bin/docker-wrapper'\nexport DOCKER_HOST=\"ssh://root@100.64.0.2\"\n{$endMarker}\n";
-$aliasBlockCsh = "{$beginMarker}\nalias docker '/usr/local/bin/docker-wrapper'\nsetenv DOCKER_HOST \"ssh://root@100.64.0.2\"\n{$endMarker}\n";
+$aliasBlockSh = "{$beginMarker}\nalias docker='/usr/local/bin/docker-wrapper'\nexport DOCKER_HOST=\"tcp://100.64.0.2:2375\"\n{$endMarker}\n";
+$aliasBlockCsh = "{$beginMarker}\nalias docker '/usr/local/bin/docker-wrapper'\nsetenv DOCKER_HOST \"tcp://100.64.0.2:2375\"\n{$endMarker}\n";
 
 $shProfiles = [
     '/usr/local/etc/zshenv',

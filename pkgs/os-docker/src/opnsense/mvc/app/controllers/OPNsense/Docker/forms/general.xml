@@ -24,6 +24,12 @@
         <help>Storage capacity allocated for /var/lib/docker container layers and volumes in Gigabytes. Stored as a sparse file.</help>
     </field>
     <field>
+        <id>docker.general.interfaces</id>
+        <label>Firewall Interfaces</label>
+        <type>select_multiple</type>
+        <help>Select the network interfaces where auto-generated container port forwarding rules should apply (default: LAN).</help>
+    </field>
+    <field>
         <id>docker.general.subnet</id>
         <label>VM Bridge Subnet</label>
         <type>text</type>

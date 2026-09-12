@@ -19,4 +19,8 @@ package.json
 package-lock.json
 *.apikey.txt
 *apikey*.txt
+*.img
+*.img.zst
+*.iso
+
 

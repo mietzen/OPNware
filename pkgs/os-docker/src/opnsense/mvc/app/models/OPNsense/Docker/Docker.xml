@@ -26,6 +26,10 @@
                 <MaximumValue>10000</MaximumValue>
                 <Required>Y</Required>
             </disk_size>
+            <interfaces type="TextField">
+                <default>lan</default>
+                <Required>N</Required>
+            </interfaces>
             <subnet type="TextField">
                 <default>100.64.0.0/24</default>
                 <Required>Y</Required>

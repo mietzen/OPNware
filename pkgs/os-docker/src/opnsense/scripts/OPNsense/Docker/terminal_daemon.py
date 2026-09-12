@@ -136,7 +136,7 @@ class ContainerSession:
 
             cmd = [
                 "/usr/local/bin/docker",
-                "-H", "ssh://root@100.64.0.2",
+                "-H", "tcp://100.64.0.2:2375",
                 "exec",
                 "-it",
                 "-e", "TERM=xterm-256color",
@@ -145,7 +145,7 @@ class ContainerSession:
                 self.shell
             ]
             os.environ["TERM"] = "xterm-256color"
-            os.environ["DOCKER_HOST"] = "ssh://root@100.64.0.2"
+            os.environ["DOCKER_HOST"] = "tcp://100.64.0.2:2375"
             try:
                 os.execv(cmd[0], cmd)
             except Exception as e:

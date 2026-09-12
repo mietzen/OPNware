@@ -27,20 +27,33 @@
  *    POSSIBILITY OF SUCH DAMAGE.
  */
 
-namespace OPNsense\Docker;
+namespace OPNsense\Docker\Api;
 
-use OPNsense\Base\IndexController;
-
-class GeneralController extends IndexController
+class NetworksController extends DockerApiControllerBase
 {
-    public function indexAction()
+    public function listAction()
     {
-        $config = \OPNsense\Core\Config::getInstance()->object();
-        $lanIp = (string)($config->interfaces->lan->ipaddr ?? '127.0.0.1');
-        $sshEnabled = isset($config->system->ssh->enabled);
-        $this->view->generalForm = $this->getForm("general");
-        $this->view->lanIp = $lanIp;
-        $this->view->sshEnabled = $sshEnabled;
-        $this->view->pick('OPNsense/Docker/general');
+        return $this->executeAction('networks_list');
+    }
+
+    public function deleteAction($name = null)
+    {
+        if ($this->request->isPost()) {
+            $netName = $name ?: $this->request->getPost('name');
+            if (empty($netName) || !$this->isValidIdentifier($netName)) {
+                return ["status" => "error", "message" => gettext("Valid network name is required")];
+            }
+            return $this->executeAction('networks_delete', $netName);
+        }
+        return ["status" => "failed", "message" => gettext("Method Not Allowed")];
+    }
+
+    public function inspectAction($name = null)
+    {
+        $netName = $name ?: $this->request->get('name');
+        if (empty($netName) || !$this->isValidIdentifier($netName)) {
+            return ["status" => "error", "message" => gettext("Valid network identifier is required")];
+        }
+        return $this->executeAction('networks_inspect', $netName);
     }
 }

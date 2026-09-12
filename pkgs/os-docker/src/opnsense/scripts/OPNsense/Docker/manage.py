@@ -12,7 +12,7 @@ import os
 STATUS_FILE = "/var/db/os-docker/manage_status.json"
 DOCKER_BIN = "/usr/local/bin/docker"
 SSH_KEY = "/var/db/os-docker/id_ed25519"
-VM_HOST = "ssh://root@100.64.0.2"
+VM_HOST = "tcp://100.64.0.2:2375"
 
 
 def write_status(data):
@@ -140,7 +140,17 @@ def main():
     elif action == "volumes_prune":
         run_docker(["volume", "prune", "-f"])
 
+    # Networks
+    elif action == "networks_list":
+        run_docker(["network", "ls", "--format", "{{json .}}"])
+    elif action == "networks_inspect" and param:
+        run_docker(["network", "inspect", "--", param])
+    elif action == "networks_delete" and param:
+        run_docker(["network", "rm", "--", param])
+
     # System
+    elif action == "system_df":
+        run_docker(["system", "df", "--format", "{{json .}}"])
     elif action == "system_stats":
         run_docker(["stats", "--no-stream", "--format", "{{json .}}"])
     elif action == "system_info":

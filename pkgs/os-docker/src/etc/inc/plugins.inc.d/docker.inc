@@ -84,22 +84,76 @@ function docker_firewall($fw)
 {
     global $config;
 
-    // Register child PF anchors for dynamic port redirection & NAT
+    $interfaces = [];
+    if (isset($config['OPNsense']['docker']['general']['interfaces'])) {
+        $raw = (string)$config['OPNsense']['docker']['general']['interfaces'];
+        $interfaces = array_filter(explode(',', $raw));
+    }
+    if (empty($interfaces)) {
+        $interfaces = ['lan'];
+    }
+
+    $subnet = (string)($config['OPNsense']['docker']['general']['subnet'] ?? '100.64.0.0/24');
+
+    // 1. Dynamic port redirection and NAT anchors
     $fw->registerAnchor('opnware-docker/*', 'rdr', 0, 'head');
     $fw->registerAnchor('opnware-docker/*', 'nat', 0, 'head');
     $fw->registerAnchor('opnware-docker/*', 'fw', 0, 'head');
 
-    // Register microVM outbound NAT pass rules on WAN
-    $subnet = (string)($config['OPNsense']['docker']['general']['subnet'] ?? '100.64.0.0/24');
+    // 2. Outbound container / microVM traffic pass rule
     $fw->registerFilterRule(
         10,
-        array(
-            'interface' => 'any',
+        [
+            'type' => 'pass',
+            'quick' => true,
+            'direction' => 'in',
             'from' => $subnet,
             'to' => 'any',
-            'descr' => 'Pass microVM and container traffic to WAN/LAN',
-            'direction' => 'in',
-            'quick' => true,
-        )
+            'statetype' => 'keep',
+            'descr' => 'Allow outbound traffic from Docker microVM and containers',
+            '#ref' => 'ui/docker/general'
+        ]
     );
+
+    // 3. Outbound NAT on WAN interfaces for microVM subnet
+    $wanInterfaces = [];
+    if (!empty($config['interfaces'])) {
+        foreach ($config['interfaces'] as $intfKey => $intfConfig) {
+            if (!empty($intfConfig['enable']) && (!empty($intfConfig['gateway']) || $intfKey === 'wan')) {
+                $wanInterfaces[] = $intfKey;
+            }
+        }
+    }
+    if (empty($wanInterfaces)) {
+        $wanInterfaces = ['wan'];
+    }
+
+    foreach ($wanInterfaces as $wanIntf) {
+        $fw->registerSNatRule(
+            150,
+            [
+                'interface' => $wanIntf,
+                'from' => $subnet,
+                'to' => 'any',
+                'descr' => 'Outbound NAT for Docker microVM subnet',
+                '#ref' => 'ui/docker/general'
+            ]
+        );
+    }
+
+    // 4. Inbound port access on selected interfaces
+    foreach ($interfaces as $intf) {
+        $fw->registerFilterRule(
+            10,
+            [
+                'interface' => $intf,
+                'statetype' => 'keep',
+                'direction' => 'in',
+                'from' => 'any',
+                'to' => '(self)',
+                'descr' => "Allow access to Docker container published ports on {$intf}",
+                '#ref' => 'ui/docker/general'
+            ]
+        );
+    }
 }

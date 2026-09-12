@@ -12,7 +12,7 @@ import re
 import syslog
 
 DOCKER_BIN = "/usr/local/bin/docker"
-VM_HOST = "ssh://root@100.64.0.2"
+VM_HOST = "tcp://100.64.0.2:2375"
 PF_ANCHOR = "opnware-docker/rdr"
 VM_IP = "100.64.0.2"
 

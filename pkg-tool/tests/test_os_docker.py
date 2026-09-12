@@ -61,6 +61,7 @@ def test_docker_form_xml_mapping():
         "docker.general.memory",
         "docker.general.disk_size",
         "docker.general.subnet",
+        "docker.general.interfaces",
         "docker.general.port_sync",
         "docker.general.fail_on_conflict",
         "docker.general.log_level"
@@ -83,7 +84,8 @@ def test_docker_configd_actions():
         "containers_delete", "containers_logs", "containers_inspect",
         "images_list", "images_pull", "images_delete", "images_prune",
         "volumes_list", "volumes_create", "volumes_inspect", "volumes_delete", "volumes_prune",
-        "system_stats", "system_info", "system_prune"
+        "networks_list", "networks_inspect", "networks_delete",
+        "system_stats", "system_info", "system_df", "system_prune"
     ]
 
     for act in required_actions:
