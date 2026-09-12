@@ -96,7 +96,8 @@ abstract class DockerApiControllerBase extends ApiControllerBase
     protected function executeRestQuery(string $endpoint, string $fallbackCmd, ?callable $transform = null): array
     {
         $res = $this->dockerRest($endpoint, 'GET', null, self::REST_TIMEOUT_SEC);
-        if ($res['code'] >= 200 && $res['code'] < 300) {
+        $isSuccess = ($res['code'] === 304 || ($res['code'] >= 200 && $res['code'] < 300));
+        if ($isSuccess) {
             $decoded = json_decode($res['body'], true);
             if ($decoded !== null) {
                 if ($transform !== null) {

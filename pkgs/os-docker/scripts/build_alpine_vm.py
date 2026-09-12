@@ -144,6 +144,7 @@ try:
             
             # Configure dockerd options to listen on TCP 2375
             send_cmd('echo \'DOCKER_OPTS="-H unix:///var/run/docker.sock -H tcp://0.0.0.0:2375"\' > /mnt/etc/conf.d/docker')
+            send_cmd('mkdir -p /mnt/etc/docker && echo \'{"features":{"containerd-snapshotter":false}}\' > /mnt/etc/docker/daemon.json')
             wait_for('localhost:~#', timeout=10)
 
             # Configure storage init script

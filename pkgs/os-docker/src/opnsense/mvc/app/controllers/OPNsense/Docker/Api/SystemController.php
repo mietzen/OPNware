@@ -122,7 +122,11 @@ class SystemController extends DockerApiControllerBase
             }
         }
 
-        return $this->executeAction('system_df');
+        $fallback = $this->executeAction('system_df');
+        if (is_array($fallback) && !empty($fallback['items'])) {
+            @file_put_contents(self::DF_CACHE_FILE, json_encode($fallback));
+        }
+        return $fallback;
     }
 
     public function statsAction()

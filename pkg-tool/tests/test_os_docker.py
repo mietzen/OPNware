@@ -286,12 +286,18 @@ def test_docker_port_sync_rest_parsing(monkeypatch):
 
 
 def test_docker_base_image_daemon_json():
-    """Verify build_base_image.sh configures containerd-snapshotter false."""
+    """Verify build_base_image.sh and build_alpine_vm.py configure containerd-snapshotter false."""
     script_file = DOCKER_PKG_DIR / "scripts" / "build_base_image.sh"
     assert script_file.is_file()
     content = script_file.read_text()
     assert "containerd-snapshotter" in content
     assert "false" in content
+
+    vm_script = DOCKER_PKG_DIR / "scripts" / "build_alpine_vm.py"
+    assert vm_script.is_file()
+    vm_content = vm_script.read_text()
+    assert "containerd-snapshotter" in vm_content
+    assert "false" in vm_content
 
 
 
