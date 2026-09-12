@@ -80,8 +80,15 @@ abstract class DockerApiControllerBase extends ApiControllerBase
 
     protected function dockerRest(string $endpoint, string $method = 'GET', ?string $data = null, int $timeout = self::REST_TIMEOUT_SEC): array
     {
-        $url = self::DOCKER_REST_BASE . $endpoint;
-        $ch = curl_init($url);
+        $socketPath = '/var/run/docker.sock';
+        if (file_exists($socketPath)) {
+            $url = 'http://localhost' . $endpoint;
+            $ch = curl_init($url);
+            curl_setopt($ch, CURLOPT_UNIX_SOCKET_PATH, $socketPath);
+        } else {
+            $url = self::DOCKER_REST_BASE . $endpoint;
+            $ch = curl_init($url);
+        }
 
         curl_setopt($ch, CURLOPT_CUSTOMREQUEST, $method);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
