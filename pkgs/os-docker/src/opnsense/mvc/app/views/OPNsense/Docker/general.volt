@@ -72,12 +72,14 @@
 
     $(document).ready(function () {
         window.scrollTo(0, 0);
-        var data_get_map = {'frm_general-settings': '/api/docker/general/get'};
+        var data_get_map = {'frm_general': '/api/docker/general/get'};
         mapDataToFormUI(data_get_map).done(function (data) {
             formatTokenizersUI();
             $('.selectpicker').each(function () {
                 if ($(this).data('selectpicker')) {
                     $(this).selectpicker('refresh');
+                } else {
+                    $(this).selectpicker();
                 }
             });
             updateServiceControlUI('docker');

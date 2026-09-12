@@ -4,6 +4,8 @@
         <patterns>
             <pattern>ui/docker/*</pattern>
             <pattern>api/docker/*</pattern>
+            <pattern>ui/diagnostics/log/core/docker*</pattern>
+            <pattern>api/diagnostics/log/core/docker*</pattern>
         </patterns>
     </page-services-docker>
 </acl>

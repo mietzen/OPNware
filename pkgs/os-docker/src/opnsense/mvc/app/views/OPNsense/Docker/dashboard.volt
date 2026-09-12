@@ -141,19 +141,21 @@
                 var reclaimableStr = '0B';
 
                 $.each(data.items, function (idx, item) {
+                    var total = item.Total || item.TotalCount || 0;
+                    var active = item.Active || 0;
                     if (item.Type === 'Containers') {
-                        totalContainers = item.Total || 0;
-                        activeContainers = item.Active || 0;
+                        totalContainers = total;
+                        activeContainers = active;
                     } else if (item.Type === 'Images') {
-                        totalImages = item.Total || 0;
-                        activeImages = item.Active || 0;
+                        totalImages = total;
+                        activeImages = active;
                         if (item.Reclaimable) {
                             reclaimableStr = item.Reclaimable;
                         }
                     } else if (item.Type === 'Local Volumes' || item.Type === 'Volumes') {
-                        totalVolumes = item.Total || 0;
+                        totalVolumes = total;
                     } else if (item.Type === 'Networks') {
-                        totalNetworks = item.Total || 0;
+                        totalNetworks = total;
                     }
                 });
 
@@ -839,18 +841,34 @@
 </div>
 
 <!-- Modal: Container CLI (XTerm.js) -->
-<div class="modal fade" id="modal-cli" tabindex="-1" role="dialog">
-    <div class="modal-dialog modal-lg" style="width: 80%;">
+<div class="modal fade" id="modal-cli" tabindex="-1" role="dialog" aria-labelledby="modal-cli-title" aria-hidden="true">
+    <div class="modal-dialog modal-lg" style="width: 85%; max-width: 1200px; margin: 75px auto 30px auto;" role="document">
         <div class="modal-content">
-            <div class="modal-header">
-                <button type="button" class="close" data-dismiss="modal">&times;</button>
-                <h4 class="modal-title" id="modal-cli-title"><i class="fa fa-terminal text-warning"></i> {{ lang._('Container CLI') }}</h4>
+            <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px;">
+                <h4 class="modal-title" id="modal-cli-title" style="margin: 0;">
+                    <i class="fa fa-terminal text-primary" style="margin-right: 10px;"></i>{{ lang._('Container Terminal') }}
+                </h4>
+                <div style="display: flex; align-items: center; gap: 8px; margin-right: 20px;">
+                    <div style="display: inline-flex; align-items: center; gap: 5px;">
+                        <label for="cli-shell" style="margin: 0; font-size: 12px; font-weight: normal;">{{ lang._('Shell') }}:</label>
+                        <input type="text" class="form-control input-sm" id="cli-shell" list="cli-shell-list" value="/bin/sh" style="width: 110px; height: 26px; padding: 2px 8px;" />
+                        <datalist id="cli-shell-list">
+                            <option value="/bin/sh">
+                            <option value="/bin/bash">
+                            <option value="/bin/csh">
+                            <option value="/bin/zsh">
+                            <option value="/bin/ash">
+                        </datalist>
+                    </div>
+                    <button type="button" class="btn btn-xs btn-default" id="btn_clear_cli" title="{{ lang._('Clear Terminal') }}"><i class="fa fa-eraser"></i> {{ lang._('Clear') }}</button>
+                </div>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close" style="margin-top: -2px;"><span aria-hidden="true">&times;</span></button>
             </div>
-            <div class="modal-body" style="padding: 0; background: #1c1f24;">
-                <div id="xterm-cli-container" style="height: 480px; width: 100%; padding: 10px;"></div>
+            <div class="modal-body" style="padding: 15px; background: #181818; border-radius: 0 0 4px 4px;">
+                <div id="xterm-cli-container" style="height: 480px; min-height: 400px; width: 100%; padding: 8px; border-radius: 4px; background: #181818;"></div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-default" data-dismiss="modal">{{ lang._('Close') }}</button>
+                <button type="button" class="btn btn-primary" data-dismiss="modal">{{ lang._('Close') }}</button>
             </div>
         </div>
     </div>

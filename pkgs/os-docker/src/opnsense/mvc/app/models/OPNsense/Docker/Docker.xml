@@ -26,7 +26,8 @@
                 <MaximumValue>10000</MaximumValue>
                 <Required>Y</Required>
             </disk_size>
-            <interfaces type="TextField">
+            <interfaces type="InterfaceField">
+                <Multiple>Y</Multiple>
                 <default>lan</default>
                 <Required>N</Required>
             </interfaces>

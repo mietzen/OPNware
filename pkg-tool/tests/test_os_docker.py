@@ -42,6 +42,7 @@ def test_docker_model_xml_schema():
     assert general.find("cpus") is not None
     assert general.find("memory") is not None
     assert general.find("disk_size") is not None
+    assert general.find("interfaces") is not None
     assert general.find("subnet") is not None
     assert general.find("port_sync") is not None
     assert general.find("fail_on_conflict") is not None
@@ -140,4 +141,32 @@ def test_package_file_overlap_coexistence():
 
     conflicts = {path: owners for path, owners in file_owners.items() if len(owners) > 1}
     assert not conflicts, f"Conflicting files found between packages: {conflicts}"
+
+
+def test_docker_acl_and_log_routes():
+    """Verify ACL includes service UI, API, and Diagnostics log routes."""
+    acl_file = DOCKER_PKG_DIR / "src" / "opnsense" / "mvc" / "app" / "models" / "OPNsense" / "Docker" / "ACL" / "ACL.xml"
+    assert acl_file.is_file()
+    tree = ET.parse(acl_file)
+    patterns = [p.text for p in tree.getroot().findall(".//pattern")]
+
+    assert "ui/docker/*" in patterns
+    assert "api/docker/*" in patterns
+    assert "ui/diagnostics/log/core/docker*" in patterns
+    assert "api/diagnostics/log/core/docker*" in patterns
+
+
+def test_docker_dashboard_tabs_and_terminal():
+    """Verify dashboard.volt contains all required tabs and terminal datalist."""
+    dash_file = DOCKER_PKG_DIR / "src" / "opnsense" / "mvc" / "app" / "views" / "OPNsense" / "Docker" / "dashboard.volt"
+    assert dash_file.is_file()
+    content = dash_file.read_text()
+
+    assert "#tab-containers" in content
+    assert "#tab-images" in content
+    assert "#tab-volumes" in content
+    assert "#tab-networks" in content
+    assert "cli-shell" in content
+    assert "btn_clear_cli" in content
+
 
