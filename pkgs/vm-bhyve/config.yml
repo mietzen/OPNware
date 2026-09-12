@@ -1,0 +1,9 @@
+---
+build_config:
+  include: {}
+redistribute:
+  name: vm-bhyve
+  version:
+    FreeBSD-15-amd64: "1.7.5"
+  repo: http://pkg.freebsd.org
+  path: quarterly/All

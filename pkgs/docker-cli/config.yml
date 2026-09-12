@@ -1,0 +1,9 @@
+---
+build_config:
+  include: {}
+redistribute:
+  name: docker-cli
+  version:
+    FreeBSD-15-amd64: "29.4.2_3"
+  repo: http://pkg.freebsd.org
+  path: quarterly/All
