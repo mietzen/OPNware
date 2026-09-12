@@ -580,8 +580,12 @@
                 btnOKClass: "btn-warning",
                 callback: function (result) {
                     if (result) {
+                        $('#btn_system_prune_progress').addClass('fa fa-spinner fa-pulse');
                         ajaxCall('/api/docker/system/prune', {}, function () {
+                            $('#btn_system_prune_progress').removeClass('fa fa-spinner fa-pulse');
                             refreshActiveTab();
+                        }, false, function () {
+                            $('#btn_system_prune_progress').removeClass('fa fa-spinner fa-pulse');
                         });
                     }
                 }
@@ -763,7 +767,7 @@
                     <div id="stat-reclaimable" style="font-size: 14px; font-weight: 700;">--</div>
                 </div>
                 <button id="btn_system_prune" class="btn btn-sm btn-default" style="margin-left: auto;" title="{{ lang._('Prune all unused Docker data') }}">
-                    <i class="fa fa-trash text-warning"></i> {{ lang._('Prune System') }}
+                    <i class="fa fa-trash text-warning"></i> {{ lang._('Prune System') }} <i id="btn_system_prune_progress"></i>
                 </button>
             </div>
         </div>
