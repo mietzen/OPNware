@@ -146,10 +146,10 @@ def sync_pf_rules():
             })
             continue
 
-        # Build PF redirect rules for all host interfaces
+        # Build PF redirect rules for configured interfaces
         for iface in interfaces:
             rules.append(
-                f"rdr on {iface} proto {p['proto']} from any to ({iface}) port {p['host_port']} -> {VM_IP} port {p['host_port']}"
+                f"rdr pass on {iface} proto {p['proto']} from any to ({iface}) port {p['host_port']} -> {VM_IP} port {p['host_port']}"
             )
 
     # Save conflict status for WebUI dashboard

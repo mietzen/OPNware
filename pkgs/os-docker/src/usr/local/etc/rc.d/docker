@@ -55,11 +55,16 @@ docker_start()
     fi
 
     # Track bhyve VM process PID
-    bhyve_pid=$(pgrep -f "bhyve.*docker-vm" 2>/dev/null | head -n 1)
-    if [ -n "${bhyve_pid}" ]; then
-        echo "${bhyve_pid}" > "${pidfile}"
-    elif [ -f /var/run/os-docker/docker_port_sync.pid ]; then
-        cp /var/run/os-docker/docker_port_sync.pid "${pidfile}"
+    for i in 1 2 3 4 5; do
+        bhyve_pid=$(pgrep -f "bhyve.*docker-vm" 2>/dev/null | head -n 1)
+        if [ -n "${bhyve_pid}" ]; then
+            echo "${bhyve_pid}" > "${pidfile}"
+            break
+        fi
+        sleep 1
+    done
+    if [ ! -f "${pidfile}" ] && [ -f /var/db/vm/docker-vm/run.pid ]; then
+        cp /var/db/vm/docker-vm/run.pid "${pidfile}"
     fi
     echo "Docker service started successfully."
 }

@@ -54,6 +54,14 @@ $shareDir = '/usr/local/share/opnware/docker';
 @mkdir($vmDir, 0755, true);
 @mkdir('/var/db/vm', 0755, true);
 
+foreach (['setup.log', 'port_sync.log', 'terminal.log', 'dockerd.log'] as $lf) {
+    $lp = "{$logDir}/{$lf}";
+    if (!file_exists($lp)) {
+        @touch($lp);
+        @chmod($lp, 0644);
+    }
+}
+
 // 0. Ensure vm-bhyve is enabled and initialized
 exec('/usr/sbin/sysrc vm_enable="YES" vm_dir="/var/db/vm" 2>/dev/null');
 if (!is_dir('/var/db/vm/.config')) {

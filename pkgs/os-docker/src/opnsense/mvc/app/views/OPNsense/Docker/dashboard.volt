@@ -766,8 +766,8 @@
                     <div class="text-muted" style="font-size: 11px; text-transform: uppercase; font-weight: 600;">{{ lang._('Reclaimable') }}</div>
                     <div id="stat-reclaimable" style="font-size: 14px; font-weight: 700;">--</div>
                 </div>
-                <button id="btn_system_prune" class="btn btn-sm btn-default" style="margin-left: auto;" title="{{ lang._('Prune all unused Docker data') }}">
-                    <i class="fa fa-trash text-warning"></i> {{ lang._('Prune System') }} <i id="btn_system_prune_progress"></i>
+                <button id="btn_system_prune" class="btn btn-xs btn-warning" style="margin-left: auto;" title="{{ lang._('Prune unused containers and images') }}">
+                    <i class="fa fa-trash-o"></i> {{ lang._('Prune') }} <i id="btn_system_prune_progress"></i>
                 </button>
             </div>
         </div>
