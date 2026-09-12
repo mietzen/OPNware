@@ -115,6 +115,20 @@ function docker_firewall($fw)
         ]
     );
 
+    // 3. Host communication pass rule to Docker microVM
+    $fw->registerFilterRule(
+        10,
+        [
+            'type' => 'pass',
+            'quick' => true,
+            'direction' => 'out',
+            'to' => $subnet,
+            'statetype' => 'keep',
+            'descr' => 'Allow host communication to Docker microVM',
+            '#ref' => 'ui/docker/general'
+        ]
+    );
+
     // 3. Outbound NAT on WAN interfaces for microVM subnet
     $wanInterfaces = [];
     if (!empty($config['interfaces'])) {

@@ -178,23 +178,14 @@ if (!file_exists($dataImgTarget)) {
 }
 
 
-// 5. Deploy /usr/local/bin/docker-wrapper
+// 5. Clean up any stale wrapper scripts and aliases
 $wrapperPath = '/usr/local/bin/docker-wrapper';
-$wrapperContent = <<<'EOF'
-#!/bin/sh
-# OPNware Docker CLI wrapper: connects seamlessly to the Alpine Linux MicroVM
-export DOCKER_HOST="tcp://100.64.0.2:2375"
-exec /usr/local/bin/docker "$@"
-EOF;
+if (file_exists($wrapperPath)) {
+    @unlink($wrapperPath);
+}
 
-file_put_contents($wrapperPath, $wrapperContent);
-@chmod($wrapperPath, 0755);
-
-// 6. Manage Shell Profile & Aliases across all FreeBSD shells
 $beginMarker = "# BEGIN OPNWARE DOCKER ALIASES";
 $endMarker = "# END OPNWARE DOCKER ALIASES";
-$aliasBlockSh = "{$beginMarker}\nalias docker='/usr/local/bin/docker-wrapper'\nexport DOCKER_HOST=\"tcp://100.64.0.2:2375\"\n{$endMarker}\n";
-$aliasBlockCsh = "{$beginMarker}\nalias docker '/usr/local/bin/docker-wrapper'\nsetenv DOCKER_HOST \"tcp://100.64.0.2:2375\"\n{$endMarker}\n";
 
 $shProfiles = [
     '/usr/local/etc/zshenv',
@@ -205,28 +196,26 @@ $shProfiles = [
 ];
 
 foreach ($shProfiles as $prof) {
-    @mkdir(dirname($prof), 0755, true);
-    $content = file_exists($prof) ? file_get_contents($prof) : '';
-    if (strpos($content, $beginMarker) !== false) {
-        $content = preg_replace('/' . preg_quote($beginMarker, '/') . '.*?' . preg_quote($endMarker, '/') . '\n?/s', $aliasBlockSh, $content);
-    } else {
-        $content .= "\n" . $aliasBlockSh;
+    if (file_exists($prof)) {
+        $content = file_get_contents($prof);
+        if (strpos($content, $beginMarker) !== false) {
+            $content = preg_replace('/' . preg_quote($beginMarker, '/') . '.*?' . preg_quote($endMarker, '/') . '\n?/s', '', $content);
+            file_put_contents($prof, trim($content) . "\n");
+        }
     }
-    file_put_contents($prof, $content);
 }
 
-// Csh / Tcsh profile
 $cshProfiles = ['/etc/csh.cshrc'];
 foreach ($cshProfiles as $prof) {
-    @mkdir(dirname($prof), 0755, true);
-    $content = file_exists($prof) ? file_get_contents($prof) : '';
-    if (strpos($content, $beginMarker) !== false) {
-        $content = preg_replace('/' . preg_quote($beginMarker, '/') . '.*?' . preg_quote($endMarker, '/') . '\n?/s', $aliasBlockCsh, $content);
-    } else {
-        $content .= "\n" . $aliasBlockCsh;
+    if (file_exists($prof)) {
+        $content = file_get_contents($prof);
+        if (strpos($content, $beginMarker) !== false) {
+            $content = preg_replace('/' . preg_quote($beginMarker, '/') . '.*?' . preg_quote($endMarker, '/') . '\n?/s', '', $content);
+            file_put_contents($prof, trim($content) . "\n");
+        }
     }
-    file_put_contents($prof, $content);
 }
 
 log_msg("Docker setup completed successfully.");
 echo json_encode(["status" => "ok", "message" => "Docker setup completed"]);
+

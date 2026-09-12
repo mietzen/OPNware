@@ -145,11 +145,9 @@ def test_os_podman_spec_and_files_valid():
     assert "bin/podman-wrapper" in build_sh_text
 
     assert "<default_linux_platform" in podman_xml
-    assert "<docker_alias" in podman_xml
     assert "<docker_search_registry" in podman_xml
 
     assert "podman.general.default_linux_platform" in forms_general
-    assert "podman.general.docker_alias" in forms_general
     assert "podman.general.docker_search_registry" in forms_general
 
     manage_content = (src / "opnsense" / "scripts" / "OPNsense" / "Podman" / "manage.py").read_text()

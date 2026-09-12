@@ -18,12 +18,6 @@
         <help>Use podman-wrapper to default build, run, create, and pull to --platform linux/amd64.</help>
     </field>
     <field>
-        <id>podman.general.docker_alias</id>
-        <label>Docker Alias</label>
-        <type>checkbox</type>
-        <help>Provide 'docker' command alias and /usr/local/bin/docker symlink pointing to Podman.</help>
-    </field>
-    <field>
         <id>podman.general.docker_search_registry</id>
         <label>Docker Hub Search Registry</label>
         <type>checkbox</type>
