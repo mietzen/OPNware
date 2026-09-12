@@ -337,7 +337,7 @@ class TerminalDaemon:
                             if data.startswith(b"{") and b"resize" in data:
                                 try:
                                     msg = json.loads(data.decode("utf-8"))
-                                    if msg.get("action") == "resize":
+                                    if msg.get("action") == "resize" or msg.get("type") == "resize":
                                         r = int(msg.get("rows", rows))
                                         c = int(msg.get("cols", cols))
                                         set_pty_size(session.master_fd, r, c)

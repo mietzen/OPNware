@@ -424,10 +424,11 @@
         });
     }
 
-    function connectTerminalWs(cid, reset) {
+    function connectTerminalWs(cid, shell, reset) {
         var host = window.location.host;
         var proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        var url = proto + '//' + host + '/api/docker/terminal/ws?id=' + encodeURIComponent(cid);
+        var activeShell = shell || $('#cli-shell').val() || '/bin/sh';
+        var url = proto + '//' + host + '/api/docker/terminal/ws?id=' + encodeURIComponent(cid) + '&shell=' + encodeURIComponent(activeShell);
 
         if (currentWs) {
             try { currentWs.close(); } catch(e) {}
@@ -464,7 +465,7 @@
     function showContainerCli(cid, name) {
         currentCliContainerId = cid;
         currentCliContainerName = name || cid;
-        $('#modal-cli-title').html('<i class="fa fa-terminal text-warning" style="margin-right: 10px;"></i>{{ lang._("Container CLI") }}: ' + $('<div>').text(currentCliContainerName).html());
+        $('#modal-cli-title').html('<i class="fa fa-terminal text-primary" style="margin-right: 10px;"></i>{{ lang._("Container Terminal") }}: ' + $('<div>').text(currentCliContainerName).html());
         $('#modal-cli').modal('show');
 
         setTimeout(function () {
@@ -476,7 +477,7 @@
                     fontSize: 13,
                     fontFamily: 'Menlo, Monaco, "Courier New", monospace',
                     theme: {
-                        background: '#1c1f24',
+                        background: '#181818',
                         foreground: '#dcdfe4',
                         cursor: '#528bff'
                     }
@@ -496,7 +497,8 @@
                 });
             }
             if (currentFitAddon) currentFitAddon.fit();
-            connectTerminalWs(cid, true);
+            var shell = $('#cli-shell').val() || '/bin/sh';
+            connectTerminalWs(cid, shell, true);
         }, 200);
     }
 
@@ -523,6 +525,27 @@
 
         $('#btn_refresh_grid').click(function () {
             refreshActiveTab();
+        });
+
+        $('#btn_clear_cli').click(function () {
+            if (currentTerm) {
+                currentTerm.clear();
+                currentTerm.focus();
+            }
+        });
+
+        $('#cli-shell').change(function () {
+            var shell = $(this).val() || '/bin/sh';
+            if (currentCliContainerId) {
+                connectTerminalWs(currentCliContainerId, shell, true);
+            }
+        });
+
+        $('#modal-cli').on('hidden.bs.modal', function () {
+            if (currentWs) {
+                try { currentWs.close(); } catch (e) {}
+                currentWs = null;
+            }
         });
 
         $('#btn_system_prune').click(function () {
