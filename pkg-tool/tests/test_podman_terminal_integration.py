@@ -11,8 +11,8 @@ PODMAN_SRC = ROOT_DIR / "pkgs" / "os-podman" / "src"
 
 
 def test_xterm_assets_packaged():
-    js_dir = PODMAN_SRC / "opnsense" / "www" / "js" / "vendor" / "xterm"
-    css_dir = PODMAN_SRC / "opnsense" / "www" / "css" / "vendor" / "xterm"
+    js_dir = PODMAN_SRC / "opnsense" / "www" / "js" / "vendor" / "podman"
+    css_dir = PODMAN_SRC / "opnsense" / "www" / "css" / "vendor" / "podman"
 
     assert (js_dir / "xterm.js").exists()
     assert (js_dir / "addon-fit.js").exists()
@@ -58,9 +58,9 @@ def test_dashboard_volt_terminal_integration():
     assert volt_file.exists()
 
     content = volt_file.read_text()
-    assert "/ui/css/vendor/xterm/xterm.css" in content
-    assert "/ui/js/vendor/xterm/xterm.js" in content
-    assert "/ui/js/vendor/xterm/addon-fit.js" in content
+    assert "/ui/css/vendor/podman/xterm.css" in content
+    assert "/ui/js/vendor/podman/xterm.js" in content
+    assert "/ui/js/vendor/podman/addon-fit.js" in content
     assert "xterm-terminal-container" in content
     assert "connectTerminalWs" in content
     assert "/api/podman/terminal/ws" in content

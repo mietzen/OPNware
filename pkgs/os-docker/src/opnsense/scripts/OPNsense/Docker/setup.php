@@ -54,6 +54,12 @@ $shareDir = '/usr/local/share/opnware/docker';
 @mkdir($vmDir, 0755, true);
 @mkdir('/var/db/vm', 0755, true);
 
+// 0. Ensure vm-bhyve is enabled and initialized
+exec('/usr/sbin/sysrc vm_enable="YES" vm_dir="/var/db/vm" 2>/dev/null');
+if (!is_dir('/var/db/vm/.config')) {
+    exec('/usr/local/sbin/vm init 2>/dev/null');
+}
+
 // 1. Setup vm-bhyve switch docker-net if missing
 $swList = [];
 exec('/usr/local/sbin/vm switch list 2>/dev/null', $swList);
