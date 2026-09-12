@@ -5,18 +5,36 @@
 This is my personal OPNsense `pkg` repository.\
 It provides custom OPNsense plugins and FreeBSD packages that I use on my firewalls:
 
+- **[os-docker](pkgs/os-docker)** — Full Docker container experience on OPNsense via Alpine Linux 3.24 `bhyve` MicroVM, native FreeBSD `docker-cli`, dual-disk persistent storage, dynamic PF port forwarding with host socket collision protection, and WebUI dashboard
 - **[os-podman](pkgs/os-podman)** — Native OCI container engine on FreeBSD Jails with ZFS storage, Linux emulation, WebUI Dashboard, interactive XTerm.js terminal, structured inspector, container metrics, and remote Docker/Podman context support
 - **[os-terminal](pkgs/os-terminal)** — Integrated Web Terminal console for OPNsense with XTerm.js, user privilege drop, shell switcher (synced with user login shell), persistent sessions across navigation, and bash/zsh management
 - **[os-caddy-advanced](pkgs/os-caddy-advanced)** — WebUI-managed Caddy web server: process settings, a user-owned Caddyfile editor (validated save cycle, Monaco editor), envfile secrets, and xcaddy module builder
 - **[os-homer](pkgs/os-homer)** — Homer dashboard served via its own isolated Caddy instance, automatic TLS, and Monaco YAML editor
 - **[monaco-editor](pkgs/monaco-editor)** — Shared Monaco editor assets with custom Caddyfile Monarch syntax grammar
-- **[caddy](pkgs/caddy)**, **[xcaddy](pkgs/xcaddy)**, **[yq](pkgs/yq)**, **[bash](pkgs/bash)**, **[zsh](pkgs/zsh)**, **[htop](pkgs/htop)**, **[go126](pkgs/go126)**, and container dependencies (**[podman](pkgs/podman)**, **[ocijail](pkgs/ocijail)**, **[conmon](pkgs/conmon)**, **[containernetworking-plugins](pkgs/containernetworking-plugins)**, **[containers-common](pkgs/containers-common)**, **[gpgme](pkgs/gpgme)**)
+- **[caddy](pkgs/caddy)**, **[xcaddy](pkgs/xcaddy)**, **[yq](pkgs/yq)**, **[bash](pkgs/bash)**, **[zsh](pkgs/zsh)**, **[htop](pkgs/htop)**, **[go126](pkgs/go126)**, and container dependencies (**[docker-cli](pkgs/docker-cli)**, **[vm-bhyve](pkgs/vm-bhyve)**, **[bhyve-firmware](pkgs/bhyve-firmware)**, **[edk2-bhyve](pkgs/edk2-bhyve)**, **[podman](pkgs/podman)**, **[ocijail](pkgs/ocijail)**, **[conmon](pkgs/conmon)**, **[containernetworking-plugins](pkgs/containernetworking-plugins)**, **[containers-common](pkgs/containers-common)**, **[gpgme](pkgs/gpgme)**)
 
 ---
 
 ## 🚀 OPNsense Plugins Showcase
 
-### 1. os-podman (Container Engine & Dashboard)
+### 1. os-docker (Docker MicroVM & Container Management)
+
+Full Docker container engine running in an Alpine Linux 3.24 `bhyve` MicroVM with native FreeBSD `docker-cli` integration:
+
+- **Live Dashboard**: Complete container, image, and volume management with real-time stats, inspect modals, and prune actions matching the `os-podman` UX layout.
+- **Dual-Disk Storage**: Immutable, deterministic base OS image (`os.img`) paired with a persistent, sparse data disk (`data.img` mounted at `/var/lib/docker`).
+- **Dynamic Port Forwarding & Conflict Protection**: Dynamic PF port forwarding daemon with proactive socket conflict detection (`sockstat -46l`) that prevents containers from binding host-bound ports (e.g. 53, 80) and alerts in the WebUI.
+- **Dynamic Host Hardware Sizing**: Automatic CPU (`hw.ncpu`) and RAM (`hw.physmem`) limits dynamically discovered and configurable in Settings.
+- **Interactive Container Terminal**: Low-latency XTerm.js terminal attached to running containers via WebSocket daemon.
+- **Native CLI Integration**: Native FreeBSD `docker-cli` pre-configured over SSH to the MicroVM (`DOCKER_HOST="ssh://root@100.64.0.2"`).
+
+![os-docker Dashboard](docs/images/os-docker-dashboard.png)
+
+![os-docker Settings](docs/images/os-docker-general.png)
+
+---
+
+### 2. os-podman (Container Engine & Dashboard)
 
 Run Docker and OCI containers natively on FreeBSD using Podman and `ocijail`:
 
@@ -34,7 +52,7 @@ Run Docker and OCI containers natively on FreeBSD using Podman and `ocijail`:
 
 ---
 
-### 2. os-terminal (Web Terminal Console)
+### 3. os-terminal (Web Terminal Console)
 
 Full-featured interactive terminal console inside the OPNsense WebUI:
 
@@ -48,7 +66,7 @@ Full-featured interactive terminal console inside the OPNsense WebUI:
 
 ---
 
-### 3. os-caddy-advanced (Caddy Web Server)
+### 4. os-caddy-advanced (Caddy Web Server)
 
 Enterprise-grade reverse proxy and web server with complete configuration flexibility:
 
@@ -61,7 +79,7 @@ Enterprise-grade reverse proxy and web server with complete configuration flexib
 
 ---
 
-### 4. os-homer (Dashboard)
+### 5. os-homer (Dashboard)
 
 Clean, fast personal dashboard for your network services:
 
@@ -77,12 +95,17 @@ Clean, fast personal dashboard for your network services:
 
 | Package | Type | Description |
 |---|---|---|
+| **os-docker** | Plugin | Full Docker experience via Alpine Linux 3.24 bhyve MicroVM & WebUI dashboard |
 | **os-podman** | Plugin | Native Podman container management, XTerm.js terminal & WebUI dashboard |
 | **os-terminal** | Plugin | Interactive Web Terminal console with XTerm.js & shell management |
 | **os-caddy-advanced** | Plugin | Advanced Caddy web server & Monaco Caddyfile editor |
 | **os-homer** | Plugin | Homer dashboard served via isolated Caddy instance |
 | **monaco-editor** | Plugin Asset | Shared Monaco editor assets with Caddyfile Monarch grammar |
 | **caddy** | Cross-compiled | Fast, multi-protocol HTTP/1-2-3 web server |
+| **docker-cli** | Redistributed | Native FreeBSD Docker CLI client |
+| **vm-bhyve** | Redistributed | Bhyve virtual machine management system |
+| **bhyve-firmware** | Redistributed | Collection of firmware for bhyve |
+| **edk2-bhyve** | Redistributed | EDK2 UEFI firmware for bhyve virtual machines |
 | **podman** | Redistributed | Podman 5.8 container engine for FreeBSD jails |
 | **ocijail** | Redistributed | FreeBSD OCI runtime wrapper for jail containerization |
 | **conmon** | Redistributed | OCI container monitor |

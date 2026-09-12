@@ -18,6 +18,7 @@ A personal FreeBSD package repository for OPNsense. The pipeline: package specs 
 - **ABI / arch** — FreeBSD major version (15) and machine architecture (amd64).
 - **LOCALBASE** — the FreeBSD default prefix (`/usr/local`): binaries in `bin/`, configs in `etc/`, data in `share/`.
 - **OPNsense plugin (os-* plugin)** — an OPNsense MVC (Phalcon PHP) plugin: a model XML (config mount `//OPNsense/<name>`), controllers/services, menu + ACL, managed via the WebUI and configd. There is no `config.xml` — the model XML replaces it. Packed with the `os-` prefix via pkg-tool's plugin-package support.
+- **os-docker** — the custom OPNsense plugin for Docker containers running inside an Alpine Linux 3.24 `bhyve` MicroVM (WebUI dashboard, dual-disk storage layout, dynamic PF port forwarding daemon with proactive socket conflict detection, dynamic host CPU/RAM allocation, XTerm.js terminal, and native FreeBSD docker-cli integration).
 - **os-podman** — the custom OPNsense plugin for Podman OCI containers (WebUI dashboard, XTerm.js terminal, resource stats, wrapper script, Linux emulation, ZFS storage, and remote context support).
 - **os-terminal** — the custom OPNsense plugin for interactive web terminal console in WebUI (XTerm.js, current user login privilege drop, shell switching synced with user login shell, session persistence, macOS shortcuts, and bash/zsh package installation).
 - **os-caddy-advanced** — the custom OPNsense plugin for Caddy (WebUI-managed, user-owned Caddyfile, module management); depends on the plain caddy pkg.
