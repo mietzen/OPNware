@@ -7,7 +7,7 @@ plugin:
 pkg_manifest:
   name: docker
   origin: opnware/os-docker
-  version: 0.1.1
+  version: 0.1.1_1
   comment: Manage Linux containers, images, and volumes via Docker inside an Alpine Linux microVM
   www: https://www.docker.com/
   maintainer: github.nstein@mailbox.org
@@ -29,6 +29,6 @@ pkg_manifest:
       version: ">=1.0_2"
 alpine:
   branch: "v3.24"
-  version: "3.24.1"
+  version: "3.24.2"
   flavor: "alpine-virt"
   arch: "x86_64"
