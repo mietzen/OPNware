@@ -25,7 +25,7 @@ def test_docker_config_spec_valid():
     assert "vm-bhyve" in spec["pkg_manifest"]["deps"]
     assert "bhyve-firmware" in spec["pkg_manifest"]["deps"]
     assert spec["alpine"]["branch"] == "v3.24"
-    assert spec["alpine"]["version"] == "3.24.1"
+    assert spec["alpine"]["version"] == "3.24.2"
 
 
 def test_docker_model_xml_schema():

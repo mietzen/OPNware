@@ -13,7 +13,7 @@ permissions:
 jobs:
   auto-merge:
     name: "Auto Merge Dependabot Github Actions & PIP Updates"
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     if: github.actor == 'dependabot[bot]' && (contains(github.event.pull_request.labels.*.name, 'github_actions') || contains(github.event.pull_request.labels.*.name, 'python'))
     steps:
       - uses: actions/checkout@v7.0.1
