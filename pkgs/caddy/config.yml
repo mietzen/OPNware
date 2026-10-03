@@ -1,12 +1,12 @@
 ---
 build_config:
   include:
-    go: '1.25'
+    go: '1.26'
   src_repo: 'https://github.com/caddyserver/caddy'
 pkg_manifest:
   name: caddy
   origin: opnware/caddy
-  version: 2.11.4
+  version: 2.11.7
   comment: Fast, highly configurable HTTP/1-2-3 web server with automatic TLS
   www: https://caddyserver.com/
   maintainer: github.nstein@mailbox.org
