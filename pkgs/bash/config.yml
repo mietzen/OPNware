@@ -4,6 +4,6 @@ build_config:
 redistribute:
   name: bash
   version:
-    FreeBSD-15-amd64: "5.3.15"
+    FreeBSD-15-amd64: "5.3.20"
   repo: http://pkg.freebsd.org
   path: quarterly/All
