@@ -31,7 +31,7 @@ def test_os_terminal_config_and_structure():
     content = config_file.read_text()
     assert "name: terminal" in content
     assert "origin: opnware/os-terminal" in content
-    assert 'version: 0.1.3' in content
+    assert 'version: 0.1.4' in content
 
     build_sh = ROOT_DIR / "pkgs" / "os-terminal" / "build.sh"
     assert build_sh.exists()
@@ -219,6 +219,31 @@ def test_terminal_view_template_and_fullscreen():
 
     # Reconnect button without forced session reset
     assert "connectWebSocket(false)" in content
+
+
+def test_terminal_plugin_lifecycle_hooks():
+    from pkg_tool import _plugin_hooks
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        payload = Path(tmp_dir) / "payload"
+        lighttpd_dir = payload / "usr" / "local" / "etc" / "lighttpd_webgui" / "conf.d"
+        lighttpd_dir.mkdir(parents=True)
+        (lighttpd_dir / "50-terminal.conf").write_text("server.modules += ( 'mod_proxy' )\n")
+
+        rc_dir = payload / "usr" / "local" / "etc" / "rc.d"
+        rc_dir.mkdir(parents=True)
+        (rc_dir / "terminal-service").write_text("#!/bin/sh\n")
+
+        actions_dir = payload / "usr" / "local" / "opnsense" / "service" / "conf" / "actions.d"
+        actions_dir.mkdir(parents=True)
+        (actions_dir / "actions_terminal.conf").write_text("[restart]\n")
+
+        hooks = _plugin_hooks(str(payload), "os-terminal")
+        assert "post-install" in hooks
+        assert "configctl webgui restart" in hooks["post-install"]
+        assert "configctl terminal restart" in hooks["post-install"]
+        assert "post-deinstall" in hooks
+        assert "configctl webgui restart" in hooks["post-deinstall"]
+        assert "configctl terminal stop" in hooks["post-deinstall"]
 
 
 

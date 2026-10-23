@@ -531,6 +531,26 @@ def _plugin_hooks(payload_dir, pkg_name):
     if os.path.isdir(os.path.join(payload_dir, 'usr/local/opnsense/version')):
         post.append(f'if [ -f {register} ]; then {register} install {pkg_name}; fi')
         deinstall.append(f'if [ -f {register} ]; then {register} remove {pkg_name}; fi')
+    lighttpd_dirs = [
+        os.path.join(payload_dir, 'usr/local/etc/lighttpd_webgui/conf.d'),
+        os.path.join(payload_dir, 'etc/lighttpd_webgui/conf.d'),
+    ]
+    if any(os.path.isdir(d) for d in lighttpd_dirs):
+        post.append('if [ -f /usr/local/sbin/configctl ]; then echo -n "Restarting webgui: "; '
+                    '/usr/local/sbin/configctl webgui restart; fi')
+        deinstall.append('if [ -f /usr/local/sbin/configctl ]; then echo -n "Restarting webgui: "; '
+                         '/usr/local/sbin/configctl webgui restart; fi')
+    short_name = pkg_name[3:] if pkg_name.startswith('os-') else pkg_name
+    actions_file = os.path.join(base, f'service/conf/actions.d/actions_{short_name}.conf')
+    rc_dirs = [
+        os.path.join(payload_dir, 'usr/local/etc/rc.d'),
+        os.path.join(payload_dir, 'etc/rc.d'),
+    ]
+    if os.path.isfile(actions_file) and any(os.path.isdir(d) for d in rc_dirs):
+        post.append(f'if [ -f /usr/local/sbin/configctl ]; then echo -n "Restarting {short_name} service: "; '
+                    f'/usr/local/sbin/configctl {short_name} restart; fi')
+        deinstall.append(f'if [ -f /usr/local/sbin/configctl ]; then echo -n "Stopping {short_name} service: "; '
+                         f'/usr/local/sbin/configctl {short_name} stop; fi')
     scripts = {}
     if post:
         scripts['post-install'] = '\n'.join(post) + '\n'
