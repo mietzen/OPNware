@@ -201,6 +201,7 @@ def test_rc_script_reload_filters_envfile_and_targets_admin():
     assert 'reload_cmd="caddy_reload"' in content
     assert 'reloadssl_cmd="caddy_reload --force"' in content
     assert "caddy_reload()" in content
+    assert "/bin/sh -c" in content
 
 
 def test_rc_script_caddy_execute_uses_portable_env():
