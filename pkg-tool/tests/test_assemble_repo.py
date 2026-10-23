@@ -25,6 +25,7 @@ meta-conf:
   version: 2
   packing_format: tzst
   manifests: packagesite.yaml
+  data: data
 """
 
 
@@ -77,11 +78,24 @@ def test_assemble_repo_builds_full_tree(tmp_path):
     assert link.is_symlink()
     assert os.readlink(link) == "./packagesite.tzst"
 
+    assert not (latest / "data").exists()
+    data_members = read_tzst(str(latest / "data.tzst"))
+    assert list(data_members) == ["data"]
+    data_content = json.loads(data_members["data"].decode())
+    assert data_content["groups"] == []
+    assert data_content["expired_packages"] == []
+    assert [p["name"] for p in data_content["packages"]] == ["alpha", "beta"]
+
+    data_link = latest / "data.pkg"
+    assert data_link.is_symlink()
+    assert os.readlink(data_link) == "./data.tzst"
+
     assert (latest / "meta.conf").read_text() == (
         '{\n'
         '  "version": 2,\n'
         '  "packing_format": "tzst",\n'
-        '  "manifests": "packagesite.yaml"\n'
+        '  "manifests": "packagesite.yaml",\n'
+        '  "data": "data"\n'
         '}\n'
     )
 
