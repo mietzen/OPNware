@@ -152,6 +152,10 @@ def test_syslog_ng_json_parsing_and_ansi_stripping():
         assert 'value("MESSAGE")' in content
         assert "subst(" in content
         assert "destination" in content
+        if "caddyadvanced" in str(conf_path):
+            assert 'set("${.caddy.msg}: ${.caddy.domain}" value("MESSAGE")' in content
+            assert 'set("${.caddy.msg}: ${.caddy.identifier}" value("MESSAGE")' in content
+            assert 'set("${.caddy.msg}: ${.caddy.address}" value("MESSAGE")' in content
 
 
 def test_rc_scripts_export_no_color():
