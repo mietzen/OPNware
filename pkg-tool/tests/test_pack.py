@@ -295,8 +295,9 @@ def test_pack_plugin_lighttpd_webgui_and_service_hooks(tmp_path):
     manifest = manifests["+MANIFEST"]
     post = manifest["scripts"]["post-install"]
     deinstall = manifest["scripts"]["post-deinstall"]
+    pre_deinstall = manifest["scripts"]["pre-deinstall"]
 
     assert "configctl webgui restart" in post
     assert "configctl caddy restart" in post
     assert "configctl webgui restart" in deinstall
-    assert "configctl caddy stop" in deinstall
+    assert "configctl caddy stop" in pre_deinstall

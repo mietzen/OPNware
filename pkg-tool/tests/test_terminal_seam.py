@@ -243,8 +243,5 @@ def test_terminal_plugin_lifecycle_hooks():
         assert "configctl terminal restart" in hooks["post-install"]
         assert "post-deinstall" in hooks
         assert "configctl webgui restart" in hooks["post-deinstall"]
-        assert "configctl terminal stop" in hooks["post-deinstall"]
-
-
-
-
+        assert "pre-deinstall" in hooks
+        assert "configctl terminal stop" in hooks["pre-deinstall"]

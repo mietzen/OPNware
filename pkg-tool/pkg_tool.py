@@ -509,53 +509,64 @@ def _plugin_hooks(payload_dir, pkg_name):
     runs register.php itself).
     """
     base = os.path.join(payload_dir, 'usr/local/opnsense')
-    post, deinstall = [], []
+    configctl = '/usr/local/sbin/configctl'
+    register = '/usr/local/opnsense/scripts/firmware/register.php'
+    post, deinstall, pre_deinstall = [], [], []
+
     if os.path.isdir(os.path.join(base, 'service/conf/actions.d')):
         post.append('if [ -f /usr/local/etc/rc.d/configd ]; then /usr/local/etc/rc.d/configd restart; fi')
+
     models_dir = os.path.join(base, 'mvc/app/models/OPNsense')
     if os.path.isdir(models_dir):
         for module in sorted(os.listdir(models_dir)):
             post.append(f'if [ -f /usr/local/opnsense/mvc/script/run_migrations.php ]; '
                         f'then /usr/local/opnsense/mvc/script/run_migrations.php OPNsense/{module}; fi')
+
     tpl_dir = os.path.join(base, 'service/templates/OPNsense')
     if os.path.isdir(tpl_dir):
         for module in sorted(os.listdir(tpl_dir)):
-            post.append(f'if [ -f /usr/local/sbin/configctl ]; then echo -n "Reloading template OPNsense/{module}: "; '
-                        f'/usr/local/sbin/configctl template reload OPNsense/{module}; fi')
+            post.append(f'if [ -f {configctl} ]; then echo -n "Reloading template OPNsense/{module}: "; '
+                        f'{configctl} template reload OPNsense/{module}; fi')
+
     if os.path.isdir(os.path.join(payload_dir, 'usr/local/etc/inc/plugins.inc.d')):
         post.append('if [ -f /usr/local/etc/rc.configure_plugins ]; then echo "Reloading plugin configuration"; '
                     '/usr/local/etc/rc.configure_plugins post-install; fi')
         deinstall.append('if [ -f /usr/local/etc/rc.configure_plugins ]; then echo "Reloading plugin configuration"; '
                          '/usr/local/etc/rc.configure_plugins post-deinstall; fi')
-    register = '/usr/local/opnsense/scripts/firmware/register.php'
+
     if os.path.isdir(os.path.join(payload_dir, 'usr/local/opnsense/version')):
         post.append(f'if [ -f {register} ]; then {register} install {pkg_name}; fi')
         deinstall.append(f'if [ -f {register} ]; then {register} remove {pkg_name}; fi')
+
     lighttpd_dirs = [
         os.path.join(payload_dir, 'usr/local/etc/lighttpd_webgui/conf.d'),
         os.path.join(payload_dir, 'etc/lighttpd_webgui/conf.d'),
     ]
     if any(os.path.isdir(d) for d in lighttpd_dirs):
-        post.append('if [ -f /usr/local/sbin/configctl ]; then echo -n "Restarting webgui: "; '
-                    '/usr/local/sbin/configctl webgui restart; fi')
-        deinstall.append('if [ -f /usr/local/sbin/configctl ]; then echo -n "Restarting webgui: "; '
-                         '/usr/local/sbin/configctl webgui restart; fi')
-    short_name = pkg_name[3:] if pkg_name.startswith('os-') else pkg_name
+        post.append(f'if [ -f {configctl} ]; then echo -n "Restarting webgui: "; '
+                    f'{configctl} webgui restart; fi')
+        deinstall.append(f'if [ -f {configctl} ]; then echo -n "Restarting webgui: "; '
+                         f'{configctl} webgui restart; fi')
+
+    short_name = pkg_name.removeprefix('os-')
     actions_file = os.path.join(base, f'service/conf/actions.d/actions_{short_name}.conf')
     rc_dirs = [
         os.path.join(payload_dir, 'usr/local/etc/rc.d'),
         os.path.join(payload_dir, 'etc/rc.d'),
     ]
     if os.path.isfile(actions_file) and any(os.path.isdir(d) for d in rc_dirs):
-        post.append(f'if [ -f /usr/local/sbin/configctl ]; then echo -n "Restarting {short_name} service: "; '
-                    f'/usr/local/sbin/configctl {short_name} restart; fi')
-        deinstall.append(f'if [ -f /usr/local/sbin/configctl ]; then echo -n "Stopping {short_name} service: "; '
-                         f'/usr/local/sbin/configctl {short_name} stop; fi')
+        post.append(f'if [ -f {configctl} ]; then echo -n "Restarting {short_name} service: "; '
+                    f'{configctl} {short_name} restart; fi')
+        pre_deinstall.append(f'if [ -f {configctl} ]; then echo -n "Stopping {short_name} service: "; '
+                             f'{configctl} {short_name} stop; fi')
+
     scripts = {}
     if post:
         scripts['post-install'] = '\n'.join(post) + '\n'
     if deinstall:
         scripts['post-deinstall'] = '\n'.join(deinstall) + '\n'
+    if pre_deinstall:
+        scripts['pre-deinstall'] = '\n'.join(pre_deinstall) + '\n'
     return scripts
 
 
