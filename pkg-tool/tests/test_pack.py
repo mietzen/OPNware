@@ -13,6 +13,7 @@ import hashlib
 import io
 import json
 import os
+from pathlib import Path
 import shutil
 import tarfile
 
@@ -273,3 +274,30 @@ def test_pack_fails_loudly_when_payload_missing(tmp_path):
 
     with pytest.raises(FileNotFoundError):
         pack(config, abi="15", arch="amd64", payload_dir=payload, output_dir=dist)
+
+
+def test_pack_plugin_lighttpd_webgui_and_service_hooks(tmp_path):
+    config, payload, dist = make_plugin_fixture(tmp_path)
+    lighttpd_dir = Path(payload) / "usr/local/etc/lighttpd_webgui/conf.d"
+    lighttpd_dir.mkdir(parents=True)
+    (lighttpd_dir / "50-test.conf").write_text("server.modules += ( 'mod_proxy' )\n")
+
+    rc_dir = Path(payload) / "usr/local/etc/rc.d"
+    rc_dir.mkdir(parents=True)
+    (rc_dir / "caddy").write_text("#!/bin/sh\n")
+
+    pack(config, abi="15", arch="amd64", payload_dir=payload, output_dir=dist)
+
+    pkg_path = os.path.join(dist, "os-caddy-2.2.0.pkg")
+    assert os.path.exists(pkg_path)
+
+    _, manifests = unpack(pkg_path)
+    manifest = manifests["+MANIFEST"]
+    post = manifest["scripts"]["post-install"]
+    deinstall = manifest["scripts"]["post-deinstall"]
+    pre_deinstall = manifest["scripts"]["pre-deinstall"]
+
+    assert "configctl webgui restart" in post
+    assert "configctl caddy restart" in post
+    assert "configctl webgui restart" in deinstall
+    assert "configctl caddy stop" in pre_deinstall
