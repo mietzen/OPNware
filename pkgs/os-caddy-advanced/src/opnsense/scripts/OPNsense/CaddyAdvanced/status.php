@@ -64,7 +64,12 @@ if (is_file($config)) {
         $cmd .= ' --envfile ' . escapeshellarg($envfile);
     }
     $vcode = run_cmd($cmd, $out);
-    $result['validate'] = $vcode === 0 ? 'OK' : trim(implode("\n", $out));
+    if ($vcode === 0) {
+        $result['validate'] = 'OK';
+    } else {
+        $errLines = preg_grep('/^\s*\{.*"level"\s*:\s*"info"/', $out, PREG_GREP_INVERT);
+        $result['validate'] = trim(implode("\n", $errLines ?: $out));
+    }
 }
 
 if (file_exists('/var/run/caddy/caddy.pid')) {

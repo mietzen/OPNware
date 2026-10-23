@@ -174,6 +174,16 @@ def test_status_script_passes_envfile_to_validate():
     status_path = Path("pkgs/os-caddy-advanced/src/opnsense/scripts/OPNsense/CaddyAdvanced/status.php")
     content = status_path.read_text()
     assert "--envfile" in content
+    assert "preg_grep" in content
+
+
+def test_general_view_formats_validation_error_with_pre_wrap():
+    volt_path = Path("pkgs/os-caddy-advanced/src/opnsense/mvc/app/views/OPNsense/CaddyAdvanced/general.volt")
+    content = volt_path.read_text()
+    assert "<pre" in content
+    assert "white-space: pre-wrap" in content
+    assert "word-break: break-word" in content
+
 
 
 def test_rc_script_passes_extra_flags_to_configtest_and_reload():
