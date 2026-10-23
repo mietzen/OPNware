@@ -108,12 +108,28 @@ fi
 # Extra Commands
 extra_commands="configtest reload reloadssl"
 configtest_cmd="caddy_execute validate ${caddy_flags} ${caddy_extra_flags}"
-reload_cmd="caddy_execute reload ${caddy_flags} ${caddy_extra_flags}"
-reloadssl_cmd="caddy_execute reload --force ${caddy_flags} ${caddy_extra_flags}"
+reload_cmd="caddy_reload"
+reloadssl_cmd="caddy_reload --force"
 
 caddy_execute()
 {
     /usr/bin/su -m "${caddy_user}" -c "env NO_COLOR=1 TERM=dumb ${caddy_command} $*"
+}
+
+caddy_reload()
+{
+    _flags=$(echo "${caddy_extra_flags}" | sed -E 's/--envfile[[:space:]]+[^[:space:]]+//g')
+    _admin_addr="${caddy_admin%|*}"
+    _addr_flag=""
+    if [ -n "${_admin_addr}" ]; then
+        _addr_flag="--address ${_admin_addr}"
+    fi
+    _env_cmd=""
+    _envfile=$(echo "${caddy_extra_flags}" | sed -n -E 's/.*--envfile[[:space:]]+([^[:space:]]+).*/\1/p')
+    if [ -n "${_envfile}" ] && [ -f "${_envfile}" ]; then
+        _env_cmd="set -a; . ${_envfile}; set +a;"
+    fi
+    /usr/bin/su -m "${caddy_user}" -c "${_env_cmd} env NO_COLOR=1 TERM=dumb ${caddy_command} reload ${caddy_flags} ${_flags} ${_addr_flag} $1"
 }
 
 caddy_precmd()

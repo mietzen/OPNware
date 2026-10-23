@@ -175,7 +175,7 @@ def test_package_versions_bumped():
     assert homer_spec["pkg_manifest"]["version"] == "0.5.12"
 
     caddy_spec = yaml.safe_load(CADDY_CONFIG.read_text())
-    assert caddy_spec["pkg_manifest"]["version"] == "0.8.19"
+    assert caddy_spec["pkg_manifest"]["version"] == "0.8.20"
 
 
 def test_homer_access_logging_configuration():

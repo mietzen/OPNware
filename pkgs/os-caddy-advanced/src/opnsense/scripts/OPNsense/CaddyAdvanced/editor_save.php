@@ -281,9 +281,18 @@ function editor_save_cycle()
         }
     }
 
-    // 2. Validate the staged tree before touching anything. Imports resolve
-    //    relative to the Caddyfile location, so the temp copy keeps the
-    //    relative layout.
+    // Rewrite absolute conf.d import path in staged Caddyfile to point to $tmp/conf.d
+    // so validation tests the staged tree rather than live files on disk.
+    $stagedCaddyfile = $tmp . '/Caddyfile';
+    if (is_file($stagedCaddyfile)) {
+        $cfContent = file_get_contents($stagedCaddyfile);
+        if ($cfContent !== false) {
+            $cfContent = str_replace(BASE . '/conf.d/', $tmp . '/conf.d/', $cfContent);
+            file_put_contents($stagedCaddyfile, $cfContent);
+        }
+    }
+
+    // 2. Validate the staged tree before touching anything.
     $cmd = CADDY_BIN . ' validate --config ' . escapeshellarg($tmp . '/Caddyfile')
         . ' --adapter caddyfile';
     $envfile = editor_envfile();
