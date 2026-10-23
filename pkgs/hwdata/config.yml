@@ -1,0 +1,9 @@
+---
+build_config:
+  include: {}
+redistribute:
+  name: hwdata
+  version:
+    FreeBSD-15-amd64: "0.411,1"
+  repo: http://pkg.freebsd.org
+  path: quarterly/All
