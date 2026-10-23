@@ -5,8 +5,8 @@
 This is my personal OPNsense `pkg` repository.\
 It provides custom OPNsense plugins and FreeBSD packages that I use on my firewalls:
 
-- **[os-docker](pkgs/os-docker)** — Full Docker container experience on OPNsense via Alpine Linux 3.24 `bhyve` MicroVM, native FreeBSD `docker-cli`, dual-disk persistent storage, dynamic PF port forwarding with host socket collision protection, and WebUI dashboard
-- **[os-podman](pkgs/os-podman)** — Native OCI container engine on FreeBSD Jails with ZFS storage, Linux emulation, WebUI Dashboard, interactive XTerm.js terminal, structured inspector, container metrics, and remote Docker/Podman context support
+- **[os-docker](pkgs/os-docker)** *(Experimental)* — Full Docker container experience on OPNsense via Alpine Linux 3.24 `bhyve` MicroVM, native FreeBSD `docker-cli`, dual-disk persistent storage, dynamic PF port forwarding with host socket collision protection, and WebUI dashboard
+- **[os-podman](pkgs/os-podman)** *(Experimental)* — Native OCI container engine on FreeBSD Jails with ZFS storage, Linux emulation, WebUI Dashboard, interactive XTerm.js terminal, structured inspector, container metrics, and remote Docker/Podman context support
 - **[os-terminal](pkgs/os-terminal)** — Integrated Web Terminal console for OPNsense with XTerm.js, user privilege drop, shell switcher (synced with user login shell), persistent sessions across navigation, and bash/zsh management
 - **[os-caddy-advanced](pkgs/os-caddy-advanced)** — WebUI-managed Caddy web server: process settings, a user-owned Caddyfile editor (validated save cycle, Monaco editor), envfile secrets, and xcaddy module builder
 - **[os-homer](pkgs/os-homer)** — Homer dashboard served via its own isolated Caddy instance, automatic TLS, and Monaco YAML editor
@@ -17,7 +17,7 @@ It provides custom OPNsense plugins and FreeBSD packages that I use on my firewa
 
 ## 🚀 OPNsense Plugins Showcase
 
-### 1. os-docker (Docker MicroVM & Container Management)
+### 1. os-docker (Docker MicroVM & Container Management) [EXPERIMENTAL]
 
 Full Docker container engine running in an Alpine Linux 3.24 `bhyve` MicroVM with native FreeBSD `docker-cli` integration:
 
@@ -34,7 +34,7 @@ Full Docker container engine running in an Alpine Linux 3.24 `bhyve` MicroVM wit
 
 ---
 
-### 2. os-podman (Container Engine & Dashboard)
+### 2. os-podman (Container Engine & Dashboard) [EXPERIMENTAL]
 
 Run Docker and OCI containers natively on FreeBSD using Podman and `ocijail`:
 

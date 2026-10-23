@@ -8,7 +8,7 @@ pkg_manifest:
   name: docker
   origin: opnware/os-docker
   version: 0.1.1_2
-  comment: Manage Linux containers, images, and volumes via Docker inside an Alpine Linux microVM
+  comment: "[EXPERIMENTAL] Manage Linux containers, images, and volumes via Docker inside an Alpine Linux microVM"
   www: https://www.docker.com/
   maintainer: github.nstein@mailbox.org
   prefix: /usr/local
@@ -16,7 +16,7 @@ pkg_manifest:
   licenses:
     - MIT
   desc: |
-    OPNware os-docker: provides high-performance, isolated Linux container management on OPNsense using a lightweight Alpine Linux 3.24 bhyve MicroVM and native FreeBSD docker-cli. Features include dual-disk architecture with zero-loss OS upgrades, persistent ext4 data volume, dynamic host resource detection, dynamic PF port forwarding with host collision protection, and a full WebUI dashboard for containers, images, volumes, and live terminal sessions.
+    [EXPERIMENTAL] OPNware os-docker: provides high-performance, isolated Linux container management on OPNsense using a lightweight Alpine Linux 3.24 bhyve MicroVM and native FreeBSD docker-cli. Features include dual-disk architecture with zero-loss OS upgrades, persistent ext4 data volume, dynamic host resource detection, dynamic PF port forwarding with host collision protection, and a full WebUI dashboard for containers, images, volumes, and live terminal sessions.
   deps:
     docker-cli:
       origin: sysutils/docker-cli
