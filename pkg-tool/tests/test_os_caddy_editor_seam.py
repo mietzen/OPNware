@@ -190,12 +190,17 @@ def test_general_view_formats_validation_error_with_pre_wrap():
 
 
 
-def test_rc_script_passes_extra_flags_to_configtest_and_reload():
+def test_editor_save_rewrites_staged_import_path():
+    src = EDITOR_SAVE.read_text()
+    assert "str_replace(BASE . '/conf.d/', $tmp . '/conf.d/'," in src
+
+
+def test_rc_script_reload_filters_envfile_and_targets_admin():
     rc_path = Path("pkgs/os-caddy-advanced/src/usr/local/etc/rc.d/caddy")
     content = rc_path.read_text()
-    assert 'configtest_cmd="caddy_execute validate ${caddy_flags} ${caddy_extra_flags}"' in content
-    assert 'reload_cmd="caddy_execute reload ${caddy_flags} ${caddy_extra_flags}"' in content
-    assert 'reloadssl_cmd="caddy_execute reload --force ${caddy_flags} ${caddy_extra_flags}"' in content
+    assert 'reload_cmd="caddy_reload"' in content
+    assert 'reloadssl_cmd="caddy_reload --force"' in content
+    assert "caddy_reload()" in content
 
 
 def test_rc_script_caddy_execute_uses_portable_env():
