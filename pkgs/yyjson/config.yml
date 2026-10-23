@@ -1,0 +1,9 @@
+---
+build_config:
+  include: {}
+redistribute:
+  name: yyjson
+  version:
+    FreeBSD-15-amd64: "0.13.0"
+  repo: http://pkg.freebsd.org
+  path: quarterly/All

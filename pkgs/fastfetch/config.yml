@@ -1,0 +1,9 @@
+---
+build_config:
+  include: {}
+redistribute:
+  name: fastfetch
+  version:
+    FreeBSD-15-amd64: "2.69.0"
+  repo: http://pkg.freebsd.org
+  path: quarterly/All
