@@ -169,3 +169,24 @@ def test_seed_uses_streamlined_absolute_import_path():
     assert "$seedContent = \"import \" . $importPath . \"\\n\";" in src
     assert "$importPath = $base . '/conf.d/*.caddy';" in src
 
+
+def test_status_script_passes_envfile_to_validate():
+    status_path = Path("pkgs/os-caddy-advanced/src/opnsense/scripts/OPNsense/CaddyAdvanced/status.php")
+    content = status_path.read_text()
+    assert "--envfile" in content
+
+
+def test_rc_script_passes_extra_flags_to_configtest_and_reload():
+    rc_path = Path("pkgs/os-caddy-advanced/src/usr/local/etc/rc.d/caddy")
+    content = rc_path.read_text()
+    assert 'configtest_cmd="caddy_execute validate ${caddy_flags} ${caddy_extra_flags}"' in content
+    assert 'reload_cmd="caddy_execute reload ${caddy_flags} ${caddy_extra_flags}"' in content
+    assert 'reloadssl_cmd="caddy_execute reload --force ${caddy_flags} ${caddy_extra_flags}"' in content
+
+
+def test_rc_script_caddy_execute_uses_portable_env():
+    rc_path = Path("pkgs/os-caddy-advanced/src/usr/local/etc/rc.d/caddy")
+    content = rc_path.read_text()
+    assert "env NO_COLOR=1 TERM=dumb" in content
+
+

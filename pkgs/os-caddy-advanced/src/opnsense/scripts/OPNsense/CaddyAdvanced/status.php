@@ -58,7 +58,12 @@ $result['modules'] = array_values($cleanMods);
 
 if (is_file($config)) {
     $result['checksum'] = hash_file('sha256', $config);
-    $vcode = run_cmd("$caddy validate --config $config --adapter caddyfile", $out);
+    $cmd = "$caddy validate --config $config --adapter caddyfile";
+    $envfile = '/usr/local/etc/caddy/env';
+    if (is_file($envfile)) {
+        $cmd .= ' --envfile ' . escapeshellarg($envfile);
+    }
+    $vcode = run_cmd($cmd, $out);
     $result['validate'] = $vcode === 0 ? 'OK' : trim(implode("\n", $out));
 }
 
