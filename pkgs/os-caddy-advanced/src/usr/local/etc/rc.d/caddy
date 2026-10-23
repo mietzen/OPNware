@@ -129,7 +129,7 @@ caddy_reload()
     if [ -n "${_envfile}" ] && [ -f "${_envfile}" ]; then
         _env_cmd="set -a; . ${_envfile}; set +a;"
     fi
-    /usr/bin/su -m "${caddy_user}" -c "/bin/sh -c '${_env_cmd} env NO_COLOR=1 TERM=dumb ${caddy_command} reload ${caddy_flags} ${_flags} ${_addr_flag} \$1'"
+    /usr/bin/su -m "${caddy_user}" -c "/bin/sh -c '${_env_cmd} env NO_COLOR=1 TERM=dumb ${caddy_command} reload ${caddy_flags} ${_flags} ${_addr_flag} $1'"
 }
 
 caddy_precmd()
