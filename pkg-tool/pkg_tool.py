@@ -348,12 +348,20 @@ def assemble_repo(artifacts_dir, repo_config_path, owner, repo, output_dir='page
             for pkg_path, info in packages:
                 shutil.copy(pkg_path, os.path.join(target, os.path.basename(pkg_path)))
                 f.write(json.dumps(info, separators=(',', ':')) + '\n')
+        data_payload = {
+            'groups': [],
+            'expired_packages': [],
+            'packages': [info for _, info in packages],
+        }
+        with open(os.path.join(latest, 'data'), 'w') as f:
+            json.dump(data_payload, f, separators=(',', ':'))
 
     for entry in sorted(os.listdir(output_dir)):
         if not entry.startswith('FreeBSD:'):
             continue
         latest = os.path.join(output_dir, entry, 'latest')
         _create_packagesite_tzst(latest)
+        _create_data_tzst(latest)
         with open(os.path.join(latest, 'meta.conf'), 'w') as f:
             json.dump(repo_config.get('meta-conf', {}), f, indent=2)
             f.write('\n')
@@ -401,6 +409,23 @@ def _create_packagesite_tzst(latest_dir):
     if os.path.lexists(link):
         os.unlink(link)
     os.symlink('./packagesite.tzst', link)
+
+def _create_data_tzst(latest_dir):
+    """Pack data into data.tzst, add the symlink, drop the source."""
+    data_path = os.path.join(latest_dir, 'data')
+    if not os.path.exists(data_path):
+        return
+    tzst_path = os.path.join(latest_dir, 'data.tzst')
+    with open(tzst_path, 'wb') as fobj, zstd.ZstdCompressor().stream_writer(fobj) as zobj, \
+            tarfile.open(fileobj=zobj, mode='w|', format=tarfile.PAX_FORMAT) as tar:
+        info = _pinned_tarinfo(tar, data_path, 'data')
+        with open(data_path, 'rb') as f:
+            tar.addfile(info, f)
+    os.remove(data_path)
+    link = os.path.join(latest_dir, 'data.pkg')
+    if os.path.lexists(link):
+        os.unlink(link)
+    os.symlink('./data.tzst', link)
 
 INDEX_HEADER = """<!DOCTYPE html>
 <html lang="en">

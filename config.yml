@@ -8,3 +8,4 @@ meta-conf:
   version: 2
   packing_format: tzst
   manifests: packagesite.yaml
+  data: data
