@@ -107,13 +107,13 @@ fi
 
 # Extra Commands
 extra_commands="configtest reload reloadssl"
-configtest_cmd="caddy_execute validate ${caddy_flags}"
-reload_cmd="caddy_execute reload ${caddy_flags}"
-reloadssl_cmd="caddy_execute reload --force ${caddy_flags}"
+configtest_cmd="caddy_execute validate ${caddy_flags} ${caddy_extra_flags}"
+reload_cmd="caddy_execute reload ${caddy_flags} ${caddy_extra_flags}"
+reloadssl_cmd="caddy_execute reload --force ${caddy_flags} ${caddy_extra_flags}"
 
 caddy_execute()
 {
-    /usr/bin/su -m "${caddy_user}" -c "export NO_COLOR=1 TERM=dumb; ${caddy_command} $*"
+    /usr/bin/su -m "${caddy_user}" -c "env NO_COLOR=1 TERM=dumb ${caddy_command} $*"
 }
 
 caddy_precmd()

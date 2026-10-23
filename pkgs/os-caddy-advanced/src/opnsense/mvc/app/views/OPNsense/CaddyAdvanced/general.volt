@@ -70,7 +70,9 @@
                 if (data.validate === 'OK') {
                     valHtml = '<span class="label label-success">{{ lang._("OK") }}</span>';
                 } else if (data.validate) {
-                    valHtml = '<span class="label label-danger">' + $('<div>').text(data.validate).html() + '</span>';
+                    valHtml = '<span class="label label-danger" style="display: inline-block; margin-bottom: 5px;">{{ lang._("Error") }}</span>' +
+                        '<pre style="white-space: pre-wrap; word-break: break-word; max-height: 250px; overflow-y: auto; margin-top: 5px;">' +
+                        $('<div>').text(data.validate).html() + '</pre>';
                 }
                 $status.find("#status-validate").html(valHtml);
 

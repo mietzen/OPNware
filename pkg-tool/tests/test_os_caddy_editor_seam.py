@@ -152,6 +152,10 @@ def test_syslog_ng_json_parsing_and_ansi_stripping():
         assert 'value("MESSAGE")' in content
         assert "subst(" in content
         assert "destination" in content
+        if "caddyadvanced" in str(conf_path):
+            assert 'set("${.caddy.msg}: ${.caddy.domain}" value("MESSAGE")' in content
+            assert 'set("${.caddy.msg}: ${.caddy.identifier}" value("MESSAGE")' in content
+            assert 'set("${.caddy.msg}: ${.caddy.address}" value("MESSAGE")' in content
 
 
 def test_rc_scripts_export_no_color():
@@ -168,4 +172,35 @@ def test_seed_uses_streamlined_absolute_import_path():
     src = EDITOR_TREE.read_text()
     assert "$seedContent = \"import \" . $importPath . \"\\n\";" in src
     assert "$importPath = $base . '/conf.d/*.caddy';" in src
+
+
+def test_status_script_passes_envfile_to_validate():
+    status_path = Path("pkgs/os-caddy-advanced/src/opnsense/scripts/OPNsense/CaddyAdvanced/status.php")
+    content = status_path.read_text()
+    assert "--envfile" in content
+    assert "preg_grep" in content
+
+
+def test_general_view_formats_validation_error_with_pre_wrap():
+    volt_path = Path("pkgs/os-caddy-advanced/src/opnsense/mvc/app/views/OPNsense/CaddyAdvanced/general.volt")
+    content = volt_path.read_text()
+    assert "<pre" in content
+    assert "white-space: pre-wrap" in content
+    assert "word-break: break-word" in content
+
+
+
+def test_rc_script_passes_extra_flags_to_configtest_and_reload():
+    rc_path = Path("pkgs/os-caddy-advanced/src/usr/local/etc/rc.d/caddy")
+    content = rc_path.read_text()
+    assert 'configtest_cmd="caddy_execute validate ${caddy_flags} ${caddy_extra_flags}"' in content
+    assert 'reload_cmd="caddy_execute reload ${caddy_flags} ${caddy_extra_flags}"' in content
+    assert 'reloadssl_cmd="caddy_execute reload --force ${caddy_flags} ${caddy_extra_flags}"' in content
+
+
+def test_rc_script_caddy_execute_uses_portable_env():
+    rc_path = Path("pkgs/os-caddy-advanced/src/usr/local/etc/rc.d/caddy")
+    content = rc_path.read_text()
+    assert "env NO_COLOR=1 TERM=dumb" in content
+
 

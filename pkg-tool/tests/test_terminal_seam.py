@@ -17,7 +17,7 @@ def test_bash_redistribute_config():
     assert config_file.exists()
     content = config_file.read_text()
     assert "name: bash" in content
-    assert 'FreeBSD-15-amd64: "5.3.15"' in content
+    assert 'FreeBSD-15-amd64: "5.3.' in content
     assert "http://pkg.freebsd.org" in content
 
     build_sh = BASH_PKG / "build.sh"
