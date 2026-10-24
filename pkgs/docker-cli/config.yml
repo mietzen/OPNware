@@ -4,6 +4,6 @@ build_config:
 redistribute:
   name: docker-cli
   version:
-    FreeBSD-15-amd64: "29.7.2_1"
+    FreeBSD-15-amd64: "29.7.2_2"
   repo: http://pkg.freebsd.org
   path: quarterly/All
