@@ -69,7 +69,7 @@ jobs:
           cache: false
 
       - name: Setup NodeJS
-        uses: actions/setup-node@v7.0.0
+        uses: actions/setup-node@v7.1.0
         if: ${{ matrix.node }}
         with:
           node-version: ${{ matrix.node }}
@@ -79,7 +79,7 @@ jobs:
         run: ./build.sh ${{ matrix.arch }} ${{ matrix.abi }}
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v7.0.1
+        uses: actions/upload-artifact@v7.0.2
         with:
           name: ${{ github.run_id }}_${{ matrix.pkg_name }}_${{ matrix.arch }}_${{ matrix.abi }}
           path: dist/*
@@ -103,7 +103,7 @@ jobs:
           path: repo
 
       - name: Download build artifacts
-        uses: actions/download-artifact@v8.0.1
+        uses: actions/download-artifact@v8.0.2
         with:
           path: artifacts
 
@@ -138,7 +138,7 @@ jobs:
           path: repo
 
       - name: Download build artifacts
-        uses: actions/download-artifact@v8.0.1
+        uses: actions/download-artifact@v8.0.2
         with:
           path: artifacts
 
@@ -179,7 +179,7 @@ jobs:
     runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@v7.0.1
-      - uses: actions/setup-python@v7.0.0
+      - uses: actions/setup-python@v7.1.0
         with:
           python-version: '3.12'
       - run: pip install -e "./pkg-tool[dev]"
