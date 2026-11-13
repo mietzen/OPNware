@@ -41,8 +41,9 @@ if (homer_caddy_is_present()) {
         $backend->configdRun('caddyadvanced restart');
     } elseif ($action === 'stop') {
         $homerCaddyFile = '/usr/local/etc/caddy/conf.d/homer.caddy';
+        $homerCaddyDisabled = $homerCaddyFile . '.disabled';
         if (file_exists($homerCaddyFile)) {
-            @unlink($homerCaddyFile);
+            @rename($homerCaddyFile, $homerCaddyDisabled);
             $backend->configdRun('caddyadvanced restart');
         }
         @shell_exec('/usr/sbin/service homer onestop >/dev/null 2>&1');

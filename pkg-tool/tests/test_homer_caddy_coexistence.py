@@ -172,7 +172,7 @@ def test_homer_rcd_checks_caddy_enable():
 
 def test_package_versions_bumped():
     homer_spec = yaml.safe_load(HOMER_CONFIG.read_text())
-    assert homer_spec["pkg_manifest"]["version"] == "0.5.12"
+    assert homer_spec["pkg_manifest"]["version"] == "0.5.13"
 
     caddy_spec = yaml.safe_load(CADDY_CONFIG.read_text())
     assert caddy_spec["pkg_manifest"]["version"] == "0.8.21"
@@ -224,7 +224,7 @@ def test_homer_sync_caddy_preserves_existing():
     src = HOMER_SYNC.read_text()
     assert "!file_exists(CADDY_HOMER_FILE)" in src
     assert "file_put_contents(CADDY_HOMER_FILE, $content)" in src
-    assert "$managed = $mdl->getCaddyManagedConfig();" in src
+    assert "$managed = $mdl->getCaddyManagedConfig(" in src
     assert "unlink(CADDY_HOMER_FILE)" in src
 
 
@@ -271,4 +271,24 @@ def test_homer_services_pidfile_and_service_control():
     assert "sync-caddy" in ctrl_src
     assert "caddyadvanced restart" in ctrl_src
     assert "/usr/sbin/service homer" in ctrl_src
+
+
+def test_homer_service_control_preserves_custom_caddy_on_stop():
+    ctrl_src = Path("pkgs/os-homer/src/opnsense/scripts/OPNsense/Homer/service_control.php").read_text()
+    assert "@unlink($homerCaddyFile)" not in ctrl_src
+    assert ".disabled" in ctrl_src
+    assert "@rename($homerCaddyFile" in ctrl_src
+
+    sync_src = HOMER_SYNC.read_text()
+    assert ".disabled" in sync_src
+    assert "@rename(" in sync_src
+
+
+def test_homer_sync_caddy_no_on_demand_for_bound_host():
+    sync_src = HOMER_SYNC.read_text()
+    assert "tls internal\\n" in sync_src
+    assert "on_demand" in sync_src
+    # Bound IP/host listeners must not emit on_demand (breaks SNI-less IP TLS handshakes)
+    assert "$listen !== ':' . $port" in sync_src
+
 

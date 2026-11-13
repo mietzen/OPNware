@@ -54,12 +54,16 @@
 	root * /usr/local/www/homer
 	file_server
 {% if tls %}
+{%   if servername != '' or listen != ':' ~ port %}
+	tls internal
+{%   else %}
 	# The internal CA mints the certificate for the site's hostname. On a
 	# port-only (all interfaces) site there is no hostname, so on_demand
 	# issues per-SNI for whatever the client sends.
 	tls internal {
 		on_demand
 	}
+{%   endif %}
 {% endif %}
 	log {
 		output net unixgram//var/run/homer/log.sock {
