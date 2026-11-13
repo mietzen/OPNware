@@ -18,11 +18,15 @@ use OPNsense\Homer\Homer;
 
 const CADDY_CONF_DIR = '/usr/local/etc/caddy/conf.d';
 const CADDY_HOMER_FILE = CADDY_CONF_DIR . '/homer.caddy';
+const CADDY_HOMER_DISABLED_FILE = CADDY_HOMER_FILE . '.disabled';
 
 // If os-homer is being deinstalled, clean up conf.d and exit
 if (!file_exists('/usr/local/opnsense/version/homer')) {
     if (file_exists(CADDY_HOMER_FILE)) {
         @unlink(CADDY_HOMER_FILE);
+    }
+    if (file_exists(CADDY_HOMER_DISABLED_FILE)) {
+        @unlink(CADDY_HOMER_DISABLED_FILE);
     }
     if (homer_caddy_is_present()) {
         @shell_exec('/usr/sbin/service caddy reload >/dev/null 2>&1');
@@ -39,6 +43,10 @@ if ($caddyPresent) {
 
     if (!is_dir(CADDY_CONF_DIR)) {
         @mkdir(CADDY_CONF_DIR, 0755, true);
+    }
+
+    if (!file_exists(CADDY_HOMER_FILE) && file_exists(CADDY_HOMER_DISABLED_FILE)) {
+        @rename(CADDY_HOMER_DISABLED_FILE, CADDY_HOMER_FILE);
     }
 
     if (!file_exists(CADDY_HOMER_FILE)) {
@@ -61,7 +69,13 @@ if ($caddyPresent) {
             }
         }
 
-        $tlsBlock = $tls ? "\ttls internal {\n\t\ton_demand\n\t}\n" : '';
+        if ($tls) {
+            $tlsBlock = ($listen !== ':' . $port)
+                ? "\ttls internal\n"
+                : "\ttls internal {\n\t\ton_demand\n\t}\n";
+        } else {
+            $tlsBlock = '';
+        }
         $content = "# Homer dashboard served via Caddy Advanced\n"
             . "{$listen} {\n"
             . "\troot * /usr/local/www/homer\n"
@@ -83,8 +97,12 @@ if ($caddyPresent) {
 }
 
 // Restore Homer config model from conf.d when Caddy Advanced is absent or disabled
-if (file_exists(CADDY_HOMER_FILE)) {
-    $managed = $mdl->getCaddyManagedConfig();
+$activeOrDisabledFile = file_exists(CADDY_HOMER_FILE)
+    ? CADDY_HOMER_FILE
+    : (file_exists(CADDY_HOMER_DISABLED_FILE) ? CADDY_HOMER_DISABLED_FILE : null);
+
+if ($activeOrDisabledFile !== null) {
+    $managed = $mdl->getCaddyManagedConfig($activeOrDisabledFile);
     if (!empty($managed)) {
         if (isset($managed['Port'])) {
             $mdl->general->Port = (string)$managed['Port'];
@@ -106,6 +124,7 @@ if (file_exists(CADDY_HOMER_FILE)) {
     }
 
     @unlink(CADDY_HOMER_FILE);
+    @unlink(CADDY_HOMER_DISABLED_FILE);
 }
 
 // Restore standalone Homer when Caddy Advanced is absent or disabled
