@@ -45,6 +45,25 @@ class LogwatchDaemon:
         self._sock = None
         self._next_digest_flush = 0
         self._digest_window_sec = 0
+        self._restore_digest_state()
+
+    def _restore_digest_state(self):
+        rows = self._conn.execute("SELECT key, value FROM digest_meta").fetchall()
+        meta = {r["key"]: r["value"] for r in rows}
+        self._next_digest_flush = int(meta.get("next_flush") or 0)
+        self._digest_window_sec = int(meta.get("window_sec") or 0)
+
+        pending = int(self._conn.execute("SELECT COUNT(*) FROM digest_queue").fetchone()[0])
+        if pending > 0 and self._next_digest_flush == 0:
+            digest_cfg = self._cfg.rules.get("digest", {})
+            win_sec = self._digest_window_sec or core.parse_dur(digest_cfg.get("initial", "5m"))
+            self._digest_window_sec = win_sec
+            self._next_digest_flush = int(time.time()) + win_sec
+            self._conn.execute(
+                "INSERT OR REPLACE INTO digest_meta (key, value) VALUES ('next_flush', ?)",
+                (str(self._next_digest_flush),),
+            )
+            self._conn.commit()
 
     def _log(self, level, msg):
         ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -180,7 +199,10 @@ class LogwatchDaemon:
                 "SELECT value FROM digest_meta WHERE key = 'last_digest_sent'"
             ).fetchone()
             if last_sent_row and (now - int(last_sent_row["value"])) >= cooldown_sec:
-                self._digest_window_sec = 0
+                if self._digest_window_sec != 0:
+                    self._digest_window_sec = 0
+                    conn.execute("DELETE FROM digest_meta WHERE key = 'window_sec'")
+                    conn.commit()
             return
 
         if self._next_digest_flush == 0 or now < self._next_digest_flush:
@@ -229,6 +251,7 @@ class LogwatchDaemon:
                 "INSERT OR REPLACE INTO digest_meta (key, value) VALUES ('window_sec', ?)",
                 (str(self._digest_window_sec),),
             )
+            conn.execute("DELETE FROM digest_meta WHERE key = 'next_flush'")
             conn.commit()
             self._log("info", f"Sent digest email for {len(sections)} rule(s)")
         except Exception as exc:

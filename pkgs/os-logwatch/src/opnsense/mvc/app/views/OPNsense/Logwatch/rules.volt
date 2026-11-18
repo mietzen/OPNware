@@ -6,7 +6,8 @@
  #}
 <style>
     .opnware-logwatch-tabs { margin-bottom: 0; }
-    .opnware-logwatch-content { padding: 15px; }
+    .opnware-logwatch-content { padding: 0 15px 15px; }
+    .opnware-logwatch-content > .tab-pane { padding-top: 15px; }
     .opnware-logwatch-content h3, .opnware-logwatch-content h4 { margin-top: 0; }
     .ly-modal .form-control { width: 100%; max-width: 100%; box-sizing: border-box; }
     .ly-modal .modal-body { padding: 15px; }

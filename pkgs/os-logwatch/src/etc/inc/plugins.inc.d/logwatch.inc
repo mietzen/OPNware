@@ -59,11 +59,11 @@ function logwatch_configure_do($verbose = false)
     $backend = new \OPNsense\Core\Backend();
     $enabled = (string)($config['OPNsense']['logwatch']['general']['enabled'] ?? '1') === '1';
 
-    $backend->configdRun('logwatch setup');
     $backend->configdRun('template reload OPNsense/Logwatch');
     if ($enabled) {
         $backend->configdRun('logwatch start');
     }
+    $backend->configdRun('logwatch setup');
 }
 
 function logwatch_syslog()

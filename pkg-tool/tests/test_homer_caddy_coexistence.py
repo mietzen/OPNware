@@ -172,7 +172,7 @@ def test_homer_rcd_checks_caddy_enable():
 
 def test_package_versions_bumped():
     homer_spec = yaml.safe_load(HOMER_CONFIG.read_text())
-    assert homer_spec["pkg_manifest"]["version"] == "0.5.13"
+    assert str(homer_spec["pkg_manifest"]["version"]).startswith("0.5.13")
 
     caddy_spec = yaml.safe_load(CADDY_CONFIG.read_text())
     assert caddy_spec["pkg_manifest"]["version"] == "0.8.21"

@@ -74,7 +74,14 @@ class ServiceController extends ApiMutableServiceControllerBase
                 $backend->configdRun('logwatch reload');
             }
 
-            $setupRes = json_decode((string)$backend->configdRun('logwatch setup'), true);
+            $rawSetup = trim((string)$backend->configdRun('logwatch setup'));
+            $setupRes = null;
+            if ($rawSetup !== '' && strpos($rawSetup, 'Execute error') === false) {
+                $setupRes = json_decode($rawSetup, true);
+            }
+            if (!is_array($setupRes) && is_file('/var/db/os-logwatch/manage_status.json')) {
+                $setupRes = json_decode((string)file_get_contents('/var/db/os-logwatch/manage_status.json'), true);
+            }
             if (is_array($setupRes) && ($setupRes['status'] ?? '') === 'error') {
                 return ['status' => 'failure', 'message' => $setupRes['message'] ?? 'Setup failed'];
             }

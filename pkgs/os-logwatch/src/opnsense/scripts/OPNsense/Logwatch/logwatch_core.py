@@ -345,6 +345,15 @@ def _check_regex(pattern, field_label):
         raise ValueError(f"Invalid regex in {field_label} ('{pattern}'): {exc}") from exc
 
 
+def _valid_sev(val, label):
+    """Validate severity token against SEVERITY_ORDER and SEVERITY_ALIASES."""
+    s = str(val or "").strip().lower()
+    canon = SEVERITY_ALIASES.get(s, s)
+    if canon not in SEVERITY_ORDER:
+        raise ValueError(f"{label} '{s}'")
+    return canon
+
+
 def validate_rules(raw_yaml):
     """Parse and validate YAML rules document; returns (normalized_yaml, parsed_dict)."""
     txt = (raw_yaml or "").strip()
@@ -387,9 +396,7 @@ def validate_rules(raw_yaml):
         if win < 1:
             raise ValueError(f"Alert '{name}' window_minutes must be >= 1")
 
-        lvl_raw = str(item.get("level") or "").strip().lower()
-        if lvl_raw not in SEVERITY_ORDER:
-            raise ValueError(f"Alert '{name}' has invalid level '{lvl_raw}'")
+        lvl_raw = _valid_sev(item.get("level"), f"Alert '{name}' has invalid level")
 
         _check_regex(item.get("tag", ""), f"alert '{name}' tag")
         _check_regex(item.get("message", ""), f"alert '{name}' message")
@@ -416,18 +423,19 @@ def validate_rules(raw_yaml):
         if not isinstance(item, dict):
             raise ValueError(f"Ignore rule #{idx + 1} must be an object")
 
-        lvl = str(item.get("level") or "").strip().lower()
-        if lvl and lvl not in SEVERITY_ORDER:
-            raise ValueError(f"Ignore rule #{idx + 1} has invalid level '{lvl}'")
+        lvl_in = str(item.get("level") or "").strip()
+        lvl = _valid_sev(lvl_in, f"Ignore rule #{idx + 1} has invalid level") if lvl_in else ""
 
         _check_regex(item.get("tag", ""), f"ignore #{idx + 1} tag")
         _check_regex(item.get("message", ""), f"ignore #{idx + 1} message")
 
         clean = {}
-        for opt_key in ("host", "facility", "tag", "level", "message"):
+        for opt_key in ("host", "facility", "tag", "message"):
             val = str(item.get(opt_key) or "").strip()
             if val:
-                clean[opt_key] = val.lower() if opt_key == "level" else val
+                clean[opt_key] = val
+        if lvl:
+            clean["level"] = lvl
         if not clean:
             raise ValueError(f"Ignore rule #{idx + 1} must specify at least one matcher")
         clean["discard"] = bool(item.get("discard", False))
@@ -442,22 +450,20 @@ def validate_rules(raw_yaml):
         if not isinstance(item, dict):
             raise ValueError(f"Severity rewrite #{idx + 1} must be an object")
 
-        lvl = str(item.get("level") or "").strip().lower()
-        if lvl and lvl not in SEVERITY_ORDER:
-            raise ValueError(f"Severity rewrite #{idx + 1} has invalid level '{lvl}'")
-
-        new_sev = str(item.get("new_severity") or "").strip().lower()
-        if new_sev not in SEVERITY_ORDER:
-            raise ValueError(f"Severity rewrite #{idx + 1} has invalid new_severity '{new_sev}'")
+        lvl_in = str(item.get("level") or "").strip()
+        lvl = _valid_sev(lvl_in, f"Severity rewrite #{idx + 1} has invalid level") if lvl_in else ""
+        new_sev = _valid_sev(item.get("new_severity"), f"Severity rewrite #{idx + 1} has invalid new_severity")
 
         _check_regex(item.get("tag", ""), f"severity_rewrite #{idx + 1} tag")
         _check_regex(item.get("message", ""), f"severity_rewrite #{idx + 1} message")
 
         clean = {}
-        for opt_key in ("host", "facility", "tag", "level", "message"):
+        for opt_key in ("host", "facility", "tag", "message"):
             val = str(item.get(opt_key) or "").strip()
             if val:
-                clean[opt_key] = val.lower() if opt_key == "level" else val
+                clean[opt_key] = val
+        if lvl:
+            clean["level"] = lvl
         clean["new_severity"] = new_sev
         rewrites_out.append(clean)
 

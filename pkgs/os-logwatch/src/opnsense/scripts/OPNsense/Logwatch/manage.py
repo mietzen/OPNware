@@ -226,10 +226,20 @@ def _cmd_test_smtp(arg):
                 source="custom",
             )
         else:
-            for k, attr in (("smtp_from", "from_addr"), ("smtp_to", "to_addr"), ("smtp_host", "host")):
+            for k, attr in (
+                ("smtp_host", "host"),
+                ("smtp_user", "user"),
+                ("smtp_password", "password"),
+                ("smtp_from", "from_addr"),
+                ("smtp_to", "to_addr"),
+            ):
                 val = str(payload.get(k) or "").strip()
                 if val:
                     setattr(cfg.smtp, attr, val)
+            if payload.get("smtp_port"):
+                port_val = int(payload["smtp_port"])
+                if port_val != core.DEFAULT_SMTP_PORT or str(payload.get("smtp_host") or "").strip():
+                    cfg.smtp.port = port_val
 
     html = core.build_alert_html(
         "Logwatch Test Email",
