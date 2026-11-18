@@ -127,6 +127,8 @@ class LogwatchDaemon:
                 msg = str(pkt.get("msg") or "").strip()
                 if tag == "configd.py" and RE_SELF_POLL.search(msg):
                     continue
+                if tag == "logwatch" and "SQLite insert failed:" in msg:
+                    continue
                 if tag in cfg.excluded_programs:
                     continue
                 allowed_sevs = core.sev_at_or_above(cfg.min_local_severity)
@@ -181,6 +183,7 @@ class LogwatchDaemon:
                 try:
                     core.insert_logs(self._conn, batch)
                 except Exception as exc:
+                    self._conn.rollback()
                     self._log("error", f"SQLite insert failed: {exc}")
                 batch.clear()
                 last_flush = time.monotonic()
@@ -273,6 +276,7 @@ class LogwatchDaemon:
             if deleted > 0:
                 self._log("info", f"Pruned {deleted} expired/capped log entries")
         except Exception as exc:
+            conn.rollback()
             self._log("error", f"Retention prune error: {exc}")
 
         digest_cfg = cfg.rules.get("digest", {})
@@ -329,9 +333,12 @@ class LogwatchDaemon:
                 core.send_email(cfg.smtp, f"[Logwatch] Alert: {rule['name']}", html)
                 self._log("info", f"Sent alert email for '{rule['name']}' ({cnt} hits)")
             except Exception as exc:
+                conn.rollback()
                 self._log("error", f"Alert evaluation error for '{rule.get('name')}': {exc}")
 
         self._send_digest_if_due(conn, cfg, now)
+        if conn.in_transaction:
+            conn.commit()
 
     def _ticker_loop(self):
         # Dedicated WAL connection avoids cross-thread sqlite3 transaction collisions

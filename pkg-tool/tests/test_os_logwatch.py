@@ -1,5 +1,6 @@
 """Unit and seam tests for os-logwatch plugin and backend core."""
 
+import sqlite3
 import sys
 import time
 import xml.etree.ElementTree as ET
@@ -243,3 +244,38 @@ def test_syslog_ng_conf_has_unique_persist_names(monkeypatch):
     assert 'persist-name("logwatch_local")' in text
     assert 'persist-name("logwatch_net_udp_0")' in text
     assert 'persist-name("logwatch_net_tcp_1")' in text
+
+
+def test_prune_logs_zero_deleted_does_not_lock_db(tmp_path):
+    db_file = str(tmp_path / "logwatch.db")
+    conn_ticker = core.open_db(db_file)
+    conn_writer = sqlite3.connect(db_file, timeout=0.1)
+    now = int(time.time())
+
+    try:
+        core.insert_logs(conn_writer, [{
+            "timestamp": "2026-11-18 13:00:00",
+            "epoch": now,
+            "host": "fw01",
+            "facility": "user",
+            "severity": "info",
+            "tag": "test",
+            "message": "fresh entry",
+        }])
+
+        deleted = core.prune_logs(conn_ticker, db_file, retention_days=7, max_db_size_mb=512, now_epoch=now)
+        assert deleted == 0
+        assert not conn_ticker.in_transaction
+
+        core.insert_logs(conn_writer, [{
+            "timestamp": "2026-11-18 13:00:05",
+            "epoch": now + 5,
+            "host": "fw01",
+            "facility": "user",
+            "severity": "info",
+            "tag": "test",
+            "message": "second entry",
+        }])
+    finally:
+        conn_writer.close()
+        conn_ticker.close()
