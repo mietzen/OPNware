@@ -9,6 +9,14 @@
     .opnware-logwatch-content { padding: 0 15px 15px; }
     .opnware-logwatch-content > .tab-pane { padding-top: 15px; }
     .opnware-logwatch-content h3, .opnware-logwatch-content h4 { margin-top: 0; }
+    select.form-control,
+    select.input-sm {
+        height: 28px !important;
+        padding: 0 24px 0 8px !important;
+        font-size: 12px !important;
+        line-height: 26px !important;
+        vertical-align: middle;
+    }
     .ly-modal .form-control { width: 100%; max-width: 100%; box-sizing: border-box; }
     .ly-modal .modal-body { padding: 15px; }
     .ly-modal .modal-footer { padding: 12px 15px; }

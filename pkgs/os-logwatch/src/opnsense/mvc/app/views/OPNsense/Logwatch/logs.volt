@@ -30,6 +30,16 @@
     .ly-status-strip { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px; }
     .ly-btn-regex.active { background-color: #337ab7; color: #fff; border-color: #2e6da4; }
     .ly-btn-alert-hit { color: #e08e0b; border-color: #e08e0b; }
+    .ly-toolbar .form-control,
+    .ly-toolbar .btn { height: 28px; padding: 3px 8px; font-size: 12px; line-height: 1.4; }
+    select.form-control,
+    select.input-sm {
+        height: 28px !important;
+        padding: 0 24px 0 8px !important;
+        font-size: 12px !important;
+        line-height: 26px !important;
+        vertical-align: middle;
+    }
     .ly-modal .form-control { width: 100%; max-width: 100%; box-sizing: border-box; }
     .ly-modal .modal-body { padding: 15px; }
     .ly-modal .modal-footer { padding: 12px 15px; }

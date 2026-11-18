@@ -875,8 +875,7 @@ def prune_logs(conn, db_path, retention_days, max_db_size_mb, now_epoch=None):
     cutoff = now - int(retention_days) * 86400
     cur = conn.execute("DELETE FROM logs WHERE epoch < ?", (cutoff,))
     deleted = cur.rowcount or 0
-    if deleted > 0:
-        conn.commit()
+    conn.commit()
 
     max_bytes = int(max_db_size_mb) * 1024 * 1024
     if max_bytes > 0 and os.path.exists(db_path):
