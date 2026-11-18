@@ -92,6 +92,21 @@ Clean, fast personal dashboard for your network services:
 
 ---
 
+### 6. os-logwatch (Syslog Aggregator & Alerting)
+
+Native OPNsense syslog aggregator, WebUI log viewer, YAML rule engine, and alerting plugin compatible with [`mietzen/logyard`](https://github.com/mietzen/logyard):
+
+- **Syslog-ng + SQLite WAL**: Receives remote RFC 3164/RFC 5424 logs over UDP/TCP (`:514` with optional automatic PF firewall rules) alongside local OPNsense and plugin logs into `/var/db/os-logwatch/logwatch.db` with retention and DB size caps.
+- **Live Log Viewer**: Cross-filtered Host, Facility, Severity (`>=`), and Tag dropdowns, substring + Regex search (`.*`), time presets/custom ranges, 3s live polling, and 1-click Ignore/Discard rule creation per row.
+- **Rules, Rewrites & Digest Alerts**: Structured tabs for threshold alert rules (with live cooldown state), ignore/discard rules, ordered severity rewrites, escalating digest emails, and a Monaco YAML editor.
+- **Monit SMTP Integration**: Reuses `Services -> Monit` mail settings automatically (with optional custom SMTP override) and ships a Lobby dashboard widget.
+
+![os-logwatch Log Viewer](docs/images/os-logwatch-logs.png)
+
+![os-logwatch Rules & Alerts](docs/images/os-logwatch-rules.png)
+
+---
+
 ## 📦 Included Packages
 
 | Package | Type | Description |
