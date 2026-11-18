@@ -1,0 +1,107 @@
+<model>
+    <mount>//OPNsense/logwatch</mount>
+    <version>1.0.0</version>
+    <description>OPNware Logwatch Syslog Aggregator Configuration</description>
+    <items>
+        <general>
+            <enabled type="BooleanField">
+                <default>1</default>
+                <required>Y</required>
+            </enabled>
+            <listen_interfaces type="OPNsense\Base\FieldTypes\InterfaceField">
+                <Multiple>Y</Multiple>
+                <default>lan</default>
+                <required>N</required>
+            </listen_interfaces>
+            <listen_port type="IntegerField">
+                <default>514</default>
+                <MinimumValue>1</MinimumValue>
+                <MaximumValue>65535</MaximumValue>
+                <ValidationMessage>Listen port must be between 1 and 65535.</ValidationMessage>
+                <required>Y</required>
+            </listen_port>
+            <enable_udp type="BooleanField">
+                <default>1</default>
+                <required>Y</required>
+            </enable_udp>
+            <enable_tcp type="BooleanField">
+                <default>1</default>
+                <required>Y</required>
+            </enable_tcp>
+            <auto_firewall type="BooleanField">
+                <default>1</default>
+                <required>Y</required>
+            </auto_firewall>
+            <capture_local type="BooleanField">
+                <default>1</default>
+                <required>Y</required>
+            </capture_local>
+            <excluded_programs type="CSVListField">
+                <default>filterlog</default>
+                <required>N</required>
+            </excluded_programs>
+            <min_local_severity type="OptionField">
+                <default>info</default>
+                <required>Y</required>
+                <OptionValues>
+                    <emerg>Emergency (0)</emerg>
+                    <alert>Alert (1)</alert>
+                    <crit>Critical (2)</crit>
+                    <err>Error (3)</err>
+                    <warning>Warning (4)</warning>
+                    <notice>Notice (5)</notice>
+                    <info>Informational (6)</info>
+                    <debug>Debug (7)</debug>
+                </OptionValues>
+            </min_local_severity>
+            <retention_days type="IntegerField">
+                <default>7</default>
+                <MinimumValue>1</MinimumValue>
+                <MaximumValue>3650</MaximumValue>
+                <ValidationMessage>Retention days must be between 1 and 3650.</ValidationMessage>
+                <required>Y</required>
+            </retention_days>
+            <max_db_size_mb type="IntegerField">
+                <default>512</default>
+                <MinimumValue>10</MinimumValue>
+                <MaximumValue>65536</MaximumValue>
+                <ValidationMessage>Max database size must be between 10 and 65536 MB.</ValidationMessage>
+                <required>Y</required>
+            </max_db_size_mb>
+            <external_url type="TextField">
+                <required>N</required>
+            </external_url>
+            <use_monit_smtp type="BooleanField">
+                <default>1</default>
+                <required>Y</required>
+            </use_monit_smtp>
+            <smtp_host type="TextField">
+                <required>N</required>
+            </smtp_host>
+            <smtp_port type="IntegerField">
+                <default>587</default>
+                <MinimumValue>1</MinimumValue>
+                <MaximumValue>65535</MaximumValue>
+                <ValidationMessage>SMTP port must be between 1 and 65535.</ValidationMessage>
+                <required>N</required>
+            </smtp_port>
+            <smtp_user type="TextField">
+                <required>N</required>
+            </smtp_user>
+            <smtp_password type="TextField">
+                <required>N</required>
+            </smtp_password>
+            <smtp_from type="TextField">
+                <required>N</required>
+            </smtp_from>
+            <smtp_to type="TextField">
+                <required>N</required>
+            </smtp_to>
+        </general>
+        <rules>
+            <yaml_content type="TextField">
+                <required>N</required>
+            </yaml_content>
+        </rules>
+    </items>
+</model>

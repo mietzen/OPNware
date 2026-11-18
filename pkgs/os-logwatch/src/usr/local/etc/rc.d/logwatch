@@ -1,0 +1,120 @@
+#!/bin/sh
+
+# PROVIDE: logwatch
+# REQUIRE: DAEMON NETWORKING
+# KEYWORD: shutdown
+
+. /etc/rc.subr
+
+name="logwatch"
+rcvar="logwatch_enable"
+
+load_rc_config "${name}"
+
+: ${logwatch_enable:="NO"}
+
+pidfile="/var/run/os-logwatch/logwatch.pid"
+suppidfile="/var/run/os-logwatch/logwatch_sup.pid"
+logfile="/var/log/logwatch/daemon.log"
+sockfile="/var/run/os-logwatch/ingest.sock"
+daemon_script="/usr/local/opnsense/scripts/OPNsense/Logwatch/logwatch_daemon.py"
+setup_script="/usr/local/opnsense/scripts/OPNsense/Logwatch/setup.php"
+
+logwatch_prestart()
+{
+    umask 022
+    mkdir -p /var/db/os-logwatch /var/run/os-logwatch /var/log/logwatch
+    chmod 0755 /var/db/os-logwatch /var/run/os-logwatch /var/log/logwatch
+    if [ -f "${setup_script}" ]; then
+        /usr/local/bin/php "${setup_script}" --no-reload >/dev/null 2>&1 || true
+    fi
+}
+
+_stop_pid()
+{
+    _target_pidfile="$1"
+    if [ -f "${_target_pidfile}" ]; then
+        _pid=$(cat "${_target_pidfile}" 2>/dev/null)
+        if [ -n "${_pid}" ] && kill -0 "${_pid}" 2>/dev/null; then
+            kill -TERM "${_pid}" 2>/dev/null
+            _wait=0
+            while [ "${_wait}" -lt 5 ] && kill -0 "${_pid}" 2>/dev/null; do
+                sleep 1
+                _wait=$((_wait + 1))
+            done
+            if kill -0 "${_pid}" 2>/dev/null; then
+                kill -KILL "${_pid}" 2>/dev/null
+            fi
+        fi
+        rm -f "${_target_pidfile}"
+    fi
+}
+
+logwatch_start()
+{
+    if [ -f "${pidfile}" ]; then
+        _existing=$(cat "${pidfile}" 2>/dev/null)
+        if [ -n "${_existing}" ] && kill -0 "${_existing}" 2>/dev/null; then
+            echo "${name} already running (pid ${_existing})."
+            return 0
+        fi
+    fi
+
+    logwatch_prestart
+    echo -n "Starting ${name}... "
+    /usr/sbin/daemon -r -R 2 -f -P "${suppidfile}" -p "${pidfile}" -o "${logfile}" \
+        /usr/local/bin/python3 "${daemon_script}" </dev/null >/dev/null 2>&1
+    sleep 1
+
+    if [ ! -f "${pidfile}" ] || ! /bin/kill -0 "$(/bin/cat "${pidfile}" 2>/dev/null)" 2>/dev/null; then
+        echo "failed (see ${logfile})."
+        return 1
+    fi
+
+    echo "done."
+    return 0
+}
+
+logwatch_stop()
+{
+    echo -n "Stopping ${name}... "
+    _stop_pid "${suppidfile}"
+    _stop_pid "${pidfile}"
+    rm -f "${sockfile}"
+    echo "done."
+}
+
+logwatch_reload()
+{
+    if [ -f "${pidfile}" ]; then
+        _pid=$(cat "${pidfile}" 2>/dev/null)
+        if [ -n "${_pid}" ] && kill -0 "${_pid}" 2>/dev/null; then
+            kill -HUP "${_pid}" 2>/dev/null
+            echo "Reloaded ${name} (pid ${_pid})."
+            return 0
+        fi
+    fi
+    echo "${name} is not running."
+    return 1
+}
+
+logwatch_status()
+{
+    if [ -f "${pidfile}" ]; then
+        _pid=$(cat "${pidfile}" 2>/dev/null)
+        if [ -n "${_pid}" ] && kill -0 "${_pid}" 2>/dev/null; then
+            echo "${name} is running as pid ${_pid}."
+            return 0
+        fi
+    fi
+    echo "${name} is not running."
+    return 1
+}
+
+start_cmd="logwatch_start"
+stop_cmd="logwatch_stop"
+reload_cmd="logwatch_reload"
+status_cmd="logwatch_status"
+extra_commands="reload status"
+
+run_rc_command "$1"

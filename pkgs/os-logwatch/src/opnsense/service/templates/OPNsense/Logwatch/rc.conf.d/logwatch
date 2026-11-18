@@ -1,0 +1,5 @@
+{% if helpers.exists('OPNsense.logwatch.general.enabled') and OPNsense.logwatch.general.enabled == '1' %}
+logwatch_enable="YES"
+{% else %}
+logwatch_enable="NO"
+{% endif %}

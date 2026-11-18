@@ -1,0 +1,26 @@
+---
+build_config:
+  include: {}
+plugin:
+  opnsense_version: "26.7"
+  tier: 3
+pkg_manifest:
+  name: logwatch
+  origin: opnware/os-logwatch
+  version: 0.1.0
+  comment: Native OPNsense syslog aggregator, WebUI log viewer, and alerting engine
+  www: https://github.com/mietzen/OPNware
+  maintainer: github.nstein@mailbox.org
+  prefix: /usr/local
+  licenselogic: single
+  licenses:
+    - MIT
+  desc: |
+    OPNware os-logwatch provides native syslog aggregation, SQLite-backed search,
+    ignore/discard and severity-rewrite rules, SMTP email alerts with digest
+    escalation, a Monaco YAML rule editor, and a Lobby dashboard widget inside
+    the OPNsense WebUI using syslog-ng, Python, and SQLite.
+  deps:
+    monaco-editor:
+      origin: opnware/monaco-editor
+      version: ">=0.56.0_5"

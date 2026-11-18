@@ -10,6 +10,7 @@ It provides custom OPNsense plugins and FreeBSD packages that I use on my firewa
 - **[os-terminal](pkgs/os-terminal)** — Integrated Web Terminal console for OPNsense with XTerm.js, user privilege drop, shell switcher (synced with user login shell), persistent sessions across navigation, and bash/zsh management
 - **[os-caddy-advanced](pkgs/os-caddy-advanced)** — WebUI-managed Caddy web server: process settings, a user-owned Caddyfile editor (validated save cycle, Monaco editor), envfile secrets, and xcaddy module builder
 - **[os-homer](pkgs/os-homer)** — Homer dashboard served via its own isolated Caddy instance, automatic TLS, and Monaco YAML editor
+- **[os-logwatch](pkgs/os-logwatch)** — Native syslog aggregator (`syslog-ng` + SQLite WAL) with live Log Viewer, ignore/discard & severity-rewrite rules, Monaco YAML editor, SMTP digest alerts (Monit reuse), and Lobby dashboard widget
 - **[monaco-editor](pkgs/monaco-editor)** — Shared Monaco editor assets with custom Caddyfile Monarch syntax grammar
 - **[caddy](pkgs/caddy)**, **[xcaddy](pkgs/xcaddy)**, **[yq](pkgs/yq)**, **[bash](pkgs/bash)**, **[zsh](pkgs/zsh)**, **[htop](pkgs/htop)**, **[go126](pkgs/go126)**, and container dependencies (**[docker-cli](pkgs/docker-cli)**, **[vm-bhyve](pkgs/vm-bhyve)**, **[bhyve-firmware](pkgs/bhyve-firmware)**, **[edk2-bhyve](pkgs/edk2-bhyve)**, **[podman](pkgs/podman)**, **[ocijail](pkgs/ocijail)**, **[conmon](pkgs/conmon)**, **[containernetworking-plugins](pkgs/containernetworking-plugins)**, **[containers-common](pkgs/containers-common)**, **[gpgme](pkgs/gpgme)**)
 
@@ -100,6 +101,7 @@ Clean, fast personal dashboard for your network services:
 | **os-terminal** | Plugin | Interactive Web Terminal console with XTerm.js & shell management |
 | **os-caddy-advanced** | Plugin | Advanced Caddy web server & Monaco Caddyfile editor |
 | **os-homer** | Plugin | Homer dashboard served via isolated Caddy instance |
+| **os-logwatch** | Plugin | Native syslog aggregator, Log Viewer, alerting & Monaco YAML editor |
 | **monaco-editor** | Plugin Asset | Shared Monaco editor assets with Caddyfile Monarch grammar |
 | **caddy** | Cross-compiled | Fast, multi-protocol HTTP/1-2-3 web server |
 | **docker-cli** | Redistributed | Native FreeBSD Docker CLI client |

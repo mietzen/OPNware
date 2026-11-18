@@ -1,0 +1,15 @@
+<metadata>
+    <logwatch>
+        <filename>Logwatch.js</filename>
+        <link>/ui/logwatch/logs</link>
+        <endpoints>
+            <endpoint>/api/logwatch/service/status</endpoint>
+            <endpoint>/api/logwatch/logs/stats</endpoint>
+        </endpoints>
+        <translations>
+            <title>Logwatch</title>
+            <running>Running</running>
+            <stopped>Stopped</stopped>
+        </translations>
+    </logwatch>
+</metadata>

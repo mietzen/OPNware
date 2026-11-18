@@ -1,0 +1,10 @@
+<menu>
+    <Services>
+        <Logwatch VisibleName="Logwatch" cssClass="fa fa-list-alt fa-fw">
+            <Logs VisibleName="Log Viewer" url="/ui/logwatch/logs" order="10"/>
+            <Rules VisibleName="Rules &amp; Alerts" url="/ui/logwatch/rules" order="20"/>
+            <General VisibleName="Settings" url="/ui/logwatch/general" order="30"/>
+            <LogFile VisibleName="Log File" url="/ui/diagnostics/log/core/logwatch" order="40"/>
+        </Logwatch>
+    </Services>
+</menu>
