@@ -1,5 +1,6 @@
 """Unit and seam tests for os-logwatch plugin and backend core."""
 
+import re
 import sqlite3
 import sys
 import time
@@ -279,3 +280,31 @@ def test_prune_logs_zero_deleted_does_not_lock_db(tmp_path):
     finally:
         conn_writer.close()
         conn_ticker.close()
+
+
+def test_logwatch_daemon_syslog_conf_matches_bracketed_levels():
+    conf_path = SRC_DIR / "etc" / "syslog-ng.conf.d" / "logwatch-daemon.conf"
+    conf = conf_path.read_text()
+
+    assert ".*error.*" not in conf
+    assert ".*warn.*" not in conf
+    assert r'\\[error\\]' in conf
+    assert r'\\[warn\\]' in conf
+
+    patterns = [m.replace(r"\\", "\\") for m in re.findall(r'message\("([^"]+)"\)', conf)]
+    assert len(patterns) >= 3
+    err_rx, warn_rx, info_neg_rx = patterns[0], patterns[1], patterns[2]
+
+    info_msg = "2026-11-18 13:40:03 [info] Sent alert email for 'Any Error or above' (3 hits)"
+    info_warn_msg = "2026-11-18 13:40:03 [info] Sent alert email for 'Many warnings' (10 hits)"
+    warn_msg = "2026-11-18 13:40:03 [warn] Ingest queue full, dropping log entry"
+    err_msg = "2026-11-18 13:40:03 [error] Alert evaluation error"
+    tb_msg = "Traceback (most recent call last):"
+
+    assert not re.search(err_rx, info_msg)
+    assert not re.search(warn_rx, info_warn_msg)
+    assert not re.search(info_neg_rx, info_msg)
+    assert not re.search(info_neg_rx, info_warn_msg)
+    assert re.search(warn_rx, warn_msg)
+    assert re.search(err_rx, err_msg)
+    assert re.search(err_rx, tb_msg)
