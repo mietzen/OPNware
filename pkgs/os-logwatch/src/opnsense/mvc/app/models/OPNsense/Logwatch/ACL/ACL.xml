@@ -1,0 +1,11 @@
+<acl>
+    <page-services-logwatch>
+        <name>Services: Logwatch Syslog Aggregator</name>
+        <patterns>
+            <pattern>ui/logwatch/*</pattern>
+            <pattern>ui/diagnostics/log/core/logwatch</pattern>
+            <pattern>api/logwatch/*</pattern>
+            <pattern>api/diagnostics/log/core/logwatch/*</pattern>
+        </patterns>
+    </page-services-logwatch>
+</acl>

@@ -1,0 +1,135 @@
+<form>
+    <field>
+        <type>header</type>
+        <label>Syslog Listener &amp; Firewall</label>
+    </field>
+    <field>
+        <id>logwatch.general.enabled</id>
+        <label>Enable Logwatch</label>
+        <type>checkbox</type>
+        <help>Enable the Logwatch syslog ingestion, SQLite storage, and email alerting daemon.</help>
+    </field>
+    <field>
+        <id>logwatch.general.listen_interfaces</id>
+        <label>Listen Interfaces</label>
+        <type>select_multiple</type>
+        <help>Interfaces whose IP addresses syslog-ng binds to for remote syslog ingestion (default: LAN).</help>
+    </field>
+    <field>
+        <id>logwatch.general.listen_port</id>
+        <label>Listen Port</label>
+        <type>text</type>
+        <help>UDP/TCP port for remote syslog ingestion (default: 514).</help>
+    </field>
+    <field>
+        <id>logwatch.general.enable_udp</id>
+        <label>Enable UDP Listener</label>
+        <type>checkbox</type>
+        <help>Accept RFC 3164 and RFC 5424 syslog messages over UDP.</help>
+    </field>
+    <field>
+        <id>logwatch.general.enable_tcp</id>
+        <label>Enable TCP Listener</label>
+        <type>checkbox</type>
+        <help>Accept RFC 3164 and RFC 5424 syslog messages over TCP.</help>
+    </field>
+    <field>
+        <id>logwatch.general.auto_firewall</id>
+        <label>Auto-Add Firewall Pass Rules</label>
+        <type>checkbox</type>
+        <help>Automatically register PF inbound pass rules on the selected Listen Interfaces for the syslog port.</help>
+    </field>
+    <field>
+        <type>header</type>
+        <label>Local OPNsense Log Capture</label>
+    </field>
+    <field>
+        <id>logwatch.general.capture_local</id>
+        <label>Capture Local Logs</label>
+        <type>checkbox</type>
+        <help>Ingest OPNsense system logs (s_all) and OPNware plugin logs (Caddy, Homer, Podman, Docker) into Logwatch.</help>
+    </field>
+    <field>
+        <id>logwatch.general.excluded_programs</id>
+        <label>Excluded Local Programs</label>
+        <type>select_multiple</type>
+        <style>tokenize</style>
+        <allownew>true</allownew>
+        <help>Comma-separated program names excluded from local capture (default: filterlog).</help>
+    </field>
+    <field>
+        <id>logwatch.general.min_local_severity</id>
+        <label>Minimum Local Severity</label>
+        <type>dropdown</type>
+        <help>Ignore local OPNsense logs less severe than this threshold (default: Informational).</help>
+    </field>
+    <field>
+        <type>header</type>
+        <label>Retention &amp; Storage</label>
+    </field>
+    <field>
+        <id>logwatch.general.retention_days</id>
+        <label>Retention (Days)</label>
+        <type>text</type>
+        <help>Automatically purge logs older than this many days (default: 7).</help>
+    </field>
+    <field>
+        <id>logwatch.general.max_db_size_mb</id>
+        <label>Max Database Size (MB)</label>
+        <type>text</type>
+        <help>Safety cap on /var/db/os-logwatch/logwatch.db size; oldest rows are pruned when exceeded (default: 512 MB).</help>
+    </field>
+    <field>
+        <id>logwatch.general.external_url</id>
+        <label>WebUI Base URL Override</label>
+        <type>text</type>
+        <hint>https://opnsense.internal</hint>
+        <help>Optional URL used in alert email footers. Leave blank to use this firewall's hostname.</help>
+    </field>
+    <field>
+        <type>header</type>
+        <label>Email Alerting (SMTP)</label>
+    </field>
+    <field>
+        <id>logwatch.general.use_monit_smtp</id>
+        <label>Reuse Monit SMTP Settings</label>
+        <type>checkbox</type>
+        <help>Reuse SMTP server, credentials, From, and Recipient from Services -> Monit. Fields below override when set.</help>
+    </field>
+    <field>
+        <id>logwatch.general.smtp_host</id>
+        <label>SMTP Host</label>
+        <type>text</type>
+        <help>Custom SMTP server hostname or IP (overrides Monit when provided).</help>
+    </field>
+    <field>
+        <id>logwatch.general.smtp_port</id>
+        <label>SMTP Port</label>
+        <type>text</type>
+        <help>SMTP server port (587 for STARTTLS, 465 for SMTPS).</help>
+    </field>
+    <field>
+        <id>logwatch.general.smtp_user</id>
+        <label>SMTP Username</label>
+        <type>text</type>
+        <help>Username for SMTP authentication.</help>
+    </field>
+    <field>
+        <id>logwatch.general.smtp_password</id>
+        <label>SMTP Password</label>
+        <type>password</type>
+        <help>Password for SMTP authentication.</help>
+    </field>
+    <field>
+        <id>logwatch.general.smtp_from</id>
+        <label>From Address</label>
+        <type>text</type>
+        <help>Sender email address (overrides Monit alert From address when set).</help>
+    </field>
+    <field>
+        <id>logwatch.general.smtp_to</id>
+        <label>Recipient Address</label>
+        <type>text</type>
+        <help>Comma-separated alert email recipients (overrides Monit alert recipient when set).</help>
+    </field>
+</form>
