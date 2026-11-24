@@ -82,6 +82,12 @@ class ServiceController extends ApiMutableServiceControllerBase
             if (!is_array($setupRes) && is_file('/var/db/os-logwatch/manage_status.json')) {
                 $setupRes = json_decode((string)file_get_contents('/var/db/os-logwatch/manage_status.json'), true);
             }
+            // Only trust the setup result when it was actually produced by the
+            // 'setup' command — a stale manage_status.json from another command
+            // must not be mistaken for the setup result.
+            if (is_array($setupRes) && ($setupRes['cmd'] ?? '') !== 'setup') {
+                $setupRes = null;
+            }
             if (is_array($setupRes) && ($setupRes['status'] ?? '') === 'error') {
                 return ['status' => 'failure', 'message' => $setupRes['message'] ?? 'Setup failed'];
             }

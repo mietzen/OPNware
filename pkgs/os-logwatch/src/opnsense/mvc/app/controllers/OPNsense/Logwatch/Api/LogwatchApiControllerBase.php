@@ -38,34 +38,75 @@ abstract class LogwatchApiControllerBase extends ApiControllerBase
     protected const STAGED_RULES = '/var/db/os-logwatch/staged_rules.yml';
 
     /**
+     * Atomically stage a JSON payload for a configd action into
+     * /var/db/os-logwatch/request_<cmd>.json (mode 0600 — payloads may contain
+     * secrets such as SMTP credentials and must never travel through configd
+     * parameters, whose socket messages are truncated at 4KB and logged).
+     */
+    public static function stageRequest(string $cmd, array $payload): bool
+    {
+        if (!preg_match('/^[a-z0-9-]+$/', $cmd)) {
+            return false;
+        }
+
+        if (!is_dir(self::STATE_DIR) && !@mkdir(self::STATE_DIR, 0755, true)) {
+            return false;
+        }
+
+        $path = self::STATE_DIR . '/request_' . $cmd . '.json';
+        $tmp = $path . '.tmp';
+        if (file_put_contents($tmp, json_encode($payload)) === false) {
+            return false;
+        }
+
+        chmod($tmp, 0600);
+        if (!rename($tmp, $path)) {
+            @unlink($tmp);
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
      * Execute a configd action under the logwatch namespace and decode JSON,
      * falling back to manage_status.json if configd swallowed output.
+     * When a payload is given it is staged to request_<cmd>.json first and the
+     * action is invoked WITHOUT parameters. The response (direct or from the
+     * status file) is only accepted when it carries cmd === $cmd — a stale
+     * status file from a previous command is rejected.
      */
-    protected function runAction(string $cmd, $param = null): array
+    public static function runAction(string $cmd, $payload = null): array
     {
         $backend = new Backend();
-        if ($param !== null) {
-            $params = is_array($param) ? $param : [$param];
-            $response = $backend->configdpRun("logwatch {$cmd}", $params);
-        } else {
-            $response = $backend->configdRun("logwatch {$cmd}");
+        if ($payload !== null) {
+            if (!is_array($payload) || !self::stageRequest($cmd, $payload)) {
+                return [
+                    'status' => 'error',
+                    'message' => gettext('Cannot stage request payload for configd'),
+                ];
+            }
         }
+
+        $response = $backend->configdRun("logwatch {$cmd}");
 
         $result = json_decode((string)$response, true);
-        if (is_array($result)) {
-            return $result;
-        }
-
-        if (is_file(self::STATUS_FILE)) {
+        if (!is_array($result) && is_file(self::STATUS_FILE)) {
             $fileData = json_decode((string)file_get_contents(self::STATUS_FILE), true);
             if (is_array($fileData)) {
-                return $fileData;
+                $result = $fileData;
             }
+        }
+
+        if (is_array($result) && ($result['cmd'] ?? null) === $cmd) {
+            return $result;
         }
 
         return [
             'status' => 'error',
-            'message' => trim((string)$response) ?: gettext('Empty response from configd'),
+            'message' => is_array($result)
+                ? gettext('stale or invalid configd response')
+                : (trim((string)$response) ?: gettext('Empty response from configd')),
         ];
     }
 

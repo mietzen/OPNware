@@ -59,8 +59,7 @@ class LogsController extends LogwatchApiControllerBase
             'offset' => (int)$this->readParam('offset', 0),
         ];
 
-        $b64 = base64_encode(json_encode($params));
-        return $this->runAction('query', $b64);
+        return $this->runAction('query', $params);
     }
 
     public function filtersAction()
@@ -72,8 +71,7 @@ class LogsController extends LogwatchApiControllerBase
             'tag' => trim((string)$this->readParam('tag', '')),
         ];
 
-        $b64 = base64_encode(json_encode($params));
-        return $this->runAction('filters', $b64);
+        return $this->runAction('filters', $params);
     }
 
     public function statsAction()
@@ -110,9 +108,18 @@ class LogsController extends LogwatchApiControllerBase
             'yaml' => $mdl->getRulesYaml(),
             'rule' => $rule,
         ];
-        $res = $this->runAction('add-ignore', base64_encode(json_encode($payload)));
+        $res = $this->runAction('add-ignore', $payload);
         if (($res['status'] ?? '') !== 'ok') {
             return $res;
+        }
+
+        // Never persist an empty rules payload — a missing "yaml" key here is a
+        // stale/invalid configd response and would wipe yaml_content on save.
+        if (!isset($res['yaml']) || !is_string($res['yaml']) || trim($res['yaml']) === '') {
+            return [
+                'status' => 'error',
+                'message' => gettext('Refusing to save empty rules (stale or invalid configd response)'),
+            ];
         }
 
         $mdl->rules->yaml_content = $res['yaml'];
