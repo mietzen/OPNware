@@ -79,6 +79,16 @@ class RulesController extends LogwatchApiControllerBase
             return $res;
         }
 
+        // Never persist an empty rules payload — that is what wiped yaml_content
+        // when configd truncated the add-ignore parameter and the controller fell
+        // back to a stale manage_status.json without a "yaml" key.
+        if (!isset($res['yaml']) || !is_string($res['yaml']) || trim($res['yaml']) === '') {
+            return [
+                'status' => 'error',
+                'message' => gettext('Refusing to save empty rules (stale or invalid configd response)'),
+            ];
+        }
+
         $mdl = new Logwatch();
         $mdl->rules->yaml_content = $res['yaml'];
         $mdl->serializeToConfig();
@@ -109,6 +119,6 @@ class RulesController extends LogwatchApiControllerBase
             'clear_digest' => ((string)$this->request->getPost('clear_digest', 'string', '0') === '1' || $this->request->getPost('clear_digest') === true),
         ];
 
-        return $this->runAction('reset-cooldown', base64_encode(json_encode($payload)));
+        return $this->runAction('reset-cooldown', $payload);
     }
 }

@@ -24,6 +24,10 @@ LOG_DIR = "/var/log/logwatch"
 DB_PATH = f"{STATE_DIR}/logwatch.db"
 STATUS_FILE = f"{STATE_DIR}/manage_status.json"
 STAGED_RULES_FILE = f"{STATE_DIR}/staged_rules.yml"
+# Pattern for per-command staged request files (payload transport that avoids
+# configd's 4KB socket message limit and keeps secrets out of configd logs)
+REQUEST_FILE = f"{STATE_DIR}/request_%s.json"
+RE_CMD_SAFE = re.compile(r"^[a-z0-9-]+$")
 SEEDED_MARKER = f"{STATE_DIR}/.seeded"
 INGEST_SOCK = f"{RUN_DIR}/ingest.sock"
 PID_FILE = f"{RUN_DIR}/logwatch.pid"
@@ -163,6 +167,14 @@ class PluginConfig:
     smtp: SmtpConfig = field(default_factory=SmtpConfig)
     rules_yaml: str = DEFAULT_RULES_YAML
     rules: dict = field(default_factory=dict)
+
+
+def request_path(cmd):
+    """Return the staged per-command request file path (cmd sanitized to [a-z0-9-])."""
+    safe = re.sub(r"[^a-z0-9-]", "", str(cmd or "").strip().lower())
+    if not RE_CMD_SAFE.match(safe):
+        raise ValueError(f"Invalid command name '{cmd}'")
+    return REQUEST_FILE % safe
 
 
 def norm_sev(val):

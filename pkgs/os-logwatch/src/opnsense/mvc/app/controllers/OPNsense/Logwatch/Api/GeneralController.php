@@ -29,7 +29,6 @@
 namespace OPNsense\Logwatch\Api;
 
 use OPNsense\Base\ApiMutableModelControllerBase;
-use OPNsense\Core\Backend;
 
 class GeneralController extends ApiMutableModelControllerBase
 {
@@ -55,24 +54,6 @@ class GeneralController extends ApiMutableModelControllerBase
             $payload['smtp_to'] = (string)$this->request->getPost('smtp_to', 'string', '');
         }
 
-        $b64 = base64_encode(json_encode($payload));
-        $backend = new Backend();
-        $raw = trim((string)$backend->configdpRun('logwatch test-smtp', [$b64]));
-        if ($raw !== '' && strpos($raw, 'Execute error') === false) {
-            $data = json_decode($raw, true);
-            if (is_array($data)) {
-                return $data;
-            }
-        }
-
-        $statusFile = '/var/db/os-logwatch/manage_status.json';
-        if (is_file($statusFile)) {
-            $fileData = json_decode((string)file_get_contents($statusFile), true);
-            if (is_array($fileData)) {
-                return $fileData;
-            }
-        }
-
-        return ['status' => 'error', 'message' => $raw !== '' ? $raw : gettext('Failed to send test email')];
+        return LogwatchApiControllerBase::runAction('test-smtp', $payload);
     }
 }

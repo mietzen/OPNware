@@ -1,7 +1,6 @@
 #!/usr/local/bin/python3
 """CLI management helper invoked by configd actions for os-logwatch."""
 
-import base64
 import glob
 import json
 import os
@@ -20,25 +19,72 @@ import logwatch_core as core
 
 RE_MOD_LOGDIR = re.compile(r"/var/log/([a-zA-Z0-9_-]+)/\1_")
 
+# Command currently being executed; stamped into every emitted payload so the
+# PHP side can reject stale manage_status.json content from other commands.
+_CURRENT_CMD = ""
+# Nonce embedded by the PHP controller into the staged request file; echoed
+# back in every response payload so runAction can match request <-> response.
+_CURRENT_REQUEST_ID = None
 
-def _emit(payload):
+
+def _emit(payload, cmd=None):
+    payload = dict(payload)
+    payload["cmd"] = cmd if cmd is not None else _CURRENT_CMD
+    if _CURRENT_REQUEST_ID is not None:
+        payload["request_id"] = _CURRENT_REQUEST_ID
     os.makedirs(core.STATE_DIR, mode=0o755, exist_ok=True)
     tmp = f"{core.STATUS_FILE}.{os.getpid()}.tmp"
     with open(tmp, "w", encoding="utf-8") as fh:
         json.dump(payload, fh)
+    os.chmod(tmp, 0o600)
     os.replace(tmp, core.STATUS_FILE)
     print(json.dumps(payload))
 
 
-def _decode_b64_json(arg):
-    if not arg:
-        return {}
-    raw = base64.b64decode(arg.encode("ascii")).decode("utf-8")
-    return json.loads(raw)
+def _load_request(cmd, arg=None):
+    """Read the staged per-command request JSON payload.
+
+    The CLI argv slot is kept for compatibility but intentionally ignored:
+    payloads travel via staged files so configd's 4KB socket message limit can
+    never truncate them and secrets never reach configd params/logs.
+    Returns the payload dict, or None after emitting status:error.
+    """
+    global _CURRENT_REQUEST_ID
+    try:
+        path = core.request_path(cmd)
+    except ValueError as exc:
+        _emit({"status": "error", "message": str(exc)}, cmd)
+        return None
+
+    try:
+        with open(path, "r", encoding="utf-8") as fh:
+            data = json.load(fh)
+    except (OSError, ValueError) as exc:
+        _emit({"status": "error", "message": f"Missing or unreadable staged request for '{cmd}': {exc}"}, cmd)
+        return None
+
+    # The staged request is consumed exactly once by this invocation; remove it
+    # best-effort so secrets (e.g. SMTP credentials) do not persist at rest.
+    try:
+        os.unlink(path)
+    except OSError:
+        pass
+
+    if not isinstance(data, dict):
+        _emit({"status": "error", "message": f"Invalid staged request payload for '{cmd}'"}, cmd)
+        return None
+
+    req_id = data.get("request_id")
+    if isinstance(req_id, str) and req_id:
+        _CURRENT_REQUEST_ID = req_id
+
+    return data
 
 
 def _cmd_query(arg):
-    params = _decode_b64_json(arg)
+    params = _load_request("query", arg)
+    if params is None:
+        return
     if params.get("regex"):
         params["search_mode"] = core.SearchMode.REGEX
     else:
@@ -62,7 +108,9 @@ def _cmd_query(arg):
 
 
 def _cmd_filters(arg):
-    params = _decode_b64_json(arg)
+    params = _load_request("filters", arg)
+    if params is None:
+        return
     conn = core.open_db()
     try:
         filters = core.get_filters(conn, params)
@@ -130,7 +178,9 @@ def _cmd_rules_validate():
 
 
 def _cmd_add_ignore(arg):
-    payload = _decode_b64_json(arg)
+    payload = _load_request("add-ignore", arg)
+    if payload is None:
+        return
     raw_yaml = payload.get("yaml") or core.DEFAULT_RULES_YAML
     new_rule = payload.get("rule") or {}
 
@@ -188,7 +238,9 @@ def _cmd_alert_state():
 
 
 def _cmd_reset_cooldown(arg):
-    payload = _decode_b64_json(arg)
+    payload = _load_request("reset-cooldown", arg)
+    if payload is None:
+        return
     rule_name = str(payload.get("rule_name") or "").strip()
     clear_digest = bool(payload.get("clear_digest", False))
     conn = core.open_db()
@@ -208,7 +260,9 @@ def _cmd_reset_cooldown(arg):
 
 
 def _cmd_test_smtp(arg):
-    payload = _decode_b64_json(arg)
+    payload = _load_request("test-smtp", arg)
+    if payload is None:
+        return
     cfg = core.load_config()
 
     # Allow testing unsaved SMTP edits directly from the UI Settings form
@@ -443,11 +497,14 @@ def _cmd_setup(no_reload=False):
 
 
 def main():
+    global _CURRENT_CMD, _CURRENT_REQUEST_ID
     if len(sys.argv) < 2:
         _emit({"status": "error", "message": "Missing command"})
         return
 
     cmd = sys.argv[1]
+    _CURRENT_CMD = cmd
+    _CURRENT_REQUEST_ID = None
     arg = sys.argv[2] if len(sys.argv) > 2 else ""
 
     try:
@@ -474,7 +531,7 @@ def main():
         else:
             _emit({"status": "error", "message": f"Unknown command: {cmd}"})
     except Exception as exc:
-        _emit({"status": "error", "message": str(exc)})
+        _emit({"status": "error", "message": str(exc)}, cmd)
 
 
 if __name__ == "__main__":
