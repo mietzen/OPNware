@@ -22,15 +22,21 @@ RE_MOD_LOGDIR = re.compile(r"/var/log/([a-zA-Z0-9_-]+)/\1_")
 # Command currently being executed; stamped into every emitted payload so the
 # PHP side can reject stale manage_status.json content from other commands.
 _CURRENT_CMD = ""
+# Nonce embedded by the PHP controller into the staged request file; echoed
+# back in every response payload so runAction can match request <-> response.
+_CURRENT_REQUEST_ID = None
 
 
 def _emit(payload, cmd=None):
     payload = dict(payload)
     payload["cmd"] = cmd if cmd is not None else _CURRENT_CMD
+    if _CURRENT_REQUEST_ID is not None:
+        payload["request_id"] = _CURRENT_REQUEST_ID
     os.makedirs(core.STATE_DIR, mode=0o755, exist_ok=True)
     tmp = f"{core.STATUS_FILE}.{os.getpid()}.tmp"
     with open(tmp, "w", encoding="utf-8") as fh:
         json.dump(payload, fh)
+    os.chmod(tmp, 0o600)
     os.replace(tmp, core.STATUS_FILE)
     print(json.dumps(payload))
 
@@ -43,6 +49,7 @@ def _load_request(cmd, arg=None):
     never truncate them and secrets never reach configd params/logs.
     Returns the payload dict, or None after emitting status:error.
     """
+    global _CURRENT_REQUEST_ID
     try:
         path = core.request_path(cmd)
     except ValueError as exc:
@@ -56,9 +63,20 @@ def _load_request(cmd, arg=None):
         _emit({"status": "error", "message": f"Missing or unreadable staged request for '{cmd}': {exc}"}, cmd)
         return None
 
+    # The staged request is consumed exactly once by this invocation; remove it
+    # best-effort so secrets (e.g. SMTP credentials) do not persist at rest.
+    try:
+        os.unlink(path)
+    except OSError:
+        pass
+
     if not isinstance(data, dict):
         _emit({"status": "error", "message": f"Invalid staged request payload for '{cmd}'"}, cmd)
         return None
+
+    req_id = data.get("request_id")
+    if isinstance(req_id, str) and req_id:
+        _CURRENT_REQUEST_ID = req_id
 
     return data
 
@@ -479,13 +497,14 @@ def _cmd_setup(no_reload=False):
 
 
 def main():
-    global _CURRENT_CMD
+    global _CURRENT_CMD, _CURRENT_REQUEST_ID
     if len(sys.argv) < 2:
         _emit({"status": "error", "message": "Missing command"})
         return
 
     cmd = sys.argv[1]
     _CURRENT_CMD = cmd
+    _CURRENT_REQUEST_ID = None
     arg = sys.argv[2] if len(sys.argv) > 2 else ""
 
     try:
