@@ -4,6 +4,6 @@ build_config:
 redistribute:
   name: gpgme
   version:
-    FreeBSD-15-amd64: "2.1.2"
+    FreeBSD-15-amd64: "2.3.1"
   repo: http://pkg.freebsd.org
   path: quarterly/All
